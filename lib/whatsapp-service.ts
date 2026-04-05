@@ -59,7 +59,7 @@ export async function sendWhatsAppMessage(phoneNumber: string, message: string):
     const bodyText = message.length > 4096 ? message.slice(0, 4093) + '...' : message;
     console.log('[WhatsApp] Tamaño del mensaje:', bodyText.length, 'chars');
 
-    const url = `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`;
+    const url = `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`;
     console.log('[WhatsApp] URL:', url.replace(phoneNumberId, 'REDACTED'));
 
     const payload = {
