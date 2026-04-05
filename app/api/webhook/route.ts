@@ -119,18 +119,51 @@ async function sendWhatsAppMessage(phoneNumber: string, message: string) {
   }
 }
 
-async function releaseWaDedup(dedupeKey: string | undefined): Promise<void> {
-  if (!dedupeKey?.trim()) return;
-  const { error } = await getSupabaseAdmin()
-    .from('processed_whatsapp_messages')
-    .delete()
-    .eq('wa_message_id', dedupeKey.trim());
-  if (error) {
-    console.warn('[webhook] No se pudo liberar deduplicación:', error.message);
-  }
+/**
+ * NO liberar el dedupe tras un fallo.
+ * Si Meta reenvía el webhook, el claim ya existe y se bloquea el duplicado.
+ * El mensaje YA se envió antes del fallo → no reintentar.
+ */
+function shouldReleaseDedupOnSendFailure(): boolean {
+  return false;
 }
 
-async function getOrCreateConversation(phoneNumber: string) {
+async function getOrCreateContact(phoneNumber: string) {
+  const { data: existing } = await getSupabaseAdmin()
+    .from('contacts')
+    .select('id, name, email, segment, location, last_message_at')
+    .eq('phone_number', phoneNumber)
+    .single();
+
+  if (existing) {
+    console.log('Found existing contact:', existing.id);
+    // Update last_message_at
+    await getSupabaseAdmin()
+      .from('contacts')
+      .update({ last_message_at: new Date().toISOString() })
+      .eq('id', existing.id);
+    return existing;
+  }
+
+  const { data: newContact, error } = await getSupabaseAdmin()
+    .from('contacts')
+    .insert({
+      phone_number: phoneNumber,
+      last_message_at: new Date().toISOString(),
+    })
+    .select('id, name, email, segment, location, last_message_at')
+    .single();
+
+  if (error) {
+    console.error('Error creating contact:', error);
+    throw error;
+  }
+
+  console.log('Created new contact:', newContact.id);
+  return newContact;
+}
+
+async function getOrCreateConversation(phoneNumber: string, contactId: string) {
   const { data: existing } = await getSupabaseAdmin()
     .from('conversations')
     .select('id')
@@ -139,12 +172,32 @@ async function getOrCreateConversation(phoneNumber: string) {
 
   if (existing) {
     console.log('Found existing conversation:', existing.id);
+    // Update last response timestamp and message count
+    const { data: msgCount } = await getSupabaseAdmin()
+      .from('messages')
+      .select('id')
+      .eq('conversation_id', existing.id);
+    
+    await getSupabaseAdmin()
+      .from('conversations')
+      .update({
+        contact_id: contactId,
+        last_response_at: new Date().toISOString(),
+        message_count: (msgCount || []).length,
+      })
+      .eq('id', existing.id);
+    
     return existing.id;
   }
 
   const { data: newConv, error } = await getSupabaseAdmin()
     .from('conversations')
-    .insert({ phone_number: phoneNumber })
+    .insert({
+      phone_number: phoneNumber,
+      contact_id: contactId,
+      is_open: true,
+      first_response_at: new Date().toISOString(),
+    })
     .select('id')
     .single();
 
@@ -196,60 +249,91 @@ function digitsOnly(s: string): string {
 }
 
 /**
+ * Limpieza opcional: eliminar registros antiguos (>7 días) para evitar crecimiento infinito.
+ * Ejecutar periódicamente con cron o llamada manual.
+ */
+async function cleanupOldDedupeRecords(): Promise<void> {
+  const { error } = await getSupabaseAdmin()
+    .rpc('exec_sql', {
+      sql: `DELETE FROM processed_whatsapp_messages WHERE created_at < NOW() - INTERVAL '7 days'`,
+    });
+
+  if (error) {
+    console.log('[webhook] Cleanup dedupe (sin RPC exec_sql, normal):', error.message);
+  }
+}
+
+/**
  * true = este evento es nuevo (se procesa). false = duplicado (Meta reintenta o payload repetido).
  * Prioridad: RPC atómico claim_whatsapp_inbound (sin condición de carrera entre instancias Vercel).
  */
 async function tryClaimInboundDedupe(dedupeKey: string): Promise<boolean> {
   const key = dedupeKey.trim();
   if (!key) {
-    console.warn('[webhook] Clave de deduplicación vacía');
+    console.warn('[webhook] Clave de deduplicación vacía, permitiendo procesamiento');
     return true;
   }
 
   const admin = getSupabaseAdmin();
+
+  // Intento 1: RPC atómico (recomendado, sin race conditions)
   const { data: claimed, error: rpcError } = await admin.rpc('claim_whatsapp_inbound', {
     p_wa_id: key,
   });
 
   if (!rpcError && typeof claimed === 'boolean') {
     if (!claimed) {
-      console.log('[webhook] Duplicado (claim atómico), omitiendo:', key.slice(0, 80));
+      console.log('[webhook] DUPLICADO DETECTADO (RPC claim):', key.slice(0, 60) + '...');
+    } else {
+      console.log('[webhook] Mensaje nuevo confirmado (RPC claim):', key.slice(0, 60) + '...');
     }
     return claimed;
   }
 
-  const rpcMsg = rpcError?.message || '';
-  const rpcMissing =
-    rpcMsg.includes('claim_whatsapp_inbound') ||
-    rpcMsg.includes('function') ||
-    rpcError?.code === 'PGRST202' ||
-    rpcMsg.includes('42883');
+  // RPC falló - hacer log del error específico
+  console.error('[webhook] RPC claim_whatsapp_inbound falló:', {
+    message: rpcError?.message,
+    code: rpcError?.code,
+    details: rpcError?.details,
+    hint: rpcError?.hint,
+  });
 
-  if (!rpcMissing) {
-    console.error('[webhook] RPC claim_whatsapp_inbound:', rpcError);
+  // Fallback: INSERT directo con ON CONFLICT (menos eficiente pero funciona)
+  const { error: insertError } = await admin
+    .from('processed_whatsapp_messages')
+    .insert({ wa_message_id: key });
+
+  if (!insertError) {
+    console.log('[webhook] Mensaje nuevo confirmado (fallback INSERT):', key.slice(0, 60) + '...');
+    return true;
   }
 
-  const { error } = await admin.from('processed_whatsapp_messages').insert({ wa_message_id: key });
-
-  if (!error) return true;
-  if (error.code === '23505') {
-    console.log('[webhook] Duplicado (insert), omitiendo:', key.slice(0, 80));
+  // Error 23505 = unique violation (duplicado)
+  if (insertError.code === '23505' || insertError.message?.includes('duplicate')) {
+    console.log('[webhook] DUPLICADO DETECTADO (fallback INSERT):', key.slice(0, 60) + '...');
     return false;
   }
 
-  const msg = error.message || '';
+  // Error crítico: tabla no existe o RLS bloquea
+  const msg = insertError.message || '';
   if (
     msg.includes('Could not find the table') ||
     msg.includes('does not exist') ||
-    msg.includes('processed_whatsapp_messages')
+    msg.includes('processed_whatsapp_messages') ||
+    msg.includes('permission denied') ||
+    msg.includes('RLS')
   ) {
-    console.warn(
-      '[webhook] Tabla processed_whatsapp_messages ausente → riesgo de duplicados. Ejecuta supabase/processed_whatsapp_messages.sql y supabase/claim_whatsapp_inbound.sql'
+    console.error(
+      '[webhook] CRÍTICO: Tabla processed_whatsapp_messages no disponible o RLS denegó.',
+      'Ejecuta en Supabase SQL Editor: supabase/schema.sql',
+      'Error:', insertError
     );
+    // Permitir procesamiento para no perder mensajes, pero el problema persistirá
     return true;
   }
-  console.error('[webhook] Error deduplicación:', error);
-  return true;
+
+  console.error('[webhook] Error inesperado en deduplicación:', insertError);
+  return true; // Permitir procesamiento por seguridad
 }
 
 type WaInboundText = {
@@ -269,13 +353,22 @@ function buildInboundDedupeKey(messageData: WaInboundText, phoneNumber: string, 
 }
 
 async function handleInboundUserMessage(messageData: WaInboundText): Promise<void> {
-  if (messageData.type !== 'text') {
-    console.log('[webhook] Ignorado (no es texto):', messageData.type);
-    return;
-  }
-
+  const msgId = messageData.id?.slice(0, 20) || 'sin-id';
+  const msgType = messageData.type;
   const phoneNumber = messageData.from;
   const text = messageData.text?.body?.trim();
+
+  console.log('[webhook] Recibido:', {
+    id: msgId,
+    type: msgType,
+    from: phoneNumber?.slice(0, 8),
+    textLen: text?.length ?? 0,
+  });
+
+  if (msgType !== 'text') {
+    console.log('[webhook] Ignorado (no es texto):', msgType);
+    return;
+  }
 
   const ignoreFrom = process.env.WHATSAPP_IGNORE_INBOUND_FROM?.trim();
   if (ignoreFrom && phoneNumber && digitsOnly(phoneNumber) === digitsOnly(ignoreFrom)) {
@@ -284,17 +377,27 @@ async function handleInboundUserMessage(messageData: WaInboundText): Promise<voi
   }
 
   if (!text || !phoneNumber) {
-    console.log('[webhook] Falta texto o from');
+    console.log('[webhook] Falta texto o from, omitiendo');
     return;
   }
 
   const dedupeKey = buildInboundDedupeKey(messageData, phoneNumber, text);
+  console.log('[webhook] Clave dedupe:', dedupeKey.slice(0, 60) + '...');
+
   const claimed = await tryClaimInboundDedupe(dedupeKey);
-  if (!claimed) return;
+  if (!claimed) {
+    console.log('[webhook] Mensaje duplicado, omitiendo procesamiento');
+    return;
+  }
 
   console.log(`Message from ${phoneNumber}: ${text}`);
 
-  const conversationId = await getOrCreateConversation(phoneNumber);
+  // Create or update contact
+  const contact = await getOrCreateContact(phoneNumber);
+  console.log('Contact:', contact.id);
+
+  // Create or update conversation
+  const conversationId = await getOrCreateConversation(phoneNumber, contact.id);
   await saveMessage(conversationId, 'user', text);
 
   const history = await getConversationHistory(phoneNumber);
@@ -310,9 +413,10 @@ async function handleInboundUserMessage(messageData: WaInboundText): Promise<voi
     await sendWhatsAppMessage(phoneNumber, assistantResponse);
     await saveMessage(conversationId, 'assistant', assistantResponse);
 
-    console.log('Message processing completed successfully');
+    console.log('[webhook] Mensaje procesado exitosamente, dedupe key persiste:', dedupeKey.slice(0, 12) + '...');
   } catch (err) {
-    await releaseWaDedup(dedupeKey);
+    // NO liberar dedupe: si Meta reenvía el webhook, el mensaje ya se envió
+    console.error('[webhook] Error tras enviar mensaje (dedupe NO liberado):', err);
     throw err;
   }
 }
