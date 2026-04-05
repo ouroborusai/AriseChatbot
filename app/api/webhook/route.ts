@@ -32,35 +32,63 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    console.log('[Webhook] Payload:', JSON.stringify(body, null, 2));
+    console.log('[Webhook] ====== PAYLOAD COMPLETO ======');
+    console.log(JSON.stringify(body, null, 2));
+    console.log('[Webhook] ====== FIN PAYLOAD ======');
 
     const entries = body.entry;
     if (!Array.isArray(entries)) {
+      console.log('[Webhook] ⚠️ Campo "entry" no es un array');
       return new NextResponse('OK', { status: 200 });
     }
 
+    console.log('[Webhook] Procesando', entries.length, 'entrada(s)');
+
     for (const entry of entries) {
       const changes = entry?.changes;
-      if (!Array.isArray(changes)) continue;
+      if (!Array.isArray(changes)) {
+        console.log('[Webhook] ⚠️ Campo "changes" no es array en entrada');
+        continue;
+      }
+
+      console.log('[Webhook] Entrada tiene', changes.length, 'cambio(s)');
 
       for (const change of changes) {
+        console.log('[Webhook] Campo:', change?.field);
+        
         if (change?.field !== 'messages') {
-          console.log('[Webhook] Campo ignorado:', change?.field);
+          console.log('[Webhook] ℹ️ Campo ignorado (no es messages):', change?.field);
           continue;
         }
 
         const messages = change?.value?.messages;
+        const customers = change?.value?.customers;
+        const statuses = change?.value?.statuses;
+
+        console.log('[Webhook] Messages:', messages ? messages.length : 0);
+        console.log('[Webhook] Customers:', customers ? customers.length : 0);
+        console.log('[Webhook] Statuses:', statuses ? statuses.length : 0);
+
         if (!Array.isArray(messages) || messages.length === 0) {
+          console.log('[Webhook] ℹ️ Sin mensajes para procesar');
           continue;
         }
 
         // Procesar cada mensaje
         for (const messageData of messages) {
-          await handleInboundUserMessage(messageData as InboundMessage);
+          console.log('[Webhook] 📨 Mensaje:', JSON.stringify(messageData, null, 2));
+          
+          try {
+            await handleInboundUserMessage(messageData as InboundMessage);
+          } catch (msgError) {
+            console.error('[Webhook] ❌ Error procesando mensaje:', msgError instanceof Error ? msgError.message : String(msgError));
+            // Continuar con el siguiente mensaje
+          }
         }
       }
     }
 
+    console.log('[Webhook] ✅ Webhook procesado exitosamente');
     return new NextResponse('OK', { status: 200 });
   } catch (error) {
     console.error('[Webhook] ❌ Error procesando payload:', error);
