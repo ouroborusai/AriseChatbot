@@ -128,6 +128,79 @@ function shouldReleaseDedupOnSendFailure(): boolean {
   return false;
 }
 
+/**
+ * Registra un mensaje saliente para evitar loop
+ * (cuando WhatsApp nos devuelve el mensaje como inbound, lo detectamos y lo ignoramos)
+ */
+async function registerOutboundMessage(phoneNumber: string, messageText: string): Promise<void> {
+  const normalizedPhone = digitsOnly(phoneNumber);
+  const contentHash = Buffer.from(messageText).toString('base64').slice(0, 128);
+  
+  try {
+    await getSupabaseAdmin()
+      .from('messages')
+      .insert({
+        conversation_id: (await getOrCreateConversation(phoneNumber, 
+          (await getOrCreateContact(phoneNumber)).id)).toString(),
+        role: 'assistant',
+        content: messageText,
+        metadata: {
+          outbound_registered: true,
+          registered_at: new Date().toISOString(),
+        },
+      });
+    
+    console.log('[webhook] Registered outbound message for anti-loop:', normalizedPhone);
+  } catch (err) {
+    console.warn('[webhook] Failed to register outbound message:', err);
+    // No fallar si no se puede registrar, el mensaje ya se envió de todas formas
+  }
+}
+
+/**
+ * Detecta si un mensaje inbound es en realidad una respuesta del bot que Meta devolvió
+ * Compara el contenido exacto con mensajes recientes enviados
+ */
+async function isEchoFromOwnMessage(phoneNumber: string, inboundText: string): Promise<boolean> {
+  const conversationResult = await getSupabaseAdmin()
+    .from('conversations')
+    .select('id')
+    .eq('phone_number', phoneNumber)
+    .single();
+
+  if (!conversationResult.data) return false;
+
+  const conversationId = conversationResult.data.id;
+  
+  // Buscar mensajes asistente recientes (últimos 10 minutos)
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  
+  const { data: recentMessages } = await getSupabaseAdmin()
+    .from('messages')
+    .select('content, created_at')
+    .eq('conversation_id', conversationId)
+    .eq('role', 'assistant')
+    .gte('created_at', tenMinutesAgo)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  if (!recentMessages || recentMessages.length === 0) {
+    return false;
+  }
+
+  // Si el inbound es igual a alguno de los últimos mensajes del asistente, es un eco
+  const inboundNormalized = inboundText.trim().toLowerCase();
+  for (const msg of recentMessages) {
+    const contentNormalized = (msg.content ?? '').trim().toLowerCase();
+    if (contentNormalized === inboundNormalized) {
+      console.log('[webhook] Echo detectado: inbound coincide con mensaje asistente reciente');
+      return true;
+    }
+  }
+
+  return false;
+}
+
 async function getOrCreateContact(phoneNumber: string) {
   const { data: existing } = await getSupabaseAdmin()
     .from('contacts')
@@ -381,6 +454,13 @@ async function handleInboundUserMessage(messageData: WaInboundText): Promise<voi
     return;
   }
 
+  // ⭐ NUEVA VALIDACIÓN: Detectar eco (nuestro propio mensaje devuelto)
+  const isEcho = await isEchoFromOwnMessage(phoneNumber, text);
+  if (isEcho) {
+    console.log('[webhook] ⚠️ LOOP DETECTADO: Mensaje es eco del bot, ignorando para evitar recursión infinita');
+    return;
+  }
+
   const dedupeKey = buildInboundDedupeKey(messageData, phoneNumber, text);
   console.log('[webhook] Clave dedupe:', dedupeKey.slice(0, 60) + '...');
 
@@ -411,6 +491,10 @@ async function handleInboundUserMessage(messageData: WaInboundText): Promise<voi
     console.log('AI Response:', assistantResponse);
 
     await sendWhatsAppMessage(phoneNumber, assistantResponse);
+    
+    // ⭐ Registrar el mensaje saliente para detección de eco futuro
+    await registerOutboundMessage(phoneNumber, assistantResponse);
+    
     await saveMessage(conversationId, 'assistant', assistantResponse);
 
     console.log('[webhook] Mensaje procesado exitosamente, dedupe key persiste:', dedupeKey.slice(0, 12) + '...');
