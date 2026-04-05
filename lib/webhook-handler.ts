@@ -98,12 +98,27 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
     const assistantResponse = await generateAssistantReply(systemPrompt, history, text);
     
     // 6. Enviar respuesta por WhatsApp
-    await sendWhatsAppMessage(phoneNumber, assistantResponse);
+    let messageSent = false;
+    try {
+      await sendWhatsAppMessage(phoneNumber, assistantResponse);
+      messageSent = true;
+      console.log('[Handler] ✓ Mensaje enviado a WhatsApp');
+    } catch (whatsappErr) {
+      console.error('[Handler] ✗ Error enviando a WhatsApp:', whatsappErr);
+      throw whatsappErr;
+    }
     
-    // 7. Guardar respuesta en BD (y registrar para detección de eco)
-    await registerOutboundMessage(conversationId, assistantResponse);
+    // 7. Guardar si se envió exitosamente
+    if (messageSent) {
+      try {
+        await registerOutboundMessage(conversationId, assistantResponse);
+        console.log('[Handler] ✓ Respuesta guardada en BD');
+      } catch (dbErr) {
+        console.warn('[Handler] ⚠️ Enviado pero no guardado en BD:', dbErr);
+      }
+    }
     
-    console.log('[Handler] ✓ Mensaje procesado exitosamente');
+    console.log('[Handler] ✓ Procesado exitosamente');
   } catch (err) {
     console.error('[Handler] Error procesando mensaje:', err);
     throw err;

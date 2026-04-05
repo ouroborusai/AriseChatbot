@@ -20,14 +20,6 @@ const openai =
     : null;
 
 /**
- * Lee el prompt del sistema desde AGENT_PROMPT.md
- */
-export function getSystemPrompt(): string {
-  const promptPath = path.join(process.cwd(), 'AGENT_PROMPT.md');
-  return fs.readFileSync(promptPath, 'utf-8');
-}
-
-/**
  * Genera respuesta del asistente usando Gemini o OpenAI
  */
 export async function generateAssistantReply(
@@ -106,21 +98,38 @@ export function getAIProvider(): 'gemini' | 'openai' {
   return process.env.GEMINI_API_KEY?.trim() ? 'gemini' : 'openai';
 }
 
-// Cache del prompt para evitar leerlo del disco cada vez
+// Cache del prompt con TTL para invalidación automática
 let cachedSystemPrompt: string | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
 
 /**
- * Lee el prompt del sistema desde archivo (con cache)
+ * Lee el prompt del sistema con cache invalidable cada 5 minutos
  */
 export function getSystemPromptCached(): string {
-  if (cachedSystemPrompt) return cachedSystemPrompt;
+  const now = Date.now();
+  const isExpired = (now - cacheTimestamp) > CACHE_TTL_MS;
+  
+  if (cachedSystemPrompt && !isExpired) {
+    return cachedSystemPrompt;
+  }
   
   const promptPath = path.join(process.cwd(), 'AGENT_PROMPT.md');
   try {
     cachedSystemPrompt = fs.readFileSync(promptPath, 'utf-8');
+    cacheTimestamp = now;
     return cachedSystemPrompt;
   } catch (err) {
     console.error('[AI] Error leyendo AGENT_PROMPT.md:', err);
-    throw new Error('No se pudo leer AGENT_PROMPT.md. Verifica que exista en la raíz del proyecto.');
+    throw new Error('No se pudo leer AGENT_PROMPT.md. Verifica que exista.');
   }
+}
+
+/**
+ * Invalida el cache del prompt manualmente
+ */
+export function invalidateSystemPromptCache(): void {
+  cachedSystemPrompt = null;
+  cacheTimestamp = 0;
+  console.log('[AI] System prompt cache invalidated');
 }

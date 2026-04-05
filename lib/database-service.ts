@@ -128,20 +128,30 @@ export async function getOrCreateConversation(phoneNumber: string, contactId: st
  * Obtiene el historial de conversación (últimos 20 mensajes)
  */
 export async function getConversationHistory(phoneNumber: string): Promise<ConversationMessage[]> {
-  const { data: conversation } = await getSupabaseAdmin()
+  const { data: conversation, error: convError } = await getSupabaseAdmin()
     .from('conversations')
     .select('id')
     .eq('phone_number', phoneNumber)
-    .single();
+    .maybeSingle();
+  
+  if (convError) {
+    console.warn('[DB] Error fetching conversation:', convError);
+    return [];
+  }
 
   if (!conversation) return [];
 
-  const { data: messages } = await getSupabaseAdmin()
+  const { data: messages, error: msgError } = await getSupabaseAdmin()
     .from('messages')
     .select('role, content')
     .eq('conversation_id', conversation.id)
     .order('created_at', { ascending: true })
     .limit(20);
+  
+  if (msgError) {
+    console.warn('[DB] Error fetching messages:', msgError);
+    return [];
+  }
 
   return (messages || []).map((m) => ({
     role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
@@ -186,7 +196,7 @@ export async function registerOutboundMessage(
 }
 
 /**
- * Detecta si un inbound es un eco de un mensaje saliente reciente
+ * Detecta si un inbound es eco: contenido igual + timestamp reciente (5 segundos)
  */
 export async function isEchoFromOwnMessage(phoneNumber: string, inboundText: string): Promise<boolean> {
   const { data: conversationResult, error: selectError } = await getSupabaseAdmin()
@@ -203,26 +213,39 @@ export async function isEchoFromOwnMessage(phoneNumber: string, inboundText: str
   }
 
   const conversationId = conversationResult.id;
-  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  // Solo buscar respuestas muy recientes (30 segundos)
+  const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
   
-  const { data: recentMessages } = await getSupabaseAdmin()
+  const { data: recentMessages, error: msgError } = await getSupabaseAdmin()
     .from('messages')
     .select('content, created_at')
     .eq('conversation_id', conversationId)
     .eq('role', 'assistant')
-    .gte('created_at', tenMinutesAgo)
+    .gte('created_at', thirtySecondsAgo)
     .order('created_at', { ascending: false })
     .limit(5);
+  
+  if (msgError) {
+    console.warn('[DB] Error fetching recent messages for echo:', msgError);
+    return false;
+  }
 
   if (!recentMessages || recentMessages.length === 0) {
     return false;
   }
 
+  // Echo = contenido exacto + enviado hace menos de 5 segundos
   const inboundNormalized = inboundText.trim().toLowerCase();
+  const nowMs = Date.now();
+  const ECHO_THRESHOLD_MS = 5000;
+  
   for (const msg of recentMessages) {
     const contentNormalized = (msg.content ?? '').trim().toLowerCase();
-    if (contentNormalized === inboundNormalized) {
-      console.log('[DB] Echo detectado: inbound coincide con mensaje asistente reciente');
+    const msgTimeMs = new Date(msg.created_at).getTime();
+    const timeDiff = nowMs - msgTimeMs;
+    
+    if (contentNormalized === inboundNormalized && timeDiff < ECHO_THRESHOLD_MS) {
+      console.log(`[DB] Echo detectado: contenido idéntico hace ${timeDiff}ms`);
       return true;
     }
   }

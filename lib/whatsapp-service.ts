@@ -37,6 +37,15 @@ validateWhatsAppConfig();
 export async function sendWhatsAppMessage(phoneNumber: string, message: string): Promise<WhatsAppSendResponse> {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  
+  // Validar credenciales ANTES de usarlas
+  if (!accessToken) {
+    throw new Error('[WhatsApp] WHATSAPP_ACCESS_TOKEN no configurado en .env.local');
+  }
+  if (!phoneNumberId) {
+    throw new Error('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID no configurado en .env.local');
+  }
+  
   const to = formatWhatsAppRecipient(phoneNumber);
 
   if (!to || to.length < 8) {
