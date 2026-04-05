@@ -68,6 +68,7 @@ npm run lint     # Lint
 2. Configurar webhook en `/api/webhook`
 3. Obtener: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`
 4. Agregar a `.env.local`
+4a. Si el token expira, regenera un nuevo `WHATSAPP_ACCESS_TOKEN` en Meta y actualiza la variable en el entorno.
 
 ## ⚙️ Despliegue (Vercel)
 

@@ -31,11 +31,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d2f26] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-whatsapp-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="rounded-[32px] border border-[#128C7E] bg-[#0f4336]/95 p-8 shadow-2xl shadow-black/20">
+        <div className="rounded-[32px] border border-whatsapp-border bg-whatsapp-medium/95 p-8 shadow-2xl shadow-black/20">
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-slate-950 text-2xl font-bold shadow-lg shadow-black/20">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-whatsapp-green text-slate-950 text-2xl font-bold shadow-lg shadow-black/20">
               W
             </div>
             <h1 className="text-3xl font-bold text-white">WhatsApp Admin</h1>
@@ -49,7 +49,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-3xl border border-slate-700 bg-[#122f28] px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-[#25D366] focus:outline-none"
+                className="w-full rounded-3xl border border-slate-700 bg-whatsapp-light px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-whatsapp-green focus:outline-none"
                 autoComplete="email"
                 required
               />
@@ -61,7 +61,7 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-3xl border border-slate-700 bg-[#122f28] px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-[#25D366] focus:outline-none"
+                className="w-full rounded-3xl border border-slate-700 bg-whatsapp-light px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-whatsapp-green focus:outline-none"
                 autoComplete="current-password"
                 required
               />
@@ -74,7 +74,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-3xl bg-[#25D366] px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#1ebd58] disabled:opacity-60"
+              className="w-full rounded-3xl bg-whatsapp-green px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover disabled:opacity-60"
             >
               {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>

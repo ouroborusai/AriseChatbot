@@ -31,6 +31,30 @@ function validateWhatsAppConfig(): void {
   }
 }
 
+function parseWhatsAppGraphError(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw) as {
+      error?: {
+        message?: string;
+        code?: number;
+        error_subcode?: number;
+      };
+    };
+    if (parsed?.error) {
+      const code = parsed.error.code ?? 'n/a';
+      const subcode = parsed.error.error_subcode ?? 'n/a';
+      const base = parsed.error.message || raw;
+      if (code === 190 && subcode === 463) {
+        return `${base} (code=${code}, subcode=${subcode}) - Token expirado. Actualiza WHATSAPP_ACCESS_TOKEN en .env.local.`;
+      }
+      return `${base} (code=${code}, subcode=${subcode})`;
+    }
+  } catch {
+    // raw no es JSON
+  }
+  return raw;
+}
+
 // Validar al cargar el módulo
 validateWhatsAppConfig();
 
@@ -83,15 +107,7 @@ export async function sendWhatsAppMessage(phoneNumber: string, message: string):
 
     const raw = await response.text();
     if (!response.ok) {
-      let detail = raw;
-      try {
-        const j = JSON.parse(raw) as { error?: { message?: string; code?: number; error_subcode?: number } };
-        if (j?.error) {
-          detail = `${j.error.message || raw} (code=${j.error.code}, subcode=${j.error.error_subcode ?? 'n/a'})`;
-        }
-      } catch {
-        /* raw no es JSON */
-      }
+      const detail = parseWhatsAppGraphError(raw);
       console.error('[WhatsApp] ❌ Graph API error:', response.status, detail);
       throw new Error(`WhatsApp send failed: ${detail}`);
     }

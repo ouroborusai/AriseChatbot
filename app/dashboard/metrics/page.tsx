@@ -43,7 +43,7 @@ export default function MetricsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] text-slate-700">
+      <div className="flex min-h-screen items-center justify-center bg-whatsapp-panel text-slate-700">
         Cargando métricas...
       </div>
     );
@@ -51,25 +51,25 @@ export default function MetricsPage() {
 
   if (!metrics) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] text-red-500">
+      <div className="flex min-h-screen items-center justify-center bg-whatsapp-panel text-red-500">
         Error al cargar métricas
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8faf7] text-slate-900 p-6">
+    <div className="min-h-screen bg-whatsapp-panel text-slate-900 p-6">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-[#128C7E] font-semibold">WhatsApp</p>
+              <p className="text-sm uppercase tracking-[0.24em] text-whatsapp-border font-semibold">WhatsApp</p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Dashboard de Métricas</h1>
               <p className="text-sm text-slate-500">Analiza el rendimiento de los chats y la respuesta del agente.</p>
             </div>
             <Link
               href="/dashboard"
-              className="inline-flex rounded-3xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#1ebd58]"
+              className="inline-flex rounded-3xl bg-whatsapp-green px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover"
             >
               Volver al chat
             </Link>
@@ -115,12 +115,12 @@ function Card({
 }) {
   const borderColor = {
     default: 'border-slate-200',
-    green: 'border-[#128C7E]',
+    green: 'border-whatsapp-border',
   }[color || 'default'];
 
   const valueColor = {
     default: 'text-slate-900',
-    green: 'text-[#075E54]',
+    green: 'text-whatsapp-sidebar',
   }[color || 'default'];
 
   return (
