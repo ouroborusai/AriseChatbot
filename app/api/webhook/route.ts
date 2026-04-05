@@ -62,9 +62,23 @@ async function generateAssistantReply(
   throw new Error('Configura GEMINI_API_KEY o OPENAI_API_KEY en .env.local');
 }
 
+/** WhatsApp Cloud API: `to` sin +, solo dígitos (ej. 56912345678). */
+function formatWhatsAppRecipient(phone: string): string {
+  let d = digitsOnly(phone);
+  if (d.startsWith('0')) d = d.replace(/^0+/, '');
+  return d;
+}
+
 async function sendWhatsAppMessage(phoneNumber: string, message: string) {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const to = formatWhatsAppRecipient(phoneNumber);
+
+  if (!to || to.length < 8) {
+    throw new Error(`Número destino inválido para WhatsApp API: "${phoneNumber}" → "${to}"`);
+  }
+
+  const bodyText = message.length > 4096 ? message.slice(0, 4093) + '...' : message;
 
   const response = await fetch(
     `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
@@ -76,19 +90,44 @@ async function sendWhatsAppMessage(phoneNumber: string, message: string) {
       },
       body: JSON.stringify({
         messaging_product: 'whatsapp',
-        to: phoneNumber,
-        text: { body: message },
+        to,
+        type: 'text',
+        text: { preview_url: false, body: bodyText },
       }),
     }
   );
 
+  const raw = await response.text();
   if (!response.ok) {
-    const error = await response.text();
-    console.error('Error sending WhatsApp message:', error);
-    throw new Error(`Failed to send message: ${error}`);
+    let detail = raw;
+    try {
+      const j = JSON.parse(raw) as { error?: { message?: string; code?: number; error_subcode?: number } };
+      if (j?.error) {
+        detail = `${j.error.message || raw} (code=${j.error.code}, subcode=${j.error.error_subcode ?? 'n/a'})`;
+      }
+    } catch {
+      /* raw no es JSON */
+    }
+    console.error('[webhook] Graph API send error:', response.status, detail);
+    throw new Error(`WhatsApp send failed: ${detail}`);
   }
 
-  return response.json();
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return { raw };
+  }
+}
+
+async function releaseWaDedup(waMessageId: string | undefined): Promise<void> {
+  if (!waMessageId?.trim()) return;
+  const { error } = await getSupabaseAdmin()
+    .from('processed_whatsapp_messages')
+    .delete()
+    .eq('wa_message_id', waMessageId);
+  if (error) {
+    console.warn('[webhook] No se pudo liberar deduplicación:', error.message);
+  }
 }
 
 async function getOrCreateConversation(phoneNumber: string) {
@@ -227,13 +266,18 @@ async function handleInboundUserMessage(messageData: WaInboundText): Promise<voi
   const provider = process.env.GEMINI_API_KEY?.trim() ? 'Gemini' : 'OpenAI';
   console.log(`Calling ${provider} with`, history.length, 'messages in history');
 
-  const assistantResponse = await generateAssistantReply(systemPrompt, history, text);
-  console.log('AI Response:', assistantResponse);
+  try {
+    const assistantResponse = await generateAssistantReply(systemPrompt, history, text);
+    console.log('AI Response:', assistantResponse);
 
-  await saveMessage(conversationId, 'assistant', assistantResponse);
-  await sendWhatsAppMessage(phoneNumber, assistantResponse);
+    await sendWhatsAppMessage(phoneNumber, assistantResponse);
+    await saveMessage(conversationId, 'assistant', assistantResponse);
 
-  console.log('Message processing completed successfully');
+    console.log('Message processing completed successfully');
+  } catch (err) {
+    await releaseWaDedup(messageData.id);
+    throw err;
+  }
 }
 
 export async function GET(request: NextRequest) {
