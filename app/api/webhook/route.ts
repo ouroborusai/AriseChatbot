@@ -119,12 +119,12 @@ async function sendWhatsAppMessage(phoneNumber: string, message: string) {
   }
 }
 
-async function releaseWaDedup(waMessageId: string | undefined): Promise<void> {
-  if (!waMessageId?.trim()) return;
+async function releaseWaDedup(dedupeKey: string | undefined): Promise<void> {
+  if (!dedupeKey?.trim()) return;
   const { error } = await getSupabaseAdmin()
     .from('processed_whatsapp_messages')
     .delete()
-    .eq('wa_message_id', waMessageId);
+    .eq('wa_message_id', dedupeKey.trim());
   if (error) {
     console.warn('[webhook] No se pudo liberar deduplicación:', error.message);
   }
@@ -195,21 +195,48 @@ function digitsOnly(s: string): string {
   return s.replace(/\D/g, '');
 }
 
-/** true = nuevo mensaje (se debe procesar); false = duplicado de Meta, ignorar */
-async function tryClaimWaMessageId(waMessageId: string | undefined): Promise<boolean> {
-  if (!waMessageId?.trim()) {
-    console.warn('[webhook] Sin message.id; no hay deduplicación (riesgo de duplicados si Meta reintenta)');
+/**
+ * true = este evento es nuevo (se procesa). false = duplicado (Meta reintenta o payload repetido).
+ * Prioridad: RPC atómico claim_whatsapp_inbound (sin condición de carrera entre instancias Vercel).
+ */
+async function tryClaimInboundDedupe(dedupeKey: string): Promise<boolean> {
+  const key = dedupeKey.trim();
+  if (!key) {
+    console.warn('[webhook] Clave de deduplicación vacía');
     return true;
   }
-  const { error } = await getSupabaseAdmin()
-    .from('processed_whatsapp_messages')
-    .insert({ wa_message_id: waMessageId });
+
+  const admin = getSupabaseAdmin();
+  const { data: claimed, error: rpcError } = await admin.rpc('claim_whatsapp_inbound', {
+    p_wa_id: key,
+  });
+
+  if (!rpcError && typeof claimed === 'boolean') {
+    if (!claimed) {
+      console.log('[webhook] Duplicado (claim atómico), omitiendo:', key.slice(0, 80));
+    }
+    return claimed;
+  }
+
+  const rpcMsg = rpcError?.message || '';
+  const rpcMissing =
+    rpcMsg.includes('claim_whatsapp_inbound') ||
+    rpcMsg.includes('function') ||
+    rpcError?.code === 'PGRST202' ||
+    rpcMsg.includes('42883');
+
+  if (!rpcMissing) {
+    console.error('[webhook] RPC claim_whatsapp_inbound:', rpcError);
+  }
+
+  const { error } = await admin.from('processed_whatsapp_messages').insert({ wa_message_id: key });
 
   if (!error) return true;
   if (error.code === '23505') {
-    console.log('[webhook] Mensaje ya procesado, omitiendo:', waMessageId);
+    console.log('[webhook] Duplicado (insert), omitiendo:', key.slice(0, 80));
     return false;
   }
+
   const msg = error.message || '';
   if (
     msg.includes('Could not find the table') ||
@@ -217,11 +244,11 @@ async function tryClaimWaMessageId(waMessageId: string | undefined): Promise<boo
     msg.includes('processed_whatsapp_messages')
   ) {
     console.warn(
-      '[webhook] Tabla processed_whatsapp_messages ausente. Ejecuta supabase/processed_whatsapp_messages.sql en Supabase.'
+      '[webhook] Tabla processed_whatsapp_messages ausente → riesgo de duplicados. Ejecuta supabase/processed_whatsapp_messages.sql y supabase/claim_whatsapp_inbound.sql'
     );
     return true;
   }
-  console.error('[webhook] Error al registrar deduplicación:', error);
+  console.error('[webhook] Error deduplicación:', error);
   return true;
 }
 
@@ -229,8 +256,17 @@ type WaInboundText = {
   id?: string;
   from?: string;
   type?: string;
+  timestamp?: string;
   text?: { body?: string };
 };
+
+function buildInboundDedupeKey(messageData: WaInboundText, phoneNumber: string, text: string): string {
+  const id = messageData.id?.trim();
+  if (id) return id;
+  const ts = messageData.timestamp?.trim() || '0';
+  const slice = text.trim().slice(0, 240);
+  return `fb:${digitsOnly(phoneNumber)}:${ts}:${slice}`;
+}
 
 async function handleInboundUserMessage(messageData: WaInboundText): Promise<void> {
   if (messageData.type !== 'text') {
@@ -238,11 +274,8 @@ async function handleInboundUserMessage(messageData: WaInboundText): Promise<voi
     return;
   }
 
-  const claimed = await tryClaimWaMessageId(messageData.id);
-  if (!claimed) return;
-
   const phoneNumber = messageData.from;
-  const text = messageData.text?.body;
+  const text = messageData.text?.body?.trim();
 
   const ignoreFrom = process.env.WHATSAPP_IGNORE_INBOUND_FROM?.trim();
   if (ignoreFrom && phoneNumber && digitsOnly(phoneNumber) === digitsOnly(ignoreFrom)) {
@@ -250,10 +283,14 @@ async function handleInboundUserMessage(messageData: WaInboundText): Promise<voi
     return;
   }
 
-  if (!text?.trim() || !phoneNumber) {
+  if (!text || !phoneNumber) {
     console.log('[webhook] Falta texto o from');
     return;
   }
+
+  const dedupeKey = buildInboundDedupeKey(messageData, phoneNumber, text);
+  const claimed = await tryClaimInboundDedupe(dedupeKey);
+  if (!claimed) return;
 
   console.log(`Message from ${phoneNumber}: ${text}`);
 
@@ -275,7 +312,7 @@ async function handleInboundUserMessage(messageData: WaInboundText): Promise<voi
 
     console.log('Message processing completed successfully');
   } catch (err) {
-    await releaseWaDedup(messageData.id);
+    await releaseWaDedup(dedupeKey);
     throw err;
   }
 }
