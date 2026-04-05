@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleInboundUserMessage } from '@/lib/webhook-handler';
-import { InboundMessage } from '@/lib/dedupe-service';
+
+type InboundMessage = {
+  id?: string;
+  from?: string;
+  type?: string;
+  text?: { body?: string };
+};
 
 export async function GET(request: NextRequest) {
   console.log('[Webhook] GET - Verificación de webhook');

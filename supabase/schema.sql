@@ -1,134 +1,75 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+﻿-- SCHEMA LIMPIO - AriseChatbot
+-- Sin RLS, solo tablas necesarias
 
--- Create conversations table
-CREATE TABLE conversations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    phone_number TEXT UNIQUE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- CONTACTS
+CREATE TABLE IF NOT EXISTS public.contacts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  phone_number text NOT NULL UNIQUE,
+  name text,
+  tags text[] DEFAULT '{}'::text[],
+  notes text,
+  is_blocked boolean DEFAULT false,
+  last_message_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  email text,
+  segment text,
+  location text,
+  purchase_history jsonb DEFAULT '[]'::jsonb,
+  metadata jsonb DEFAULT '{}'::jsonb
 );
 
--- Create messages table
-CREATE TABLE messages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-    role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
-    content TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- CONVERSATIONS
+CREATE TABLE IF NOT EXISTS public.conversations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  phone_number text NOT NULL UNIQUE,
+  contact_id uuid REFERENCES public.contacts(id) ON DELETE SET NULL,
+  is_open boolean NOT NULL DEFAULT true,
+  first_response_at timestamptz,
+  last_response_at timestamptz,
+  message_count int NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Enable realtime on conversations
-ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
+-- MESSAGES
+CREATE TABLE IF NOT EXISTS public.messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
--- Enable realtime on messages
-ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+-- ÍNDICES
+CREATE INDEX IF NOT EXISTS idx_contacts_phone ON public.contacts(phone_number);
+CREATE INDEX IF NOT EXISTS idx_conversations_phone ON public.conversations(phone_number);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON public.messages(conversation_id);
 
--- Create indexes
-CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
-CREATE INDEX idx_messages_created_at ON messages(created_at DESC);
-
--- Enable Row Level Security
-ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for conversations
-CREATE POLICY "Service role can do everything on conversations"
-    ON conversations
-    FOR ALL
-    USING (true)
-    WITH CHECK (true);
-
-CREATE POLICY "Authenticated users can read conversations"
-    ON conversations
-    FOR SELECT
-    TO authenticated
-    USING (true);
-
--- RLS Policies for messages
-CREATE POLICY "Service role can do everything on messages"
-    ON messages
-    FOR ALL
-    TO service_role
-    USING (true)
-    WITH CHECK (true);
-
-CREATE POLICY "Authenticated users can read messages"
-    ON messages
-    FOR SELECT
-    TO authenticated
-    USING (true);
-
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+-- TRIGGERS para updated_at
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS trigger AS $$
 BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
+  NEW.updated_at = NOW();
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger for conversations
+DROP TRIGGER IF EXISTS update_contacts_updated_at ON public.contacts;
+CREATE TRIGGER update_contacts_updated_at
+  BEFORE UPDATE ON public.contacts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_conversations_updated_at ON public.conversations;
 CREATE TRIGGER update_conversations_updated_at
-    BEFORE UPDATE ON conversations
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+  BEFORE UPDATE ON public.conversations
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
 
--- IDs de mensajes entrantes ya procesados (reintentos de Meta / webhooks duplicados)
-CREATE TABLE IF NOT EXISTS processed_whatsapp_messages (
-    wa_message_id TEXT PRIMARY KEY,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_processed_wa_created ON processed_whatsapp_messages (created_at DESC);
-
--- Política RLS: service_role tiene acceso completo
-ALTER TABLE processed_whatsapp_messages ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Service role full access" ON processed_whatsapp_messages;
-CREATE POLICY "Service role full access"
-    ON processed_whatsapp_messages
-    FOR ALL
-    TO service_role
-    USING (true)
-    WITH CHECK (true);
-
--- Función claim atómico (evita race conditions entre instancias Vercel)
-CREATE OR REPLACE FUNCTION public.claim_whatsapp_inbound(p_wa_id text)
-RETURNS boolean
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  WITH ins AS (
-    INSERT INTO public.processed_whatsapp_messages (wa_message_id)
-    VALUES (p_wa_id)
-    ON CONFLICT (wa_message_id) DO NOTHING
-    RETURNING 1
-  )
-  SELECT EXISTS (SELECT 1 FROM ins);
-$$;
-
-REVOKE ALL ON FUNCTION public.claim_whatsapp_inbound(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.claim_whatsapp_inbound(text) TO service_role;
-
--- Función de limpieza: elimina registros > 7 días
-CREATE OR REPLACE FUNCTION public.cleanup_old_dedupe_records(p_days_old integer DEFAULT 7)
-RETURNS integer
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    deleted_count integer;
-BEGIN
-    DELETE FROM processed_whatsapp_messages
-    WHERE created_at < NOW() - (p_days_old || ' days')::interval;
-
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    RETURN deleted_count;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.cleanup_old_dedupe_records(integer) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.cleanup_old_dedupe_records(integer) TO service_role;
+-- RLS DESHABILITADO (DESARROLLO)
+ALTER TABLE public.contacts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.conversations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.messages DISABLE ROW LEVEL SECURITY;

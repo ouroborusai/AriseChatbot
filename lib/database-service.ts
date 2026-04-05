@@ -252,16 +252,3 @@ export async function isEchoFromOwnMessage(phoneNumber: string, inboundText: str
   return false;
 }
 
-/**
- * Limpia registros antiguos de deduplicación (>7 días)
- */
-export async function cleanupOldDedupeRecords(): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .rpc('exec_sql', {
-      sql: `DELETE FROM processed_whatsapp_messages WHERE created_at < NOW() - INTERVAL '7 days'`,
-    });
-
-  if (error) {
-    console.log('[DB] Cleanup dedupe failed (normal):', error.message);
-  }
-}
