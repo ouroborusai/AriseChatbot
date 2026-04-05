@@ -105,3 +105,22 @@ async function generateOpenAIReply(
 export function getAIProvider(): 'gemini' | 'openai' {
   return process.env.GEMINI_API_KEY?.trim() ? 'gemini' : 'openai';
 }
+
+// Cache del prompt para evitar leerlo del disco cada vez
+let cachedSystemPrompt: string | null = null;
+
+/**
+ * Lee el prompt del sistema desde archivo (con cache)
+ */
+export function getSystemPromptCached(): string {
+  if (cachedSystemPrompt) return cachedSystemPrompt;
+  
+  const promptPath = path.join(process.cwd(), 'AGENT_PROMPT.md');
+  try {
+    cachedSystemPrompt = fs.readFileSync(promptPath, 'utf-8');
+    return cachedSystemPrompt;
+  } catch (err) {
+    console.error('[AI] Error leyendo AGENT_PROMPT.md:', err);
+    throw new Error('No se pudo leer AGENT_PROMPT.md. Verifica que exista en la raíz del proyecto.');
+  }
+}

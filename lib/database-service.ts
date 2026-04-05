@@ -23,20 +23,29 @@ export interface ConversationMessage {
  * Obtiene o crea un contacto
  */
 export async function getOrCreateContact(phoneNumber: string): Promise<Contact> {
-  const { data: existing } = await getSupabaseAdmin()
+  const { data: existing, error: selectError } = await getSupabaseAdmin()
     .from('contacts')
     .select('id, name, email, segment, location, last_message_at')
     .eq('phone_number', phoneNumber)
-    .single();
+    .maybeSingle();
+  
+  if (selectError) {
+    console.error('[DB] Error selecting contact:', selectError);
+    throw selectError;
+  }
 
   if (existing) {
     console.log('[DB] Found existing contact:', existing.id);
     
     // Actualizar last_message_at
-    await getSupabaseAdmin()
+    const { error: updateError } = await getSupabaseAdmin()
       .from('contacts')
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', existing.id);
+    
+    if (updateError) {
+      console.warn('[DB] Error updating contact timestamp:', updateError);
+    }
     
     return existing;
   }
@@ -63,11 +72,16 @@ export async function getOrCreateContact(phoneNumber: string): Promise<Contact> 
  * Obtiene o crea una conversación
  */
 export async function getOrCreateConversation(phoneNumber: string, contactId: string): Promise<string> {
-  const { data: existing } = await getSupabaseAdmin()
+  const { data: existing, error: selectError } = await getSupabaseAdmin()
     .from('conversations')
     .select('id')
     .eq('phone_number', phoneNumber)
-    .single();
+    .maybeSingle();
+  
+  if (selectError) {
+    console.error('[DB] Error selecting conversation:', selectError);
+    throw selectError;
+  }
 
   if (existing) {
     console.log('[DB] Found existing conversation:', existing.id);
@@ -159,15 +173,12 @@ export async function saveMessage(
  * Intenta registrar un mensaje saliente (para detección de eco)
  */
 export async function registerOutboundMessage(
-  phoneNumber: string,
+  conversationId: string,
   messageText: string
 ): Promise<void> {
   try {
-    const contact = await getOrCreateContact(phoneNumber);
-    const conversationId = await getOrCreateConversation(phoneNumber, contact.id);
-    
     await saveMessage(conversationId, 'assistant', messageText);
-    console.log('[DB] Registered outbound message for anti-loop:', phoneNumber.slice(-8));
+    console.log('[DB] Outbound message registered for anti-loop');
   } catch (err) {
     console.warn('[DB] Failed to register outbound message:', err);
     // No fallar si no se puede registrar
@@ -178,15 +189,20 @@ export async function registerOutboundMessage(
  * Detecta si un inbound es un eco de un mensaje saliente reciente
  */
 export async function isEchoFromOwnMessage(phoneNumber: string, inboundText: string): Promise<boolean> {
-  const conversationResult = await getSupabaseAdmin()
+  const { data: conversationResult, error: selectError } = await getSupabaseAdmin()
     .from('conversations')
     .select('id')
     .eq('phone_number', phoneNumber)
-    .single();
+    .maybeSingle();
 
-  if (!conversationResult.data) return false;
+  if (!conversationResult) return false;
+  
+  if (selectError) {
+    console.warn('[DB] Error checking for echo:', selectError);
+    return false;
+  }
 
-  const conversationId = conversationResult.data.id;
+  const conversationId = conversationResult.id;
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   
   const { data: recentMessages } = await getSupabaseAdmin()

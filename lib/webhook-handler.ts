@@ -3,7 +3,7 @@
  * Orquesta la lógica principal de procesamiento de mensajes
  */
 
-import { getAIProvider, generateAssistantReply, getSystemPrompt, ConversationTurn } from './ai-service';
+import { getAIProvider, generateAssistantReply, getSystemPromptCached } from './ai-service';
 import { sendWhatsAppMessage } from './whatsapp-service';
 import {
   getOrCreateContact,
@@ -18,10 +18,7 @@ import {
   buildInboundDedupeKey,
   tryClaimInboundDedupe,
 } from './dedupe-service';
-
-function digitsOnly(s: string): string {
-  return s.replace(/\D/g, '');
-}
+import { digitsOnly } from './utils';
 
 /**
  * Procesa un mensaje inbound de WhatsApp
@@ -94,7 +91,7 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
     const history = await getConversationHistory(phoneNumber);
     
     // 5. Generar respuesta con IA
-    const systemPrompt = getSystemPrompt();
+    const systemPrompt = getSystemPromptCached();
     const aiProvider = getAIProvider();
     
     console.log(`[Handler] Llamando ${aiProvider} con ${history.length} mensajes previos`);
@@ -103,11 +100,8 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
     // 6. Enviar respuesta por WhatsApp
     await sendWhatsAppMessage(phoneNumber, assistantResponse);
     
-    // 7. Registrar mensaje saliente (para detección de eco)
-    await registerOutboundMessage(phoneNumber, assistantResponse);
-    
-    // 8. Guardar respuesta en BD
-    await saveMessage(conversationId, 'assistant', assistantResponse);
+    // 7. Guardar respuesta en BD (y registrar para detección de eco)
+    await registerOutboundMessage(conversationId, assistantResponse);
     
     console.log('[Handler] ✓ Mensaje procesado exitosamente');
   } catch (err) {

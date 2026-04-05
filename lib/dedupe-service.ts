@@ -4,6 +4,7 @@
  */
 
 import { getSupabaseAdmin } from './supabase-admin';
+import { digitsOnly } from './utils';
 
 export interface InboundMessage {
   id?: string;
@@ -94,8 +95,4 @@ export async function tryClaimInboundDedupe(dedupeKey: string): Promise<boolean>
 
   console.error('[Dedupe] Error inesperado:', insertError);
   return true; // Permitir por seguridad
-}
-
-function digitsOnly(s: string): string {
-  return s.replace(/\D/g, '');
 }

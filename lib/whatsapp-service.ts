@@ -3,6 +3,8 @@
  * Maneja todas las interacciones con WhatsApp Cloud API
  */
 
+import { digitsOnly, validateEnvVars } from './utils';
+
 export interface WhatsAppSendResponse {
   message_id?: string;
   raw?: string;
@@ -14,9 +16,23 @@ function formatWhatsAppRecipient(phone: string): string {
   return d;
 }
 
-function digitsOnly(s: string): string {
-  return s.replace(/\D/g, '');
+/**
+ * Valida credenciales de WhatsApp al inicio
+ */
+function validateWhatsAppConfig(): void {
+  const missing = validateEnvVars([
+    'WHATSAPP_ACCESS_TOKEN',
+    'WHATSAPP_PHONE_NUMBER_ID',
+    'WHATSAPP_VERIFY_TOKEN'
+  ]);
+  
+  if (missing.length > 0) {
+    console.warn('[WhatsApp] Algunas variables faltantes. El sistema puede no funcionar correctamente.');
+  }
 }
+
+// Validar al cargar el módulo
+validateWhatsAppConfig();
 
 export async function sendWhatsAppMessage(phoneNumber: string, message: string): Promise<WhatsAppSendResponse> {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
@@ -66,8 +82,4 @@ export async function sendWhatsAppMessage(phoneNumber: string, message: string):
   } catch {
     return { raw };
   }
-}
-
-export function shouldReleaseDedupOnSendFailure(): boolean {
-  return false;
 }
