@@ -35,31 +35,37 @@ function validateWhatsAppConfig(): void {
 validateWhatsAppConfig();
 
 export async function sendWhatsAppMessage(phoneNumber: string, message: string): Promise<WhatsAppSendResponse> {
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  
-  // Validar credenciales ANTES de usarlas
-  if (!accessToken) {
-    throw new Error('[WhatsApp] WHATSAPP_ACCESS_TOKEN no configurado en .env.local');
-  }
-  if (!phoneNumberId) {
-    throw new Error('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID no configurado en .env.local');
-  }
-  
-  const to = formatWhatsAppRecipient(phoneNumber);
+  try {
+    console.log('[WhatsApp] 📤 Iniciando envío de mensaje...');
+    
+    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    
+    // Validar credenciales ANTES de usarlas
+    if (!accessToken) {
+      throw new Error('[WhatsApp] WHATSAPP_ACCESS_TOKEN no configurado en .env.local');
+    }
+    if (!phoneNumberId) {
+      throw new Error('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID no configurado en .env.local');
+    }
+    
+    const to = formatWhatsAppRecipient(phoneNumber);
+    console.log('[WhatsApp] Número destino:', to);
 
-  if (!to || to.length < 8) {
-    throw new Error(`Número destino inválido para WhatsApp API: "${phoneNumber}" → "${to}"`);
-  }
+    if (!to || to.length < 8) {
+      throw new Error(`Número destino inválido para WhatsApp API: "${phoneNumber}" → "${to}"`);
+    }
 
-  const bodyText = message.length > 4096 ? message.slice(0, 4093) + '...' : message;
+    const bodyText = message.length > 4096 ? message.slice(0, 4093) + '...' : message;
+    console.log('[WhatsApp] Tamaño del mensaje:', bodyText.length, 'chars');
 
-  const response = await fetch(
-    `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
-    {
+    const url = `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`;
+    console.log('[WhatsApp] URL:', url.replace(phoneNumberId, 'REDACTED'));
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken.slice(0, 20)}...`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -68,27 +74,36 @@ export async function sendWhatsAppMessage(phoneNumber: string, message: string):
         type: 'text',
         text: { preview_url: false, body: bodyText },
       }),
-    }
-  );
+    });
 
-  const raw = await response.text();
-  if (!response.ok) {
-    let detail = raw;
-    try {
-      const j = JSON.parse(raw) as { error?: { message?: string; code?: number; error_subcode?: number } };
-      if (j?.error) {
-        detail = `${j.error.message || raw} (code=${j.error.code}, subcode=${j.error.error_subcode ?? 'n/a'})`;
+    console.log('[WhatsApp] Status HTTP:', response.status);
+
+    const raw = await response.text();
+    if (!response.ok) {
+      let detail = raw;
+      try {
+        const j = JSON.parse(raw) as { error?: { message?: string; code?: number; error_subcode?: number } };
+        if (j?.error) {
+          detail = `${j.error.message || raw} (code=${j.error.code}, subcode=${j.error.error_subcode ?? 'n/a'})`;
+        }
+      } catch {
+        /* raw no es JSON */
       }
-    } catch {
-      /* raw no es JSON */
+      console.error('[WhatsApp] ❌ Graph API error:', response.status, detail);
+      throw new Error(`WhatsApp send failed: ${detail}`);
     }
-    console.error('[WhatsApp] Graph API send error:', response.status, detail);
-    throw new Error(`WhatsApp send failed: ${detail}`);
-  }
 
-  try {
-    return JSON.parse(raw) as WhatsAppSendResponse;
-  } catch {
-    return { raw };
+    console.log('[WhatsApp] ✅ Respuesta correcta de Meta');
+    try {
+      return JSON.parse(raw) as WhatsAppSendResponse;
+    } catch {
+      return { raw };
+    }
+  } catch (error) {
+    console.error('[WhatsApp] ❌ Error en sendWhatsAppMessage:', error);
+    if (error instanceof Error) {
+      console.error('[WhatsApp] Message:', error.message);
+    }
+    throw error;
   }
 }
