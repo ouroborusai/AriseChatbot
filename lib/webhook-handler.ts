@@ -79,48 +79,64 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
 
   try {
     // 1. Obtener o crear contacto
+    console.log('[Handler] PASO 1: Obteniendo/creando contacto...');
     const contact = await getOrCreateContact(phoneNumber);
+    console.log('[Handler] ✓ PASO 1 OK:', contact.id);
     
     // 2. Obtener o crear conversación
+    console.log('[Handler] PASO 2: Obteniendo/creando conversación...');
     const conversationId = await getOrCreateConversation(phoneNumber, contact.id);
+    console.log('[Handler] ✓ PASO 2 OK:', conversationId);
     
     // 3. Guardar mensaje del usuario
+    console.log('[Handler] PASO 3: Guardando mensaje del usuario...');
     await saveMessage(conversationId, 'user', text);
+    console.log('[Handler] ✓ PASO 3 OK');
     
     // 4. Obtener historial
+    console.log('[Handler] PASO 4: Obteniendo historial...');
     const history = await getConversationHistory(phoneNumber);
+    console.log('[Handler] ✓ PASO 4 OK: ' + history.length + ' mensajes');
     
     // 5. Generar respuesta con IA
+    console.log('[Handler] PASO 5: Generando respuesta de IA...');
     const systemPrompt = getSystemPromptCached();
     const aiProvider = getAIProvider();
     
     console.log(`[Handler] Llamando ${aiProvider} con ${history.length} mensajes previos`);
     const assistantResponse = await generateAssistantReply(systemPrompt, history, text);
+    console.log('[Handler] ✓ PASO 5 OK: respuesta generada');
     
     // 6. Enviar respuesta por WhatsApp
+    console.log('[Handler] PASO 6: Enviando a WhatsApp...');
     let messageSent = false;
     try {
       await sendWhatsAppMessage(phoneNumber, assistantResponse);
       messageSent = true;
-      console.log('[Handler] ✓ Mensaje enviado a WhatsApp');
+      console.log('[Handler] ✓ PASO 6 OK: Mensaje enviado a WhatsApp');
     } catch (whatsappErr) {
-      console.error('[Handler] ✗ Error enviando a WhatsApp:', whatsappErr);
+      console.error('[Handler] ✗ PASO 6 FALLO: Error enviando a WhatsApp:', whatsappErr);
       throw whatsappErr;
     }
     
     // 7. Guardar si se envió exitosamente
+    console.log('[Handler] PASO 7: Registrando mensaje de salida...');
     if (messageSent) {
       try {
         await registerOutboundMessage(conversationId, assistantResponse);
-        console.log('[Handler] ✓ Respuesta guardada en BD');
+        console.log('[Handler] ✓ PASO 7 OK: Respuesta guardada en BD');
       } catch (dbErr) {
-        console.warn('[Handler] ⚠️ Enviado pero no guardado en BD:', dbErr);
+        console.warn('[Handler] ⚠️ PASO 7 PARCIAL: Enviado pero no guardado en BD:', dbErr);
       }
     }
     
-    console.log('[Handler] ✓ Procesado exitosamente');
+    console.log('[Handler] ✓ PROCESADO EXITOSAMENTE');
   } catch (err) {
-    console.error('[Handler] Error procesando mensaje:', err);
+    console.error('[Handler] ❌ ERROR PROCESANDO MENSAJE:', err);
+    if (err instanceof Error) {
+      console.error('[Handler] Error message:', err.message);
+      console.error('[Handler] Error stack:', err.stack);
+    }
     throw err;
   }
 }

@@ -57,7 +57,14 @@ export async function POST(request: NextRequest) {
 
     return new NextResponse('OK', { status: 200 });
   } catch (error) {
-    console.error('[Webhook] Error procesando payload:', error);
+    console.error('[Webhook] ❌ Error procesando payload:', error);
+    
+    // Log detallado del error
+    if (error instanceof Error) {
+      console.error('[Webhook] Error message:', error.message);
+      console.error('[Webhook] Error stack:', error.stack);
+    }
+    
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
