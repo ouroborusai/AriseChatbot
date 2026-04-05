@@ -28,15 +28,32 @@ export async function generateAssistantReply(
   latestUserText: string
 ): Promise<string> {
   try {
+    const backend = process.env.AI_BACKEND?.trim().toLowerCase();
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
     const openaiKey = process.env.OPENAI_API_KEY?.trim();
 
-    // Verificar que al menos una key esté configurada
-    if (!geminiKey && !openaiKey) {
-      throw new Error('❌ CONFIGURACIÓN FALTANTE: Necesitas configurar GEMINI_API_KEY o OPENAI_API_KEY en .env.local');
+    if (backend === 'ollama') {
+      console.log('[AI] Usando Ollama local...');
+      return await generateOllamaReply(systemPrompt, history, latestUserText);
     }
 
-    // Intentar Gemini primero si está configurado
+    if (backend === 'gemini') {
+      if (!geminiKey) {
+        throw new Error('❌ CONFIGURACIÓN FALTANTE: GEMINI_API_KEY no está configurada para AI_BACKEND=gemini');
+      }
+      console.log('[AI] Forzando Gemini...');
+      return await generateGeminiReply(systemPrompt, history, latestUserText);
+    }
+
+    if (backend === 'openai') {
+      if (!openaiKey) {
+        throw new Error('❌ CONFIGURACIÓN FALTANTE: OPENAI_API_KEY no está configurada para AI_BACKEND=openai');
+      }
+      console.log('[AI] Forzando OpenAI...');
+      return await generateOpenAIReply(systemPrompt, history, latestUserText);
+    }
+
+    // Sin backend forzado, intenta Gemini primero si existe, luego OpenAI.
     if (geminiKey) {
       console.log('[AI] Intentando con Gemini...');
       try {
@@ -46,13 +63,12 @@ export async function generateAssistantReply(
       }
     }
 
-    // Fallback a OpenAI
     if (openaiKey) {
       console.log('[AI] Usando OpenAI');
       return await generateOpenAIReply(systemPrompt, history, latestUserText);
     }
 
-    throw new Error('❌ No se pudo generar respuesta: ambas APIs fallaron o no están configuradas');
+    throw new Error('❌ No se pudo generar respuesta: no se detectó backend válido ni llaves configuradas');
   } catch (error) {
     console.error('[AI] ❌ Error generando respuesta:', error);
     if (error instanceof Error) {
@@ -122,6 +138,7 @@ async function generateOpenAIReply(
   const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: 'system', content: systemPrompt },
     ...history.map((t) => ({ role: t.role, content: t.content })),
+    { role: 'user', content: latestUserText },
   ];
   
   const completion = await openai!.chat.completions.create({
@@ -133,10 +150,56 @@ async function generateOpenAIReply(
   return completion.choices[0]?.message?.content || 'Lo siento, no pude procesar tu mensaje.';
 }
 
+async function generateOllamaReply(
+  systemPrompt: string,
+  history: ConversationTurn[],
+  latestUserText: string
+): Promise<string> {
+  const url = process.env.OLLAMA_API_URL?.trim() || 'http://127.0.0.1:11434/v1/chat/completions';
+  const model = process.env.OLLAMA_MODEL?.trim() || 'llama2';
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...history.map((t) => ({ role: t.role, content: t.content })),
+    { role: 'user', content: latestUserText },
+  ];
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0.7,
+    }),
+  });
+
+  const raw = await response.text();
+  if (!response.ok) {
+    let detail = raw;
+    try {
+      const json = JSON.parse(raw);
+      detail = json.error?.message || JSON.stringify(json);
+    } catch {
+      // no es JSON
+    }
+    throw new Error(`Ollama request failed: ${response.status} ${detail}`);
+  }
+
+  const json = JSON.parse(raw) as { choices?: Array<{ message?: { role?: string; content?: string } }> };
+  const content = json.choices?.[0]?.message?.content;
+  return content || 'Lo siento, no pude procesar tu mensaje.';
+}
+
 /**
  * Detecta el proveedor actual de IA
  */
-export function getAIProvider(): 'gemini' | 'openai' {
+export function getAIProvider(): 'gemini' | 'openai' | 'ollama' {
+  const backend = process.env.AI_BACKEND?.trim().toLowerCase();
+  if (backend === 'ollama') return 'ollama';
+  if (backend === 'openai') return 'openai';
   return process.env.GEMINI_API_KEY?.trim() ? 'gemini' : 'openai';
 }
 

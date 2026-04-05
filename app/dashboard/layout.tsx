@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
@@ -11,6 +11,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
 
@@ -45,34 +46,36 @@ export default function DashboardLayout({
     <div className="h-screen min-h-screen bg-[#e5ddd5] text-slate-900">
       <div className="flex min-h-screen flex-col lg:flex-row">
         <aside className="w-full lg:w-[320px] shrink-0 bg-[#075E54] text-white shadow-xl">
-          <div className="flex h-full min-h-0 flex-col justify-between px-6 py-8">
-            <div>
-              <div className="mb-8">
-                <div className="inline-flex items-center gap-3 rounded-3xl bg-[#128C7E] px-4 py-3 shadow-lg shadow-black/10">
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#075E54] font-bold">
-                    W
-                  </span>
-                  <div>
-                    <p className="text-lg font-semibold">WhatsApp Hub</p>
-                    <p className="text-sm text-green-100/90">Panel de mensajes</p>
+          <div className="flex h-full min-h-0 flex-col justify-between px-6 py-8 overflow-hidden">
+            <div className="space-y-8 overflow-y-auto pr-1">
+              <div>
+                <div className="mb-8">
+                  <div className="inline-flex items-center gap-3 rounded-3xl bg-[#128C7E] px-4 py-3 shadow-lg shadow-black/10">
+                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#075E54] font-bold">
+                      W
+                    </span>
+                    <div>
+                      <p className="text-lg font-semibold">WhatsApp Hub</p>
+                      <p className="text-sm text-green-100/90">Panel de mensajes</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <nav className="space-y-2">
-                <Link
-                  href="/dashboard"
-                  className="block rounded-3xl px-4 py-3 text-sm font-medium transition hover:bg-[#128C7E]"
-                >
-                  Mensajes
-                </Link>
-                <Link
-                  href="/dashboard/metrics"
-                  className="block rounded-3xl px-4 py-3 text-sm font-medium transition hover:bg-[#128C7E]"
-                >
-                  Métricas
-                </Link>
-              </nav>
+                <nav className="space-y-2">
+                  <Link
+                    href="/dashboard"
+                    className={`block rounded-3xl px-4 py-3 text-sm font-medium transition ${pathname === '/dashboard' ? 'bg-[#128C7E] text-white shadow-inner' : 'hover:bg-[#128C7E]'}`}
+                  >
+                    Mensajes
+                  </Link>
+                  <Link
+                    href="/dashboard/metrics"
+                    className={`block rounded-3xl px-4 py-3 text-sm font-medium transition ${pathname === '/dashboard/metrics' ? 'bg-[#128C7E] text-white shadow-inner' : 'hover:bg-[#128C7E]'}`}
+                  >
+                    Métricas
+                  </Link>
+                </nav>
+              </div>
             </div>
 
             <div className="space-y-4">
