@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { resolveGeminiModel } from '@/lib/gemini-model';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import fs from 'fs';
@@ -26,7 +27,7 @@ async function generateAssistantReply(
   if (geminiKey) {
     const genAI = new GoogleGenerativeAI(geminiKey);
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+      model: resolveGeminiModel(),
       systemInstruction: systemPrompt,
     });
 

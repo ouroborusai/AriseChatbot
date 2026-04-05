@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { resolveGeminiModel } from '@/lib/gemini-model';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 type CheckOk = { ok: true; detail?: string };
@@ -91,7 +92,7 @@ export async function GET(request: Request) {
     try {
       const genAI = new GoogleGenerativeAI(geminiKey);
       const model = genAI.getGenerativeModel({
-        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+        model: resolveGeminiModel(),
       });
       const result = await model.generateContent('Responde solo: OK');
       const text = (await result.response).text()?.trim().slice(0, 80);
@@ -119,6 +120,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     checkedAt: new Date().toISOString(),
+    geminiModel: envSet('GEMINI_API_KEY') ? resolveGeminiModel() : null,
     webhookUrl,
     env,
     database,

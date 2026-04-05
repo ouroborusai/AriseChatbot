@@ -6,6 +6,7 @@ type Check = { ok: boolean; detail: string };
 
 type HealthPayload = {
   checkedAt: string;
+  geminiModel: string | null;
   webhookUrl: string | null;
   env: Record<string, boolean>;
   database: Check;
@@ -160,6 +161,9 @@ export function SystemStatusPanel() {
                   <Dot ok={data.gemini.ok} />
                   <div>
                     <span className="text-gray-300 font-medium">IA (Gemini / OpenAI)</span>
+                    {data.geminiModel && (
+                      <p className="text-gray-600 text-xs mt-0.5 font-mono">Modelo: {data.geminiModel}</p>
+                    )}
                     <p className="text-gray-500 text-xs mt-0.5">{data.gemini.detail}</p>
                   </div>
                 </li>
