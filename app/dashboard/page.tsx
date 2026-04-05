@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { SystemStatusPanel } from '@/app/dashboard/system-status-panel';
 
 type Conversation = {
   id: string;
@@ -111,8 +112,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-60px)]">
-      <aside className="w-80 border-r border-gray-800 flex flex-col">
+    <div className="flex flex-col h-[calc(100vh-60px)]">
+      <SystemStatusPanel />
+      <div className="flex flex-1 min-h-0">
+      <aside className="w-80 border-r border-gray-800 flex flex-col shrink-0">
         <div className="p-4 border-b border-gray-800">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
             Conversaciones ({conversations.length})
@@ -179,6 +182,7 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 }

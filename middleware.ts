@@ -2,7 +2,8 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith('/api/webhook')) {
+  const path = request.nextUrl.pathname;
+  if (path.startsWith('/api/webhook') || path.startsWith('/api/health')) {
     return NextResponse.next();
   }
 
