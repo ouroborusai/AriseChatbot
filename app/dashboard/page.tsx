@@ -68,8 +68,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-full bg-[#f8faf7] text-slate-900">
-      <div className="mx-auto flex max-w-6xl flex-col h-full gap-6">
+    <div className="flex h-full min-h-0 bg-[#f8faf7] text-slate-900">
+      <div className="mx-auto flex h-full min-h-0 max-w-6xl flex-col gap-6">
         <section className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/40">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -83,13 +83,13 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="flex-1 overflow-hidden rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/40">
+        <section className="flex-1 min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/40">
           {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-slate-600">
+            <div className="flex h-full items-center justify-center text-slate-600">
               No hay mensajes aún.
             </div>
           ) : (
-            <div className="h-full overflow-y-auto space-y-4">
+            <div className="h-full min-h-0 overflow-y-auto space-y-4 pr-1 pb-4">
               {messages.map((message) => (
                 <div
                   key={message.id}
