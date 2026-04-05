@@ -31,37 +31,37 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0d2f26] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-8">
-          <h1 className="text-2xl font-bold text-white mb-6 text-center">
-            QuickShip Admin
-          </h1>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
+        <div className="rounded-[32px] border border-[#128C7E] bg-[#0f4336]/95 p-8 shadow-2xl shadow-black/20">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-slate-950 text-2xl font-bold shadow-lg shadow-black/20">
+              W
+            </div>
+            <h1 className="text-3xl font-bold text-white">WhatsApp Admin</h1>
+            <p className="mt-2 text-sm text-slate-200">Accede a tus mensajes y métricas del agente.</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-slate-200 mb-2">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                className="w-full rounded-3xl border border-slate-700 bg-[#122f28] px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-[#25D366] focus:outline-none"
                 autoComplete="email"
                 required
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Contraseña
-              </label>
+              <label className="block text-sm font-medium text-slate-200 mb-2">Contraseña</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                className="w-full rounded-3xl border border-slate-700 bg-[#122f28] px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-[#25D366] focus:outline-none"
                 autoComplete="current-password"
                 required
               />
@@ -74,7 +74,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+              className="w-full rounded-3xl bg-[#25D366] px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#1ebd58] disabled:opacity-60"
             >
               {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>

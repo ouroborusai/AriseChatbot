@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 type Message = {
   id: string;
@@ -14,12 +12,10 @@ type Message = {
 };
 
 export default function DashboardPage() {
-  const router = useRouter();
   const supabase = createClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch all messages (simplified)
   useEffect(() => {
     const fetchMessages = async () => {
       const { data, error } = await supabase
@@ -41,7 +37,6 @@ export default function DashboardPage() {
 
     fetchMessages();
 
-    // Simple realtime subscription
     const channel = supabase
       .channel('messages')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
@@ -55,52 +50,64 @@ export default function DashboardPage() {
   }, [supabase]);
 
   if (loading) {
-    return <div className="p-4">Cargando...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-slate-800">
+        Cargando mensajes...
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Dashboard - Mensajes Recientes</h1>
-          <Link href="/login" className="text-blue-600 hover:underline">
-            Logout
-          </Link>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Últimos 50 mensajes</h2>
-
-          {messages.length === 0 ? (
-            <p className="text-gray-500">No hay mensajes aún.</p>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className="p-3 rounded-lg"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium px-2 py-1 rounded">
-                          {message.role === 'user' ? 'Usuario' : 'Bot'}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {message.phone_number}
-                        </span>
-                      </div>
-                      <p className="text-sm">{message.content}</p>
-                    </div>
-                    <span className="text-xs text-gray-400 ml-4">
-                      {new Date(message.created_at).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
+    <div className="min-h-screen bg-[#f8faf7] text-slate-900">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+        <section className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/40">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.24em] text-[#128C7E] font-semibold">WhatsApp</p>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">Mensajes recientes</h1>
+              <p className="text-sm text-slate-500">Las últimas conversaciones recibidas en el panel de WhatsApp.</p>
             </div>
+            <div className="rounded-3xl bg-[#25D366] px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm">
+              Mensajes activos: {messages.length}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-4">
+          {messages.length === 0 ? (
+            <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 text-slate-600 shadow">
+              No hay mensajes aún.
+            </div>
+          ) : (
+            messages.map((message) => (
+              <div
+                key={message.id}
+                className={`rounded-[32px] border px-5 py-4 shadow-sm transition ${
+                  message.role === 'user'
+                    ? 'border-[#d1f5cd] bg-[#dcf8c6]'
+                    : 'border-slate-200 bg-white'
+                }`}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                      <span className="inline-flex rounded-full bg-[#128C7E]/10 px-3 py-1 text-[#075E54] font-semibold">
+                        {message.role === 'user' ? 'Usuario' : 'Bot'}
+                      </span>
+                      {message.phone_number && (
+                        <span className="text-slate-500">{message.phone_number}</span>
+                      )}
+                    </div>
+                    <p className="text-base leading-7 text-slate-900">{message.content}</p>
+                  </div>
+                  <span className="shrink-0 text-sm text-slate-500">
+                    {new Date(message.created_at).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            ))
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'QuickShip Admin',
+  title: 'WhatsApp Admin',
   description: 'Panel de control para agente de WhatsApp',
 };
 

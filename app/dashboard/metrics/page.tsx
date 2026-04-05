@@ -43,7 +43,7 @@ export default function MetricsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-950 text-white">
+      <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] text-slate-700">
         Cargando métricas...
       </div>
     );
@@ -51,44 +51,50 @@ export default function MetricsPage() {
 
   if (!metrics) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-950 text-red-400">
+      <div className="flex min-h-screen items-center justify-center bg-[#f8faf7] text-red-500">
         Error al cargar métricas
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Dashboard de Métricas</h1>
-          <Link href="/dashboard" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition">
-            Volver al Chat
-          </Link>
+    <div className="min-h-screen bg-[#f8faf7] text-slate-900 p-6">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.24em] text-[#128C7E] font-semibold">WhatsApp</p>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">Dashboard de Métricas</h1>
+              <p className="text-sm text-slate-500">Analiza el rendimiento de los chats y la respuesta del agente.</p>
+            </div>
+            <Link
+              href="/dashboard"
+              className="inline-flex rounded-3xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#1ebd58]"
+            >
+              Volver al chat
+            </Link>
+          </div>
         </div>
 
-        {/* Métricas principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <Card title="Total Conversaciones" value={metrics.total_conversations} subtitle="Todas" />
-          <Card title="Conversaciones Hoy" value={metrics.conversations_today} subtitle="24 horas" />
-          <Card title="Esta Semana" value={metrics.conversations_this_week} subtitle="7 días" />
-          <Card title="Abiertas" value={metrics.open_conversations} subtitle="Sin cerrar" color="yellow" />
-          <Card title="Cerradas" value={metrics.closed_conversations} subtitle="Resueltas" color="green" />
-          <Card title="Tasa Resolución" value={`${metrics.resolution_rate}%`} subtitle="Cerradas/Total" color="green" />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card title="Total conversaciones" value={metrics.total_conversations} subtitle="Todas" />
+          <Card title="Conversaciones hoy" value={metrics.conversations_today} subtitle="Últimas 24h" />
+          <Card title="Esta semana" value={metrics.conversations_this_week} subtitle="Últimos 7 días" />
+          <Card title="Abiertas" value={metrics.open_conversations} subtitle="Pendientes" color="green" />
+          <Card title="Cerradas" value={metrics.closed_conversations} subtitle="Resueltas" color="default" />
+          <Card title="Tasa de resolución" value={`${metrics.resolution_rate}%`} subtitle="Objetivo" color="green" />
         </div>
 
-        {/* Métricas de tiempo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid gap-4 lg:grid-cols-2">
           <Card
-            title="Tiempo Respuesta Promedio"
+            title="Tiempo respuesta promedio"
             value={`${metrics.average_response_time_minutes}m`}
-            subtitle={`${metrics.average_response_time_ms}ms`}
+            subtitle={`${metrics.average_response_time_ms} ms`}
           />
-          <Card title="Total Mensajes" value={metrics.total_messages} subtitle={`${metrics.messages_today} hoy`} />
+          <Card title="Total mensajes" value={metrics.total_messages} subtitle={`${metrics.messages_today} hoy`} />
         </div>
 
-        {/* Última actualización */}
-        <p className="text-sm text-gray-500 text-center">
+        <p className="text-sm text-slate-500 text-center">
           Última actualización: {new Date(metrics.timestamp).toLocaleString('es')}
         </p>
       </div>
@@ -105,25 +111,23 @@ function Card({
   title: string;
   value: string | number;
   subtitle?: string;
-  color?: 'default' | 'green' | 'yellow';
+  color?: 'default' | 'green';
 }) {
   const borderColor = {
-    default: 'border-gray-800',
-    green: 'border-green-900',
-    yellow: 'border-yellow-900',
+    default: 'border-slate-200',
+    green: 'border-[#128C7E]',
   }[color || 'default'];
 
   const valueColor = {
-    default: 'text-white',
-    green: 'text-green-400',
-    yellow: 'text-yellow-400',
+    default: 'text-slate-900',
+    green: 'text-[#075E54]',
   }[color || 'default'];
 
   return (
-    <div className={`bg-gray-900 border ${borderColor} rounded-lg p-6`}>
-      <p className="text-gray-400 text-sm mb-2">{title}</p>
-      <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
-      {subtitle && <p className="text-gray-600 text-xs mt-2">{subtitle}</p>}
+    <div className={`rounded-[32px] border bg-white/95 p-6 shadow-sm ${borderColor}`}>
+      <p className="text-sm uppercase tracking-[0.2em] text-slate-500">{title}</p>
+      <p className={`mt-4 text-4xl font-bold ${valueColor}`}>{value}</p>
+      {subtitle && <p className="mt-2 text-sm text-slate-500">{subtitle}</p>}
     </div>
   );
 }
