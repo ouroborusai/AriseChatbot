@@ -91,7 +91,7 @@ export async function GET(request: Request) {
     try {
       const genAI = new GoogleGenerativeAI(geminiKey);
       const model = genAI.getGenerativeModel({
-        model: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
       });
       const result = await model.generateContent('Responde solo: OK');
       const text = (await result.response).text()?.trim().slice(0, 80);
