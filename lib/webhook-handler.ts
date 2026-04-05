@@ -29,12 +29,15 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
   const phoneNumber = messageData.from;
   const text = messageData.text?.body?.trim();
 
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('[Handler] ▶️ INICIANDO PROCESAMIENTO DE MENSAJE');
   console.log('[Handler] Mensaje recibido:', {
     id: msgId,
     type: msgType,
     from: phoneNumber?.slice(0, 8),
     textLen: text?.length ?? 0,
   });
+  console.log('═══════════════════════════════════════════════════════');
 
   // ===== VALIDACIONES INICIALES =====
   
