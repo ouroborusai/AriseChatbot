@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  if (path.startsWith('/api/webhook') || path.startsWith('/api/health')) {
+  if (path.startsWith('/api/webhook') || path.startsWith('/api/health') || path.startsWith('/api/test-message') || path.startsWith('/api/check-env') || path.startsWith('/api/test-ai')) {
     return NextResponse.next();
   }
 

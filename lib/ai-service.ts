@@ -29,18 +29,30 @@ export async function generateAssistantReply(
 ): Promise<string> {
   try {
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
-    
-    if (geminiKey) {
-      console.log('[AI] Usando Gemini');
-      return await generateGeminiReply(systemPrompt, history, latestUserText);
+    const openaiKey = process.env.OPENAI_API_KEY?.trim();
+
+    // Verificar que al menos una key esté configurada
+    if (!geminiKey && !openaiKey) {
+      throw new Error('❌ CONFIGURACIÓN FALTANTE: Necesitas configurar GEMINI_API_KEY o OPENAI_API_KEY en .env.local');
     }
 
-    if (openai) {
+    // Intentar Gemini primero si está configurado
+    if (geminiKey) {
+      console.log('[AI] Intentando con Gemini...');
+      try {
+        return await generateGeminiReply(systemPrompt, history, latestUserText);
+      } catch (geminiError) {
+        console.warn('[AI] Gemini falló, intentando OpenAI...', geminiError instanceof Error ? geminiError.message : 'Error desconocido');
+      }
+    }
+
+    // Fallback a OpenAI
+    if (openaiKey) {
       console.log('[AI] Usando OpenAI');
       return await generateOpenAIReply(systemPrompt, history, latestUserText);
     }
 
-    throw new Error('Configura GEMINI_API_KEY o OPENAI_API_KEY en .env.local');
+    throw new Error('❌ No se pudo generar respuesta: ambas APIs fallaron o no están configuradas');
   } catch (error) {
     console.error('[AI] ❌ Error generando respuesta:', error);
     if (error instanceof Error) {

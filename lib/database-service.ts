@@ -125,7 +125,7 @@ export async function getOrCreateConversation(phoneNumber: string, contactId: st
 }
 
 /**
- * Obtiene el historial de conversación (últimos 20 mensajes)
+ * Obtiene el historial completo de conversación
  */
 export async function getConversationHistory(phoneNumber: string): Promise<ConversationMessage[]> {
   const { data: conversation, error: convError } = await getSupabaseAdmin()
@@ -145,8 +145,7 @@ export async function getConversationHistory(phoneNumber: string): Promise<Conve
     .from('messages')
     .select('role, content')
     .eq('conversation_id', conversation.id)
-    .order('created_at', { ascending: true })
-    .limit(20);
+    .order('created_at', { ascending: true });
   
   if (msgError) {
     console.warn('[DB] Error fetching messages:', msgError);
