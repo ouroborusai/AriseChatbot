@@ -2,7 +2,7 @@
 const https = require('https');
 
 const GEMINI_API_KEY = 'AIzaSyCv5xDJJ3NQgMGN7QFB-I37tMPwhnwkdNY';
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-2.5-flash-lite';
 
 console.log('🧪 Test de Gemini API');
 console.log('═════════════════════════════════════════');
