@@ -43,9 +43,9 @@ export default function DashboardLayout({
 
   return (
     <div className="h-screen min-h-screen bg-[#e5ddd5] text-slate-900">
-      <div className="flex h-screen min-h-screen">
-        <aside className="w-full max-w-xs shrink-0 bg-[#075E54] text-white shadow-xl">
-          <div className="flex h-full flex-col justify-between px-6 py-8">
+      <div className="flex min-h-screen flex-col lg:flex-row">
+        <aside className="w-full lg:w-[320px] shrink-0 bg-[#075E54] text-white shadow-xl">
+          <div className="flex h-full min-h-0 flex-col justify-between px-6 py-8">
             <div>
               <div className="mb-8">
                 <div className="inline-flex items-center gap-3 rounded-3xl bg-[#128C7E] px-4 py-3 shadow-lg shadow-black/10">
@@ -90,7 +90,7 @@ export default function DashboardLayout({
           </div>
         </aside>
 
-        <main className="flex-1 min-h-0 p-6 lg:p-8">
+        <main className="flex-1 min-h-0 overflow-hidden p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>
