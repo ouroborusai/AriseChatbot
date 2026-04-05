@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import fs from 'fs';
@@ -91,7 +91,7 @@ async function sendWhatsAppMessage(phoneNumber: string, message: string) {
 }
 
 async function getOrCreateConversation(phoneNumber: string) {
-  const { data: existing } = await supabaseAdmin
+  const { data: existing } = await getSupabaseAdmin()
     .from('conversations')
     .select('id')
     .eq('phone_number', phoneNumber)
@@ -102,7 +102,7 @@ async function getOrCreateConversation(phoneNumber: string) {
     return existing.id;
   }
 
-  const { data: newConv, error } = await supabaseAdmin
+  const { data: newConv, error } = await getSupabaseAdmin()
     .from('conversations')
     .insert({ phone_number: phoneNumber })
     .select('id')
@@ -118,7 +118,7 @@ async function getOrCreateConversation(phoneNumber: string) {
 }
 
 async function getConversationHistory(phoneNumber: string): Promise<Turn[]> {
-  const { data: conversation } = await supabaseAdmin
+  const { data: conversation } = await getSupabaseAdmin()
     .from('conversations')
     .select('id')
     .eq('phone_number', phoneNumber)
@@ -126,7 +126,7 @@ async function getConversationHistory(phoneNumber: string): Promise<Turn[]> {
 
   if (!conversation) return [];
 
-  const { data: messages } = await supabaseAdmin
+  const { data: messages } = await getSupabaseAdmin()
     .from('messages')
     .select('role, content')
     .eq('conversation_id', conversation.id)
@@ -140,7 +140,7 @@ async function getConversationHistory(phoneNumber: string): Promise<Turn[]> {
 }
 
 async function saveMessage(conversationId: string, role: 'user' | 'assistant', content: string) {
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('messages')
     .insert({ conversation_id: conversationId, role, content });
 
