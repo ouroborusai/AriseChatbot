@@ -73,7 +73,7 @@ export async function sendWhatsAppMessage(phoneNumber: string, message: string):
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken.slice(0, 20)}...`,
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
