@@ -152,6 +152,90 @@ async function saveMessage(conversationId: string, role: 'user' | 'assistant', c
   console.log(`Saved ${role} message for conversation ${conversationId}`);
 }
 
+function digitsOnly(s: string): string {
+  return s.replace(/\D/g, '');
+}
+
+/** true = nuevo mensaje (se debe procesar); false = duplicado de Meta, ignorar */
+async function tryClaimWaMessageId(waMessageId: string | undefined): Promise<boolean> {
+  if (!waMessageId?.trim()) {
+    console.warn('[webhook] Sin message.id; no hay deduplicación (riesgo de duplicados si Meta reintenta)');
+    return true;
+  }
+  const { error } = await getSupabaseAdmin()
+    .from('processed_whatsapp_messages')
+    .insert({ wa_message_id: waMessageId });
+
+  if (!error) return true;
+  if (error.code === '23505') {
+    console.log('[webhook] Mensaje ya procesado, omitiendo:', waMessageId);
+    return false;
+  }
+  const msg = error.message || '';
+  if (
+    msg.includes('Could not find the table') ||
+    msg.includes('does not exist') ||
+    msg.includes('processed_whatsapp_messages')
+  ) {
+    console.warn(
+      '[webhook] Tabla processed_whatsapp_messages ausente. Ejecuta supabase/processed_whatsapp_messages.sql en Supabase.'
+    );
+    return true;
+  }
+  console.error('[webhook] Error al registrar deduplicación:', error);
+  return true;
+}
+
+type WaInboundText = {
+  id?: string;
+  from?: string;
+  type?: string;
+  text?: { body?: string };
+};
+
+async function handleInboundUserMessage(messageData: WaInboundText): Promise<void> {
+  if (messageData.type !== 'text') {
+    console.log('[webhook] Ignorado (no es texto):', messageData.type);
+    return;
+  }
+
+  const claimed = await tryClaimWaMessageId(messageData.id);
+  if (!claimed) return;
+
+  const phoneNumber = messageData.from;
+  const text = messageData.text?.body;
+
+  const ignoreFrom = process.env.WHATSAPP_IGNORE_INBOUND_FROM?.trim();
+  if (ignoreFrom && phoneNumber && digitsOnly(phoneNumber) === digitsOnly(ignoreFrom)) {
+    console.log('[webhook] Ignorado remitente = WHATSAPP_IGNORE_INBOUND_FROM (evita ecos)');
+    return;
+  }
+
+  if (!text?.trim() || !phoneNumber) {
+    console.log('[webhook] Falta texto o from');
+    return;
+  }
+
+  console.log(`Message from ${phoneNumber}: ${text}`);
+
+  const conversationId = await getOrCreateConversation(phoneNumber);
+  await saveMessage(conversationId, 'user', text);
+
+  const history = await getConversationHistory(phoneNumber);
+  const systemPrompt = getSystemPrompt();
+
+  const provider = process.env.GEMINI_API_KEY?.trim() ? 'Gemini' : 'OpenAI';
+  console.log(`Calling ${provider} with`, history.length, 'messages in history');
+
+  const assistantResponse = await generateAssistantReply(systemPrompt, history, text);
+  console.log('AI Response:', assistantResponse);
+
+  await saveMessage(conversationId, 'assistant', assistantResponse);
+  await sendWhatsAppMessage(phoneNumber, assistantResponse);
+
+  console.log('Message processing completed successfully');
+}
+
 export async function GET(request: NextRequest) {
   console.log('GET /api/webhook - Webhook verification called');
 
@@ -172,47 +256,38 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('POST /api/webhook - Message received');
+  console.log('POST /api/webhook - payload received');
 
   try {
     const body = await request.json();
     console.log('Webhook payload:', JSON.stringify(body, null, 2));
 
-    const entry = body.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const messageData = changes?.value?.messages?.[0];
-
-    if (!messageData) {
-      console.log('No message found in payload');
+    const entries = body.entry;
+    if (!Array.isArray(entries)) {
       return new NextResponse('OK', { status: 200 });
     }
 
-    const phoneNumber = messageData.from;
-    const text = messageData.text?.body;
+    for (const entry of entries) {
+      const changes = entry?.changes;
+      if (!Array.isArray(changes)) continue;
 
-    if (!text || !phoneNumber) {
-      console.log('Missing phone or text');
-      return new NextResponse('OK', { status: 200 });
+      for (const change of changes) {
+        if (change?.field !== 'messages') {
+          console.log('[webhook] Campo ignorado:', change?.field);
+          continue;
+        }
+
+        const messages = change?.value?.messages;
+        if (!Array.isArray(messages) || messages.length === 0) {
+          continue;
+        }
+
+        for (const messageData of messages) {
+          await handleInboundUserMessage(messageData as WaInboundText);
+        }
+      }
     }
 
-    console.log(`Message from ${phoneNumber}: ${text}`);
-
-    const conversationId = await getOrCreateConversation(phoneNumber);
-    await saveMessage(conversationId, 'user', text);
-
-    const history = await getConversationHistory(phoneNumber);
-    const systemPrompt = getSystemPrompt();
-
-    const provider = process.env.GEMINI_API_KEY?.trim() ? 'Gemini' : 'OpenAI';
-    console.log(`Calling ${provider} with`, history.length, 'messages in history');
-
-    const assistantResponse = await generateAssistantReply(systemPrompt, history, text);
-    console.log('AI Response:', assistantResponse);
-
-    await saveMessage(conversationId, 'assistant', assistantResponse);
-    await sendWhatsAppMessage(phoneNumber, assistantResponse);
-
-    console.log('Message processing completed successfully');
     return new NextResponse('OK', { status: 200 });
   } catch (error) {
     console.error('Error processing webhook:', error);

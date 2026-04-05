@@ -73,3 +73,13 @@ CREATE TRIGGER update_conversations_updated_at
     BEFORE UPDATE ON conversations
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- IDs de mensajes entrantes ya procesados (reintentos de Meta / webhooks duplicados)
+CREATE TABLE IF NOT EXISTS processed_whatsapp_messages (
+    wa_message_id TEXT PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_processed_wa_created ON processed_whatsapp_messages (created_at DESC);
+
+ALTER TABLE processed_whatsapp_messages ENABLE ROW LEVEL SECURITY;
