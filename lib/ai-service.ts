@@ -34,7 +34,11 @@ export async function generateAssistantReply(
 
     if (backend === 'ollama') {
       console.log('[AI] Usando Ollama local...');
-      return await generateOllamaReply(systemPrompt, history, latestUserText);
+      try {
+        return await generateOllamaReply(systemPrompt, history, latestUserText);
+      } catch (ollamaError) {
+        console.warn('[AI] Ollama falló, intentando backend alternativo...', ollamaError instanceof Error ? ollamaError.message : String(ollamaError));
+      }
     }
 
     if (backend === 'gemini') {
