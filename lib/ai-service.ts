@@ -27,17 +27,27 @@ export async function generateAssistantReply(
   history: ConversationTurn[],
   latestUserText: string
 ): Promise<string> {
-  const geminiKey = process.env.GEMINI_API_KEY?.trim();
-  
-  if (geminiKey) {
-    return generateGeminiReply(systemPrompt, history, latestUserText);
-  }
+  try {
+    const geminiKey = process.env.GEMINI_API_KEY?.trim();
+    
+    if (geminiKey) {
+      console.log('[AI] Usando Gemini');
+      return await generateGeminiReply(systemPrompt, history, latestUserText);
+    }
 
-  if (openai) {
-    return generateOpenAIReply(systemPrompt, history, latestUserText);
-  }
+    if (openai) {
+      console.log('[AI] Usando OpenAI');
+      return await generateOpenAIReply(systemPrompt, history, latestUserText);
+    }
 
-  throw new Error('Configura GEMINI_API_KEY o OPENAI_API_KEY en .env.local');
+    throw new Error('Configura GEMINI_API_KEY o OPENAI_API_KEY en .env.local');
+  } catch (error) {
+    console.error('[AI] ❌ Error generando respuesta:', error);
+    if (error instanceof Error) {
+      console.error('[AI] Error message:', error.message);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -48,25 +58,45 @@ async function generateGeminiReply(
   history: ConversationTurn[],
   latestUserText: string
 ): Promise<string> {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({
-    model: resolveGeminiModel(),
-    systemInstruction: systemPrompt,
-  });
+  try {
+    console.log('[AI/Gemini] Inicializando GoogleGenerativeAI...');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    
+    console.log('[AI/Gemini] Resolviendo modelo...');
+    const modelName = resolveGeminiModel();
+    console.log('[AI/Gemini] Modelo seleccionado:', modelName);
+    
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      systemInstruction: systemPrompt,
+    });
 
-  const prior =
-    history.length > 0 && history[history.length - 1].role === 'user'
-      ? history.slice(0, -1)
-      : history;
+    const prior =
+      history.length > 0 && history[history.length - 1].role === 'user'
+        ? history.slice(0, -1)
+        : history;
 
-  const geminiHistory = prior.map((t) => ({
-    role: t.role === 'user' ? ('user' as const) : ('model' as const),
-    parts: [{ text: t.content }],
-  }));
+    const geminiHistory = prior.map((t) => ({
+      role: t.role === 'user' ? ('user' as const) : ('model' as const),
+      parts: [{ text: t.content }],
+    }));
 
-  const chat = model.startChat({ history: geminiHistory });
-  const result = await chat.sendMessage(latestUserText);
-  return (await result.response).text() || 'Lo siento, no pude procesar tu mensaje.';
+    console.log('[AI/Gemini] Iniciando chat con', geminiHistory.length, 'mensajes previos');
+    const chat = model.startChat({ history: geminiHistory });
+    
+    console.log('[AI/Gemini] Enviando mensaje a Gemini...');
+    const result = await chat.sendMessage(latestUserText);
+    
+    console.log('[AI/Gemini] ✓ Respuesta recibida');
+    return (await result.response).text() || 'Lo siento, no pude procesar tu mensaje.';
+  } catch (error) {
+    console.error('[AI/Gemini] ❌ ERROR:', error);
+    if (error instanceof Error) {
+      console.error('[AI/Gemini] Message:', error.message);
+      console.error('[AI/Gemini] Stack:', error.stack);
+    }
+    throw error;
+  }
 }
 
 /**
