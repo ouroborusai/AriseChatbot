@@ -1,24 +1,40 @@
--- SQL para configurar el nuevo proyecto de Supabase
+﻿-- SQL para configurar el nuevo proyecto de Supabase
 -- Ejecutar en Supabase Dashboard → SQL Editor
 
--- 1. Crear tablas (si no existen)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- CONTACTS
 CREATE TABLE IF NOT EXISTS public.contacts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   phone_number text NOT NULL UNIQUE,
   name text,
+  tags text[] DEFAULT '{}'::text[],
+  notes text,
+  is_blocked boolean DEFAULT false,
+  last_message_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  email text,
+  segment text,
+  location text,
+  purchase_history jsonb DEFAULT '[]'::jsonb,
+  metadata jsonb DEFAULT '{}'::jsonb
 );
 
+-- CONVERSATIONS
 CREATE TABLE IF NOT EXISTS public.conversations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   phone_number text NOT NULL UNIQUE,
   contact_id uuid REFERENCES public.contacts(id) ON DELETE SET NULL,
-  is_open boolean DEFAULT true,
+  is_open boolean NOT NULL DEFAULT true,
+  first_response_at timestamptz,
+  last_response_at timestamptz,
+  message_count int NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- MESSAGES
 CREATE TABLE IF NOT EXISTS public.messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id uuid NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
@@ -27,10 +43,50 @@ CREATE TABLE IF NOT EXISTS public.messages (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- 2. Deshabilitar RLS (IMPORTANTE para que funcione)
+-- AGREGA COLUMNAS FALTANTES SI LA TABLA YA EXISTE
+ALTER TABLE public.contacts
+  ADD COLUMN IF NOT EXISTS tags text[] DEFAULT '{}'::text[],
+  ADD COLUMN IF NOT EXISTS notes text,
+  ADD COLUMN IF NOT EXISTS is_blocked boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS last_message_at timestamptz,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS segment text,
+  ADD COLUMN IF NOT EXISTS location text,
+  ADD COLUMN IF NOT EXISTS purchase_history jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}'::jsonb;
+
+ALTER TABLE public.conversations
+  ADD COLUMN IF NOT EXISTS first_response_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_response_at timestamptz,
+  ADD COLUMN IF NOT EXISTS message_count int NOT NULL DEFAULT 0;
+
+-- ÍNDICES
+CREATE INDEX IF NOT EXISTS idx_contacts_phone ON public.contacts(phone_number);
+CREATE INDEX IF NOT EXISTS idx_conversations_phone ON public.conversations(phone_number);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON public.messages(conversation_id);
+
+-- TRIGGERS para updated_at
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_contacts_updated_at ON public.contacts;
+CREATE TRIGGER update_contacts_updated_at
+  BEFORE UPDATE ON public.contacts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_conversations_updated_at ON public.conversations;
+CREATE TRIGGER update_conversations_updated_at
+  BEFORE UPDATE ON public.conversations
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+-- RLS DESHABILITADO (DESARROLLO)
 ALTER TABLE public.contacts DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.conversations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages DISABLE ROW LEVEL SECURITY;
-
--- 3. Verificar
-SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('contacts', 'conversations', 'messages');
