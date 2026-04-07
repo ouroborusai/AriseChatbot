@@ -3,7 +3,7 @@
  * La IA maneja las respuestas directamente, solo mantenemos saludos y detección de ayuda humana
  */
 
-import { generateAssistantReply, getSystemPromptCached } from './ai-service';
+import { generateAssistantReply, getSystemPromptCached, invalidateSystemPromptCache } from './ai-service';
 import { sendWhatsAppDocument, sendWhatsAppInteractiveButtons, sendWhatsAppMessage } from './whatsapp-service';
 import {
   getLatestClientDocuments,
@@ -17,6 +17,7 @@ import {
   getConversationHistory,
   createServiceRequest,
   getServiceRequestByCode,
+  getChatbotEnabled,
 } from './database-service';
 import { getSupabaseAdmin } from './supabase-admin';
 
@@ -86,8 +87,9 @@ function wantsChangeCompany(message: string): boolean {
 }
 
 function isKnownClient(contact: { name?: string; segment?: string }): boolean {
+  // Solo es cliente conocido si tiene segment = 'cliente'
   if (contact.segment && contact.segment.toLowerCase() === 'cliente') return true;
-  return Boolean(contact.name && contact.name.trim().length > 0);
+  return false;
 }
 
 function getLastButtonFromHistory(history: Array<{ role: 'user' | 'assistant'; content: string }>): string | null {
@@ -350,10 +352,12 @@ function buildSystemPromptForContact(
 
   if (contact.segment === 'cliente') {
     lines.push('- Este usuario es un cliente activo de MTZ. Atiende con prioridad, claridad y enfoque en sus servicios actuales.');
+    lines.push('- Cuando respondas, incluye opciones útiles como: "Si necesitas tus documentos, puedo mostrarte el menú de documentos 📄" o "Para impuestos, consulta el menú de impuestos 🧾"');
   } else if (contact.segment === 'prospect') {
     lines.push('- Este usuario es un posible cliente nuevo. Explica los servicios de MTZ, cómo trabajamos y cómo contratar.');
+    lines.push('- Cuando respondas, incluye llamada a la acción como: "¿Quieres una cotización? Responde con 💼" o "¿Necesitas más información? Puedo explicarte nuestros servicios 📝"');
   } else {
-    lines.push('- No se tiene segment definido. Trata de identificar si es cliente existente o prospecto, pero siempre ofrece opciones claras de MTZ.');
+    lines.push('- No se tiene segment definido. Puedes perguntar de manera amigable: "¿Ya trabajas con MTZ o eres nuevo?" para clasificar.');
   }
 
   if (activeCompanyId) {
@@ -370,6 +374,7 @@ function buildSystemPromptForContact(
 
   lines.push('- Responde de manera precisa y práctica, guiando hacia los servicios de MTZ y sugiriendo asesoría cuando corresponda.');
   lines.push('- Si el usuario habla de forma conversacional, interpreta la intención y responde con claridad, sin pedir datos que ya tiene WhatsApp.');
+  lines.push('- FINALmente, haz la conversación más interactiva sugiriendo acciones específicas cuando sea apropiado.');
 
   return lines.join('\n');
 }
@@ -407,6 +412,23 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
     const companies = await listCompaniesForContact(contact.id);
     const activeCompanyId = await getActiveCompanyForConversation(conversationId);
 
+    // Verificar si el chatbot está habilitado para esta conversación
+    const { data: conversationData } = await getSupabaseAdmin()
+      .from('conversations')
+      .select('chatbot_enabled')
+      .eq('id', conversationId)
+      .maybeSingle();
+    
+    const chatbotEnabled = conversationData?.chatbot_enabled !== false; // default true
+
+    if (!chatbotEnabled) {
+      console.log('[Webhook] ⚠️ Chatbot deshabilitado para esta conversación - derivando a modo manual');
+      const msg = 'Esta conversación está en modo manual. Un asesor te atenderá pronto.';
+      await saveMessage(conversationId, 'assistant', msg);
+      // No enviamos mensaje automático - el asesor responderá manualmente
+      return;
+    }
+
     // 2. Guardar mensaje del usuario (texto o interacción)
     if (text) {
       await saveMessage(conversationId, 'user', text);
@@ -417,15 +439,14 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
       return;
     }
 
-    // 2.5 CLASIFICACIÓN: Si es primer mensaje y no tiene segment, preguntar si es cliente
-    const isFirstMsg = await isFirstMessage(conversationId);
-    if (isFirstMsg && !contact.segment) {
-      console.log('🆕 Primer mensaje - Clasificando contacto...');
+    // 2.5 CLASIFICACIÓN: Si NO tiene segment, preguntar si es cliente (SIEMPRE)
+    if (!contact.segment) {
+      console.log('🆕 Contacto sin clasificar - Enviando menú de clasificación...');
       await sendClassificationMenu(phoneNumber);
       return;
     }
 
-    // Procesar respuesta de clasificación
+    // Procesar respuesta de clasificación (botones)
     if (interactive === BTN_IS_CLIENT_YES) {
       await updateContactSegment(contact.id, 'cliente');
       const msg = '✅ Perfecto. Acceso a tu cuenta de cliente activado.';
@@ -515,12 +536,18 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
       }
     }
 
-    // 4. Saludo inicial / primera guía: SIEMPRE menú (sin Gemini)
-    if (text && isGreeting(text)) {
-      // Si es un saludo o un mensaje normal sin selección previa, guiamos con menú.
+    // 4. Saludo inicial / primera guía para prospectos sin segment
+    // Si ya tiene segment, dejamos que Gemini maneje saludos para conversación más natural
+    if (text && isGreeting(text) && !contact.segment) {
       await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id });
-      console.log('✅ Menú de bienvenida enviado');
+      console.log('✅ Menú de bienvenida enviado (prospecto)');
       return;
+    }
+
+    // 4b. Si es cliente con segment, saludos van a Gemini (con opciones en la respuesta)
+    if (text && isGreeting(text) && contact.segment === 'cliente') {
+      console.log('💬 Cliente saludando - Gemini maneja conversación');
+      // No retornamos aquí, dejamos que fluya a Gemini
     }
 
     // 5. Acciones para clientes existentes
@@ -746,24 +773,29 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
         return;
       }
 
-      // Consultas de información del prospecto pueden ir a IA, pero priorizar guiar a servicios.
+      // Consultas de información del prospecto van a Gemini para conversación natural
       if (lastBtn === BTN_NEW_INFO) {
-        const msg = 'Gracias. Te envío información clara sobre los servicios de MTZ y luego te daré opción de asesoría.';
-        await saveMessage(conversationId, 'assistant', msg);
-        await sendWhatsAppMessage(phoneNumber, msg);
-        return;
+        // En vez de respuesta fija, dejamos que Gemini responda naturalmente
+        console.log('💬 Prospecto pidiendo más info - Gemini maneja');
+        // Continue to Gemini
       }
     }
 
-    // 7. Fallback: solo aquí usamos Gemini (consulta abierta / conversación)
+    // 7. Fallback: Gemini para consulta abierta / conversación
+    // Esto incluye: saludos de clientes, preguntas sobre servicios, soporte, etc.
     const basePrompt = await getSystemPromptCached();
+    console.log('[Gemini] Prompt base cargado,len:', basePrompt.length);
     const systemPrompt = buildSystemPromptForContact(basePrompt, contact, companies, activeCompanyId);
     const history = await getConversationHistory(phoneNumber);
+    console.log('[Gemini] Enviando a IA,historial:', history.length, 'mensajes');
     const aiResponse = await generateAssistantReply(systemPrompt, history, text || '');
 
     await saveMessage(conversationId, 'assistant', aiResponse);
     await sendWhatsAppMessage(phoneNumber, aiResponse);
 
+    // Invalidar cache para que próximo request use prompt actualizado si hubo cambios
+    invalidateSystemPromptCache();
+    
     console.log('✅ Respuesta Gemini enviada');
 
   } catch (error) {

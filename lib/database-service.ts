@@ -294,6 +294,30 @@ export async function getActiveCompanyForConversation(conversationId: string): P
   return (data?.active_company_id as string | null) ?? null;
 }
 
+export async function setChatbotEnabled(conversationId: string, enabled: boolean): Promise<boolean> {
+  const { error } = await getSupabaseAdmin()
+    .from('conversations')
+    .update({ chatbot_enabled: enabled })
+    .eq('id', conversationId);
+  
+  if (error) {
+    console.error('[DB] Error toggling chatbot:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function getChatbotEnabled(conversationId: string): Promise<boolean> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('conversations')
+    .select('chatbot_enabled')
+    .eq('id', conversationId)
+    .maybeSingle();
+  
+  if (error || !data) return true; // default enabled
+  return data.chatbot_enabled !== false;
+}
+
 export async function createServiceRequest(
   contactId: string,
   conversationId: string,

@@ -77,35 +77,38 @@ export default function DashboardLayout({
           collapsed ? 'w-20' : 'w-72'
         }`}
       >
-        {/* Capa 1: Logo y botón collapse - Altura fija */}
+        {/* Capa 1: Logo - Altura fija */}
         <div className="shrink-0 px-4 py-5 border-b border-slate-700/50">
-          <div className="flex items-center justify-between gap-2">
-            <div
-              className={`flex-1 inline-flex items-center gap-3 rounded-2xl bg-white/10 px-3 py-3 backdrop-blur-sm transition-all duration-300 ${
-                collapsed ? 'justify-center' : 'justify-start'
-              }`}
-            >
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-400 to-green-500 text-white font-bold shadow-lg">
-                M
-              </span>
-              {!collapsed && (
-                <div className="overflow-hidden">
-                  <p className="text-base font-semibold whitespace-nowrap">
-                    MTZ Consultores
-                  </p>
-                  <p className="text-xs text-slate-400">Panel de atención</p>
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setCollapsed(!collapsed)}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-sm transition hover:bg-white/10 active:bg-white/20"
-              aria-label={collapsed ? 'Expandir menú' : 'Replegar menú'}
-            >
-              {collapsed ? '▶' : '◀'}
-            </button>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-400 to-green-500 text-white font-bold shadow-lg">
+              M
+            </span>
+            {!collapsed && (
+              <div className="overflow-hidden">
+                <p className="text-base font-semibold whitespace-nowrap">
+                  MTZ Consultores
+                </p>
+                <p className="text-xs text-slate-400">Panel de atención</p>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Botón collapse - Separado */}
+        <div className="shrink-0 px-2 py-2 border-b border-slate-700/30">
+          <button
+            type="button"
+            onClick={() => setCollapsed(!collapsed)}
+            className={`flex items-center gap-2 w-full rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:text-white hover:bg-white/5 transition ${
+              collapsed ? 'justify-center' : 'justify-end'
+            }`}
+            aria-label={collapsed ? 'Expandir menú' : 'Contraer menú'}
+          >
+            <span className={`text-xs transition-transform ${collapsed ? '' : 'rotate-180'}`}>
+              {collapsed ? '▶' : '◀'}
+            </span>
+            {!collapsed && <span className="text-xs">Contraer</span>}
+          </button>
         </div>
 
         {/* Capa 2: Navegación - Crece y ocupa espacio disponible */}

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 type Message = {
   id: string;
@@ -25,9 +26,12 @@ interface MessageViewProps {
 }
 
 export default function MessageView({ selectedConversation, selectedPhone }: MessageViewProps) {
-  const [replyText, setReplyText] = React.useState('');
-  const [sending, setSending] = React.useState(false);
-  const [sendResult, setSendResult] = React.useState<{ success?: boolean; error?: string } | null>(null);
+  const supabase = createClient();
+  const [replyText, setReplyText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{ success?: boolean; error?: string } | null>(null);
+  const [chatbotEnabled, setChatbotEnabled] = useState(true);
+  const [loadingToggle, setLoadingToggle] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -37,6 +41,53 @@ export default function MessageView({ selectedConversation, selectedPhone }: Mes
   useEffect(() => {
     scrollToBottom();
   }, [selectedConversation]);
+
+  useEffect(() => {
+    const fetchChatbotStatus = async () => {
+      if (!selectedPhone) return;
+      
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id, chatbot_enabled')
+        .eq('phone_number', selectedPhone)
+        .maybeSingle();
+      
+      if (conversation) {
+        setChatbotEnabled(conversation.chatbot_enabled !== false);
+      } else {
+        setChatbotEnabled(true);
+      }
+    };
+    
+    fetchChatbotStatus();
+  }, [selectedPhone, supabase]);
+
+  const handleToggleChatbot = async () => {
+    if (!selectedPhone) return;
+    
+    setLoadingToggle(true);
+    try {
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('phone_number', selectedPhone)
+        .maybeSingle();
+      
+      if (conversation) {
+        const newEnabled = !chatbotEnabled;
+        await supabase
+          .from('conversations')
+          .update({ chatbot_enabled: newEnabled })
+          .eq('id', conversation.id);
+        
+        setChatbotEnabled(newEnabled);
+      }
+    } catch (error) {
+      console.error('Error toggling chatbot:', error);
+    } finally {
+      setLoadingToggle(false);
+    }
+  };
 
   const handleSendReply = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -89,6 +140,23 @@ export default function MessageView({ selectedConversation, selectedPhone }: Mes
                 : 'Ver los chats en la lista de la izquierda'}
             </p>
           </div>
+          
+          {/* Toggle Chatbot */}
+          {selectedConversation && (
+            <button
+              onClick={handleToggleChatbot}
+              disabled={loadingToggle}
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition ${
+                chatbotEnabled
+                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+              title={chatbotEnabled ? 'Desactivar chatbot' : 'Activar chatbot'}
+            >
+              <span className={`inline-block h-2 w-2 rounded-full ${chatbotEnabled ? 'bg-green-500' : 'bg-slate-400'}`}></span>
+              {loadingToggle ? '...' : chatbotEnabled ? '🤖 Automático' : '👤 Manual'}
+            </button>
+          )}
         </div>
       </div>
 

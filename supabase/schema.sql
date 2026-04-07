@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS public.conversations (
   contact_id uuid REFERENCES public.contacts(id) ON DELETE SET NULL,
   active_company_id uuid REFERENCES public.companies(id) ON DELETE SET NULL,
   is_open boolean NOT NULL DEFAULT true,
+  chatbot_enabled boolean NOT NULL DEFAULT true,
   first_response_at timestamptz,
   last_response_at timestamptz,
   message_count int NOT NULL DEFAULT 0,
