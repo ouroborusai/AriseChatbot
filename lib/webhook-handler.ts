@@ -290,7 +290,7 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
 
     // 3. ¿Quiere hablar con humano?
     if ((text && wantsHumanAgent(text)) || interactive === BTN_EXISTING_HUMAN || interactive === BTN_NEW_HUMAN) {
-      const humanMessage = 'Entiendo. Un asesor de MTZ te contactará pronto. ¿Cuál es tu número de contacto?';
+      const humanMessage = 'Entiendo. Un asesor especializado de MTZ se comunicará contigo desde este número en breve. Gracias por tu paciencia.';
       await saveMessage(conversationId, 'assistant', humanMessage);
       await sendWhatsAppMessage(phoneNumber, humanMessage);
       console.log('✅ Derivado a humano');
