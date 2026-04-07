@@ -33,6 +33,10 @@ type InboundMessage = {
 const WELCOME_KEYWORDS = ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'buenas', 'saludos'];
 const HUMAN_KEYWORDS = ['humano', 'asesor', 'urgente', 'multa', 'fiscalización', 'fiscalizacion', 'sii', 'demanda', 'reclamo'];
 
+// Cliente classification
+const BTN_IS_CLIENT_YES = 'btn_is_client_yes';
+const BTN_IS_CLIENT_NO = 'btn_is_client_no';
+
 const BTN_EXISTING_DOCS = 'btn_existing_docs';
 const BTN_EXISTING_TAX = 'btn_existing_tax';
 const BTN_EXISTING_HUMAN = 'btn_existing_human';
@@ -90,6 +94,52 @@ function getLastButtonFromHistory(history: Array<{ role: 'user' | 'assistant'; c
     }
   }
   return null;
+}
+
+/**
+ * Detecta si es el primer mensaje de un contacto nuevo
+ */
+async function isFirstMessage(conversationId: string): Promise<boolean> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('messages')
+    .select('id')
+    .eq('conversation_id', conversationId);
+
+  if (error) {
+    console.warn('[Check] Error validating first message:', error);
+    return false;
+  }
+
+  // Si solo hay 1 mensaje (el que acabamos de guardar), es el primer mensaje
+  return (data?.length || 0) <= 1;
+}
+
+/**
+ * Envía menú de clasificación: ¿Eres cliente de MTZ?
+ */
+async function sendClassificationMenu(phoneNumber: string): Promise<void> {
+  await sendWhatsAppInteractiveButtons(
+    phoneNumber,
+    '¿Eres cliente de MTZ Consultores Tributarios?',
+    [
+      { id: BTN_IS_CLIENT_YES, title: '✅ Sí, soy cliente' },
+      { id: BTN_IS_CLIENT_NO, title: '🆕 No, soy nuevo' },
+    ]
+  );
+}
+
+/**
+ * Actualiza el segment del contacto (cliente o prospect)
+ */
+async function updateContactSegment(contactId: string, segment: 'cliente' | 'prospect'): Promise<void> {
+  const { error } = await getSupabaseAdmin()
+    .from('contacts')
+    .update({ segment })
+    .eq('id', contactId);
+
+  if (error) {
+    console.warn('[DB] Error updating contact segment:', error);
+  }
 }
 
 async function sendDocumentsCategoryMenu(phoneNumber: string): Promise<void> {
@@ -267,6 +317,33 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
       await saveMessage(conversationId, 'user', `[button:${interactive}]`);
     } else {
       console.log('❌ Ignorado: mensaje sin texto ni interacción');
+      return;
+    }
+
+    // 2.5 CLASIFICACIÓN: Si es primer mensaje y no tiene segment, preguntar si es cliente
+    const isFirstMsg = await isFirstMessage(conversationId);
+    if (isFirstMsg && !contact.segment) {
+      console.log('🆕 Primer mensaje - Clasificando contacto...');
+      await sendClassificationMenu(phoneNumber);
+      return;
+    }
+
+    // Procesar respuesta de clasificación
+    if (interactive === BTN_IS_CLIENT_YES) {
+      await updateContactSegment(contact.id, 'cliente');
+      const msg = '✅ Perfecto. Acceso a tu cuenta de cliente activado.';
+      await saveMessage(conversationId, 'assistant', msg);
+      await sendWhatsAppMessage(phoneNumber, msg);
+      await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id, segment: 'cliente' });
+      return;
+    }
+
+    if (interactive === BTN_IS_CLIENT_NO) {
+      await updateContactSegment(contact.id, 'prospect');
+      const msg = '👋 Bienvenido a MTZ. Te mostraremos cómo podemos ayudarte.';
+      await saveMessage(conversationId, 'assistant', msg);
+      await sendWhatsAppMessage(phoneNumber, msg);
+      await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id, segment: 'prospect' });
       return;
     }
 
