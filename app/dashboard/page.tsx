@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -15,6 +15,11 @@ type Message = {
   conversations?: { phone_number?: string };
 };
 
+type Contact = {
+  phone_number: string;
+  name?: string | null;
+};
+
 type ConversationSummary = {
   phone: string;
   label: string;
@@ -26,15 +31,21 @@ type ConversationSummary = {
 export default function DashboardPage() {
   const supabase = useMemo(() => createClient(), []);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [contacts, setContacts] = useState<Map<string, string>>(new Map());
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [realtimeStatus, setRealtimeStatus] = useState<string>('Conectando...');
 
   useEffect(() => {
     const fetchMessages = async () => {
       const { data, error } = await supabase
         .from('messages')
         .select(`
-          *,
+          id,
+          role,
+          content,
+          created_at,
+          conversation_id,
           conversations!inner(phone_number)
         `)
         .order('created_at', { ascending: true })
@@ -43,7 +54,13 @@ export default function DashboardPage() {
       if (error) {
         console.error('Error fetching messages:', error);
       } else {
-        setMessages(data || []);
+        // Transformar datos para que phone_number esté accesible
+        const transformedMessages = (data || []).map((m: any) => ({
+          ...m,
+          phone_number: m.conversations?.phone_number,
+          conversations: undefined
+        }));
+        setMessages(transformedMessages);
       }
       setLoading(false);
     };
@@ -57,13 +74,68 @@ export default function DashboardPage() {
         event: 'INSERT', 
         schema: 'public', 
         table: 'messages' 
-      }, (payload) => {
+      }, async (payload) => {
         console.log('📨 Nuevo mensaje recibido:', payload.new);
-        setMessages((prev) => [...prev, payload.new as Message]);
+        const newMsgRaw = payload.new as any;
+        
+        // Obtener el phone_number del mensaje nuevo
+        const { data: msgWithConv } = await supabase
+          .from('messages')
+          .select('id, role, content, created_at, conversations!inner(phone_number)')
+          .eq('id', newMsgRaw.id)
+          .single();
+        
+        if (msgWithConv) {
+          const newMsg = {
+            ...msgWithConv,
+            phone_number: (msgWithConv as any).conversations?.phone_number,
+          } as Message;
+          
+          setMessages((prev) => {
+            if (prev.some(m => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+        }
       })
       .subscribe((status) => {
         console.log('📡 Estado de suscripción:', status);
+        setRealtimeStatus(status === 'SUBSCRIBED' ? '🟢 En vivo' : '🔴 Desconectado');
       });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
+  // Cargar contactos para obtener nombres
+  useEffect(() => {
+    const fetchContacts = async () => {
+      const { data } = await supabase
+        .from('contacts')
+        .select('phone_number, name');
+      
+      if (data) {
+        const contactMap = new Map<string, string>();
+        data.forEach(c => {
+          if (c.name) contactMap.set(c.phone_number, c.name);
+        });
+        setContacts(contactMap);
+      }
+    };
+    
+    fetchContacts();
+
+    // Suscripción a cambios en contacts
+    const channel = supabase
+      .channel('realtime-contacts')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'contacts' 
+      }, () => {
+        fetchContacts();
+      })
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -83,7 +155,7 @@ export default function DashboardPage() {
       if (!existing) {
         groups.set(phone, {
           phone,
-          label: `Cliente ${phone.slice(-4)}`,
+          label: phone, // provisional, se reemplaza abajo
           preview,
           updatedAt: messageTime,
           messages: [message],
@@ -97,8 +169,34 @@ export default function DashboardPage() {
       }
     });
 
-    return Array.from(groups.values()).sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1));
-  }, [messages]);
+    // Reemplazar labels con nombres reales
+    const result = Array.from(groups.values()).map(conv => ({
+      ...conv,
+      label: contacts.get(conv.phone) || `Cliente ${conv.phone.slice(-4)}`
+    }));
+
+    return result.sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1));
+  }, [messages, contacts]);
+
+  // Obtener nombres de contactos
+  useEffect(() => {
+    const fetchContactNames = async () => {
+      const phones = conversations.map(c => c.phone);
+      if (phones.length === 0) return;
+
+      const { data: contacts } = await supabase
+        .from('contacts')
+        .select('phone_number, name')
+        .in('phone_number', phones);
+
+      if (contacts) {
+        // Actualizar labels con nombres
+        setMessages(prev => prev); // Esto fuerza re-render
+      }
+    };
+
+    fetchContactNames();
+  }, [conversations.length, supabase]);
 
   const selectedConversation = useMemo(
     () => conversations.find((conversation) => conversation.phone === selectedPhone) || null,
@@ -124,11 +222,23 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-slate-800">Mensajes</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          {conversations.length} {conversations.length === 1 ? 'conversación' : 'conversaciones'} activas
-        </p>
+      {/* Header con indicador de conexión */}
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Mensajes</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {conversations.length} {conversations.length === 1 ? 'conversación' : 'conversaciones'} activas
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => window.location.reload()}
+            className="text-xs text-slate-500 hover:text-slate-700 underline"
+          >
+            Recargar
+          </button>
+          <span className="text-xs text-slate-500">{realtimeStatus}</span>
+        </div>
       </div>
       <div className="card-base p-0 overflow-hidden flex-1">
         <div className="flex h-[calc(100vh-14rem)] gap-0">

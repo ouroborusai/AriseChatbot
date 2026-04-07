@@ -158,27 +158,127 @@ async function updateContactSegment(contactId: string, segment: 'cliente' | 'pro
   }
 }
 
-async function sendDocumentsCategoryMenu(phoneNumber: string): Promise<void> {
+async function sendDocumentsCategoryMenu(phoneNumber: string, contactId?: string, companyId?: string | null): Promise<void> {
+  if (!contactId) {
+    await sendWhatsAppInteractiveButtons(
+      phoneNumber,
+      '¿Qué tipo de documento necesitas?',
+      [
+        { id: BTN_DOC_CAT_TAX, title: '🧾 Impuestos' },
+        { id: BTN_DOC_CAT_ACCOUNTING, title: '📊 Balance' },
+        { id: BTN_DOC_CAT_PAYROLL_CONTRACTS, title: '📄 Contratos / Nómina' },
+      ]
+    );
+    return;
+  }
+
+  // Obtener documentos del cliente
+  const { data: docs, error } = await getSupabaseAdmin()
+    .from('client_documents')
+    .select('id, title, file_name, created_at')
+    .eq('contact_id', contactId)
+    .eq('company_id', companyId || null)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (!docs || docs.length === 0) {
+    await sendWhatsAppMessage(
+      phoneNumber,
+      '📋 No tengo documentos cargados para ti aún. Estamos cargando tu información. ¿Prefieres solicitar alguno o hablar con un asesor?'
+    );
+    return;
+  }
+
+  // Agrupar por tipo y mostrar los más recientes
+  const ivaDocs = docs.filter(d => d.title.toLowerCase().includes('iva'));
+  const rentaDocs = docs.filter(d => d.title.toLowerCase().includes('renta'));
+  const balanceDocs = docs.filter(d => d.title.toLowerCase().includes('balance'));
+  const liquidacionDocs = docs.filter(d => d.title.toLowerCase().includes('liquidacion'));
+  const otroDocs = docs.filter(d => 
+    !d.title.toLowerCase().includes('iva') && 
+    !d.title.toLowerCase().includes('renta') && 
+    !d.title.toLowerCase().includes('balance') &&
+    !d.title.toLowerCase().includes('liquidacion')
+  );
+
+  const buttons: { id: string; title: string }[] = [];
+
+  if (ivaDocs.length > 0) {
+    const latestIva = ivaDocs[0].title;
+    buttons.push({ id: 'show_iva', title: `🧾 IVA: ${latestIva}` });
+  }
+  if (rentaDocs.length > 0) {
+    const latestRenta = rentaDocs[0].title;
+    buttons.push({ id: 'show_renta', title: `📊 Renta: ${latestRenta}` });
+  }
+  if (balanceDocs.length > 0) {
+    const latestBalance = balanceDocs[0].title;
+    buttons.push({ id: 'show_balance', title: `📈 Balance: ${latestBalance}` });
+  }
+  if (liquidacionDocs.length > 0) {
+    const latestLiq = liquidacionDocs[0].title;
+    buttons.push({ id: 'show_liquidacion', title: `💰 Liquidación: ${latestLiq}` });
+  }
+  if (otroDocs.length > 0) {
+    buttons.push({ id: 'show_otro', title: `📁 Otros documentos (${otroDocs.length})` });
+  }
+
+  buttons.push({ id: BTN_EXISTING_REQUEST_DOC, title: '📋 Solicitar otro' });
+  buttons.push({ id: BTN_EXISTING_HUMAN, title: '📞 Hablar con asesor' });
+
+  const docCount = docs.length;
   await sendWhatsAppInteractiveButtons(
     phoneNumber,
-    '¿Qué tipo de documento necesitas?',
-    [
-      { id: BTN_DOC_CAT_TAX, title: '🧾 Impuestos' },
-      { id: BTN_DOC_CAT_ACCOUNTING, title: '📊 Balance' },
-      { id: BTN_DOC_CAT_PAYROLL_CONTRACTS, title: '📄 Contratos / Nómina' },
-    ]
+    `📄 Tienes ${docCount} documento${docCount > 1 ? 's' : ''} disponibles. ¿Cuál ver?`,
+    buttons
   );
 }
 
-async function sendTaxDocMenu(phoneNumber: string): Promise<void> {
+async function sendTaxDocMenu(phoneNumber: string, contactId?: string, companyId?: string | null): Promise<void> {
+  if (!contactId) {
+    await sendWhatsAppInteractiveButtons(
+      phoneNumber,
+      'Selecciona el documento de impuestos:',
+      [
+        { id: BTN_DOC_IVA, title: 'IVA (mes)' },
+        { id: BTN_DOC_RENTA, title: 'Renta (año)' },
+        { id: BTN_EXISTING_HUMAN, title: '📞 Asesor' },
+      ]
+    );
+    return;
+  }
+
+  // Obtener IVAs del cliente
+  const { data: ivaDocs } = await getSupabaseAdmin()
+    .from('client_documents')
+    .select('id, title, file_url')
+    .eq('contact_id', contactId)
+    .eq('company_id', companyId || null)
+    .ilike('title', '%iva%')
+    .order('created_at', { ascending: false })
+    .limit(6);
+
+  if (!ivaDocs || ivaDocs.length === 0) {
+    await sendWhatsAppMessage(
+      phoneNumber,
+      '🧾 No tengo IVAs declarados cargados aún. Estamos cargando tu información. ¿Prefieres solicitar uno o hablar con un asesor?'
+    );
+    return;
+  }
+
+  // Mostrar los IVAs disponibles como botones
+  const buttons: { id: string; title: string }[] = ivaDocs.map(doc => ({
+    id: `iva_${doc.id}`,
+    title: doc.title
+  }));
+
+  buttons.push({ id: BTN_EXISTING_REQUEST_DOC, title: '📋 Solicitar IVA' });
+  buttons.push({ id: BTN_EXISTING_HUMAN, title: '📞 Hablar con asesor' });
+
   await sendWhatsAppInteractiveButtons(
     phoneNumber,
-    'Selecciona el documento de impuestos:',
-    [
-      { id: BTN_DOC_IVA, title: 'IVA (mes)' },
-      { id: BTN_DOC_RENTA, title: 'Renta (año)' },
-      { id: BTN_EXISTING_HUMAN, title: '📞 Asesor' },
-    ]
+    `🧾 Tienes ${ivaDocs.length} IVAs disponibles. ¿Cuál quieres ver?`,
+    buttons
   );
 }
 
@@ -306,29 +406,30 @@ async function createAndSendServiceRequest(
 async function sendWelcomeMenu(phoneNumber: string, contact: { id?: string; name?: string; segment?: string }): Promise<void> {
   if (isKnownClient(contact)) {
     const name = contact.name?.trim() || 'cliente';
-    const docs = await getLatestClientDocuments(contact.id || '', 1).catch(() => []);
+    const docs = await getLatestClientDocuments(contact.id || '', 3).catch(() => []);
     const hasDocs = docs.length > 0;
+
+    // Mensaje de bienvenida con opciones en un solo interactive
+    const greetingText = hasDocs
+      ? `¡Hola ${name}! 👋 Tengo tus documentos listos. ¿Qué necesitas?`
+      : `¡Hola ${name}! 👋 No tengo documentos cargados aún. ¿Qué necesitas?`;
 
     const buttons = [
       ...(hasDocs
-        ? [{ id: BTN_EXISTING_DOCS, title: '📄 Mis documentos' as const }]
-        : [{ id: BTN_EXISTING_REQUEST_DOC, title: '📎 Solicitar documento' as const }]),
-      { id: BTN_EXISTING_TAX, title: '🧾 Mis impuestos' },
-      { id: BTN_CHECK_REQUEST_STATUS, title: '🔎 Estado solicitud' },
+        ? [{ id: BTN_EXISTING_DOCS, title: '📄 Ver mis documentos' as const }]
+        : [{ id: BTN_EXISTING_REQUEST_DOC, title: '📋 Solicitar documento' as const }]),
+      { id: BTN_EXISTING_TAX, title: '🧾 IVAs declarados' },
+      { id: BTN_CHECK_REQUEST_STATUS, title: '🔎 Mis solicitudes' },
       { id: BTN_EXISTING_HUMAN, title: '📞 Hablar con asesor' },
     ];
 
-    await sendWhatsAppInteractiveButtons(
-      phoneNumber,
-      `Hola ${name}. ¿Qué necesitas hoy?`,
-      buttons
-    );
+    await sendWhatsAppInteractiveButtons(phoneNumber, greetingText, buttons);
     return;
   }
 
   await sendWhatsAppInteractiveButtons(
     phoneNumber,
-    'Hola. Bienvenido a MTZ Consultores Tributarios. ¿Cómo te gustaría iniciar?',
+    '¡Hola! 👋 Bienvenido a MTZ Consultores. ¿En qué podemos ayudarte?',
     [
       { id: BTN_NEW_QUOTE, title: '💼 Quiero cotizar' },
       { id: BTN_NEW_INFO, title: '📝 Más información' },
@@ -533,21 +634,14 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
       }
     }
 
-    // 4b. Para clientes con segment: saludo personalizado + menú
+    // 4b. Para clientes con segment: saludo personalizado + menú (en un solo mensaje)
     if (text && isGreeting(text) && contact.segment === 'cliente') {
-      const name = contact.name?.trim() || 'cliente';
-      const greetingMsg = `¡Hola ${name}! 👋 Bienvenido de vuelta a MTZ Consultores. ¿En qué puedo ayudarte hoy?`;
-      await saveMessage(conversationId, 'assistant', greetingMsg);
-      await sendWhatsAppMessage(phoneNumber, greetingMsg);
       await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id, segment: 'cliente' });
       return;
     }
 
     // 4c. Para prospectos con segment: saludo + menú
     if (text && isGreeting(text) && contact.segment === 'prospect') {
-      const greetingMsg = '¡Hola! 👋 Bienvenido a MTZ Consultores Tributarios. ¿En qué podemos ayudarte hoy?';
-      await saveMessage(conversationId, 'assistant', greetingMsg);
-      await sendWhatsAppMessage(phoneNumber, greetingMsg);
       await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id, segment: 'prospect' });
       return;
     }
@@ -557,12 +651,12 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
 
     // 5. Acciones para clientes existentes
     if (interactive === BTN_EXISTING_DOCS) {
-      await sendDocumentsCategoryMenu(phoneNumber);
+      await sendDocumentsCategoryMenu(phoneNumber, contact.id, activeCompanyId);
       return;
     }
 
     if (interactive === BTN_EXISTING_REQUEST_DOC) {
-      const msg = '¿Qué documento necesitas? Descríbelo brevemente y si quieres indica período o tipo.';
+      const msg = '¿Qué documento necesitas? Describe el tipo y período que buscas.';
       await saveMessage(conversationId, 'assistant', msg);
       await sendWhatsAppMessage(phoneNumber, msg);
       return;
@@ -584,7 +678,7 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
 
     // Menús de documentos (categorías)
     if (interactive === BTN_DOC_CAT_TAX) {
-      await sendTaxDocMenu(phoneNumber);
+      await sendTaxDocMenu(phoneNumber, contact.id, activeCompanyId);
       return;
     }
     if (interactive === BTN_DOC_CAT_ACCOUNTING) {
@@ -626,9 +720,7 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
     }
 
     if (interactive === BTN_EXISTING_TAX) {
-      const msg = 'Perfecto. ¿De qué período necesitas información (mes/año) y sobre qué impuesto?';
-      await saveMessage(conversationId, 'assistant', msg);
-      await sendWhatsAppMessage(phoneNumber, msg);
+      await sendTaxDocMenu(phoneNumber, contact.id, activeCompanyId);
       return;
     }
 
