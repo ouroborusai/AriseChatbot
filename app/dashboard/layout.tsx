@@ -71,12 +71,12 @@ export default function DashboardLayout({
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="flex h-full w-full">
-        {/* Sidebar - Desktop & Mobile */}
-        <aside
-          className={`fixed bottom-0 left-0 top-0 z-50 bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl transition-all duration-300 md:relative md:z-auto ${
-            collapsed ? 'w-20' : 'w-72'
-          }`}
-        >
+        {/* Sidebar - Desktop only */}
+      <aside
+        className={`transition-all duration-300 bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl ${
+          collapsed ? 'w-20' : 'w-72'
+        }`}
+      >
           <div className="flex h-full flex-col justify-between overflow-hidden px-4 py-5">
             <div className="space-y-6 overflow-y-auto pr-1">
               {/* Logo / Brand */}
@@ -150,8 +150,8 @@ export default function DashboardLayout({
         </aside>
 
         {/* Contenido Principal */}
-        <main className="flex-1 overflow-auto w-full">
-          <div className="page-container p-6 lg:p-8">
+        <main className="flex-1 overflow-auto">
+          <div className="page-container p-8">
             {children}
           </div>
         </main>
@@ -159,4 +159,3 @@ export default function DashboardLayout({
     </div>
   );
 }
-
