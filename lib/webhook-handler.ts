@@ -343,6 +343,91 @@ async function sendDocumentIfAvailable(
   return true;
 }
 
+// Enviar documento específico por ID
+async function sendDocumentById(phoneNumber: string, conversationId: string, docId: string): Promise<void> {
+  const { data: doc, error } = await getSupabaseAdmin()
+    .from('client_documents')
+    .select('*')
+    .eq('id', docId)
+    .maybeSingle();
+
+  if (error || !doc) {
+    const msg = 'No encontré ese documento. ¿Prefieres solicitarlo o hablar con un asesor?';
+    await saveMessage(conversationId, 'assistant', msg);
+    await sendWhatsAppMessage(phoneNumber, msg);
+    return;
+  }
+
+  let url: string | null = null;
+  if (doc.storage_bucket && doc.storage_path) {
+    const { data, error: urlError } = await getSupabaseAdmin()
+      .storage
+      .from(doc.storage_bucket)
+      .createSignedUrl(doc.storage_path, 60 * 10);
+    if (urlError || !data?.signedUrl) {
+      const msg = 'Encontré tu documento, pero falló el enlace. Un asesor te contactará.';
+      await saveMessage(conversationId, 'assistant', msg);
+      await sendWhatsAppMessage(phoneNumber, msg);
+      return;
+    }
+    url = data.signedUrl;
+  } else if (doc.file_url) {
+    url = doc.file_url;
+  }
+
+  if (!url) {
+    const msg = `Encontré "${doc.title}" pero no tiene archivo disponible.`;
+    await saveMessage(conversationId, 'assistant', msg);
+    await sendWhatsAppMessage(phoneNumber, msg);
+    return;
+  }
+
+  await sendWhatsAppDocument(
+    phoneNumber,
+    url,
+    doc.file_name || `${doc.title}.pdf`,
+    `Aquí tienes: ${doc.title}`
+  );
+  await saveMessage(conversationId, 'assistant', `Documento enviado: ${doc.title}`);
+}
+
+// Mostrar más documentos de un tipo específico
+async function sendDocumentsByType(phoneNumber: string, contactId: string, companyId: string | null, type: string): Promise<void> {
+  let titleFilter = '%';
+  if (type === 'iva') titleFilter = '%iva%';
+  else if (type === 'renta') titleFilter = '%renta%';
+  else if (type === 'balance') titleFilter = '%balance%';
+  else if (type === 'liquidacion') titleFilter = '%liquidacion%';
+  else if (type === 'otro') titleFilter = '%';
+
+  const { data: docs } = await getSupabaseAdmin()
+    .from('client_documents')
+    .select('id, title')
+    .eq('contact_id', contactId)
+    .eq('company_id', companyId || null)
+    .ilike('title', titleFilter)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (!docs || docs.length === 0) {
+    await sendWhatsAppMessage(phoneNumber, 'No encontré más documentos de ese tipo.');
+    return;
+  }
+
+  const buttons = docs.map(doc => ({
+    id: `${type}_${doc.id}`,
+    title: doc.title
+  }));
+
+  buttons.push({ id: BTN_EXISTING_HUMAN, title: '📞 Hablar con asesor' });
+
+  await sendWhatsAppInteractiveButtons(
+    phoneNumber,
+    `Tienes ${docs.length} documentos. ¿Cuál quieres?`,
+    buttons
+  );
+}
+
 async function sendCompanySelectionMenu(
   phoneNumber: string,
   companies: Array<{ id: string; legal_name: string }>
@@ -721,6 +806,38 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
 
     if (interactive === BTN_EXISTING_TAX) {
       await sendTaxDocMenu(phoneNumber, contact.id, activeCompanyId);
+      return;
+    }
+
+    // 5b. Botones de documentos específicos (IVA, Renta, etc.)
+    if (interactive && interactive.startsWith('iva_')) {
+      const docId = interactive.replace('iva_', '');
+      await sendDocumentById(phoneNumber, conversationId, docId);
+      return;
+    }
+
+    if (interactive && interactive.startsWith('renta_')) {
+      const docId = interactive.replace('renta_', '');
+      await sendDocumentById(phoneNumber, conversationId, docId);
+      return;
+    }
+
+    if (interactive && interactive.startsWith('balance_')) {
+      const docId = interactive.replace('balance_', '');
+      await sendDocumentById(phoneNumber, conversationId, docId);
+      return;
+    }
+
+    if (interactive && interactive.startsWith('liquidacion_')) {
+      const docId = interactive.replace('liquidacion_', '');
+      await sendDocumentById(phoneNumber, conversationId, docId);
+      return;
+    }
+
+    if (interactive && interactive.startsWith('show_')) {
+      // Mostrar más documentos de un tipo
+      const type = interactive.replace('show_', '');
+      await sendDocumentsByType(phoneNumber, contact.id, activeCompanyId, type);
       return;
     }
 
