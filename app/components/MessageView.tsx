@@ -42,6 +42,9 @@ export default function MessageView({ selectedConversation, selectedPhone }: Mes
     scrollToBottom();
   }, [selectedConversation]);
 
+  // Nota: La suscripción realtime está en page.tsx, aquí solo scroll al fondo
+  // cuando llegue un nuevo mensaje se propagará por el estado global
+
   useEffect(() => {
     const fetchChatbotStatus = async () => {
       if (!selectedPhone) return;

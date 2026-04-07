@@ -50,12 +50,20 @@ export default function DashboardPage() {
 
     fetchMessages();
 
+    // Suscribirse a nuevos mensajes en tiempo real
     const channel = supabase
-      .channel('messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+      .channel('realtime-messages')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'messages' 
+      }, (payload) => {
+        console.log('📨 Nuevo mensaje recibido:', payload.new);
         setMessages((prev) => [...prev, payload.new as Message]);
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Estado de suscripción:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
