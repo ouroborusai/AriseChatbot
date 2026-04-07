@@ -28,6 +28,14 @@ type InboundMessage = {
   };
 };
 
+const WELCOME_KEYWORDS = ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'buenas', 'saludos'];
+
+const WELCOME_BUTTONS = [
+  { id: 'btn_orders', title: '📋 Ver pedidos' },
+  { id: 'btn_support', title: '🆘 Soporte técnico' },
+  { id: 'btn_promotions', title: '💰 Promociones' },
+];
+
 const PREDEFINED_RESPONSES: Array<{ keywords: string[]; response: string }> = [
   {
     keywords: ['horario', 'horarios', 'horas', 'abre', 'abierto'],
@@ -78,6 +86,11 @@ function getPredefinedResponse(message: string): string | null {
 function isHelpRequest(message: string): boolean {
   const normalized = normalizeMessage(message);
   return HELP_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+function isGreeting(message: string): boolean {
+  const normalized = normalizeMessage(message);
+  return WELCOME_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
 function getButtonReplyResponse(buttonId?: string): string | null {
@@ -150,6 +163,22 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
         console.log('✅ WhatsApp enviado (respuesta por botón)');
       } catch (whatsappError) {
         console.error('❌ Error WhatsApp botón:', whatsappError instanceof Error ? whatsappError.message : String(whatsappError));
+      }
+      return;
+    }
+
+    if (text && isGreeting(text)) {
+      const welcomeMessage = 'Hola 👋 Bienvenido. Elige una opción rápida para comenzar:';
+      console.log('✨ Saludo detectado, enviando bienvenida con botones');
+      await saveMessage(conversationId, 'assistant', welcomeMessage);
+      console.log('✅ Mensaje asistente de bienvenida guardado');
+      try {
+        await sendWhatsAppInteractiveButtons(phoneNumber, welcomeMessage, WELCOME_BUTTONS);
+        console.log('✅ WhatsApp enviado (bienvenida con botones)');
+      } catch (whatsappError) {
+        console.error('❌ Error WhatsApp bienvenida con botones:', whatsappError instanceof Error ? whatsappError.message : String(whatsappError));
+        const fallbackMessage = 'Hola 👋 Gracias por escribirnos. ¿En qué podemos ayudarte hoy?';
+        await sendWhatsAppMessage(phoneNumber, fallbackMessage);
       }
       return;
     }
