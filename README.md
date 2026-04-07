@@ -37,6 +37,18 @@ npm run dev
 - [SUPABASE_SQL_GUIDE.md](SUPABASE_SQL_GUIDE.md) - Guía de SQL para Supabase
 - [AGENT_PROMPT.md](AGENT_PROMPT.md) - Prompt del sistema de IA
 
+## 📱 Dashboard Admin
+
+El dashboard incluye las siguientes secciones:
+
+| Ruta | Descripción |
+|------|-------------|
+| `/dashboard` | Chat en tiempo real con clientes |
+| `/dashboard/clients` | Gestión de clientes y envío de mensajes |
+| `/dashboard/templates` | Plantillas de mensajes rápidos |
+| `/dashboard/metrics` | Métricas y estadísticas |
+| `/dashboard/settings` | Configuración del sistema |
+
 ## 🗄️ Base de datos
 
 ### Tablas principales

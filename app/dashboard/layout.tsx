@@ -7,7 +7,10 @@ import Link from 'next/link';
 
 const menuItems = [
   { href: '/dashboard', label: 'Chats', icon: '💬' },
+  { href: '/dashboard/clients', label: 'Clientes', icon: '👥' },
+  { href: '/dashboard/templates', label: 'Plantillas', icon: '📝' },
   { href: '/dashboard/metrics', label: 'Métricas', icon: '📊' },
+  { href: '/dashboard/settings', label: 'Config', icon: '⚙️' },
 ];
 
 export default function DashboardLayout({

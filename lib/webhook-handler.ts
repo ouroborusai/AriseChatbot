@@ -59,6 +59,39 @@ const PREDEFINED_RESPONSES: Array<{ keywords: string[]; response: string }> = [
     keywords: ['promoción', 'promocion', 'oferta', 'descuento'],
     response: 'Tenemos promociones especiales esta semana. ¿Deseas ver las ofertas disponibles?',
   },
+  // Respuestas contables específicas
+  {
+    keywords: ['factura', 'facturar', 'boleta', 'ticket'],
+    response: 'Para emitir una factura necesito: RUT del cliente, giro o actividad, y monto. ¿Me puedes proporcionar esos datos?',
+  },
+  {
+    keywords: ['iva', 'impuesto', 'declarar', 'f29'],
+    response: 'El IVA se declara mensualmente en el Formulario 29. ¿Necesitas ayuda con la declaración o cálculo del IVA?',
+  },
+  {
+    keywords: ['renta', 'renta anual', 'f22', 'operación renta'],
+    response: 'La Operación Renta se declara en abril. ¿Necesitas ayuda con tu declaración de renta anual?',
+  },
+  {
+    keywords: ['sueldo', 'liquidación', 'nomina', 'imprevistos'],
+    response: 'Para calcular liquidaciones necesito: sueldo base, horas extras, y cargas familiares. ¿Te ayudo con el cálculo?',
+  },
+  {
+    keywords: ['rut', 'rol unico', 'tributario', 'sii'],
+    response: 'El RUT es el identificador tributario. ¿Necesitas obtenerlo, actualizarlo o ver tu situación en el SII?',
+  },
+  {
+    keywords: ['balance', 'balance general', 'estado financiero'],
+    response: 'Los estados financieros muestran la situación de tu empresa. ¿Necesitas preparar balances o analizarlos?',
+  },
+  {
+    keywords: ['pago', 'pagar', 'vencimiento', 'mora', 'multa'],
+    response: 'Los pagos tributarios tienen fechas específicas. ¿Qué pago necesitas regularizar? Te puedo ayudar con el cálculo.',
+  },
+  {
+    keywords: ['contrato', 'honorarios', 'boleta honorarios'],
+    response: 'Para contratos a honorarios hay retenciones obligatorias. ¿Necesitas emitir boleta o calcular retenciones?',
+  },
 ];
 
 const HELP_KEYWORDS = ['ayuda', 'soporte', 'problema', 'reclamo', 'atención', 'humano'];
