@@ -72,6 +72,7 @@ export default function ClientsPage() {
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState('');
+  const [isEditingSegment, setIsEditingSegment] = useState(false);
 
   const [uploadForm, setUploadForm] = useState({
     docType: '',
@@ -305,6 +306,24 @@ export default function ClientsPage() {
     }
   };
 
+  const handleUpdateSegment = async (newSegment: string) => {
+    if (!selectedContact) return;
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .update({ segment: newSegment })
+        .eq('id', selectedContact.id);
+      
+      if (error) throw error;
+      
+      setIsEditingSegment(false);
+      await fetchContacts();
+      setSelectedContact({ ...selectedContact, segment: newSegment });
+    } catch (e) {
+      console.error('Error updating segment:', e);
+    }
+  };
+
   const handleUploadDocument = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedContact || !uploadFile || !uploadForm.docType) return;
@@ -519,14 +538,48 @@ export default function ClientsPage() {
                       {selectedContact.name || 'Sin nombre'}
                     </p>
                     <p className="text-sm text-slate-600">{selectedContact.phone_number}</p>
-                    {selectedContact.segment && (
-                      <span className={`inline-block mt-2 text-xs px-2 py-1 rounded-full ${
-                        selectedContact.segment === 'cliente' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {selectedContact.segment === 'cliente' ? 'Cliente' : 'Prospecto'}
-                      </span>
+                    
+                    {/* Segmento editable */}
+                    {isEditingSegment ? (
+                      <div className="mt-3 flex gap-2">
+                        <select
+                          value={selectedContact.segment || ''}
+                          onChange={(e) => handleUpdateSegment(e.target.value)}
+                          className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                        >
+                          <option value="">Sin clasificar</option>
+                          <option value="cliente">Cliente</option>
+                          <option value="prospect">Prospecto</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingSegment(false)}
+                          className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className={`inline-block text-xs px-2 py-1 rounded-full ${
+                          selectedContact.segment === 'cliente' 
+                            ? 'bg-green-100 text-green-700' 
+                            : selectedContact.segment === 'prospect'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {selectedContact.segment === 'cliente' ? '✅ Cliente' : 
+                           selectedContact.segment === 'prospect' ? '🆕 Prospecto' : 
+                           '❓ Sin clasificar'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingSegment(true)}
+                          className="text-xs text-slate-500 hover:text-slate-700"
+                        >
+                          Cambiar
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}

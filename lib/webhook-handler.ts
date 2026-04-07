@@ -439,33 +439,30 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
       return;
     }
 
-    // 2.5 CLASIFICACIÓN: Si NO tiene segment, preguntar si es cliente (SIEMPRE)
-    if (!contact.segment) {
-      console.log('🆕 Contacto sin clasificar - Enviando menú de clasificación...');
-      await sendClassificationMenu(phoneNumber);
-      return;
-    }
-
-    // Procesar respuesta de clasificación (botones)
+    // 2.5 PROCESAR BOTONES DE CLASIFICACIÓN PRIMERO (antes de verificar segment)
+    // Esto evita el loop de preguntar constantemente
     if (interactive === BTN_IS_CLIENT_YES) {
       await updateContactSegment(contact.id, 'cliente');
-      const msg = '✅ Perfecto. Acceso a tu cuenta de cliente activado.';
+      const name = contact.name ? ` ${contact.name}` : '';
+      const msg = `¡Hola${name}! 👋 Bienvenido de vuelta a MTZ Consultores. ¿En qué puedo ayudarte hoy?`;
       await saveMessage(conversationId, 'assistant', msg);
       await sendWhatsAppMessage(phoneNumber, msg);
+      // Enviar menú de cliente
       await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id, segment: 'cliente' });
       return;
     }
 
     if (interactive === BTN_IS_CLIENT_NO) {
       await updateContactSegment(contact.id, 'prospect');
-      const msg = '👋 Bienvenido a MTZ. Te mostraremos cómo podemos ayudarte.';
+      const msg = '¡Hola! 👋 Bienvenido a MTZ Consultores Tributarios. ¿En qué podemos ayudarte hoy?';
       await saveMessage(conversationId, 'assistant', msg);
       await sendWhatsAppMessage(phoneNumber, msg);
+      // Enviar menú de prospecto
       await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id, segment: 'prospect' });
       return;
     }
 
-    // Selección de empresa (botones)
+    // Procesar botones de empresa
     if (interactive && interactive.startsWith(COMPANY_BTN_PREFIX)) {
       const companyId = interactive.slice(COMPANY_BTN_PREFIX.length);
       await setActiveCompanyForConversation(conversationId, companyId);
@@ -536,19 +533,27 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
       }
     }
 
-    // 4. Saludo inicial / primera guía para prospectos sin segment
-    // Si ya tiene segment, dejamos que Gemini maneje saludos para conversación más natural
-    if (text && isGreeting(text) && !contact.segment) {
-      await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id });
-      console.log('✅ Menú de bienvenida enviado (prospecto)');
+    // 4b. Para clientes con segment: saludo personalizado + menú
+    if (text && isGreeting(text) && contact.segment === 'cliente') {
+      const name = contact.name?.trim() || 'cliente';
+      const greetingMsg = `¡Hola ${name}! 👋 Bienvenido de vuelta a MTZ Consultores. ¿En qué puedo ayudarte hoy?`;
+      await saveMessage(conversationId, 'assistant', greetingMsg);
+      await sendWhatsAppMessage(phoneNumber, greetingMsg);
+      await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id, segment: 'cliente' });
       return;
     }
 
-    // 4b. Si es cliente con segment, saludos van a Gemini (con opciones en la respuesta)
-    if (text && isGreeting(text) && contact.segment === 'cliente') {
-      console.log('💬 Cliente saludando - Gemini maneja conversación');
-      // No retornamos aquí, dejamos que fluya a Gemini
+    // 4c. Para prospectos con segment: saludo + menú
+    if (text && isGreeting(text) && contact.segment === 'prospect') {
+      const greetingMsg = '¡Hola! 👋 Bienvenido a MTZ Consultores Tributarios. ¿En qué podemos ayudarte hoy?';
+      await saveMessage(conversationId, 'assistant', greetingMsg);
+      await sendWhatsAppMessage(phoneNumber, greetingMsg);
+      await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id, segment: 'prospect' });
+      return;
     }
+
+    // 4d. Si no tiene segment pero envía texto (sin clasificación) - derivar a Gemini que pregunte
+    // (El asesor lo clasificará manualmente en el panel)
 
     // 5. Acciones para clientes existentes
     if (interactive === BTN_EXISTING_DOCS) {
