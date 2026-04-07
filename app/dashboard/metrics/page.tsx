@@ -43,61 +43,62 @@ export default function MetricsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-whatsapp-panel text-slate-700">
-        Cargando métricas...
+      <div className="flex h-full items-center justify-center text-slate-700">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-whatsapp-green border-r-transparent"></div>
+          <p className="mt-4 text-sm font-medium">Cargando métricas...</p>
+        </div>
       </div>
     );
   }
 
   if (!metrics) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-whatsapp-panel text-red-500">
-        Error al cargar métricas
+      <div className="flex h-full items-center justify-center text-red-500">
+        <p className="text-lg font-semibold">Error al cargar métricas</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-whatsapp-panel text-slate-900 p-6">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-whatsapp-border font-semibold">WhatsApp</p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Dashboard de Métricas</h1>
-              <p className="text-sm text-slate-500">Analiza el rendimiento de los chats y la respuesta del agente.</p>
-            </div>
-            <Link
-              href="/dashboard"
-              className="inline-flex rounded-3xl bg-whatsapp-green px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover"
-            >
-              Volver al chat
-            </Link>
+    <div className="space-y-6">
+      <div className="card-base">
+        <div className="card-header">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] text-whatsapp-border font-semibold">WhatsApp</p>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900">Dashboard de Métricas</h1>
+            <p className="text-sm text-slate-500">Analiza el rendimiento de los chats y la respuesta del agente.</p>
           </div>
+          <Link
+            href="/dashboard"
+            className="inline-flex rounded-3xl bg-whatsapp-green px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover"
+          >
+            Volver al chat
+          </Link>
         </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card title="Total conversaciones" value={metrics.total_conversations} subtitle="Todas" />
-          <Card title="Conversaciones hoy" value={metrics.conversations_today} subtitle="Últimas 24h" />
-          <Card title="Esta semana" value={metrics.conversations_this_week} subtitle="Últimos 7 días" />
-          <Card title="Abiertas" value={metrics.open_conversations} subtitle="Pendientes" color="green" />
-          <Card title="Cerradas" value={metrics.closed_conversations} subtitle="Resueltas" color="default" />
-          <Card title="Tasa de resolución" value={`${metrics.resolution_rate}%`} subtitle="Objetivo" color="green" />
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card
-            title="Tiempo respuesta promedio"
-            value={`${metrics.average_response_time_minutes}m`}
-            subtitle={`${metrics.average_response_time_ms} ms`}
-          />
-          <Card title="Total mensajes" value={metrics.total_messages} subtitle={`${metrics.messages_today} hoy`} />
-        </div>
-
-        <p className="text-sm text-slate-500 text-center">
-          Última actualización: {new Date(metrics.timestamp).toLocaleString('es')}
-        </p>
       </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card title="Total conversaciones" value={metrics.total_conversations} subtitle="Todas" />
+        <Card title="Conversaciones hoy" value={metrics.conversations_today} subtitle="Últimas 24h" />
+        <Card title="Esta semana" value={metrics.conversations_this_week} subtitle="Últimos 7 días" />
+        <Card title="Abiertas" value={metrics.open_conversations} subtitle="Pendientes" color="green" />
+        <Card title="Cerradas" value={metrics.closed_conversations} subtitle="Resueltas" color="default" />
+        <Card title="Tasa de resolución" value={`${metrics.resolution_rate}%`} subtitle="Objetivo" color="green" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card
+          title="Tiempo respuesta promedio"
+          value={`${metrics.average_response_time_minutes}m`}
+          subtitle={`${metrics.average_response_time_ms} ms`}
+        />
+        <Card title="Total mensajes" value={metrics.total_messages} subtitle={`${metrics.messages_today} hoy`} />
+      </div>
+
+      <p className="text-sm text-slate-500 text-center">
+        Última actualización: {new Date(metrics.timestamp).toLocaleString('es')}
+      </p>
     </div>
   );
 }
@@ -124,7 +125,7 @@ function Card({
   }[color || 'default'];
 
   return (
-    <div className={`rounded-[32px] border bg-white/95 p-6 shadow-sm ${borderColor}`}>
+    <div className={`card-base ${borderColor}`}>
       <p className="text-sm uppercase tracking-[0.2em] text-slate-500">{title}</p>
       <p className={`mt-4 text-4xl font-bold ${valueColor}`}>{value}</p>
       {subtitle && <p className="mt-2 text-sm text-slate-500">{subtitle}</p>}

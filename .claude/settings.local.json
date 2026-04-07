@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /b /s C:\\\\Users\\\\s_pk_\\\\Desktop\\\\AgenteMTZ\\\\*.ts C:\\\\Users\\\\s_pk_\\\\Desktop\\\\AgenteMTZ\\\\*.tsx C:\\\\Users\\\\s_pk_\\\\Desktop\\\\AgenteMTZ\\\\*.md C:\\\\Users\\\\s_pk_\\\\Desktop\\\\AgenteMTZ\\\\*.sql C:\\\\Users\\\\s_pk_\\\\Desktop\\\\AgenteMTZ\\\\*.json)",
+      "Bash(findstr /v \"node_modules\")",
+      "Bash(powershell:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

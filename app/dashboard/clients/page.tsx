@@ -93,7 +93,7 @@ export default function ClientsPage() {
         setSendResult({ error: data.error || 'Error al enviar' });
       }
     } catch (err) {
-      setSendResult({ error: 'Error de conexión' });
+      setSendResult({ error: 'Error de conexion' });
     } finally {
       setSending(false);
     }
@@ -101,173 +101,174 @@ export default function ClientsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-whatsapp-panel text-slate-700">
-        Cargando clientes...
+      <div className="flex h-full items-center justify-center text-slate-700">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-whatsapp-green border-r-transparent"></div>
+          <p className="mt-4 text-sm font-medium">Cargando clientes...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-whatsapp-panel text-slate-900 p-6">
-      <div className="mx-auto max-w-6xl space-y-6">
-        {/* Header */}
-        <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/60">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-whatsapp-border font-semibold">
-                Gestión
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] text-whatsapp-border font-semibold">
+              Gestion
+            </p>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900">Clientes</h1>
+            <p className="text-sm text-slate-500">
+              Envía mensajes o documentos a tus clientes
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Lista de contactos */}
+        <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">
+            Contactos ({contacts.length})
+          </h2>
+
+          <input
+            type="text"
+            placeholder="Buscar por telefono, nombre o email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none mb-4"
+          />
+
+          <div className="space-y-2 max-h-[500px] overflow-y-auto">
+            {filteredContacts.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-8">
+                No se encontraron contactos
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Clientes</h1>
-              <p className="text-sm text-slate-500">
-                Envía mensajes o documentos a tus clientes
-              </p>
-            </div>
+            ) : (
+              filteredContacts.map((contact) => (
+                <button
+                  key={contact.id}
+                  onClick={() => setSelectedContact(contact)}
+                  className={`w-full text-left p-4 rounded-2xl border transition ${
+                    selectedContact?.id === contact.id
+                      ? 'border-whatsapp-green bg-green-50'
+                      : 'border-slate-200 hover:border-whatsapp-green hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">
+                        {contact.name || `Cliente ${contact.phone_number.slice(-4)}`}
+                      </p>
+                      <p className="text-sm text-slate-500">{contact.phone_number}</p>
+                      {contact.email && (
+                        <p className="text-xs text-slate-400 truncate">{contact.email}</p>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-400 shrink-0">
+                      {new Date(contact.last_message_at).toLocaleDateString('es')}
+                    </span>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Lista de contactos */}
-          <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              Contactos ({contacts.length})
-            </h2>
+        {/* Formulario de envio */}
+        <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">
+            {selectedContact ? 'Enviar mensaje' : 'Selecciona un cliente'}
+          </h2>
 
-            <input
-              type="text"
-              placeholder="Buscar por teléfono, nombre o email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none mb-4"
-            />
-
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
-              {filteredContacts.length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-8">
-                  No se encontraron contactos
+          {selectedContact ? (
+            <form onSubmit={handleSendMessage} className="space-y-4">
+              <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200">
+                <p className="text-sm text-slate-500">Enviando a:</p>
+                <p className="font-medium text-slate-900">
+                  {selectedContact.name || `Cliente ${selectedContact.phone_number.slice(-4)}`}
                 </p>
-              ) : (
-                filteredContacts.map((contact) => (
-                  <button
-                    key={contact.id}
-                    onClick={() => setSelectedContact(contact)}
-                    className={`w-full text-left p-4 rounded-2xl border transition ${
-                      selectedContact?.id === contact.id
-                        ? 'border-whatsapp-green bg-green-50'
-                        : 'border-slate-200 hover:border-whatsapp-green hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-slate-900">
-                          {contact.name || `Cliente ${contact.phone_number.slice(-4)}`}
-                        </p>
-                        <p className="text-sm text-slate-500">{contact.phone_number}</p>
-                        {contact.email && (
-                          <p className="text-xs text-slate-400">{contact.email}</p>
-                        )}
-                      </div>
-                      <span className="text-xs text-slate-400">
-                        {new Date(contact.last_message_at).toLocaleDateString('es')}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Formulario de envío */}
-          <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">
-              {selectedContact ? 'Enviar mensaje' : 'Selecciona un cliente'}
-            </h2>
-
-            {selectedContact ? (
-              <form onSubmit={handleSendMessage} className="space-y-4">
-                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200">
-                  <p className="text-sm text-slate-500">Enviando a:</p>
-                  <p className="font-medium text-slate-900">
-                    {selectedContact.name || `Cliente ${selectedContact.phone_number.slice(-4)}`}
-                  </p>
-                  <p className="text-sm text-slate-600">{selectedContact.phone_number}</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Mensaje
-                  </label>
-                  <textarea
-                    value={messageForm.message}
-                    onChange={(e) => setMessageForm({ ...messageForm, message: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none resize-none"
-                    rows={4}
-                    placeholder="Escribe tu mensaje aquí..."
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    URL del documento (opcional)
-                  </label>
-                  <input
-                    type="url"
-                    value={messageForm.documentUrl}
-                    onChange={(e) => setMessageForm({ ...messageForm, documentUrl: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none"
-                    placeholder="https://ejemplo.com/documento.pdf"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Nombre del archivo (opcional)
-                  </label>
-                  <input
-                    type="text"
-                    value={messageForm.documentName}
-                    onChange={(e) => setMessageForm({ ...messageForm, documentName: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none"
-                    placeholder="documento.pdf"
-                  />
-                </div>
-
-                {sendResult && (
-                  <div
-                    className={`rounded-2xl p-4 text-sm ${
-                      sendResult.success
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-red-50 text-red-700 border border-red-200'
-                    }`}
-                  >
-                    {sendResult.success ? '✓ Mensaje enviado' : `✗ ${sendResult.error}`}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={sending || !messageForm.message}
-                  className="w-full rounded-3xl bg-whatsapp-green px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover disabled:opacity-60"
-                >
-                  {sending ? 'Enviando...' : 'Enviar mensaje'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedContact(null)}
-                  className="w-full rounded-3xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                >
-                  Cancelar
-                </button>
-              </form>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-slate-500 text-sm">
-                  Selecciona un cliente de la lista para enviarle un mensaje
-                </p>
+                <p className="text-sm text-slate-600">{selectedContact.phone_number}</p>
               </div>
-            )}
-          </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Mensaje
+                </label>
+                <textarea
+                  value={messageForm.message}
+                  onChange={(e) => setMessageForm({ ...messageForm, message: e.target.value })}
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none resize-none"
+                  rows={4}
+                  placeholder="Escribe tu mensaje aqui..."
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  URL del documento (opcional)
+                </label>
+                <input
+                  type="url"
+                  value={messageForm.documentUrl}
+                  onChange={(e) => setMessageForm({ ...messageForm, documentUrl: e.target.value })}
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none"
+                  placeholder="https://ejemplo.com/documento.pdf"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Nombre del archivo (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={messageForm.documentName}
+                  onChange={(e) => setMessageForm({ ...messageForm, documentName: e.target.value })}
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none"
+                  placeholder="documento.pdf"
+                />
+              </div>
+
+              {sendResult && (
+                <div
+                  className={`rounded-2xl p-4 text-sm ${
+                    sendResult.success
+                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}
+                >
+                  {sendResult.success ? '✓ Mensaje enviado' : `✗ ${sendResult.error}`}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={sending || !messageForm.message}
+                className="w-full rounded-3xl bg-whatsapp-green px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover disabled:opacity-60"
+              >
+                {sending ? 'Enviando...' : 'Enviar mensaje'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedContact(null)}
+                className="w-full rounded-3xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+            </form>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-slate-500 text-sm">
+                Selecciona un cliente de la lista para enviarle un mensaje
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

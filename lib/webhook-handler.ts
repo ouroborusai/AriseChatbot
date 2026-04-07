@@ -1,16 +1,11 @@
 /**
- * Webhook Handler Simplificado
- * Procesa mensajes de WhatsApp de forma básica
+ * Webhook Handler - Versión Simplificada con Gemini
+ * La IA maneja las respuestas directamente, solo mantenemos saludos y detección de ayuda humana
  */
 
 import { generateAssistantReply, getSystemPromptCached } from './ai-service';
-import { sendWhatsAppInteractiveButtons, sendWhatsAppMessage } from './whatsapp-service';
-import {
-  getOrCreateContact,
-  getOrCreateConversation,
-  saveMessage,
-  getConversationHistory,
-} from './database-service';
+import { sendWhatsAppMessage } from './whatsapp-service';
+import { getOrCreateContact, getOrCreateConversation, saveMessage, getConversationHistory } from './database-service';
 
 type InboundMessage = {
   id?: string;
@@ -22,115 +17,13 @@ type InboundMessage = {
     button_reply?: { id?: string; title?: string };
     list_reply?: { id?: string; title?: string };
   };
-  button?: {
-    text?: string;
-    payload?: string;
-  };
 };
 
 const WELCOME_KEYWORDS = ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'buenas', 'saludos'];
-
-const CLIENT_BUTTONS = [
-  { id: 'btn_client_info', title: '📄 Mi estado de cuenta' },
-  { id: 'btn_client_tax', title: '🧾 Mis impuestos' },
-  { id: 'btn_client_docs', title: '📎 Enviar documento' },
-];
-
-const PROSPECT_BUTTONS = [
-  { id: 'btn_new_quote', title: '💼 Quiero cotizar' },
-  { id: 'btn_new_info', title: '📝 Más información' },
-  { id: 'btn_new_contact', title: '📞 Hablar con asesor' },
-];
-
-const PREDEFINED_RESPONSES: Array<{ keywords: string[]; response: string }> = [
-  {
-    keywords: ['horario', 'horarios', 'horas', 'abre', 'abierto'],
-    response: 'Estamos abiertos de lunes a viernes de 9AM a 6PM, y sábados de 10AM a 2PM.',
-  },
-  {
-    keywords: ['ubicación', 'donde', 'dirección', 'direccion', 'localización', 'localizacion'],
-    response: 'Nos ubicamos en Calle Principal 123. ¿Quieres que te envíe la ubicación exacta?',
-  },
-  {
-    keywords: ['precio', 'costo', 'tarifa', 'valor'],
-    response: 'Nuestros precios comienzan en $10 y varían según el servicio. ¿Qué tipo de consulta necesitas?',
-  },
-  {
-    keywords: ['promoción', 'promocion', 'oferta', 'descuento'],
-    response: 'Tenemos promociones especiales esta semana. ¿Deseas ver las ofertas disponibles?',
-  },
-  // Respuestas contables específicas
-  {
-    keywords: ['factura', 'facturar', 'boleta', 'ticket'],
-    response: 'Para emitir una factura necesito: RUT del cliente, giro o actividad, y monto. ¿Me puedes proporcionar esos datos?',
-  },
-  {
-    keywords: ['iva', 'impuesto', 'declarar', 'f29'],
-    response: 'El IVA se declara mensualmente en el Formulario 29. ¿Necesitas ayuda con la declaración o cálculo del IVA?',
-  },
-  {
-    keywords: ['renta', 'renta anual', 'f22', 'operación renta'],
-    response: 'La Operación Renta se declara en abril. ¿Necesitas ayuda con tu declaración de renta anual?',
-  },
-  {
-    keywords: ['sueldo', 'liquidación', 'nomina', 'imprevistos'],
-    response: 'Para calcular liquidaciones necesito: sueldo base, horas extras, y cargas familiares. ¿Te ayudo con el cálculo?',
-  },
-  {
-    keywords: ['rut', 'rol unico', 'tributario', 'sii'],
-    response: 'El RUT es el identificador tributario. ¿Necesitas obtenerlo, actualizarlo o ver tu situación en el SII?',
-  },
-  {
-    keywords: ['balance', 'balance general', 'estado financiero'],
-    response: 'Los estados financieros muestran la situación de tu empresa. ¿Necesitas preparar balances o analizarlos?',
-  },
-  {
-    keywords: ['pago', 'pagar', 'vencimiento', 'mora', 'multa'],
-    response: 'Los pagos tributarios tienen fechas específicas. ¿Qué pago necesitas regularizar? Te puedo ayudar con el cálculo.',
-  },
-  {
-    keywords: ['contrato', 'honorarios', 'boleta honorarios'],
-    response: 'Para contratos a honorarios hay retenciones obligatorias. ¿Necesitas emitir boleta o calcular retenciones?',
-  },
-];
-
-const HELP_KEYWORDS = ['ayuda', 'soporte', 'problema', 'reclamo', 'atención', 'humano'];
-
-const BUTTON_REPLY_RESPONSES: Record<string, string> = {
-  btn_orders: 'Para ver el estado de tu pedido, envíame el número de pedido o el nombre del producto.',
-  btn_support: 'Cuéntame brevemente tu problema y te ayudo a resolverlo, o escribe "humano" para hablar con alguien.',
-  btn_promotions: 'Estas son las promociones actuales: 20% de descuento en productos seleccionados. ¿Te interesa recibir el enlace?',
-  btn_client_info: 'Perfecto. Para revisar tu estado de cuenta, dime el periodo o año fiscal que quieres consultar.',
-  btn_client_tax: '¡Claro! ¿Necesitas ayuda con ISR, IVA, nómina o declaraciones anuales?',
-  btn_client_docs: 'Indica qué documento deseas compartir o recibir. Por ejemplo: factura, comprobante o RFC.',
-  btn_new_quote: 'Genial, te puedo preparar una cotización. ¿Cuál es tu actividad principal o giro de negocio?',
-  btn_new_info: 'Te puedo explicar nuestros servicios fiscales, contables y de nómina. ¿Qué te interesa más?',
-  btn_new_contact: 'Un asesor de MTZ te contactará pronto. Por favor envía tu nombre completo y correo electrónico.',
-};
-
-const HELP_BUTTONS = [
-  { id: 'btn_orders', title: '📋 Ver pedidos' },
-  { id: 'btn_support', title: '🆘 Soporte técnico' },
-  { id: 'btn_promotions', title: '💰 Promociones' },
-];
+const HUMAN_KEYWORDS = ['humano', 'asesor', 'urgente', 'multa', 'fiscalización', 'fiscalizacion', 'sii', 'demanda', 'reclamo'];
 
 function normalizeMessage(message: string): string {
   return message.trim().toLowerCase();
-}
-
-function getPredefinedResponse(message: string): string | null {
-  const normalized = normalizeMessage(message);
-  for (const item of PREDEFINED_RESPONSES) {
-    if (item.keywords.some((keyword) => normalized.includes(keyword))) {
-      return item.response;
-    }
-  }
-  return null;
-}
-
-function isHelpRequest(message: string): boolean {
-  const normalized = normalizeMessage(message);
-  return HELP_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
 function isGreeting(message: string): boolean {
@@ -138,37 +31,19 @@ function isGreeting(message: string): boolean {
   return WELCOME_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
-function getButtonReplyResponse(buttonId?: string): string | null {
-  if (!buttonId) return null;
-  return BUTTON_REPLY_RESPONSES[buttonId] ?? null;
+function wantsHumanAgent(message: string): boolean {
+  const normalized = normalizeMessage(message);
+  return HUMAN_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
 /**
- * Procesa un mensaje inbound de WhatsApp (versión simplificada)
+ * Procesa un mensaje inbound de WhatsApp - Gemini maneja casi todo
  */
 export async function handleInboundUserMessage(messageData: InboundMessage): Promise<void> {
-  const msgId = messageData.id?.slice(0, 20) || 'sin-id';
-  const msgType = messageData.type;
   const phoneNumber = messageData.from;
-  const text = messageData.text?.body?.trim()
-    || messageData.interactive?.button_reply?.title?.trim()
-    || messageData.interactive?.list_reply?.title?.trim()
-    || messageData.button?.text?.trim();
-  const buttonReplyId = messageData.interactive?.button_reply?.id || messageData.interactive?.list_reply?.id || messageData.button?.payload;
+  const text = messageData.text?.body?.trim();
 
-  console.log('🚀 WEBHOOK: Mensaje recibido:', {
-    msgId,
-    msgType,
-    phoneNumber,
-    textLen: text?.length,
-    buttonReplyId,
-  });
-
-  // Validaciones básicas
-  if (!['text', 'interactive', 'button', 'list'].includes(msgType || '')) {
-    console.log('❌ Ignorado: tipo de mensaje no soportado', msgType);
-    return;
-  }
+  console.log('🚀 WEBHOOK: Mensaje de', phoneNumber, '- Texto:', text?.slice(0, 50));
 
   if (!text || !phoneNumber) {
     console.log('❌ Ignorado: falta texto o teléfono');
@@ -183,115 +58,45 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
   }
 
   try {
-    // 1. Contacto
-    console.log('📞 Paso 1: Buscando/creando contacto...');
+    // 1. Contacto y conversación
     const contact = await getOrCreateContact(phoneNumber);
-    console.log('✅ Contacto OK:', contact.id);
-
-    // 2. Conversación
-    console.log('💬 Paso 2: Buscando/creando conversación...');
     const conversationId = await getOrCreateConversation(phoneNumber, contact.id);
-    console.log('✅ Conversación OK:', conversationId);
 
-    // 3. Guardar mensaje usuario
-    console.log('💾 Paso 3: Guardando mensaje usuario...');
+    // 2. Guardar mensaje del usuario
     await saveMessage(conversationId, 'user', text);
-    console.log('✅ Mensaje usuario guardado');
 
-    const buttonReplyResponse = getButtonReplyResponse(buttonReplyId);
-    if (buttonReplyResponse) {
-      console.log('✨ Respuesta por botón detectada, evitando IA');
-      await saveMessage(conversationId, 'assistant', buttonReplyResponse);
-      console.log('✅ Mensaje asistente por botón guardado');
-      try {
-        await sendWhatsAppMessage(phoneNumber, buttonReplyResponse);
-        console.log('✅ WhatsApp enviado (respuesta por botón)');
-      } catch (whatsappError) {
-        console.error('❌ Error WhatsApp botón:', whatsappError instanceof Error ? whatsappError.message : String(whatsappError));
-      }
+    // 3. ¿Quiere hablar con humano?
+    if (wantsHumanAgent(text)) {
+      const humanMessage = 'Entiendo. Un asesor de MTZ te contactará pronto. ¿Cuál es tu número de contacto?';
+      await saveMessage(conversationId, 'assistant', humanMessage);
+      await sendWhatsAppMessage(phoneNumber, humanMessage);
+      console.log('✅ Derivado a humano');
       return;
     }
 
-    if (text && isGreeting(text)) {
-      const isKnownClient = Boolean(contact.name || contact.email || contact.segment);
-      const welcomeMessage = isKnownClient
-        ? `Hola ${contact.name ?? 'cliente'}, bienvenido de nuevo a MTZ Consultores Tributarios. Elige una opción rápida:`
-        : 'Hola 👋 Bienvenido a MTZ Consultores Tributarios. ¿Cómo te gustaría iniciar?';
-      const buttons = isKnownClient ? CLIENT_BUTTONS : PROSPECT_BUTTONS;
-
-      console.log('✨ Saludo detectado, enviando bienvenida con botones');
-      await saveMessage(conversationId, 'assistant', welcomeMessage);
-      console.log('✅ Mensaje asistente de bienvenida guardado');
-      try {
-        await sendWhatsAppInteractiveButtons(phoneNumber, welcomeMessage, buttons);
-        console.log('✅ WhatsApp enviado (bienvenida con botones)');
-      } catch (whatsappError) {
-        console.error('❌ Error WhatsApp bienvenida con botones:', whatsappError instanceof Error ? whatsappError.message : String(whatsappError));
-        const fallbackMessage = isKnownClient
-          ? `Hola ${contact.name ?? 'cliente'}, gracias por contactarnos. ¿En qué podemos ayudarte hoy?`
-          : 'Hola 👋 Gracias por escribirnos. ¿En qué podemos ayudarte hoy?';
-        await sendWhatsAppMessage(phoneNumber, fallbackMessage);
-      }
-      return;
-    }
-
-    if (text && isHelpRequest(text)) {
-      const helpMessage = 'Elige una opción rápida:';
-      console.log('✨ Respuesta de ayuda detectada, enviando menú de botones');
-      await saveMessage(conversationId, 'assistant', helpMessage);
-      console.log('✅ Mensaje asistente de ayuda guardado');
-      try {
-        await sendWhatsAppInteractiveButtons(phoneNumber, helpMessage, HELP_BUTTONS);
-        console.log('✅ WhatsApp enviado (menú de botones)');
-      } catch (whatsappError) {
-        console.error('❌ Error WhatsApp menú de botones:', whatsappError instanceof Error ? whatsappError.message : String(whatsappError));
-      }
-      return;
-    }
-
-    const predefinedResponse = text ? getPredefinedResponse(text) : null;
-    if (predefinedResponse) {
-      console.log('✨ Respuesta predefinida detectada, evitando IA');
-      await saveMessage(conversationId, 'assistant', predefinedResponse);
-      console.log('✅ Mensaje asistente predefinido guardado');
-      try {
-        await sendWhatsAppMessage(phoneNumber, predefinedResponse);
-        console.log('✅ WhatsApp enviado (respuesta predefinida)');
-      } catch (whatsappError) {
-        console.error('❌ Error WhatsApp predefinido:', whatsappError instanceof Error ? whatsappError.message : String(whatsappError));
-      }
-      return;
-    }
-
-    // 4. Obtener historial
-    console.log('📚 Paso 4: Obteniendo historial...');
-    const history = await getConversationHistory(phoneNumber);
-    console.log('✅ Historial obtenido:', history.length, 'mensajes');
-
-    // 5. Generar respuesta IA
-    console.log('🤖 Paso 5: Generando respuesta IA...');
-    const systemPrompt = await getSystemPromptCached();
-    const aiResponse = await generateAssistantReply(systemPrompt, history, text);
-    console.log('✅ Respuesta IA generada');
-
-    // 6. Guardar respuesta bot
-    console.log('💾 Paso 6: Guardando respuesta bot...');
-    await saveMessage(conversationId, 'assistant', aiResponse);
-    console.log('✅ Respuesta bot guardada');
-
-    // 7. Enviar por WhatsApp (opcional - puede fallar)
-    console.log('📤 Paso 7: Enviando por WhatsApp...');
-    try {
+    // 4. Saludo inicial - Gemini responde con bienvenida personalizada
+    if (isGreeting(text)) {
+      const systemPrompt = await getSystemPromptCached();
+      const history = await getConversationHistory(phoneNumber);
+      const aiResponse = await generateAssistantReply(systemPrompt, history, text);
+      await saveMessage(conversationId, 'assistant', aiResponse);
       await sendWhatsAppMessage(phoneNumber, aiResponse);
-      console.log('✅ WhatsApp enviado');
-    } catch (whatsappError) {
-      console.error('❌ Error WhatsApp (continuando):', whatsappError instanceof Error ? whatsappError.message : String(whatsappError));
+      console.log('✅ Saludo respondido por Gemini');
+      return;
     }
 
-    console.log('🎉 PROCESAMIENTO COMPLETADO');
+    // 5. Respuesta normal con Gemini (usa historial para contexto)
+    const systemPrompt = await getSystemPromptCached();
+    const history = await getConversationHistory(phoneNumber);
+    const aiResponse = await generateAssistantReply(systemPrompt, history, text);
+
+    await saveMessage(conversationId, 'assistant', aiResponse);
+    await sendWhatsAppMessage(phoneNumber, aiResponse);
+
+    console.log('✅ Respuesta Gemini enviada');
 
   } catch (error) {
-    console.error('💥 ERROR GENERAL:', error);
+    console.error('💥 ERROR:', error);
     throw error;
   }
 }

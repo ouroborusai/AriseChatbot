@@ -24,7 +24,7 @@ type ConversationSummary = {
 };
 
 export default function DashboardPage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,21 +105,32 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-slate-800 bg-gray-100">
-        Cargando mensajes...
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-10 w-10 animate-spin rounded-full border-3 border-solid border-green-500 border-r-transparent"></div>
+          <p className="mt-4 text-sm font-medium text-slate-600">Cargando conversaciones...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full min-h-0">
-      <div className="flex-1 min-h-0 grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)] px-0">
-        <ConversationList
-          conversations={conversations}
-          selectedPhone={selectedPhone}
-          onSelect={setSelectedPhone}
-        />
-        <MessageView selectedConversation={selectedConversation} />
+    <div className="flex h-full flex-col">
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold text-slate-800">Mensajes</h1>
+        <p className="text-sm text-slate-500 mt-1">
+          {conversations.length} {conversations.length === 1 ? 'conversación' : 'conversaciones'} activas
+        </p>
+      </div>
+      <div className="card-base p-0 overflow-hidden flex-1">
+        <div className="flex h-[calc(100vh-14rem)] gap-0">
+          <ConversationList
+            conversations={conversations}
+            selectedPhone={selectedPhone}
+            onSelect={setSelectedPhone}
+          />
+          <MessageView selectedConversation={selectedConversation} />
+        </div>
       </div>
     </div>
   );

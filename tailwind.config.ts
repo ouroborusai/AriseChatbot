@@ -26,6 +26,10 @@ const config: Config = {
           chatBg: '#f6fbf5',
         },
       },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+      },
     },
   },
   plugins: [],

@@ -63,16 +63,16 @@ export function SystemStatusPanel() {
   }, []);
 
   return (
-    <div className="border-b border-gray-800 bg-gray-900/50">
+    <div className="card-base bg-slate-50">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-900/80 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-100 transition-colors rounded-2xl"
       >
-        <span className="text-sm font-semibold text-gray-200">
+        <span className="text-sm font-semibold text-slate-700">
           Estado del sistema y conexiones
         </span>
-        <span className="text-gray-500 text-xs">{open ? 'Ocultar' : 'Mostrar'}</span>
+        <span className="text-slate-500 text-xs">{open ? 'Ocultar' : 'Mostrar'}</span>
       </button>
       {open && (
         <div className="px-4 pb-4 space-y-4">
@@ -81,133 +81,154 @@ export function SystemStatusPanel() {
               type="button"
               onClick={runCheck}
               disabled={loading}
-              className="text-sm px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50"
+              className="text-sm px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 font-medium"
             >
               {loading ? 'Comprobando…' : 'Ejecutar chequeo'}
             </button>
-            <p className="text-xs text-gray-500 self-center">
+            <p className="text-xs text-slate-500 self-center">
               Comprueba variables en Vercel, Supabase, WhatsApp y el modelo de IA.
             </p>
           </div>
 
           {error && (
-            <p className="text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-lg px-3 py-2">
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
               {error}
             </p>
           )}
 
           {data && (
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div
-                  className={`rounded-lg border px-3 py-2 ${
+                  className={`rounded-xl border px-4 py-3 ${
                     data.summary.canReplyWhatsApp
-                      ? 'border-emerald-800 bg-emerald-950/30'
-                      : 'border-amber-800 bg-amber-950/20'
+                      ? 'border-emerald-300 bg-emerald-50'
+                      : 'border-amber-300 bg-amber-50'
                   }`}
                 >
-                  <p className="text-gray-400 text-xs uppercase">Responder por WhatsApp</p>
-                  <p className="text-white font-medium">
+                  <p className="text-slate-600 text-xs uppercase font-medium">Responder por WhatsApp</p>
+                  <p className="text-slate-900 font-semibold mt-1">
                     {data.summary.canReplyWhatsApp ? 'Listo' : 'Revisar'}
                   </p>
                 </div>
                 <div
-                  className={`rounded-lg border px-3 py-2 ${
-                    data.summary.canSaveChats ? 'border-emerald-800 bg-emerald-950/30' : 'border-red-900 bg-red-950/20'
+                  className={`rounded-xl border px-4 py-3 ${
+                    data.summary.canSaveChats
+                      ? 'border-emerald-300 bg-emerald-50'
+                      : 'border-red-300 bg-red-50'
                   }`}
                 >
-                  <p className="text-gray-400 text-xs uppercase">Guardar en Supabase</p>
-                  <p className="text-white font-medium">{data.summary.canSaveChats ? 'OK' : 'Fallo'}</p>
+                  <p className="text-slate-600 text-xs uppercase font-medium">Guardar en Supabase</p>
+                  <p className="text-slate-900 font-semibold mt-1">
+                    {data.summary.canSaveChats ? 'OK' : 'Fallo'}
+                  </p>
                 </div>
                 <div
-                  className={`rounded-lg border px-3 py-2 ${
+                  className={`rounded-xl border px-4 py-3 ${
                     data.summary.canReceiveWebhook
-                      ? 'border-emerald-800 bg-emerald-950/30'
-                      : 'border-red-900 bg-red-950/20'
+                      ? 'border-emerald-300 bg-emerald-50'
+                      : 'border-amber-300 bg-amber-50'
                   }`}
                 >
-                  <p className="text-gray-400 text-xs uppercase">Token verificación Meta</p>
-                  <p className="text-white font-medium">
+                  <p className="text-slate-600 text-xs uppercase font-medium">Token verificación Meta</p>
+                  <p className="text-slate-900 font-semibold mt-1">
                     {data.summary.canReceiveWebhook ? 'Definido' : 'Falta en Vercel'}
                   </p>
                 </div>
               </div>
 
               {data.webhookUrl && (
-                <div className="rounded-lg border border-gray-800 bg-gray-950 p-3">
-                  <p className="text-gray-400 text-xs mb-1">URL para Callback en Meta (webhook)</p>
-                  <code className="text-emerald-400 text-xs break-all block select-all">
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-slate-500 text-xs mb-2 font-medium">URL para Callback en Meta (webhook)</p>
+                  <code className="text-emerald-600 text-xs break-all block select-all bg-slate-50 p-2 rounded-lg">
                     {data.webhookUrl}
                   </code>
                 </div>
               )}
 
-              <ul className="space-y-2">
-                <li className="flex gap-2">
-                  <Dot ok={data.database.ok} />
-                  <div>
-                    <span className="text-gray-300 font-medium">Base de datos (service role)</span>
-                    <p className="text-gray-500 text-xs mt-0.5">{data.database.detail}</p>
-                  </div>
-                </li>
-                <li className="flex gap-2">
-                  <Dot ok={data.whatsapp.ok} />
-                  <div>
-                    <span className="text-gray-300 font-medium">API de WhatsApp (Graph)</span>
-                    <p className="text-gray-500 text-xs mt-0.5">{data.whatsapp.detail}</p>
-                  </div>
-                </li>
-                <li className="flex gap-2">
-                  <Dot ok={data.gemini.ok} />
-                  <div>
-                    <span className="text-gray-300 font-medium">IA (Gemini / OpenAI)</span>
-                    {data.geminiModel && (
-                      <p className="text-gray-600 text-xs mt-0.5 font-mono">Modelo: {data.geminiModel}</p>
-                    )}
-                    <p className="text-gray-500 text-xs mt-0.5">{data.gemini.detail}</p>
-                  </div>
-                </li>
-              </ul>
+              <div className="space-y-3">
+                <StatusRow
+                  ok={data.database.ok}
+                  title="Base de datos (service role)"
+                  detail={data.database.detail}
+                />
+                <StatusRow
+                  ok={data.whatsapp.ok}
+                  title="API de WhatsApp (Graph)"
+                  detail={data.whatsapp.detail}
+                />
+                <StatusRow
+                  ok={data.gemini.ok}
+                  title="IA (Gemini / OpenAI)"
+                  detail={data.gemini.detail}
+                  model={data.geminiModel}
+                />
+              </div>
 
               <div>
-                <p className="text-gray-400 text-xs uppercase mb-2">Variables de entorno (solo sí / no)</p>
+                <p className="text-slate-500 text-xs uppercase mb-3 font-medium">Variables de entorno</p>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(data.env).map(([key, set]) => (
                     <span
                       key={key}
-                      className={`text-xs px-2 py-0.5 rounded ${
-                        set ? 'bg-gray-800 text-gray-300' : 'bg-red-950 text-red-300'
+                      className={`text-xs px-3 py-1.5 rounded-full font-medium ${
+                        set ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
                       }`}
                     >
-                      {key}: {set ? 'sí' : 'no'}
+                      {key}: {set ? '✓' : '✗'}
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-lg border border-gray-800 bg-gray-950/80 p-3">
-                <p className="text-gray-400 text-xs uppercase mb-2">Checklist Meta</p>
-                <ul className="list-disc list-inside text-gray-500 text-xs space-y-1">
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <p className="text-slate-600 text-xs uppercase mb-3 font-medium">Checklist Meta</p>
+                <ul className="space-y-2">
                   {data.summary.metaChecklist.map((line) => (
-                    <li key={line}>{line}</li>
+                    <li key={line} className="flex items-start gap-2 text-slate-600 text-xs">
+                      <span className="text-emerald-500 mt-0.5">✓</span>
+                      <span>{line}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
 
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-slate-400 text-center">
                 Última comprobación: {new Date(data.checkedAt).toLocaleString('es')}
               </p>
             </div>
           )}
 
           {!data && !error && !loading && (
-            <p className="text-gray-500 text-sm">
-              Pulsa <strong>Ejecutar chequeo</strong> para ver si el bot puede recibir webhooks, guardar
-              mensajes y contestar.
+            <p className="text-slate-500 text-sm text-center py-4">
+              Pulsa <strong className="text-slate-700">Ejecutar chequeo</strong> para verificar el estado del sistema.
             </p>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function StatusRow({
+  ok,
+  title,
+  detail,
+  model,
+}: {
+  ok: boolean;
+  title: string;
+  detail: string;
+  model?: string | null;
+}) {
+  return (
+    <div className="flex gap-3 items-start">
+      <div className={`shrink-0 w-2 h-2 rounded-full mt-1.5 ${ok ? 'bg-emerald-500' : 'bg-red-500'}`} />
+      <div className="flex-1 min-w-0">
+        <span className="text-slate-700 font-medium">{title}</span>
+        {model && <p className="text-slate-400 text-xs mt-0.5 font-mono">Modelo: {model}</p>}
+        <p className="text-slate-500 text-xs mt-0.5">{detail}</p>
+      </div>
     </div>
   );
 }

@@ -31,15 +31,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-whatsapp-dark flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-whatsapp-dark via-whatsapp-medium to-whatsapp-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="rounded-[32px] border border-whatsapp-border bg-whatsapp-medium/95 p-8 shadow-2xl shadow-black/20">
+        <div className="rounded-[32px] border border-whatsapp-border/50 bg-whatsapp-medium/90 backdrop-blur-sm p-8 shadow-2xl shadow-black/30">
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-whatsapp-green text-slate-950 text-2xl font-bold shadow-lg shadow-black/20">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-whatsapp-green text-slate-950 text-2xl font-bold shadow-lg shadow-black/30">
               W
             </div>
             <h1 className="text-3xl font-bold text-white">WhatsApp Admin</h1>
-            <p className="mt-2 text-sm text-slate-200">Accede a tus mensajes y métricas del agente.</p>
+            <p className="mt-2 text-sm text-slate-300">Accede a tus mensajes y métricas del agente.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
@@ -49,34 +49,43 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-3xl border border-slate-700 bg-whatsapp-light px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-whatsapp-green focus:outline-none"
+                className="w-full rounded-3xl border border-slate-600 bg-whatsapp-light/50 px-4 py-3 text-slate-100 placeholder-slate-400 focus:border-whatsapp-green focus:outline-none focus:ring-2 focus:ring-whatsapp-green/20 transition"
                 autoComplete="email"
                 required
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-2">Contraseña</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-3xl border border-slate-700 bg-whatsapp-light px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-whatsapp-green focus:outline-none"
+                className="w-full rounded-3xl border border-slate-600 bg-whatsapp-light/50 px-4 py-3 text-slate-100 placeholder-slate-400 focus:border-whatsapp-green focus:outline-none focus:ring-2 focus:ring-whatsapp-green/20 transition"
                 autoComplete="current-password"
                 required
               />
             </div>
 
             {error && (
-              <p className="text-red-400 text-sm">{error}</p>
+              <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-3">
+                <p className="text-red-300 text-sm">{error}</p>
+              </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-3xl bg-whatsapp-green px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover disabled:opacity-60"
+              className="w-full rounded-3xl bg-whatsapp-green px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-black/20"
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-r-transparent"></span>
+                  Iniciando sesión...
+                </span>
+              ) : (
+                'Iniciar sesión'
+              )}
             </button>
           </form>
         </div>
