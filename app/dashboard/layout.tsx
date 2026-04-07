@@ -77,16 +77,14 @@ export default function DashboardLayout({
                     </div>
                   )}
                 </div>
-                {!collapsed && (
-                  <button
-                    type="button"
-                    onClick={() => setCollapsed(!collapsed)}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-sm transition hover:bg-white/10"
-                    aria-label="Replegar menú"
-                  >
-                    ◀
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setCollapsed(!collapsed)}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-sm transition hover:bg-white/10"
+                  aria-label={collapsed ? 'Expandir menú' : 'Replegar menú'}
+                >
+                  {collapsed ? '▶' : '◀'}
+                </button>
               </div>
 
               {/* Navegación */}

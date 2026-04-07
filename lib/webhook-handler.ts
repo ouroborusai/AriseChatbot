@@ -277,6 +277,44 @@ async function sendWelcomeMenu(phoneNumber: string, contact: { id?: string; name
   );
 }
 
+function buildSystemPromptForContact(
+  basePrompt: string,
+  contact: { name?: string; segment?: string },
+  companies: Array<{ id: string; legal_name: string }>,
+  activeCompanyId: string | null
+): string {
+  const lines = [basePrompt.trim(), '\n\n### Contexto de usuario:'];
+
+  if (contact.name) {
+    lines.push(`- Nombre del contacto: ${contact.name}`);
+  }
+
+  if (contact.segment === 'cliente') {
+    lines.push('- Este usuario es un cliente activo de MTZ. Atiende con prioridad, claridad y enfoque en sus servicios actuales.');
+  } else if (contact.segment === 'prospect') {
+    lines.push('- Este usuario es un posible cliente nuevo. Explica los servicios de MTZ, cómo trabajamos y cómo contratar.');
+  } else {
+    lines.push('- No se tiene segment definido. Trata de identificar si es cliente existente o prospecto, pero siempre ofrece opciones claras de MTZ.');
+  }
+
+  if (activeCompanyId) {
+    const activeCompany = companies.find((c) => c.id === activeCompanyId);
+    if (activeCompany) {
+      lines.push(`- Empresa activa de la conversación: ${activeCompany.legal_name}`);
+    }
+  }
+
+  if (companies.length > 0) {
+    const names = companies.map((c) => c.legal_name).join(', ');
+    lines.push(`- Empresas vinculadas: ${names}`);
+  }
+
+  lines.push('- Responde de manera precisa y práctica, guiando hacia los servicios de MTZ y sugiriendo asesoría cuando corresponda.');
+  lines.push('- Si el usuario habla de forma conversacional, interpreta la intención y responde con claridad, sin pedir datos que ya tiene WhatsApp.');
+
+  return lines.join('\n');
+}
+
 /**
  * Procesa un mensaje inbound de WhatsApp - Gemini maneja casi todo
  */
@@ -592,7 +630,8 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
     }
 
     // 7. Fallback: solo aquí usamos Gemini (consulta abierta / conversación)
-    const systemPrompt = await getSystemPromptCached();
+    const basePrompt = await getSystemPromptCached();
+    const systemPrompt = buildSystemPromptForContact(basePrompt, contact, companies, activeCompanyId);
     const history = await getConversationHistory(phoneNumber);
     const aiResponse = await generateAssistantReply(systemPrompt, history, text || '');
 
