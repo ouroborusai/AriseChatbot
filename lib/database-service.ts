@@ -145,7 +145,8 @@ export async function getConversationHistory(phoneNumber: string): Promise<Conve
     .from('messages')
     .select('role, content')
     .eq('conversation_id', conversation.id)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(10);  // Limita a últimos 10 mensajes para ahorrar tokens en IA
   
   if (msgError) {
     console.warn('[DB] Error fetching messages:', msgError);
