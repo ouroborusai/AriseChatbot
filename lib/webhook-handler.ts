@@ -640,12 +640,20 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
 
     if (interactive === BTN_IS_CLIENT_NO) {
       await updateContactSegment(contact.id, 'prospect');
-      const msg = '¡Hola! 👋 Bienvenido a MTZ Consultores Tributarios. ¿En qué podemos ayudarte hoy?';
+      const msg = '¡Hola! 👋 Bienvenido a MTZ Consultores. ¿En qué podemos ayudarte hoy?';
       await saveMessage(conversationId, 'assistant', msg);
       await sendWhatsAppMessage(phoneNumber, msg);
       // Enviar menú de prospecto
       await sendWelcomeMenu(phoneNumber, { ...contact, id: contact.id, segment: 'prospect' });
       return;
+    }
+
+    // Si no tiene segment, asignar como prospecto y responder
+    if (!contact.segment) {
+      console.log('🆕 Contacto sin segment - asignando como prospecto automáticamente');
+      await updateContactSegment(contact.id, 'prospect');
+      contact.segment = 'prospect';
+      // Continuar con el flujo normal - llegará al menú de prospecto
     }
 
     // Procesar botones de empresa
