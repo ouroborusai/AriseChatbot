@@ -13,6 +13,24 @@ type Contact = {
   last_message_at: string;
 };
 
+type CompanyLink = {
+  company_id: string;
+  is_primary: boolean;
+  companies: { id: string; legal_name: string } | null;
+};
+
+type ClientDocument = {
+  id: string;
+  contact_id: string;
+  company_id?: string | null;
+  title: string;
+  file_name?: string | null;
+  file_url?: string | null;
+  storage_bucket?: string | null;
+  storage_path?: string | null;
+  created_at: string;
+};
+
 type MessageData = {
   phone: string;
   message: string;
@@ -29,6 +47,19 @@ export default function ClientsPage() {
   const [messageForm, setMessageForm] = useState({ message: '', documentUrl: '', documentName: '' });
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success?: boolean; error?: string } | null>(null);
+
+  const [companyLinks, setCompanyLinks] = useState<CompanyLink[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [newCompanyName, setNewCompanyName] = useState('');
+
+  const [documents, setDocuments] = useState<ClientDocument[]>([]);
+  const [docForm, setDocForm] = useState({
+    title: '',
+    storagePath: '',
+    fileName: '',
+  });
+  const [savingDoc, setSavingDoc] = useState(false);
+  const [docResult, setDocResult] = useState<{ success?: boolean; error?: string } | null>(null);
 
   useEffect(() => {
     fetchContacts();
@@ -57,6 +88,137 @@ export default function ClientsPage() {
       (contact.email?.toLowerCase().includes(query) ?? false)
     );
   });
+
+  useEffect(() => {
+    if (!selectedContact) {
+      setCompanyLinks([]);
+      setSelectedCompanyId('');
+      setDocuments([]);
+      return;
+    }
+    const load = async () => {
+      await fetchCompaniesForContact(selectedContact.id);
+      await fetchDocumentsForContact(selectedContact.id, null);
+    };
+    load();
+  }, [selectedContact?.id]);
+
+  const fetchCompaniesForContact = async (contactId: string) => {
+    const { data, error } = await supabase
+      .from('contact_companies')
+      .select('company_id, is_primary, companies(id, legal_name)')
+      .eq('contact_id', contactId);
+    if (error) {
+      console.error('Error fetching contact companies:', error);
+      setCompanyLinks([]);
+      return;
+    }
+    const links = (data || []) as CompanyLink[];
+    setCompanyLinks(links);
+    const primary = links.find((l) => l.is_primary)?.company_id || '';
+    setSelectedCompanyId(primary);
+  };
+
+  const fetchDocumentsForContact = async (contactId: string, companyId: string | null) => {
+    let q = supabase
+      .from('client_documents')
+      .select('id, contact_id, company_id, title, file_name, file_url, storage_bucket, storage_path, created_at')
+      .eq('contact_id', contactId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (companyId) q = q.eq('company_id', companyId);
+    const { data, error } = await q;
+    if (error) {
+      console.error('Error fetching documents:', error);
+      setDocuments([]);
+      return;
+    }
+    setDocuments((data || []) as ClientDocument[]);
+  };
+
+  const handleCreateAndLinkCompany = async () => {
+    if (!selectedContact || !newCompanyName.trim()) return;
+    try {
+      // 1) crear company
+      const { data: company, error: cErr } = await supabase
+        .from('companies')
+        .insert({ legal_name: newCompanyName.trim() })
+        .select('id, legal_name')
+        .single();
+      if (cErr) throw cErr;
+
+      // 2) vincular a contacto
+      const { error: linkErr } = await supabase
+        .from('contact_companies')
+        .upsert({ contact_id: selectedContact.id, company_id: company.id, is_primary: companyLinks.length === 0 })
+        .select();
+      if (linkErr) throw linkErr;
+
+      setNewCompanyName('');
+      await fetchCompaniesForContact(selectedContact.id);
+    } catch (e) {
+      console.error('Error creating/linking company:', e);
+    }
+  };
+
+  const handleSetPrimaryCompany = async (companyId: string) => {
+    if (!selectedContact) return;
+    try {
+      // marcar todo false
+      const { error: clearErr } = await supabase
+        .from('contact_companies')
+        .update({ is_primary: false })
+        .eq('contact_id', selectedContact.id);
+      if (clearErr) throw clearErr;
+
+      // marcar uno true
+      const { error: setErr } = await supabase
+        .from('contact_companies')
+        .update({ is_primary: true })
+        .eq('contact_id', selectedContact.id)
+        .eq('company_id', companyId);
+      if (setErr) throw setErr;
+
+      setSelectedCompanyId(companyId);
+      await fetchCompaniesForContact(selectedContact.id);
+      await fetchDocumentsForContact(selectedContact.id, companyId);
+    } catch (e) {
+      console.error('Error setting primary company:', e);
+    }
+  };
+
+  const handleSaveDocument = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedContact || !docForm.title.trim()) return;
+    setSavingDoc(true);
+    setDocResult(null);
+    try {
+      const payload = {
+        contact_id: selectedContact.id,
+        company_id: selectedCompanyId || null,
+        title: docForm.title.trim(),
+        storage_bucket: 'client-documents',
+        storage_path: docForm.storagePath.trim() || null,
+        file_name: docForm.fileName.trim() || null,
+      };
+
+      if (!payload.storage_path) {
+        setDocResult({ error: 'storage_path es requerido (ruta dentro del bucket).' });
+        return;
+      }
+
+      const { error } = await supabase.from('client_documents').insert(payload);
+      if (error) throw error;
+
+      setDocForm({ title: '', storagePath: '', fileName: '' });
+      setDocResult({ success: true });
+      await fetchDocumentsForContact(selectedContact.id, selectedCompanyId || null);
+    } catch (e: any) {
+      setDocResult({ error: e?.message || 'Error guardando documento' });
+    } finally {
+      setSavingDoc(false);
+    }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,7 +347,132 @@ export default function ClientsPage() {
           </h2>
 
           {selectedContact ? (
-            <form onSubmit={handleSendMessage} className="space-y-4">
+            <div className="space-y-6">
+              {/* Empresas vinculadas */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold text-slate-900">Empresas</h3>
+                  <span className="text-xs text-slate-500">{companyLinks.length} vinculada(s)</span>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  {companyLinks.length === 0 ? (
+                    <p className="text-sm text-slate-500">Este WhatsApp aún no tiene empresas asignadas.</p>
+                  ) : (
+                    companyLinks
+                      .filter((l) => l.companies)
+                      .map((l) => (
+                        <button
+                          key={l.company_id}
+                          type="button"
+                          onClick={() => handleSetPrimaryCompany(l.company_id)}
+                          className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition ${
+                            selectedCompanyId === l.company_id
+                              ? 'border-whatsapp-green bg-green-50'
+                              : 'border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-medium text-slate-900">{l.companies!.legal_name}</span>
+                            {l.is_primary && (
+                              <span className="text-xs rounded-full bg-slate-900 text-white px-2 py-1">Activa</span>
+                            )}
+                          </div>
+                        </button>
+                      ))
+                  )}
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                  <input
+                    value={newCompanyName}
+                    onChange={(e) => setNewCompanyName(e.target.value)}
+                    className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                    placeholder="Nueva empresa (razón social)"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateAndLinkCompany}
+                    className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                  >
+                    + Agregar
+                  </button>
+                </div>
+              </div>
+
+              {/* Documentos por empresa */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">Documentos (Storage)</h3>
+                  <button
+                    type="button"
+                    onClick={() => fetchDocumentsForContact(selectedContact.id, selectedCompanyId || null)}
+                    className="text-xs text-slate-600 hover:text-slate-900"
+                  >
+                    Actualizar
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveDocument} className="mt-3 space-y-3">
+                  <input
+                    value={docForm.title}
+                    onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                    placeholder="Título (ej: IVA 2026-03 / Balance 2025 / Liquidación 2026-03 Juan Perez)"
+                    required
+                  />
+                  <input
+                    value={docForm.storagePath}
+                    onChange={(e) => setDocForm({ ...docForm, storagePath: e.target.value })}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                    placeholder="storage_path (ej: mtz/contacts/<id>/tax/iva/2026/2026-03/iva-2026-03.pdf)"
+                    required
+                  />
+                  <input
+                    value={docForm.fileName}
+                    onChange={(e) => setDocForm({ ...docForm, fileName: e.target.value })}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                    placeholder="file_name (opcional, ej: iva-2026-03.pdf)"
+                  />
+                  {docResult && (
+                    <div
+                      className={`rounded-xl px-3 py-2 text-sm ${
+                        docResult.success
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-red-50 text-red-700 border border-red-200'
+                      }`}
+                    >
+                      {docResult.success ? '✓ Documento registrado' : `✗ ${docResult.error}`}
+                    </div>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={savingDoc || !selectedCompanyId}
+                    className="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                    title={!selectedCompanyId ? 'Selecciona una empresa activa primero' : ''}
+                  >
+                    {savingDoc ? 'Guardando...' : 'Registrar documento'}
+                  </button>
+                </form>
+
+                <div className="mt-4 max-h-[220px] overflow-y-auto space-y-2">
+                  {documents.length === 0 ? (
+                    <p className="text-sm text-slate-500">No hay documentos registrados para esta selección.</p>
+                  ) : (
+                    documents.map((d) => (
+                      <div key={d.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                        <p className="text-sm font-medium text-slate-900">{d.title}</p>
+                        <p className="text-xs text-slate-600 break-all">
+                          {d.storage_bucket}:{d.storage_path}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Envío manual */}
+              <form onSubmit={handleSendMessage} className="space-y-4">
               <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200">
                 <p className="text-sm text-slate-500">Enviando a:</p>
                 <p className="font-medium text-slate-900">
@@ -261,7 +548,8 @@ export default function ClientsPage() {
               >
                 Cancelar
               </button>
-            </form>
+              </form>
+            </div>
           ) : (
             <div className="text-center py-12">
               <p className="text-slate-500 text-sm">

@@ -7,8 +7,13 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const phoneNumber = searchParams.get('phone') || '';
     const contactId = searchParams.get('contact_id') || '';
+    const companyId = searchParams.get('company_id') || '';
 
-    let query = getSupabaseAdmin().from('client_documents').select('id, contact_id, title, description, file_name, file_url, file_type, created_at');
+    let query = getSupabaseAdmin()
+      .from('client_documents')
+      .select(
+        'id, contact_id, title, description, file_name, file_url, storage_bucket, storage_path, file_type, created_at'
+      );
 
     if (contactId) {
       query = query.eq('contact_id', contactId);
@@ -31,6 +36,9 @@ export async function GET(request: NextRequest) {
 
       query = query.eq('contact_id', contact.id);
     }
+    if (companyId) {
+      query = query.eq('company_id', companyId);
+    }
 
     const { data: documents, error } = await query.order('created_at', { ascending: false });
     if (error) {
@@ -48,20 +56,26 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { contact_id, title, description, file_name, file_url, file_type } = body;
+    const { contact_id, company_id, title, description, file_name, file_url, storage_bucket, storage_path, file_type } = body;
 
-    if (!contact_id || !title || !file_url) {
-      return NextResponse.json({ error: 'contact_id, title and file_url are required' }, { status: 400 });
+    if (!contact_id || !title || (!file_url && !(storage_bucket && storage_path))) {
+      return NextResponse.json(
+        { error: 'contact_id, title and (file_url OR storage_bucket+storage_path) are required' },
+        { status: 400 }
+      );
     }
 
     const { data: document, error } = await getSupabaseAdmin()
       .from('client_documents')
       .insert({
         contact_id,
+        company_id: company_id || undefined,
         title,
         description: description || undefined,
         file_name: file_name || undefined,
-        file_url,
+        file_url: file_url || undefined,
+        storage_bucket: storage_bucket || undefined,
+        storage_path: storage_path || undefined,
         file_type: file_type || undefined,
       })
       .select()

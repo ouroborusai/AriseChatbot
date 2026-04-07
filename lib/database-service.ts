@@ -153,18 +153,115 @@ export async function getConversationHistory(phoneNumber: string): Promise<Conve
     .from('messages')
     .select('role, content')
     .eq('conversation_id', conversation.id)
-    .order('created_at', { ascending: true })
-    .limit(10);  // Limita a últimos 10 mensajes para ahorrar tokens en IA
+    .order('created_at', { ascending: false })
+    .limit(10); // traer los últimos 10 mensajes (más recientes)
   
   if (msgError) {
     console.warn('[DB] Error fetching messages:', msgError);
     return [];
   }
 
-  return (messages || []).map((m) => ({
+  // Volver a orden cronológico ascendente para que la IA vea la conversación en orden correcto.
+  const ordered = (messages || []).slice().reverse();
+
+  return ordered.map((m) => ({
     role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
     content: m.content ?? '',
   }));
+}
+
+export interface ClientDocumentRow {
+  id: string;
+  contact_id: string;
+  company_id?: string | null;
+  title: string;
+  description?: string | null;
+  file_name?: string | null;
+  file_url?: string | null;
+  storage_bucket?: string | null;
+  storage_path?: string | null;
+  file_type?: string | null;
+  created_at: string;
+}
+
+export async function getLatestClientDocuments(contactId: string, limit = 3): Promise<ClientDocumentRow[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('client_documents')
+    .select('id, contact_id, company_id, title, description, file_name, file_url, storage_bucket, storage_path, file_type, created_at')
+    .eq('contact_id', contactId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.warn('[DB] Error fetching client documents:', error);
+    return [];
+  }
+
+  return (data || []) as ClientDocumentRow[];
+}
+
+export async function findLatestClientDocumentByQuery(
+  contactId: string,
+  query: string,
+  companyId?: string | null
+): Promise<ClientDocumentRow | null> {
+  const q = query.trim();
+  if (!q) return null;
+
+  // Buscar por coincidencia en title / description / file_name / storage_path
+  let qb = getSupabaseAdmin()
+    .from('client_documents')
+    .select('id, contact_id, company_id, title, description, file_name, file_url, storage_bucket, storage_path, file_type, created_at')
+    .eq('contact_id', contactId);
+  if (companyId) qb = qb.eq('company_id', companyId);
+
+  const { data, error } = await qb
+    .or(`title.ilike.%${q}%,description.ilike.%${q}%,file_name.ilike.%${q}%,storage_path.ilike.%${q}%`)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[DB] Error searching client documents:', error);
+    return null;
+  }
+
+  return (data || null) as ClientDocumentRow | null;
+}
+
+export async function listCompaniesForContact(contactId: string): Promise<Array<{ id: string; legal_name: string }>> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('contact_companies')
+    .select('companies(id, legal_name)')
+    .eq('contact_id', contactId);
+
+  if (error) {
+    console.warn('[DB] Error listing companies for contact:', error);
+    return [];
+  }
+
+  const rows = (data || []) as Array<{ companies?: { id: string; legal_name: string } | null }>;
+  return rows.map((r) => r.companies).filter(Boolean) as Array<{ id: string; legal_name: string }>;
+}
+
+export async function setActiveCompanyForConversation(conversationId: string, companyId: string | null): Promise<void> {
+  const { error } = await getSupabaseAdmin()
+    .from('conversations')
+    .update({ active_company_id: companyId })
+    .eq('id', conversationId);
+  if (error) {
+    console.warn('[DB] Error setting active_company_id:', error);
+  }
+}
+
+export async function getActiveCompanyForConversation(conversationId: string): Promise<string | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('conversations')
+    .select('active_company_id')
+    .eq('id', conversationId)
+    .maybeSingle();
+  if (error) return null;
+  return (data?.active_company_id as string | null) ?? null;
 }
 
 /**

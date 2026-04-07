@@ -58,7 +58,7 @@ export default function DashboardLayout({
         <aside
           className={`shrink-0 bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl transition-all duration-300 ${
             collapsed ? 'lg:w-20' : 'lg:w-72'
-          } w-full lg:w-72`}
+          } w-full`}
         >
           <div className="flex h-full flex-col justify-between overflow-hidden px-4 py-5">
             <div className="space-y-6 overflow-y-auto pr-1">

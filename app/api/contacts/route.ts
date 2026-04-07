@@ -59,31 +59,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone_number, name, email, segment, location } = body;
-    const normalizedPhone = digitsOnly(phone_number || '');
+    // Soporta:
+    // - Un solo contacto: { phone_number, ... }
+    // - Lote: [{ phone_number, ... }, ...]
+    const contactsInput = Array.isArray(body) ? body : [body];
 
-    if (!normalizedPhone) {
-      return NextResponse.json(
-        { error: 'phone_number is required' },
-        { status: 400 }
-      );
-    }
-
-    const { data: contact, error } = await getSupabaseAdmin()
-      .from('contacts')
-      .upsert(
-        {
-          phone_number: normalizedPhone,
-          name: name || undefined,
-          email: email || undefined,
-          segment: segment || undefined,
-          location: location || undefined,
-          last_message_at: new Date().toISOString(),
-        },
-        { onConflict: 'phone_number' }
-      )
-      .select()
-      .single();
+    const rows = contactsInput
+      .map((c) => ({
+        phone_number: digitsOnly(c?.phone_number || ''),
+        name: c?.name || undefined,
+        email: c?.email || undefined,
+        segment: c?.segment || undefined,
+        location: c?.location || undefined,
+        last_message_at: new Date().toISOString(),
+      }))
+      .filter((c) => Boolean(c.phone_number));
 
     if (error) {
       console.error('Error upserting contact:', error);
@@ -93,7 +83,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(contact);
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'phone_number is required' }, { status: 400 });
+    }
+
+    const { data, error } = await getSupabaseAdmin()
+      .from('contacts')
+      .upsert(rows, { onConflict: 'phone_number' })
+      .select();
+
+    if (error) {
+      console.error('Error upserting contact(s):', error);
+      return NextResponse.json({ error: 'Failed to save contact(s)' }, { status: 500 });
+    }
+
+    // Si venía un solo contacto, devolvemos uno; si venía lote, devolvemos lista.
+    return NextResponse.json(Array.isArray(body) ? { contacts: data || [] } : (data?.[0] || null));
   } catch (error) {
     console.error('Unexpected error in POST /api/contacts:', error);
     return NextResponse.json(

@@ -67,6 +67,12 @@ CREATE TRIGGER trigger_name ON table_name ...
 - [ ] ¿He revisado que `CREATE TABLE IF NOT EXISTS` sea válido (no `CREATE TABLE IF NOT EXISTS ... IF NOT EXISTS`)?
 - [ ] ¿Las referencias de foreign keys apuntan a tablas que ya existen?
 
+## 📞 Normalización de teléfonos (IMPORTANTE)
+
+- **Regla:** en base de datos guardamos `contacts.phone_number` como **solo dígitos**, sin espacios, sin `+`, sin guiones.
+- **Formato recomendado (Chile WhatsApp):** `56` + `9` + `XXXXXXXX` → ejemplo: `56920137573`.
+- **Código:** ya se normaliza con `digitsOnly()` antes de guardar/buscar (API y webhook).
+
 ## Recomendaciones
 
 1. **Ejecuta en partes:** Crea primero tablas, luego índices, luego políticas.
