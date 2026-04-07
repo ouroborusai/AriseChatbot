@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 type Contact = {
@@ -38,6 +38,15 @@ type MessageData = {
   documentName?: string;
 };
 
+const DOC_TYPES = [
+  { value: 'iva', label: '🧾 IVA (Impuesto al Valor Agregado)', periodFormat: 'YYYY-MM (ej: 2026-03)' },
+  { value: 'renta', label: '📊 Renta (Declaración anual)', periodFormat: 'YYYY (ej: 2025)' },
+  { value: 'balance', label: '📈 Balance (Estados financieros)', periodFormat: 'YYYY (ej: 2025)' },
+  { value: 'liquidacion', label: '💰 Liquidación de sueldo', periodFormat: 'YYYY-MM Nombre (ej: 2026-03 Juan Perez)' },
+  { value: 'contrato', label: '📄 Contrato', periodFormat: 'Descripción libre' },
+  { value: 'otro', label: '📁 Otro documento', periodFormat: 'Descripción libre' },
+];
+
 export default function ClientsPage() {
   const supabase = createClient();
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -60,6 +69,19 @@ export default function ClientsPage() {
   });
   const [savingDoc, setSavingDoc] = useState(false);
   const [docResult, setDocResult] = useState<{ success?: boolean; error?: string } | null>(null);
+
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState('');
+
+  const [uploadForm, setUploadForm] = useState({
+    docType: '',
+    period: '',
+  });
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{ success?: boolean; error?: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchContacts();
@@ -265,6 +287,105 @@ export default function ClientsPage() {
     }
   };
 
+  const handleUpdateContactName = async () => {
+    if (!selectedContact || !editName.trim()) return;
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .update({ name: editName.trim() })
+        .eq('id', selectedContact.id);
+      
+      if (error) throw error;
+      
+      setIsEditingName(false);
+      await fetchContacts();
+      setSelectedContact({ ...selectedContact, name: editName.trim() });
+    } catch (e) {
+      console.error('Error updating name:', e);
+    }
+  };
+
+  const handleUploadDocument = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedContact || !uploadFile || !uploadForm.docType) return;
+    
+    setUploading(true);
+    setUploadResult(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      formData.append('contact_id', selectedContact.id);
+      if (selectedCompanyId) {
+        formData.append('company_id', selectedCompanyId);
+      }
+      formData.append('doc_type', uploadForm.docType);
+      formData.append('period', uploadForm.period.trim());
+      
+      const res = await fetch('/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        setUploadResult({ success: true });
+        setUploadFile(null);
+        setUploadForm({ docType: '', period: '' });
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        await fetchDocumentsForContact(selectedContact.id, selectedCompanyId || null);
+      } else {
+        setUploadResult({ error: data.error || 'Error al subir archivo' });
+      }
+    } catch (err) {
+      setUploadResult({ error: 'Error de conexión' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    if (!selectedContact || !confirm('¿Eliminar este documento?')) return;
+    
+    try {
+      const res = await fetch(`/upload?id=${docId}`, { method: 'DELETE' });
+      if (res.ok) {
+        await fetchDocumentsForContact(selectedContact.id, selectedCompanyId || null);
+      }
+    } catch (e) {
+      console.error('Error deleting document:', e);
+    }
+  };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      setUploadFile(files[0]);
+    }
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setUploadFile(files[0]);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center text-slate-700">
@@ -352,6 +473,178 @@ export default function ClientsPage() {
 
           {selectedContact ? (
             <div className="space-y-6">
+              {/* Info del contacto */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">Contacto</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditName(selectedContact.name || '');
+                      setIsEditingName(true);
+                    }}
+                    className="text-xs text-whatsapp-green hover:underline"
+                  >
+                    Editar nombre
+                  </button>
+                </div>
+                
+                {isEditingName ? (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                      placeholder="Nombre del contacto"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={handleUpdateContactName}
+                      className="rounded-xl bg-whatsapp-green px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-whatsapp-greenHover"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingName(false)}
+                      className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-2">
+                    <p className="font-medium text-slate-900">
+                      {selectedContact.name || 'Sin nombre'}
+                    </p>
+                    <p className="text-sm text-slate-600">{selectedContact.phone_number}</p>
+                    {selectedContact.segment && (
+                      <span className={`inline-block mt-2 text-xs px-2 py-1 rounded-full ${
+                        selectedContact.segment === 'cliente' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {selectedContact.segment === 'cliente' ? 'Cliente' : 'Prospecto'}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Subir documento con drag & drop */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">📤 Subir documento</h3>
+                
+                <form onSubmit={handleUploadDocument} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Tipo de documento</label>
+                    <select
+                      value={uploadForm.docType}
+                      onChange={(e) => setUploadForm({ ...uploadForm, docType: e.target.value, period: '' })}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                      required
+                    >
+                      <option value="">Seleccionar tipo...</option>
+                      {DOC_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                    {uploadForm.docType && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Formato: {DOC_TYPES.find(t => t.value === uploadForm.docType)?.periodFormat}
+                      </p>
+                    )}
+                  </div>
+
+                  {uploadForm.docType && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">Período / Descripción</label>
+                      <input
+                        value={uploadForm.period}
+                        onChange={(e) => setUploadForm({ ...uploadForm, period: e.target.value })}
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                        placeholder={
+                          uploadForm.docType === 'liquidacion' ? '2026-03 Juan Perez' :
+                          uploadForm.docType === 'iva' ? '2026-03' :
+                          uploadForm.docType === 'renta' || uploadForm.docType === 'balance' ? '2025' :
+                          'Descripción del documento'
+                        }
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* Drag & Drop Zone */}
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition ${
+                      isDragging 
+                        ? 'border-whatsapp-green bg-green-50' 
+                        : uploadFile
+                          ? 'border-whatsapp-green bg-green-50'
+                          : 'border-slate-300 hover:border-whatsapp-green'
+                    }`}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      onChange={handleFileSelect}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                      className="hidden"
+                    />
+                    
+                    {uploadFile ? (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-slate-900">📎 {uploadFile.name}</p>
+                        <p className="text-xs text-slate-500">{(uploadFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadFile(null);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                          className="text-xs text-red-600 hover:underline"
+                        >
+                          Quitar archivo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-sm text-slate-600">Arrastra un archivo aquí o haz clic para seleccionar</p>
+                        <p className="text-xs text-slate-400">PDF, Excel, Word, imágenes (máx 50MB)</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {uploadResult && (
+                    <div
+                      className={`rounded-xl px-3 py-2 text-sm ${
+                        uploadResult.success
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-red-50 text-red-700 border border-red-200'
+                      }`}
+                    >
+                      {uploadResult.success ? '✓ Documento subido correctamente' : `✗ ${uploadResult.error}`}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={uploading || !uploadFile || !uploadForm.docType || !uploadForm.period}
+                    className="w-full rounded-xl bg-whatsapp-green px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-whatsapp-greenHover disabled:opacity-60"
+                  >
+                    {uploading ? 'Subiendo...' : 'Subir documento'}
+                  </button>
+                </form>
+              </div>
+
               {/* Empresas vinculadas */}
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -404,71 +697,40 @@ export default function ClientsPage() {
                 </div>
               </div>
 
-              {/* Documentos por empresa */}
+              {/* Documentos subidos */}
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-900">Documentos (Storage)</h3>
-                  <button
-                    type="button"
-                    onClick={() => fetchDocumentsForContact(selectedContact.id, selectedCompanyId || null)}
-                    className="text-xs text-slate-600 hover:text-slate-900"
-                  >
-                    Actualizar
-                  </button>
+                  <h3 className="text-sm font-semibold text-slate-900">📁 Documentos subidos</h3>
+                  <span className="text-xs text-slate-500">{documents.length} archivo(s)</span>
                 </div>
 
-                <form onSubmit={handleSaveDocument} className="mt-3 space-y-3">
-                  <input
-                    value={docForm.title}
-                    onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
-                    placeholder="Título (ej: IVA 2026-03 / Balance 2025 / Liquidación 2026-03 Juan Perez)"
-                    required
-                  />
-                  <input
-                    value={docForm.storagePath}
-                    onChange={(e) => setDocForm({ ...docForm, storagePath: e.target.value })}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
-                    placeholder="storage_path (ej: mtz/contacts/<id>/tax/iva/2026/2026-03/iva-2026-03.pdf)"
-                    required
-                  />
-                  <input
-                    value={docForm.fileName}
-                    onChange={(e) => setDocForm({ ...docForm, fileName: e.target.value })}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
-                    placeholder="file_name (opcional, ej: iva-2026-03.pdf)"
-                  />
-                  {docResult && (
-                    <div
-                      className={`rounded-xl px-3 py-2 text-sm ${
-                        docResult.success
-                          ? 'bg-green-50 text-green-700 border border-green-200'
-                          : 'bg-red-50 text-red-700 border border-red-200'
-                      }`}
-                    >
-                      {docResult.success ? '✓ Documento registrado' : `✗ ${docResult.error}`}
-                    </div>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={savingDoc || !selectedCompanyId}
-                    className="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
-                    title={!selectedCompanyId ? 'Selecciona una empresa activa primero' : ''}
-                  >
-                    {savingDoc ? 'Guardando...' : 'Registrar documento'}
-                  </button>
-                </form>
-
-                <div className="mt-4 max-h-[220px] overflow-y-auto space-y-2">
+                <div className="mt-4 max-h-[250px] overflow-y-auto space-y-2">
                   {documents.length === 0 ? (
-                    <p className="text-sm text-slate-500">No hay documentos registrados para esta selección.</p>
+                    <p className="text-sm text-slate-500">No hay documentos subidos para este cliente/empresa.</p>
                   ) : (
                     documents.map((d) => (
-                      <div key={d.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                        <p className="text-sm font-medium text-slate-900">{d.title}</p>
-                        <p className="text-xs text-slate-600 break-all">
-                          {d.storage_bucket}:{d.storage_path}
-                        </p>
+                      <div key={d.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900 truncate">{d.title}</p>
+                          <p className="text-xs text-slate-500 truncate">{d.file_name}</p>
+                          {d.file_url && (
+                            <a 
+                              href={d.file_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs text-whatsapp-green hover:underline"
+                            >
+                              Ver documento
+                            </a>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDocument(d.id)}
+                          className="text-xs text-red-600 hover:text-red-800 shrink-0"
+                        >
+                          Eliminar
+                        </button>
                       </div>
                     ))
                   )}

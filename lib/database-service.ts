@@ -176,7 +176,7 @@ export async function getConversationHistory(phoneNumber: string): Promise<Conve
     .select('role, content')
     .eq('conversation_id', conversation.id)
     .order('created_at', { ascending: false })
-    .limit(10); // traer los últimos 10 mensajes (más recientes)
+    .limit(20); // traer los últimos 20 mensajes (más recientes)
   
   if (msgError) {
     console.warn('[DB] Error fetching messages:', msgError);
@@ -302,6 +302,9 @@ export async function createServiceRequest(
   companyId?: string | null
 ): Promise<ServiceRequest | null> {
   const requestCode = generateRequestCode(requestType);
+  
+  console.log('[DB] Creating service request:', { requestCode, requestType, contactId, conversationId, companyId });
+  
   const { data, error } = await getSupabaseAdmin()
     .from('service_requests')
     .insert({
@@ -317,10 +320,11 @@ export async function createServiceRequest(
     .single();
 
   if (error) {
-    console.error('[DB] Error creating service request:', error);
+    console.error('[DB] Error creating service request:', error.message, error.details, error.hint);
     return null;
   }
 
+  console.log('[DB] Service request created:', data?.id);
   return data as ServiceRequest;
 }
 

@@ -284,16 +284,21 @@ async function createAndSendServiceRequest(
   companyId?: string | null
 ): Promise<void> {
   const request = await createServiceRequest(contactId, conversationId, type, description, companyId);
+  
   if (!request) {
-    const msg = 'Hubo un problema registrando la solicitud. Un asesor te atenderá pronto.';
+    console.log('[ServiceRequest] Error creating request, deriving to human advisor');
+    const msg = 'Hubo un problema al registrar tu solicitud en el sistema. Un asesor de MTZ te contactará directamente en breve para gestionar tu solicitud. Disculpa las molestias.';
     await saveMessage(conversationId, 'assistant', msg);
     await sendWhatsAppMessage(phoneNumber, msg);
     return;
   }
 
-  const msg = `Solicitud registrada ✅\nCódigo: ${request.request_code}\nTipo: ${request.request_type}\nEstado: ${request.status}\nTe avisaremos cuando esté lista.`;
+  const typeLabel = type === 'quote' ? 'Cotización' : type === 'document' ? 'Documento' : 'Solicitud';
+  const msg = `Solicitud registrada ✅\n\n📋 Código: ${request.request_code}\n📌 Tipo: ${typeLabel}\n⏳ Estado: Pendiente\n\nTe enviaremos un WhatsApp cuando esté lista. ¿Necesitas algo más?`;
   await saveMessage(conversationId, 'assistant', msg);
   await sendWhatsAppMessage(phoneNumber, msg);
+  
+  console.log('[ServiceRequest] Created with code:', request.request_code);
 }
 
 async function sendWelcomeMenu(phoneNumber: string, contact: { id?: string; name?: string; segment?: string }): Promise<void> {
@@ -613,6 +618,8 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
     if (text) {
       const history = await getConversationHistory(phoneNumber);
       const lastBtn = getLastButtonFromHistory(history);
+      console.log('[Router] Last button detected:', lastBtn);
+      console.log('[Router] History entries:', history.map(h => ({ role: h.role, content: h.content.slice(0, 30) })));
       const companyIdForDocs = await getActiveCompanyForConversation(conversationId);
 
       // IVA YYYY-MM
