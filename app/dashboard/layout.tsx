@@ -21,8 +21,23 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
+
+  // Cargar estado de collapse del localStorage
+  useEffect(() => {
+    setMounted(true);
+    const saved = localStorage.getItem('sidebar-collapsed');
+    if (saved) setCollapsed(JSON.parse(saved));
+  }, []);
+
+  // Guardar estado de collapse al localStorage
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed));
+    }
+  }, [collapsed, mounted]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -51,28 +66,34 @@ export default function DashboardLayout({
     );
   }
 
+  if (!mounted) return null;
+
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="flex h-full flex-col lg:flex-row">
-        {/* Sidebar */}
+      <div className="flex h-full w-full">
+        {/* Sidebar - Desktop & Mobile */}
         <aside
-          className={`shrink-0 bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl transition-all duration-300 ${
-            collapsed ? 'lg:w-20' : 'lg:w-72'
-          } w-full`}
+          className={`fixed bottom-0 left-0 top-0 z-50 bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl transition-all duration-300 md:relative md:z-auto ${
+            collapsed ? 'w-20' : 'w-72'
+          }`}
         >
           <div className="flex h-full flex-col justify-between overflow-hidden px-4 py-5">
             <div className="space-y-6 overflow-y-auto pr-1">
               {/* Logo / Brand */}
               <div className="flex items-center justify-between gap-2">
-                <div className={`flex-1 inline-flex items-center gap-3 rounded-2xl bg-white/10 px-3 py-3 backdrop-blur-sm transition-all duration-300 ${
-                  collapsed ? 'justify-center' : 'justify-start'
-                }`}>
+                <div
+                  className={`flex-1 inline-flex items-center gap-3 rounded-2xl bg-white/10 px-3 py-3 backdrop-blur-sm transition-all duration-300 ${
+                    collapsed ? 'justify-center' : 'justify-start'
+                  }`}
+                >
                   <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-400 to-green-500 text-white font-bold shadow-lg">
                     M
                   </span>
                   {!collapsed && (
                     <div className="overflow-hidden">
-                      <p className="text-base font-semibold whitespace-nowrap">MTZ Consultores</p>
+                      <p className="text-base font-semibold whitespace-nowrap">
+                        MTZ Consultores
+                      </p>
                       <p className="text-xs text-slate-400">Panel de atención</p>
                     </div>
                   )}
@@ -80,7 +101,7 @@ export default function DashboardLayout({
                 <button
                   type="button"
                   onClick={() => setCollapsed(!collapsed)}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-sm transition hover:bg-white/10"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-sm transition hover:bg-white/10 active:bg-white/20"
                   aria-label={collapsed ? 'Expandir menú' : 'Replegar menú'}
                 >
                   {collapsed ? '▶' : '◀'}
@@ -105,7 +126,7 @@ export default function DashboardLayout({
                         {item.icon}
                       </span>
                       {!collapsed && (
-                        <span className="whitespace-nowrap">{item.label}</span>
+                        <span className="truncate">{item.label}</span>
                       )}
                     </Link>
                   );
@@ -117,7 +138,9 @@ export default function DashboardLayout({
             <div className="space-y-3">
               <button
                 onClick={handleLogout}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/20"
+                className={`flex w-full items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/20 active:bg-red-500/30 ${
+                  collapsed ? 'justify-center' : 'justify-start'
+                }`}
               >
                 <span className="text-base">⏻</span>
                 {!collapsed && <span>Cerrar sesión</span>}
@@ -127,7 +150,7 @@ export default function DashboardLayout({
         </aside>
 
         {/* Contenido Principal */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto w-full">
           <div className="page-container p-6 lg:p-8">
             {children}
           </div>
@@ -136,3 +159,4 @@ export default function DashboardLayout({
     </div>
   );
 }
+
