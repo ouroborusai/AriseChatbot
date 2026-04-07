@@ -63,9 +63,9 @@ export default function DashboardLayout({
           <div className="flex h-full flex-col justify-between overflow-hidden px-4 py-5">
             <div className="space-y-6 overflow-y-auto pr-1">
               {/* Logo / Brand */}
-              <div className="flex items-center justify-between gap-3">
-                <div className={`inline-flex items-center gap-3 rounded-2xl bg-white/10 px-3 py-3 backdrop-blur-sm transition-all duration-300 ${
-                  collapsed ? 'justify-center w-full' : 'justify-start'
+              <div className="flex items-center justify-between gap-2">
+                <div className={`flex-1 inline-flex items-center gap-3 rounded-2xl bg-white/10 px-3 py-3 backdrop-blur-sm transition-all duration-300 ${
+                  collapsed ? 'justify-center' : 'justify-start'
                 }`}>
                   <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-400 to-green-500 text-white font-bold shadow-lg">
                     M
@@ -77,14 +77,16 @@ export default function DashboardLayout({
                     </div>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCollapsed(!collapsed)}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-sm transition hover:bg-white/10"
-                  aria-label={collapsed ? 'Expandir menú' : 'Replegar menú'}
-                >
-                  {collapsed ? '▶' : '◀'}
-                </button>
+                {!collapsed && (
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed(!collapsed)}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-sm transition hover:bg-white/10"
+                    aria-label="Replegar menú"
+                  >
+                    ◀
+                  </button>
+                )}
               </div>
 
               {/* Navegación */}
