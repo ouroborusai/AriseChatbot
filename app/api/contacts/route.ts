@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { digitsOnly } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,8 +60,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { phone_number, name, email, segment, location } = body;
+    const normalizedPhone = digitsOnly(phone_number || '');
 
-    if (!phone_number) {
+    if (!normalizedPhone) {
       return NextResponse.json(
         { error: 'phone_number is required' },
         { status: 400 }
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest) {
       .from('contacts')
       .upsert(
         {
-          phone_number,
+          phone_number: normalizedPhone,
           name: name || undefined,
           email: email || undefined,
           segment: segment || undefined,

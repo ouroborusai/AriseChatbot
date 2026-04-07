@@ -4,6 +4,7 @@
  */
 
 import { getSupabaseAdmin } from './supabase-admin';
+import { digitsOnly } from './utils';
 
 export interface Contact {
   id: string;
@@ -12,6 +13,10 @@ export interface Contact {
   segment?: string;
   location?: string;
   last_message_at: string;
+}
+
+function normalizePhoneNumber(phone: string): string {
+  return digitsOnly(phone);
 }
 
 export interface ConversationMessage {
@@ -23,10 +28,11 @@ export interface ConversationMessage {
  * Obtiene o crea un contacto
  */
 export async function getOrCreateContact(phoneNumber: string): Promise<Contact> {
+  const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const { data: existing, error: selectError } = await getSupabaseAdmin()
     .from('contacts')
     .select('id, name, email, segment, location, last_message_at')
-    .eq('phone_number', phoneNumber)
+    .eq('phone_number', normalizedPhone)
     .maybeSingle();
   
   if (selectError) {
@@ -53,7 +59,7 @@ export async function getOrCreateContact(phoneNumber: string): Promise<Contact> 
   const { data: newContact, error } = await getSupabaseAdmin()
     .from('contacts')
     .insert({
-      phone_number: phoneNumber,
+      phone_number: normalizedPhone,
       last_message_at: new Date().toISOString(),
     })
     .select('id, name, email, segment, location, last_message_at')
@@ -72,10 +78,11 @@ export async function getOrCreateContact(phoneNumber: string): Promise<Contact> 
  * Obtiene o crea una conversación
  */
 export async function getOrCreateConversation(phoneNumber: string, contactId: string): Promise<string> {
+  const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const { data: existing, error: selectError } = await getSupabaseAdmin()
     .from('conversations')
     .select('id')
-    .eq('phone_number', phoneNumber)
+    .eq('phone_number', normalizedPhone)
     .maybeSingle();
   
   if (selectError) {
@@ -107,7 +114,7 @@ export async function getOrCreateConversation(phoneNumber: string, contactId: st
   const { data: newConv, error } = await getSupabaseAdmin()
     .from('conversations')
     .insert({
-      phone_number: phoneNumber,
+      phone_number: normalizedPhone,
       contact_id: contactId,
       is_open: true,
       first_response_at: new Date().toISOString(),
@@ -128,10 +135,11 @@ export async function getOrCreateConversation(phoneNumber: string, contactId: st
  * Obtiene el historial completo de conversación
  */
 export async function getConversationHistory(phoneNumber: string): Promise<ConversationMessage[]> {
+  const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const { data: conversation, error: convError } = await getSupabaseAdmin()
     .from('conversations')
     .select('id')
-    .eq('phone_number', phoneNumber)
+    .eq('phone_number', normalizedPhone)
     .maybeSingle();
   
   if (convError) {

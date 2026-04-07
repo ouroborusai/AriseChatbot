@@ -43,7 +43,20 @@ CREATE TABLE IF NOT EXISTS public.messages (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- DOCUMENTOS DE CLIENTES
+CREATE TABLE IF NOT EXISTS public.client_documents (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  contact_id uuid NOT NULL REFERENCES public.contacts(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  description text,
+  file_name text,
+  file_url text,
+  file_type text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- ÍNDICES
+CREATE INDEX IF NOT EXISTS idx_client_documents_contact_id ON public.client_documents(contact_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_phone ON public.contacts(phone_number);
 CREATE INDEX IF NOT EXISTS idx_conversations_phone ON public.conversations(phone_number);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON public.messages(conversation_id);

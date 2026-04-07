@@ -207,3 +207,72 @@ export async function sendWhatsAppInteractiveButtons(
     throw error;
   }
 }
+
+export async function sendWhatsAppDocument(
+  phoneNumber: string,
+  documentUrl: string,
+  filename: string,
+  caption?: string
+): Promise<WhatsAppSendResponse> {
+  try {
+    console.log('[WhatsApp] 📤 Iniciando envío de documento...');
+
+    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+    if (!accessToken) {
+      throw new Error('[WhatsApp] WHATSAPP_ACCESS_TOKEN no configurado en .env.local');
+    }
+    if (!phoneNumberId) {
+      throw new Error('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID no configurado en .env.local');
+    }
+
+    const to = formatWhatsAppRecipient(phoneNumber);
+    if (!to || to.length < 8) {
+      throw new Error(`Número destino inválido para WhatsApp API: "${phoneNumber}" → "${to}"`);
+    }
+
+    const payload = {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'document',
+      document: {
+        link: documentUrl,
+        filename,
+        caption: caption || 'Documento solicitado',
+      },
+    };
+
+    console.log('[WhatsApp] Payload documento:', JSON.stringify(payload));
+
+    const url = `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const raw = await response.text();
+    if (!response.ok) {
+      const detail = parseWhatsAppGraphError(raw);
+      console.error('[WhatsApp] ❌ Graph API error:', response.status, detail);
+      throw new Error(`WhatsApp send failed: ${detail}`);
+    }
+
+    console.log('[WhatsApp] ✅ Documento enviado');
+    try {
+      return JSON.parse(raw) as WhatsAppSendResponse;
+    } catch {
+      return { raw };
+    }
+  } catch (error) {
+    console.error('[WhatsApp] ❌ Error en sendWhatsAppDocument:', error);
+    if (error instanceof Error) {
+      console.error('[WhatsApp] Message:', error.message);
+    }
+    throw error;
+  }
+}

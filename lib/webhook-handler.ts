@@ -30,10 +30,16 @@ type InboundMessage = {
 
 const WELCOME_KEYWORDS = ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'buenas', 'saludos'];
 
-const WELCOME_BUTTONS = [
-  { id: 'btn_orders', title: '📋 Ver pedidos' },
-  { id: 'btn_support', title: '🆘 Soporte técnico' },
-  { id: 'btn_promotions', title: '💰 Promociones' },
+const CLIENT_BUTTONS = [
+  { id: 'btn_client_info', title: '📄 Mi estado de cuenta' },
+  { id: 'btn_client_tax', title: '🧾 Mis impuestos' },
+  { id: 'btn_client_docs', title: '📎 Enviar documento' },
+];
+
+const PROSPECT_BUTTONS = [
+  { id: 'btn_new_quote', title: '💼 Quiero cotizar' },
+  { id: 'btn_new_info', title: '📝 Más información' },
+  { id: 'btn_new_contact', title: '📞 Hablar con asesor' },
 ];
 
 const PREDEFINED_RESPONSES: Array<{ keywords: string[]; response: string }> = [
@@ -61,6 +67,12 @@ const BUTTON_REPLY_RESPONSES: Record<string, string> = {
   btn_orders: 'Para ver el estado de tu pedido, envíame el número de pedido o el nombre del producto.',
   btn_support: 'Cuéntame brevemente tu problema y te ayudo a resolverlo, o escribe "humano" para hablar con alguien.',
   btn_promotions: 'Estas son las promociones actuales: 20% de descuento en productos seleccionados. ¿Te interesa recibir el enlace?',
+  btn_client_info: 'Perfecto. Para revisar tu estado de cuenta, dime el periodo o año fiscal que quieres consultar.',
+  btn_client_tax: '¡Claro! ¿Necesitas ayuda con ISR, IVA, nómina o declaraciones anuales?',
+  btn_client_docs: 'Indica qué documento deseas compartir o recibir. Por ejemplo: factura, comprobante o RFC.',
+  btn_new_quote: 'Genial, te puedo preparar una cotización. ¿Cuál es tu actividad principal o giro de negocio?',
+  btn_new_info: 'Te puedo explicar nuestros servicios fiscales, contables y de nómina. ¿Qué te interesa más?',
+  btn_new_contact: 'Un asesor de MTZ te contactará pronto. Por favor envía tu nombre completo y correo electrónico.',
 };
 
 const HELP_BUTTONS = [
@@ -168,16 +180,23 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
     }
 
     if (text && isGreeting(text)) {
-      const welcomeMessage = 'Hola 👋 Bienvenido. Elige una opción rápida para comenzar:';
+      const isKnownClient = Boolean(contact.name || contact.email || contact.segment);
+      const welcomeMessage = isKnownClient
+        ? `Hola ${contact.name ?? 'cliente'}, bienvenido de nuevo a MTZ Consultores Tributarios. Elige una opción rápida:`
+        : 'Hola 👋 Bienvenido a MTZ Consultores Tributarios. ¿Cómo te gustaría iniciar?';
+      const buttons = isKnownClient ? CLIENT_BUTTONS : PROSPECT_BUTTONS;
+
       console.log('✨ Saludo detectado, enviando bienvenida con botones');
       await saveMessage(conversationId, 'assistant', welcomeMessage);
       console.log('✅ Mensaje asistente de bienvenida guardado');
       try {
-        await sendWhatsAppInteractiveButtons(phoneNumber, welcomeMessage, WELCOME_BUTTONS);
+        await sendWhatsAppInteractiveButtons(phoneNumber, welcomeMessage, buttons);
         console.log('✅ WhatsApp enviado (bienvenida con botones)');
       } catch (whatsappError) {
         console.error('❌ Error WhatsApp bienvenida con botones:', whatsappError instanceof Error ? whatsappError.message : String(whatsappError));
-        const fallbackMessage = 'Hola 👋 Gracias por escribirnos. ¿En qué podemos ayudarte hoy?';
+        const fallbackMessage = isKnownClient
+          ? `Hola ${contact.name ?? 'cliente'}, gracias por contactarnos. ¿En qué podemos ayudarte hoy?`
+          : 'Hola 👋 Gracias por escribirnos. ¿En qué podemos ayudarte hoy?';
         await sendWhatsAppMessage(phoneNumber, fallbackMessage);
       }
       return;

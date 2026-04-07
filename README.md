@@ -28,6 +28,7 @@ npm run dev
 | `/api/test-ai` | POST | Test de IA sin WhatsApp |
 | `/api/test-message` | POST | Test completo (guardar + responder) |
 | `/api/contacts` | GET/POST | Listar/crear contactos |
+| `/api/client-documents` | GET/POST | Listar/crear documentos de cliente |
 | `/api/metrics` | GET | Estadísticas del sistema |
 | `/api/check-env` | GET | Verificar variables de entorno |
 
