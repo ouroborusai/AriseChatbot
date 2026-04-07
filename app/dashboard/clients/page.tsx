@@ -113,7 +113,11 @@ export default function ClientsPage() {
       setCompanyLinks([]);
       return;
     }
-    const links = (data || []) as CompanyLink[];
+    const links = (data ? data.map((item: any) => ({
+      company_id: item.company_id,
+      is_primary: item.is_primary,
+      companies: item.companies ? [item.companies].flat()[0] : null
+    })) : []) as CompanyLink[];
     setCompanyLinks(links);
     const primary = links.find((l) => l.is_primary)?.company_id || '';
     setSelectedCompanyId(primary);

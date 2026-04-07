@@ -240,8 +240,16 @@ export async function listCompaniesForContact(contactId: string): Promise<Array<
     return [];
   }
 
-  const rows = (data || []) as Array<{ companies?: { id: string; legal_name: string } | null }>;
-  return rows.map((r) => r.companies).filter(Boolean) as Array<{ id: string; legal_name: string }>;
+  const rows = (data || []) as Array<any>;
+  return rows
+    .map((r) => {
+      const company = r.companies;
+      if (Array.isArray(company)) {
+        return company[0];
+      }
+      return company;
+    })
+    .filter(Boolean) as Array<{ id: string; legal_name: string }>;
 }
 
 export async function setActiveCompanyForConversation(conversationId: string, companyId: string | null): Promise<void> {

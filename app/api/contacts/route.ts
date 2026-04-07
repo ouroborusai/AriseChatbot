@@ -75,14 +75,6 @@ export async function POST(request: NextRequest) {
       }))
       .filter((c) => Boolean(c.phone_number));
 
-    if (error) {
-      console.error('Error upserting contact:', error);
-      return NextResponse.json(
-        { error: 'Failed to save contact' },
-        { status: 500 }
-      );
-    }
-
     if (rows.length === 0) {
       return NextResponse.json({ error: 'phone_number is required' }, { status: 400 });
     }

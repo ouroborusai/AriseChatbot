@@ -194,10 +194,10 @@ async function sendCompanySelectionMenu(
   );
 }
 
-async function sendWelcomeMenu(phoneNumber: string, contact: { name?: string; segment?: string }): Promise<void> {
+async function sendWelcomeMenu(phoneNumber: string, contact: { id?: string; name?: string; segment?: string }): Promise<void> {
   if (isKnownClient(contact)) {
     const name = contact.name?.trim() || 'cliente';
-    const docs = await getLatestClientDocuments((contact as { id?: string }).id || '', 1).catch(() => []);
+    const docs = await getLatestClientDocuments(contact.id || '', 1).catch(() => []);
     const hasDocs = docs.length > 0;
 
     const buttons = [
