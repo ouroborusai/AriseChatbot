@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendWhatsAppMessage, sendWhatsAppDocument } from '@/lib/whatsapp-service';
+import { sendWhatsAppMessage, sendWhatsAppDocument, sendWhatsAppImage } from '@/lib/whatsapp-service';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { digitsOnly } from '@/lib/utils';
 
@@ -10,11 +10,11 @@ import { digitsOnly } from '@/lib/utils';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone_number, message, document_url, document_name } = body;
+    const { phone_number, message, document_url, document_name, image_url, image_caption } = body;
 
-    if (!phone_number || (!message && !document_url)) {
+    if (!phone_number || (!message && !document_url && !image_url)) {
       return NextResponse.json(
-        { error: 'phone_number y message o document_url son requeridos' },
+        { error: 'phone_number y message o document_url o image_url son requeridos' },
         { status: 400 }
       );
     }
@@ -90,7 +90,15 @@ export async function POST(request: NextRequest) {
     // 3. Enviar mensaje por WhatsApp
     let messageContent = message || 'Documento adjunto';
 
-    if (document_url) {
+    if (image_url) {
+      console.log('[SendMessage] Enviando imagen...');
+      await sendWhatsAppImage(
+        normalizedPhone,
+        image_url,
+        image_caption || message || 'Imagen enviada'
+      );
+      messageContent = message || image_caption || 'Imagen enviada';
+    } else if (document_url) {
       console.log('[SendMessage] Enviando documento...');
       await sendWhatsAppDocument(
         normalizedPhone,

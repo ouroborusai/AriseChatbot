@@ -241,6 +241,18 @@ async function generateAssistantReply(
 4. **Hybrid**: Lo mejor de ambos mundos (reglas + IA)
 5. **Auditable**: Respuestas predefinidas quedan en historial claro
 
+## 📎 Soporte de Archivos y Medios
+
+- WhatsApp Cloud API permite el envío de **documentos** y **imágenes**.
+- En este proyecto ya existe envío de **PDF/documentos** con `document_url`.
+- Ahora también se puede enviar **imagenes** usando `image_url`.
+- Esto significa que puedes adjuntar:
+  - PDFs / contratos / recibos
+  - fotos / capturas / vouchers
+  - otros archivos vía enlace seguro al mensaje
+
+---
+
 ---
 
 ## 🔧 Cómo Agregar Nuevas Respuestas Predefinidas

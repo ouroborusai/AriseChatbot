@@ -81,7 +81,26 @@ CREATE TABLE IF NOT EXISTS public.client_documents (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- SOLICITUDES Y TICKETS
+CREATE TABLE IF NOT EXISTS public.service_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  request_code text NOT NULL UNIQUE,
+  contact_id uuid NOT NULL REFERENCES public.contacts(id) ON DELETE CASCADE,
+  conversation_id uuid NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
+  company_id uuid REFERENCES public.companies(id) ON DELETE SET NULL,
+  request_type text NOT NULL,
+  description text NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  result_url text,
+  assigned_to text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- ÍNDICES
+CREATE INDEX IF NOT EXISTS idx_service_requests_contact_id ON public.service_requests(contact_id);
+CREATE INDEX IF NOT EXISTS idx_service_requests_conversation_id ON public.service_requests(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_service_requests_status ON public.service_requests(status);
 CREATE INDEX IF NOT EXISTS idx_client_documents_contact_id ON public.client_documents(contact_id);
 CREATE INDEX IF NOT EXISTS idx_client_documents_company_id ON public.client_documents(company_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_phone ON public.contacts(phone_number);

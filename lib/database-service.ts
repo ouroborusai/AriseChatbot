@@ -24,6 +24,28 @@ export interface ConversationMessage {
   content: string;
 }
 
+export interface ServiceRequest {
+  id: string;
+  request_code: string;
+  contact_id: string;
+  conversation_id: string;
+  company_id?: string | null;
+  request_type: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'ready' | 'completed' | 'cancelled';
+  result_url?: string | null;
+  assigned_to?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function generateRequestCode(type: string): string {
+  const prefix = type === 'quote' ? 'COT' : type === 'document' ? 'DOC' : 'REQ';
+  const short = Math.random().toString(36).slice(2, 7).toUpperCase();
+  const timestamp = Date.now().toString().slice(-6);
+  return `${prefix}-${timestamp}-${short}`;
+}
+
 /**
  * Obtiene o crea un contacto
  */
@@ -270,6 +292,84 @@ export async function getActiveCompanyForConversation(conversationId: string): P
     .maybeSingle();
   if (error) return null;
   return (data?.active_company_id as string | null) ?? null;
+}
+
+export async function createServiceRequest(
+  contactId: string,
+  conversationId: string,
+  requestType: string,
+  description: string,
+  companyId?: string | null
+): Promise<ServiceRequest | null> {
+  const requestCode = generateRequestCode(requestType);
+  const { data, error } = await getSupabaseAdmin()
+    .from('service_requests')
+    .insert({
+      request_code: requestCode,
+      contact_id: contactId,
+      conversation_id: conversationId,
+      company_id: companyId || null,
+      request_type: requestType,
+      description,
+      status: 'pending',
+    })
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('[DB] Error creating service request:', error);
+    return null;
+  }
+
+  return data as ServiceRequest;
+}
+
+export async function getServiceRequestsForContact(contactId: string): Promise<ServiceRequest[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('service_requests')
+    .select('*')
+    .eq('contact_id', contactId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn('[DB] Error fetching service requests:', error);
+    return [];
+  }
+
+  return (data || []) as ServiceRequest[];
+}
+
+export async function getServiceRequestByCode(requestCode: string): Promise<ServiceRequest | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('service_requests')
+    .select('*')
+    .eq('request_code', requestCode)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[DB] Error fetching service request by code:', error);
+    return null;
+  }
+
+  return (data || null) as ServiceRequest | null;
+}
+
+export async function updateServiceRequestStatus(
+  requestCode: string,
+  status: ServiceRequest['status'],
+  resultUrl?: string | null
+): Promise<boolean> {
+  const { error } = await getSupabaseAdmin()
+    .from('service_requests')
+    .update({ status, result_url: resultUrl || null })
+    .eq('request_code', requestCode);
+
+  if (error) {
+    console.error('[DB] Error updating service request status:', error);
+    return false;
+  }
+
+  return true;
 }
 
 /**

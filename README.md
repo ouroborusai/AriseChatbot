@@ -43,11 +43,18 @@ El dashboard incluye las siguientes secciones:
 
 | Ruta | Descripción |
 |------|-------------|
-| `/dashboard` | Chat en tiempo real con clientes |
-| `/dashboard/clients` | Gestión de clientes y envío de mensajes |
-| `/dashboard/templates` | Plantillas de mensajes rápidos |
-| `/dashboard/metrics` | Métricas y estadísticas |
+| `/dashboard` | 🆕 **Chat en tiempo real** - Responde a clientes directamente desde la interfaz |
+| `/dashboard/clients` | Gestión de clientes, envío de mensajes y documentos |
+| `/dashboard/templates` | Plantillas de mensajes rápidos predefinidos |
+| `/dashboard/metrics` | Métricas y estadísticas del chatbot |
 | `/dashboard/settings` | Configuración del sistema |
+
+### 🆕 Vista de Chat en Tiempo Real (`/dashboard`)
+- Lista de conversaciones activas del lado izquierdo
+- Historial de mensajes en el centro
+- **Envío directo de respuestas** desde la interfaz hacia WhatsApp
+- Auto-refresh de nuevos mensajes
+- Feedback visual de envío exitoso/error
 
 ## 🗄️ Base de datos
 

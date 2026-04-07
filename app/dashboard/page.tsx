@@ -129,7 +129,10 @@ export default function DashboardPage() {
             selectedPhone={selectedPhone}
             onSelect={setSelectedPhone}
           />
-          <MessageView selectedConversation={selectedConversation} />
+          <MessageView
+            selectedConversation={selectedConversation}
+            selectedPhone={selectedPhone}
+          />
         </div>
       </div>
     </div>

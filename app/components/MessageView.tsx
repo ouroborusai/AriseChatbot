@@ -21,9 +21,13 @@ type ConversationSummary = {
 
 interface MessageViewProps {
   selectedConversation: ConversationSummary | null;
+  selectedPhone: string | null;
 }
 
-export default function MessageView({ selectedConversation }: MessageViewProps) {
+export default function MessageView({ selectedConversation, selectedPhone }: MessageViewProps) {
+  const [replyText, setReplyText] = React.useState('');
+  const [sending, setSending] = React.useState(false);
+  const [sendResult, setSendResult] = React.useState<{ success?: boolean; error?: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -33,6 +37,39 @@ export default function MessageView({ selectedConversation }: MessageViewProps) 
   useEffect(() => {
     scrollToBottom();
   }, [selectedConversation]);
+
+  const handleSendReply = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedPhone || !replyText.trim()) return;
+
+    setSending(true);
+    setSendResult(null);
+
+    try {
+      const response = await fetch('/api/send-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone_number: selectedPhone,
+          message: replyText.trim(),
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setSendResult({ success: true });
+        setReplyText('');
+        // Auto-clear resultado después de 2 segundos
+        setTimeout(() => setSendResult(null), 2000);
+      } else {
+        setSendResult({ error: data.error || 'No se pudo enviar el mensaje' });
+      }
+    } catch (error) {
+      setSendResult({ error: error instanceof Error ? error.message : 'Error de conexión' });
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <main className="flex h-full flex-1 flex-col overflow-hidden bg-gradient-to-b from-slate-50 to-white">
@@ -93,16 +130,45 @@ export default function MessageView({ selectedConversation }: MessageViewProps) 
         )}
       </div>
 
-      {/* Área de input (deshabilitada por ahora) */}
-      <div className="shrink-0 border-t border-slate-100 bg-white px-5 py-3">
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-400">
-          <span className="text-xl opacity-50">😊</span>
-          <input
-            disabled
-            placeholder="Respuestas automáticas por WhatsApp"
-            className="flex-1 bg-transparent text-sm text-slate-500 outline-none placeholder:text-slate-400"
-          />
-        </div>
+      {/* Área de input para responder desde la interfaz */}
+      <div className="shrink-0 border-t border-slate-100 bg-white px-5 py-4">
+        <form onSubmit={handleSendReply} className="space-y-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <span className="text-xl">💬</span>
+            <input
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              disabled={!selectedConversation || !selectedPhone || sending}
+              placeholder={
+                selectedConversation
+                  ? 'Escribe tu respuesta...'
+                  : 'Selecciona una conversación para responder'
+              }
+              className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+            />
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <button
+              type="submit"
+              disabled={!selectedConversation || !selectedPhone || !replyText.trim() || sending}
+              className="inline-flex items-center justify-center rounded-2xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+            >
+              {sending ? 'Enviando...' : 'Enviar respuesta'}
+            </button>
+            {sendResult && (
+              <div
+                className={`rounded-2xl px-4 py-3 text-sm ${
+                  sendResult.success
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}
+              >
+                {sendResult.success ? 'Respuesta enviada' : `Error: ${sendResult.error}`}
+              </div>
+            )}
+          </div>
+        </form>
       </div>
     </main>
   );

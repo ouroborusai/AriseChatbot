@@ -15,6 +15,8 @@ import {
   getOrCreateConversation,
   saveMessage,
   getConversationHistory,
+  createServiceRequest,
+  getServiceRequestByCode,
 } from './database-service';
 import { getSupabaseAdmin } from './supabase-admin';
 
@@ -58,6 +60,8 @@ const BTN_DOC_BALANCE = 'btn_doc_balance';
 const BTN_DOC_LIQUIDACIONES = 'btn_doc_liquidaciones';
 const BTN_DOC_CONTRATOS = 'btn_doc_contratos';
 
+const BTN_CHECK_REQUEST_STATUS = 'btn_check_request_status';
+const BTN_SCHEDULE_CALL = 'btn_schedule_call';
 const BTN_SELECT_COMPANY = 'btn_select_company';
 const BTN_COMPANY_FREE_TEXT = 'btn_company_free_text';
 const COMPANY_BTN_PREFIX = 'company:';
@@ -94,6 +98,16 @@ function getLastButtonFromHistory(history: Array<{ role: 'user' | 'assistant'; c
     }
   }
   return null;
+}
+
+function parseRequestCode(message: string): string | null {
+  const match = message.match(/\b(DOC|COT|REQ)-[A-Z0-9]{4,}\b/i);
+  return match ? match[0].toUpperCase() : null;
+}
+
+function isRequestStatusQuery(message: string): boolean {
+  const normalized = normalizeMessage(message);
+  return normalized.includes('estado') && normalized.includes('solicitud');
 }
 
 /**
@@ -244,6 +258,44 @@ async function sendCompanySelectionMenu(
   );
 }
 
+async function sendRequestStatusPrompt(phoneNumber: string): Promise<void> {
+  const msg = 'Para consultar una solicitud, envía el código que te dimos. Ejemplo: DOC-1234-ABCD o COT-5678-ZYXW.';
+  await sendWhatsAppMessage(phoneNumber, msg);
+}
+
+async function sendRequestStatusByCode(phoneNumber: string, requestCode: string): Promise<void> {
+  const request = await getServiceRequestByCode(requestCode);
+  if (!request) {
+    const msg = `No encontré una solicitud con el código ${requestCode}. Revisa que estés usando el código correcto.`;
+    await sendWhatsAppMessage(phoneNumber, msg);
+    return;
+  }
+
+  const msg = `Solicitud ${request.request_code}: ${request.request_type} - Estado: ${request.status}.\nDescripción: ${request.description}${request.result_url ? `\nDescarga: ${request.result_url}` : ''}`;
+  await sendWhatsAppMessage(phoneNumber, msg);
+}
+
+async function createAndSendServiceRequest(
+  phoneNumber: string,
+  contactId: string,
+  conversationId: string,
+  type: string,
+  description: string,
+  companyId?: string | null
+): Promise<void> {
+  const request = await createServiceRequest(contactId, conversationId, type, description, companyId);
+  if (!request) {
+    const msg = 'Hubo un problema registrando la solicitud. Un asesor te atenderá pronto.';
+    await saveMessage(conversationId, 'assistant', msg);
+    await sendWhatsAppMessage(phoneNumber, msg);
+    return;
+  }
+
+  const msg = `Solicitud registrada ✅\nCódigo: ${request.request_code}\nTipo: ${request.request_type}\nEstado: ${request.status}\nTe avisaremos cuando esté lista.`;
+  await saveMessage(conversationId, 'assistant', msg);
+  await sendWhatsAppMessage(phoneNumber, msg);
+}
+
 async function sendWelcomeMenu(phoneNumber: string, contact: { id?: string; name?: string; segment?: string }): Promise<void> {
   if (isKnownClient(contact)) {
     const name = contact.name?.trim() || 'cliente';
@@ -255,6 +307,7 @@ async function sendWelcomeMenu(phoneNumber: string, contact: { id?: string; name
         ? [{ id: BTN_EXISTING_DOCS, title: '📄 Mis documentos' as const }]
         : [{ id: BTN_EXISTING_REQUEST_DOC, title: '📎 Solicitar documento' as const }]),
       { id: BTN_EXISTING_TAX, title: '🧾 Mis impuestos' },
+      { id: BTN_CHECK_REQUEST_STATUS, title: '🔎 Estado solicitud' },
       { id: BTN_EXISTING_HUMAN, title: '📞 Hablar con asesor' },
     ];
 
@@ -272,6 +325,7 @@ async function sendWelcomeMenu(phoneNumber: string, contact: { id?: string; name
     [
       { id: BTN_NEW_QUOTE, title: '💼 Quiero cotizar' },
       { id: BTN_NEW_INFO, title: '📝 Más información' },
+      { id: BTN_CHECK_REQUEST_STATUS, title: '🔎 Estado solicitud' },
       { id: BTN_NEW_HUMAN, title: '📞 Hablar con asesor' },
     ]
   );
@@ -403,6 +457,23 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
       return;
     }
 
+    if (interactive === BTN_CHECK_REQUEST_STATUS) {
+      await sendRequestStatusPrompt(phoneNumber);
+      return;
+    }
+
+    if (text) {
+      const requestCode = parseRequestCode(text);
+      if (requestCode) {
+        await sendRequestStatusByCode(phoneNumber, requestCode);
+        return;
+      }
+      if (isRequestStatusQuery(text)) {
+        await sendRequestStatusPrompt(phoneNumber);
+        return;
+      }
+    }
+
     // 3. ¿Quiere hablar con humano?
     if ((text && wantsHumanAgent(text)) || interactive === BTN_EXISTING_HUMAN || interactive === BTN_NEW_HUMAN) {
       const humanMessage = 'Entiendo. Un asesor especializado de MTZ se comunicará contigo desde este número en breve. Gracias por tu paciencia.';
@@ -454,7 +525,21 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
     }
 
     if (interactive === BTN_EXISTING_REQUEST_DOC) {
-      const msg = '¿Qué documento necesitas? (por ejemplo: “Declaración IVA Marzo 2026”, “F29”, “Balance”, “Contrato”)';
+      const msg = '¿Qué documento necesitas? Descríbelo brevemente y si quieres indica período o tipo.';
+      await saveMessage(conversationId, 'assistant', msg);
+      await sendWhatsAppMessage(phoneNumber, msg);
+      return;
+    }
+
+    if (interactive === BTN_NEW_QUOTE) {
+      const msg = 'Para cotizar, dime tu actividad económica y cuántos documentos/emisiones tienes al mes (aprox.).';
+      await saveMessage(conversationId, 'assistant', msg);
+      await sendWhatsAppMessage(phoneNumber, msg);
+      return;
+    }
+
+    if (interactive === BTN_NEW_INFO) {
+      const msg = 'Perfecto. ¿Sobre qué necesitas más información? Por ejemplo: servicios contables, impuestos, nómina o regularizaciones.';
       await saveMessage(conversationId, 'assistant', msg);
       await sendWhatsAppMessage(phoneNumber, msg);
       return;
@@ -625,6 +710,40 @@ export async function handleInboundUserMessage(messageData: InboundMessage): Pro
           `contrato ${text.trim()}`,
           'No encuentro ese contrato cargado todavía. ¿Quieres que un asesor lo gestione?'
         );
+        return;
+      }
+
+      // Solicitud de documento via texto libre desde el botón de solicitud
+      if (lastBtn === BTN_EXISTING_REQUEST_DOC) {
+        await createAndSendServiceRequest(
+          phoneNumber,
+          contact.id,
+          conversationId,
+          'document',
+          text.trim(),
+          activeCompanyId
+        );
+        return;
+      }
+
+      // Cotización solicitada por prospecto
+      if (lastBtn === BTN_NEW_QUOTE) {
+        await createAndSendServiceRequest(
+          phoneNumber,
+          contact.id,
+          conversationId,
+          'quote',
+          text.trim(),
+          activeCompanyId
+        );
+        return;
+      }
+
+      // Consultas de información del prospecto pueden ir a IA, pero priorizar guiar a servicios.
+      if (lastBtn === BTN_NEW_INFO) {
+        const msg = 'Gracias. Te envío información clara sobre los servicios de MTZ y luego te daré opción de asesoría.';
+        await saveMessage(conversationId, 'assistant', msg);
+        await sendWhatsAppMessage(phoneNumber, msg);
         return;
       }
     }
