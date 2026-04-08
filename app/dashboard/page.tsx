@@ -36,35 +36,50 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [realtimeStatus, setRealtimeStatus] = useState<string>('Conectando...');
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`
-          id,
-          role,
-          content,
-          created_at,
-          conversation_id,
-          conversations!inner(phone_number)
-        `)
-        .order('created_at', { ascending: true })
-        .limit(100);
+  // Función para cargar mensajes
+  const fetchMessages = async () => {
+    // Obtener conversaciones primero
+    const { data: convs, error: convError } = await supabase
+      .from('conversations')
+      .select('id, phone_number')
+      .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching messages:', error);
-      } else {
-        // Transformar datos para que phone_number esté accesible
-        const transformedMessages = (data || []).map((m: any) => ({
-          ...m,
-          phone_number: m.conversations?.phone_number,
-          conversations: undefined
-        }));
-        setMessages(transformedMessages);
-      }
+    if (convError) {
+      console.error('Error fetching conversations:', convError);
       setLoading(false);
-    };
+      return;
+    }
 
+    if (!convs || convs.length === 0) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
+
+    // Obtener todos los mensajes de esas conversaciones
+    const convIds = convs.map(c => c.id);
+    
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id, role, content, created_at, conversation_id')
+      .in('conversation_id', convIds)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching messages:', error);
+    } else if (data) {
+      // Mapear teléfono a cada mensaje
+      const convMap = new Map(convs.map(c => [c.id, c.phone_number]));
+      const transformedMessages = data.map(m => ({
+        ...m,
+        phone_number: convMap.get(m.conversation_id) || 'sin número'
+      }));
+      setMessages(transformedMessages);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchMessages();
 
     // Suscribirse a nuevos mensajes en tiempo real
@@ -74,28 +89,10 @@ export default function DashboardPage() {
         event: 'INSERT', 
         schema: 'public', 
         table: 'messages' 
-      }, async (payload) => {
+      }, (payload) => {
         console.log('📨 Nuevo mensaje recibido:', payload.new);
-        const newMsgRaw = payload.new as any;
-        
-        // Obtener el phone_number del mensaje nuevo
-        const { data: msgWithConv } = await supabase
-          .from('messages')
-          .select('id, role, content, created_at, conversations!inner(phone_number)')
-          .eq('id', newMsgRaw.id)
-          .single();
-        
-        if (msgWithConv) {
-          const newMsg = {
-            ...msgWithConv,
-            phone_number: (msgWithConv as any).conversations?.phone_number,
-          } as Message;
-          
-          setMessages((prev) => {
-            if (prev.some(m => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
-          });
-        }
+        // Recargar todos los mensajes para mantener consistencia
+        fetchMessages();
       })
       .subscribe((status) => {
         console.log('📡 Estado de suscripción:', status);
