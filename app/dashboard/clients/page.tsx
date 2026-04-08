@@ -406,15 +406,449 @@ export default function ClientsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center text-slate-700">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-whatsapp-green border-r-transparent"></div>
-          <p className="mt-4 text-sm font-medium">Cargando clientes...</p>
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-800">Clientes</h1>
+        <p className="text-sm text-slate-500">Gestiona tus clientes y contactos</p>
+      </div>
+
+      <div className="flex-1 min-h-0 flex gap-6">
+        {/* Lista de contactos */}
+        <div className="w-80 shrink-0 flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden">
+          <div className="p-4 border-b border-slate-100">
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar contacto..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+            />
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-2">
+            {loadingContacts ? (
+              <div className="text-center py-8 text-slate-500 text-sm">Cargando...</div>
+            ) : filteredContacts.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-sm">Sin contactos</div>
+            ) : (
+              <div className="space-y-1">
+                {filteredContacts.map((contact) => (
+                  <button
+                    key={contact.id}
+                    type="button"
+                    onClick={() => selectContact(contact)}
+                    className={`w-full text-left p-3 rounded-xl transition ${
+                      selectedContact?.id === contact.id
+                        ? 'bg-green-50 ring-1 ring-green-200'
+                        : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <p className="font-medium text-slate-900 truncate">
+                      {contact.name || `Cliente ${contact.phone_number.slice(-4)}`}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate">{contact.phone_number}</p>
+                    {contact.segment && (
+                      <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
+                        contact.segment === 'cliente' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {contact.segment === 'cliente' ? 'Cliente' : 'Prospecto'}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Panel de detalles */}
+        <div className="flex-1 min-w-0 bg-white rounded-2xl border border-slate-200 overflow-y-auto">
+          {selectedContact ? (
+            <div className="p-6 space-y-6">
+              {/* Info del contacto */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">Contacto</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditName(selectedContact.name || '');
+                      setIsEditingName(true);
+                    }}
+                    className="text-xs text-whatsapp-green hover:underline"
+                  >
+                    Editar nombre
+                  </button>
+                </div>
+                
+                {isEditingName ? (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                      placeholder="Nombre del contacto"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={handleUpdateContactName}
+                      className="rounded-xl bg-whatsapp-green px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-whatsapp-greenHover"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingName(false)}
+                      className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-2">
+                    <p className="font-medium text-slate-900">
+                      {selectedContact.name || 'Sin nombre'}
+                    </p>
+                    <p className="text-sm text-slate-600">{selectedContact.phone_number}</p>
+                    
+                    {/* Segmento editable */}
+                    {isEditingSegment ? (
+                      <div className="mt-3 flex gap-2">
+                        <select
+                          value={selectedContact.segment || ''}
+                          onChange={(e) => handleUpdateSegment(e.target.value)}
+                          className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                        >
+                          <option value="">Sin clasificar</option>
+                          <option value="cliente">Cliente</option>
+                          <option value="prospect">Prospecto</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingSegment(false)}
+                          className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className={`inline-block text-xs px-2 py-1 rounded-full ${
+                          selectedContact.segment === 'cliente' 
+                            ? 'bg-green-100 text-green-700' 
+                            : selectedContact.segment === 'prospect'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {selectedContact.segment === 'cliente' ? '✅ Cliente' : 
+                           selectedContact.segment === 'prospect' ? '🆕 Prospecto' : 
+                           '❓ Sin clasificar'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingSegment(true)}
+                          className="text-xs text-slate-500 hover:text-slate-700"
+                        >
+                          Cambiar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Subir documento con drag & drop */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">📤 Subir documento</h3>
+                
+                <form onSubmit={handleUploadDocument} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Tipo de documento</label>
+                    <select
+                      value={uploadForm.docType}
+                      onChange={(e) => setUploadForm({ ...uploadForm, docType: e.target.value, period: '' })}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                      required
+                    >
+                      <option value="">Seleccionar tipo...</option>
+                      {DOC_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                    {uploadForm.docType && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Formato: {DOC_TYPES.find(t => t.value === uploadForm.docType)?.periodFormat}
+                      </p>
+                    )}
+                  </div>
+
+                  {uploadForm.docType && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">Período / Descripción</label>
+                      <input
+                        value={uploadForm.period}
+                        onChange={(e) => setUploadForm({ ...uploadForm, period: e.target.value })}
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none"
+                        placeholder={
+                          uploadForm.docType === 'liquidacion' ? '2026-03 Juan Perez' :
+                          uploadForm.docType === 'iva' ? '2026-03' :
+                          uploadForm.docType === 'renta' || uploadForm.docType === 'balance' ? '2025' :
+                          'Descripción del documento'
+                        }
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* Drag & Drop Zone */}
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition ${
+                      isDragging 
+                        ? 'border-whatsapp-green bg-green-50' 
+                        : uploadFile
+                          ? 'border-whatsapp-green bg-green-50'
+                          : 'border-slate-300 hover:border-whatsapp-green'
+                    }`}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      onChange={handleFileSelect}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                      className="hidden"
+                    />
+                    
+                    {uploadFile ? (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-slate-900">📎 {uploadFile.name}</p>
+                        <p className="text-xs text-slate-500">{(uploadFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadFile(null);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                          className="text-xs text-red-600 hover:underline"
+                        >
+                          Quitar archivo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-sm text-slate-600">Arrastra un archivo aquí o haz clic para seleccionar</p>
+                        <p className="text-xs text-slate-400">PDF, Excel, Word, imágenes (máx 50MB)</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {uploadResult && (
+                    <div
+                      className={`rounded-xl px-3 py-2 text-sm ${
+                        uploadResult.success
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-red-50 text-red-700 border border-red-200'
+                      }`}
+                    >
+                      {uploadResult.success ? '✓ Documento subido correctamente' : `✗ ${uploadResult.error}`}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={uploading || !uploadFile || !uploadForm.docType || !uploadForm.period}
+                    className="w-full rounded-xl bg-whatsapp-green px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-whatsapp-greenHover disabled:opacity-60"
+                  >
+                    {uploading ? 'Subiendo...' : 'Subir documento'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Empresas vinculadas */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">🏢 Empresas</h3>
+                
+                {loadingCompanies ? (
+                  <p className="text-sm text-slate-500">Cargando...</p>
+                ) : companies.length === 0 ? (
+                  <p className="text-sm text-slate-500">No hay empresas vinculadas</p>
+                ) : (
+                  <div className="space-y-2">
+                    {companies.map((link) => (
+                      <div
+                        key={link.company_id}
+                        className={`p-3 rounded-xl border cursor-pointer transition ${
+                          selectedCompanyId === link.company_id
+                            ? 'border-whatsapp-green bg-green-50'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                        onClick={() => setSelectedCompanyId(link.company_id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-slate-900">{link.companies?.legal_name}</p>
+                          {link.is_primary && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Principal</span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetPrimaryCompany(link.company_id);
+                          }}
+                          className="text-xs text-slate-500 hover:text-slate-700 mt-1"
+                        >
+                          {link.is_primary ? '' : 'Definir como principal'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Documentos subidos */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-900">📁 Documentos subidos</h3>
+                  <span className="text-xs text-slate-500">{documents.length} archivo(s)</span>
+                </div>
+
+                <div className="mt-4 max-h-[250px] overflow-y-auto space-y-2">
+                  {documents.length === 0 ? (
+                    <p className="text-sm text-slate-500">No hay documentos subidos para este cliente/empresa.</p>
+                  ) : (
+                    documents.map((d) => (
+                      <div key={d.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900 truncate">{d.title}</p>
+                          <p className="text-xs text-slate-500 truncate">{d.file_name}</p>
+                          {d.file_url && (
+                            <a 
+                              href={d.file_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs text-whatsapp-green hover:underline"
+                            >
+                              Ver documento
+                            </a>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDocument(d.id)}
+                          className="text-xs text-red-600 hover:text-red-800 shrink-0"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Envío manual */}
+              <form onSubmit={handleSendMessage} className="space-y-4">
+              <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200">
+                <p className="text-sm text-slate-500">Enviando a:</p>
+                <p className="font-medium text-slate-900">
+                  {selectedContact.name || `Cliente ${selectedContact.phone_number.slice(-4)}`}
+                </p>
+                <p className="text-sm text-slate-600">{selectedContact.phone_number}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Mensaje
+                </label>
+                <textarea
+                  value={messageForm.message}
+                  onChange={(e) => setMessageForm({ ...messageForm, message: e.target.value })}
+                  rows={4}
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none"
+                  placeholder="Escribe tu mensaje..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    URL de documento (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={messageForm.documentUrl}
+                    onChange={(e) => setMessageForm({ ...messageForm, documentUrl: e.target.value })}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none"
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Nombre del archivo (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={messageForm.documentName}
+                    onChange={(e) => setMessageForm({ ...messageForm, documentName: e.target.value })}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none"
+                    placeholder="documento.pdf"
+                  />
+                </div>
+              </div>
+
+              {sendResult && (
+                <div
+                  className={`rounded-2xl p-4 text-sm ${
+                    sendResult.success
+                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}
+                >
+                  {sendResult.success ? '✓ Mensaje enviado' : `✗ ${sendResult.error}`}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={sending || !messageForm.message}
+                  className="flex-1 rounded-3xl bg-whatsapp-green px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover disabled:opacity-60"
+                >
+                  {sending ? 'Enviando...' : 'Enviar mensaje'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedContact(null)}
+                  className="px-4 py-3 rounded-3xl border border-slate-300 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+              </form>
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center p-6">
+              <div className="text-center">
+                <p className="text-slate-500 text-sm mb-4">
+                  Selecciona un cliente de la lista para gestionar
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className="space-y-6">

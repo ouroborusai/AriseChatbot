@@ -237,8 +237,8 @@ export default function DashboardPage() {
           <span className="text-xs text-slate-500">{realtimeStatus}</span>
         </div>
       </div>
-      <div className="card-base p-0 overflow-hidden flex-1">
-        <div className="flex h-[calc(100vh-14rem)] gap-0">
+      <div className="flex-1 min-h-0">
+        <div className="h-full flex gap-0">
           <ConversationList
             conversations={conversations}
             selectedPhone={selectedPhone}
