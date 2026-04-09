@@ -143,3 +143,19 @@ ALTER TABLE public.companies DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_companies DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.conversations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.client_documents DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.service_requests DISABLE ROW LEVEL SECURITY;
+
+-- CÓDIGOS DE ACCESO PARA PORTAL PÚBLICO
+CREATE TABLE IF NOT EXISTS public.client_access_codes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  phone_number text NOT NULL,
+  code text NOT NULL,
+  expires_at timestamptz NOT NULL,
+  used_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(phone_number, code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_client_access_codes_phone ON public.client_access_codes(phone_number);
+CREATE INDEX IF NOT EXISTS idx_client_access_codes_code ON public.client_access_codes(code);

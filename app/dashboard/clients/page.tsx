@@ -83,6 +83,8 @@ export default function ClientsPage() {
   const [uploadResult, setUploadResult] = useState<{ success?: boolean; error?: string } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sendingAccessCode, setSendingAccessCode] = useState(false);
+  const [accessCodeResult, setAccessCodeResult] = useState<{ success?: boolean; error?: string } | null>(null);
 
   useEffect(() => {
     fetchContacts();
@@ -376,6 +378,31 @@ export default function ClientsPage() {
       }
     } catch (e) {
       console.error('Error deleting document:', e);
+    }
+  };
+
+  const handleSendAccessCode = async () => {
+    if (!selectedContact) return;
+    setSendingAccessCode(true);
+    setAccessCodeResult(null);
+
+    try {
+      const res = await fetch('/api/access-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone_number: selectedContact.phone_number }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setAccessCodeResult({ success: true });
+      } else {
+        setAccessCodeResult({ error: data.error || 'Error al enviar código' });
+      }
+    } catch (e) {
+      setAccessCodeResult({ error: 'Error de conexión' });
+    } finally {
+      setSendingAccessCode(false);
     }
   };
 
@@ -752,6 +779,29 @@ export default function ClientsPage() {
                     ))
                   )}
                 </div>
+              </div>
+
+              {/* Enviar código de acceso */}
+              <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">🔐 Acceso Portal</h3>
+                    <p className="text-xs text-slate-500 mt-1">Envía un código para ver documentos</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSendAccessCode}
+                    disabled={sendingAccessCode || !selectedContact}
+                    className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {sendingAccessCode ? 'Enviando...' : '📤 Enviar Código'}
+                  </button>
+                </div>
+                {accessCodeResult && (
+                  <div className={`mt-3 text-sm ${accessCodeResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                    {accessCodeResult.success ? '✅ Código enviado correctamente' : `❌ ${accessCodeResult.error}`}
+                  </div>
+                )}
               </div>
 
               {/* Envío manual */}
