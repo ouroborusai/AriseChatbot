@@ -146,7 +146,25 @@ ALTER TABLE public.messages DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.client_documents DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.service_requests DISABLE ROW LEVEL SECURITY;
 
--- CÓDIGOS DE ACCESO PARA PORTAL PÚBLICO
+-- PLANTILLAS DE MENSAJES
+CREATE TABLE IF NOT EXISTS public.templates (
+  id text PRIMARY KEY,
+  name text NOT NULL,
+  content text NOT NULL,
+  category text NOT NULL DEFAULT 'general',
+  service_type text,
+  trigger text,
+  actions jsonb DEFAULT '[]'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  priority integer NOT NULL DEFAULT 50,
+  segment text NOT NULL DEFAULT 'todos',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_templates_category ON public.templates(category);
+CREATE INDEX IF NOT EXISTS idx_templates_priority ON public.templates(priority);
+CREATE INDEX IF NOT EXISTS idx_templates_is_active ON public.templates(is_active);
 CREATE TABLE IF NOT EXISTS public.client_access_codes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   phone_number text NOT NULL,
