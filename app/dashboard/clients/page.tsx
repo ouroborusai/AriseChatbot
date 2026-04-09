@@ -437,7 +437,7 @@ export default function ClientsPage() {
                   <button
                     key={contact.id}
                     type="button"
-                    onClick={() => selectContact(contact)}
+                    onClick={() => setSelectedContact(contact)}
                     className={`w-full text-left p-3 rounded-xl transition ${
                       selectedContact?.id === contact.id
                         ? 'bg-green-50 ring-1 ring-green-200'
@@ -676,13 +676,13 @@ export default function ClientsPage() {
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <h3 className="text-sm font-semibold text-slate-900 mb-3">🏢 Empresas</h3>
                 
-                {loadingCompanies ? (
+                {loading ? (
                   <p className="text-sm text-slate-500">Cargando...</p>
-                ) : companies.length === 0 ? (
+                ) : companyLinks.length === 0 ? (
                   <p className="text-sm text-slate-500">No hay empresas vinculadas</p>
                 ) : (
                   <div className="space-y-2">
-                    {companies.map((link) => (
+                    {companyLinks.map((link) => (
                       <div
                         key={link.company_id}
                         className={`p-3 rounded-xl border cursor-pointer transition ${
