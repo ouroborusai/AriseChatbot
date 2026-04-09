@@ -427,7 +427,7 @@ export default function ClientsPage() {
           </div>
           
           <div className="flex-1 overflow-y-auto p-2">
-            {loadingContacts ? (
+            {loading ? (
               <div className="text-center py-8 text-slate-500 text-sm">Cargando...</div>
             ) : filteredContacts.length === 0 ? (
               <div className="text-center py-8 text-slate-500 text-sm">Sin contactos</div>
