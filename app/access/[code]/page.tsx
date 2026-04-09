@@ -31,6 +31,7 @@ type ContactData = {
   name: string | null;
   segment: string | null;
   companies: { id: string; legal_name: string } | null;
+  linkedCompanies: { company_id: string; legal_name: string }[];
   documents: Document[];
   requests: ServiceRequest[];
 };
@@ -49,6 +50,37 @@ export default function AccessPage({ params }: { params: Promise<{ code: string 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'documents' | 'requests'>('documents');
   const [error, setError] = useState<string | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+
+  // Fetch docs when company changes
+  useEffect(() => {
+    if (!selectedCompanyId || !contact) return;
+
+    const fetchDocsForCompany = async () => {
+      const { data: docs } = await supabase
+        .from('client_documents')
+        .select('id, title, file_name, file_url, created_at, company_id')
+        .eq('company_id', selectedCompanyId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (docs) {
+        setContact(prev => prev ? { ...prev, documents: docs } : null);
+      }
+    };
+
+    fetchDocsForCompany();
+  }, [selectedCompanyId, supabase, contact]);
+
+  // Set initial company when contact loads
+  useEffect(() => {
+    if (contact?.linkedCompanies && contact.linkedCompanies.length > 0 && !selectedCompanyId) {
+      const primary = contact.linkedCompanies.find((c: any) => 
+        c.company_id === contact.companies?.id
+      );
+      setSelectedCompanyId(primary?.company_id || contact.linkedCompanies[0].company_id);
+    }
+  }, [contact, selectedCompanyId]);
 
   useEffect(() => {
     const validateCode = async () => {
@@ -87,13 +119,24 @@ export default function AccessPage({ params }: { params: Promise<{ code: string 
 
         const companyId = companyData?.company_id || '';
 
+        // Los documentos son por empresa, buscar solo por company_id
         const { data: docs } = await supabase
           .from('client_documents')
-          .select('id, title, file_name, file_url, created_at')
-          .eq('contact_id', contactData.id)
-          .eq('company_id', companyId || null)
+          .select('id, title, file_name, file_url, created_at, company_id')
+          .eq('company_id', companyId)
           .order('created_at', { ascending: false })
           .limit(20);
+
+        // Obtener todas las empresas vinculadas para mostrar opciones
+        const { data: allCompanyData } = await supabase
+          .from('contact_companies')
+          .select('company_id, companies(id, legal_name)')
+          .eq('contact_id', contactData.id);
+
+        const linkedCompanies = allCompanyData?.map((item: any) => ({
+          company_id: item.company_id,
+          legal_name: item.companies?.legal_name || 'Sin nombre',
+        })) || [];
 
         const { data: requests } = await supabase
           .from('service_requests')
@@ -111,6 +154,7 @@ export default function AccessPage({ params }: { params: Promise<{ code: string 
         setContact({
           ...contactData,
           companies: primaryCompany,
+          linkedCompanies,
           documents: docs || [],
           requests: requests || [],
         });
@@ -208,8 +252,22 @@ export default function AccessPage({ params }: { params: Promise<{ code: string 
           <h2 className="text-2xl font-bold">
             {contact.name || 'Cliente'}
           </h2>
-          {contact.companies && (
-            <p className="text-green-100">{contact.companies.legal_name}</p>
+          
+          {/* Selector de empresa */}
+          {contact.linkedCompanies && contact.linkedCompanies.length > 0 && (
+            <div className="mt-2">
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                className="bg-green-700 text-white text-sm px-2 py-1 rounded border-none cursor-pointer"
+              >
+                {contact.linkedCompanies.map((c: any) => (
+                  <option key={c.company_id} value={c.company_id}>
+                    {c.legal_name}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
       </div>

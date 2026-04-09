@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 type Company = {
@@ -21,6 +21,21 @@ type ContactCompany = {
   contacts: { phone_number: string; name: string | null } | null;
 };
 
+type CompanyDocument = {
+  id: string;
+  contact_id: string;
+  company_id: string;
+  title: string;
+  description: string | null;
+  file_name: string | null;
+  file_url: string | null;
+  storage_bucket: string | null;
+  storage_path: string | null;
+  file_type: string | null;
+  created_at: string;
+  contacts?: { phone_number: string; name: string | null };
+};
+
 export default function CompaniesPage() {
   const supabase = useMemo(() => createClient(), []);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -28,10 +43,18 @@ export default function CompaniesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [companyContacts, setCompanyContacts] = useState<ContactCompany[]>([]);
+  const [documents, setDocuments] = useState<CompanyDocument[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newCompanyRut, setNewCompanyRut] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Upload states
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [docTitle, setDocTitle] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchCompanies = async () => {
     const { data, error } = await supabase
@@ -75,8 +98,111 @@ export default function CompaniesPage() {
   useEffect(() => {
     if (selectedCompany) {
       fetchContactsForCompany(selectedCompany.id);
+      fetchDocumentsForCompany(selectedCompany.id);
     }
   }, [selectedCompany?.id]);
+
+  const fetchDocumentsForCompany = async (companyId: string) => {
+    const { data, error } = await supabase
+      .from('client_documents')
+      .select('*, contacts:contacts(phone_number, name)')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error('Error fetching documents:', error);
+      setDocuments([]);
+    } else {
+      const mapped = (data || []).map((item: any) => ({
+        ...item,
+        contacts: Array.isArray(item.contacts) ? item.contacts[0] : item.contacts,
+      }));
+      setDocuments(mapped);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setUploadFile(files[0]);
+    }
+  };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      setUploadFile(files[0]);
+    }
+  }, []);
+
+  const handleUploadDocument = async () => {
+    if (!selectedCompany || !uploadFile || !docTitle.trim()) return;
+    setUploading(true);
+
+    try {
+      const fileName = `${selectedCompany.id}/${Date.now()}_${uploadFile.name}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, uploadFile);
+
+      if (uploadError) {
+        console.error('Error uploading file:', uploadError);
+        setUploading(false);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('documents')
+        .getPublicUrl(fileName);
+
+      const { error: docError } = await supabase.from('client_documents').insert({
+        contact_id: companyContacts[0]?.contact_id || null,
+        company_id: selectedCompany.id,
+        title: docTitle.trim(),
+        file_name: uploadFile.name,
+        file_url: publicUrl,
+        storage_bucket: 'documents',
+        storage_path: fileName,
+        file_type: uploadFile.type,
+      });
+
+      if (docError) {
+        console.error('Error saving document:', docError);
+      } else {
+        setDocTitle('');
+        setUploadFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        fetchDocumentsForCompany(selectedCompany.id);
+      }
+    } catch (e) {
+      console.error('Error:', e);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    if (!confirm('¿Eliminar este documento?')) return;
+    
+    const { error } = await supabase.from('client_documents').delete().eq('id', docId);
+    if (!error && selectedCompany) {
+      fetchDocumentsForCompany(selectedCompany.id);
+    }
+  };
 
   const handleSelectCompany = (company: Company) => {
     setSelectedCompany(company);
@@ -306,6 +432,107 @@ export default function CompaniesPage() {
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Documentos de la empresa */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      📁 Documentos ({documents.length})
+                    </h3>
+                  </div>
+
+                  {/* Upload form */}
+                  <div className="mb-4 p-3 bg-slate-50 rounded-xl space-y-3">
+                    <input
+                      value={docTitle}
+                      onChange={(e) => setDocTitle(e.target.value)}
+                      placeholder="Título del documento (ej: IVA Marzo 2026)"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+                    />
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`cursor-pointer rounded-xl border-2 border-dashed p-4 text-center transition ${
+                        isDragging || uploadFile
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-slate-300 hover:border-green-400'
+                      }`}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        onChange={handleFileSelect}
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                        className="hidden"
+                      />
+                      {uploadFile ? (
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">📎 {uploadFile.name}</p>
+                          <p className="text-xs text-slate-500">{(uploadFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setUploadFile(null);
+                              if (fileInputRef.current) fileInputRef.current.value = '';
+                            }}
+                            className="text-xs text-red-600 hover:underline mt-1"
+                          >
+                            Quitar
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">Arrastra archivo o haz clic</p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleUploadDocument}
+                      disabled={!selectedCompany || !uploadFile || !docTitle.trim() || uploading}
+                      className="w-full rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {uploading ? 'Subiendo...' : '📤 Subir Documento'}
+                    </button>
+                  </div>
+
+                  {/* Lista de documentos */}
+                  <div className="max-h-[300px] overflow-y-auto space-y-2">
+                    {documents.length === 0 ? (
+                      <p className="text-sm text-slate-500">No hay documentos subidos.</p>
+                    ) : (
+                      documents.map((doc) => (
+                        <div key={doc.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 truncate">{doc.title}</p>
+                            <p className="text-xs text-slate-500 truncate">{doc.file_name}</p>
+                            <p className="text-xs text-slate-400">
+                              {new Date(doc.created_at).toLocaleDateString('es-CL')}
+                            </p>
+                            {doc.file_url && (
+                              <a
+                                href={doc.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-green-600 hover:underline"
+                              >
+                                Ver documento
+                              </a>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            className="text-xs text-red-600 hover:text-red-800 shrink-0"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
