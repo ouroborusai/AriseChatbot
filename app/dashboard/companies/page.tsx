@@ -189,16 +189,16 @@ export default function CompaniesPage() {
     setUploading(true);
     try {
       const fileName = `${selectedCompanyId}/${selectedYear}/${title}_${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('documents').upload(fileName, file);
+      const { error: uploadError } = await supabase.storage.from('client-documents').upload(fileName, file);
       if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage.from('client-documents').getPublicUrl(fileName);
       await supabase.from('client_documents').insert({
         contact_id: contacts[0]?.contact_id || null,
         company_id: selectedCompanyId,
         title,
         file_name: file.name,
         file_url: publicUrl,
-        storage_bucket: 'documents',
+        storage_bucket: 'client-documents',
         storage_path: fileName,
         file_type: file.type,
       });
