@@ -120,12 +120,18 @@ export async function handleInboundUserMessage(messageData: {
 
     if (!contact.segment) {
       await autoClassifyAsProspect(contact);
-      await sendWelcomeMenu(phoneNumber, { ...contact, segment: 'prospecto' });
+      const prospectTemplate = await TemplateService.findTemplateById('bienvenida_prospecto', 'prospecto');
+      if (prospectTemplate) {
+        await sendTemplateWithConditions(phoneNumber, prospectTemplate, context, navState);
+      } else {
+        await sendWhatsAppMessage(phoneNumber, '¡Hola! 👋 Bienvenido a MTZ Consultores. ¿En qué podemos ayudarte?');
+      }
       return;
     }
 
     if (text && isGreeting(text)) {
-      const greetingTemplate = await TemplateService.findTemplateById('menu_principal_cliente', contact.segment);
+      const templateId = contact.segment === 'cliente' ? 'menu_principal_cliente' : 'bienvenida_prospecto';
+      const greetingTemplate = await TemplateService.findTemplateById(templateId, contact.segment);
       if (greetingTemplate) {
         await sendTemplateWithConditions(phoneNumber, greetingTemplate, context, navState);
       } else {

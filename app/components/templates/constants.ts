@@ -185,75 +185,8 @@ export const sinEmpresas: Template = {
 // ============================================
 // PLANTILLAS DE BIENVENIDA (LEGACY - mantener compatibilidad)
 // ============================================
+// Eliminado bienvenidaCliente por redundancia con menuPrincipalCliente
 
-/**
- * Template de bienvenida para CLIENTES
- * Muestra botones diferentes según si tiene documentos o no
- *
- * Flujo:
- * - Si tiene documentos → muestra "Ver mis documentos"
- * - Si NO tiene documentos → muestra "Solicitar documento"
- * - Siempre muestra: IVAs, Hablar con asesor
- */
-export const bienvenidaCliente: Template = {
-  id: 'bienvenida_cliente',
-  name: '1. Saludo Cliente',
-  content: 'Hola 👋 Bienvenido a MTZ Consultores Tributarios. ¿En qué podemos ayudarte hoy?',
-  category: 'bienvenida',
-  segment: 'cliente',
-  is_active: true,
-  priority: 1,
-  trigger: 'hola,hola!,buenos días,buenas',
-  workflow: 'atencion',
-  rules: {
-    required_context: {
-      required_segment: 'cliente'
-    }
-  },
-  actions: [
-    {
-      type: 'button',
-      id: 'btn_docs',
-      title: '📄 Ver mis documentos',
-      next_template_id: 'menu_documentos',
-      conditions: {
-        show_if: [
-          { field: 'has_documents', operator: 'exists', value: true }
-        ],
-        else_action: { type: 'hide_button' }
-      }
-    },
-    {
-      type: 'button',
-      id: 'btn_solicitar_doc',
-      title: '📋 Solicitar documento',
-      next_template_id: 'solicitar_documento',
-      conditions: {
-        show_if: [
-          { field: 'has_documents', operator: 'exists', value: false }
-        ],
-        else_action: { type: 'hide_button' }
-      }
-    },
-    {
-      type: 'button',
-      id: 'btn_iva',
-      title: '🧾 Mis IVAs',
-      next_template_id: 'menu_iva',
-      conditions: {
-        show_if: [
-          { field: 'segment', operator: 'equals', value: 'cliente' }
-        ]
-      }
-    },
-    {
-      type: 'button',
-      id: 'btn_asesor',
-      title: '📞 Hablar con asesor',
-      next_template_id: 'derivacion_asesor'
-    },
-  ],
-};
 
 /**
  * Template de bienvenida para PROSPECTOS
@@ -1262,8 +1195,7 @@ export const DEFAULT_TEMPLATES: Template[] = [
   menuEmpresas,             // ID: menu_empresas
   sinEmpresas,              // ID: sin_empresas
 
-  // Bienvenida (legacy - compatibilidad)
-  bienvenidaCliente,
+  // Bienvenida
   bienvenidaProspecto,
 
   // =========================================
