@@ -50,6 +50,7 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
   };
 
   const addAction = () => {
+    if ((form.actions?.length || 0) >= 3) return;
     setForm(prev => ({
       ...prev,
       actions: [...(prev.actions || []), { type: 'button', id: '', title: '', next_template_id: '' }]
@@ -189,14 +190,15 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-medium text-slate-900">Botones de Respuesta</h3>
-                <p className="text-xs text-slate-500">Configura los botones interactivos que tendrá este mensaje</p>
+                <p className="text-xs text-slate-500">Máximo 3 botones por mensaje</p>
               </div>
               <button
                 type="button"
                 onClick={addAction}
-                className="text-sm text-green-600 hover:text-green-700 font-medium"
+                disabled={(form.actions?.length || 0) >= 3}
+                className="text-sm text-green-600 hover:text-green-700 font-medium disabled:text-slate-400 disabled:cursor-not-allowed"
               >
-                + Agregar
+                {form.actions?.length || 0}/3 + Agregar
               </button>
             </div>
 
