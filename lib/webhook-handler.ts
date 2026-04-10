@@ -216,8 +216,8 @@ export async function handleInboundUserMessage(messageData: {
       const catResult = await handleDocCategoryButton(interactive, phoneNumber, contact.id, activeCompanyId);
       if (catResult.handled) return;
 
-      // Si el interactive es un next_template_id, navegar con evaluación de condiciones
-      const nextTemplate = await findTemplateById(interactive, contact.segment);
+      // Si el interactive es un ID de botón, buscar su next_template_id
+      const nextTemplate = await findTemplateByActionId(interactive, contact.segment);
       if (nextTemplate) {
         await sendTemplateWithConditions(phoneNumber, nextTemplate, context, navState);
         return;
