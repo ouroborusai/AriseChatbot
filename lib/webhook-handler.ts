@@ -202,24 +202,35 @@ async function sendTemplateWithConditions(
     return;
   }
 
-  await sendWhatsAppMessage(phoneNumber, TemplateService.replaceVariables(template.content, context));
+  const content = TemplateService.replaceVariables(template.content, context);
+  
   if (template.actions && template.actions.length > 0) {
-    await sendTemplateActionsWithConditions(phoneNumber, template.actions, context);
+    const handled = await sendTemplateActionsWithConditions(phoneNumber, template.actions, context, content);
+    if (handled) return;
   }
+
+  // Fallback: si no se ejecutó ninguna acción interactiva o prioritaria, enviar como texto plano
+  await sendWhatsAppMessage(phoneNumber, content);
 }
 
 async function sendTemplateActionsWithConditions(
   phoneNumber: string,
   actions: Action[],
-  context: TemplateContext
-): Promise<void> {
+  context: TemplateContext,
+  content: string
+): Promise<boolean> {
   // 1. Intentar ejecutar acciones prioritarias (como show_document)
   const actionHandled = await ActionService.executeActions(phoneNumber, actions, context);
-  if (actionHandled) return;
+  if (actionHandled) return true;
 
   // 2. Obtener acciones finales filtradas por condiciones
   const { buttons, listAction, elseActions } = getFinalActions(actions, context);
 
-  // 3. Enviar respuesta interactiva (Botones, Lista o Mensaje de fallback)
-  await ActionService.sendInteractiveResponse(phoneNumber, buttons, listAction, elseActions, context);
+  // 3. Si hay botones o listas, enviar respuesta interactiva y marcar como manejado
+  if (buttons.length > 0 || listAction || elseActions.length > 0) {
+    await ActionService.sendInteractiveResponse(phoneNumber, content, buttons, listAction, elseActions, context);
+    return true;
+  }
+
+  return false;
 }

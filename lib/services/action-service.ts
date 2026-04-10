@@ -52,6 +52,7 @@ export class ActionService {
    */
   static async sendInteractiveResponse(
     phoneNumber: string,
+    content: string,
     buttons: any[],
     listAction: any | null,
     elseActions: any[],
@@ -71,7 +72,7 @@ export class ActionService {
       const options = TemplateService.parseListContent(listAction.description || '[]', context);
       if (options.length > 0) {
         await sendWhatsAppListMessage(phoneNumber, {
-          body: 'Selecciona una opción:',
+          body: content,
           buttonText: listAction.title || 'Seleccionar',
           sections: [{
             title: 'Opciones',
@@ -92,7 +93,7 @@ export class ActionService {
         id: b.id || 'btn',
         title: b.title || 'Opción'
       }));
-      await sendWhatsAppInteractiveButtons(phoneNumber, 'Selecciona una opción:', buttonPayloads);
+      await sendWhatsAppInteractiveButtons(phoneNumber, content, buttonPayloads);
     }
   }
 }

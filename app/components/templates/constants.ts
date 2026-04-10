@@ -44,37 +44,15 @@ export const menuPrincipalCliente: Template = {
   },
   actions: [
     {
-      type: 'button',
-      id: 'btn_mis_documentos',
-      title: '📄 Mis Documentos',
-      next_template_id: 'menu_documentos',
-      conditions: {
-        show_if: [
-          { field: 'has_documents', operator: 'exists', value: true }
-        ],
-        else_action: {
-          type: 'redirect',
-          redirect_template_id: 'solicitar_documento'
-        }
-      }
-    },
-    {
-      type: 'button',
-      id: 'btn_mis_datos',
-      title: '👤 Mis Datos',
-      next_template_id: 'menu_mis_datos'
-    },
-    {
-      type: 'button',
-      id: 'btn_tramites',
-      title: '⚙️ Trámites',
-      next_template_id: 'menu_tramites'
-    },
-    {
-      type: 'button',
-      id: 'btn_asesor_principal',
-      title: '📞 Hablar con asesor',
-      next_template_id: 'derivacion_asesor'
+      type: 'list',
+      title: 'Opciones',
+      description: 'Selecciona una opción',
+      content: JSON.stringify([
+        { id: 'btn_mis_documentos', title: '📄 Mis Documentos', description: 'Consultar y descargar archivos' },
+        { id: 'btn_mis_datos', title: '👤 Mis Datos', description: 'Actualizar información personal' },
+        { id: 'btn_tramites', title: '⚙️ Trámites', description: 'Gestiones y servicios' },
+        { id: 'btn_asesor_principal', title: '📞 Hablar con asesor', description: 'Atención personalizada' },
+      ])
     },
   ],
 };
@@ -94,28 +72,15 @@ export const menuMisDatos: Template = {
   workflow: 'general',
   actions: [
     {
-      type: 'button',
-      id: 'btn_actualizar_email',
-      title: '📧 Actualizar email',
-      next_template_id: 'actualizar_email'
-    },
-    {
-      type: 'button',
-      id: 'btn_actualizar_telefono',
-      title: '📱 Actualizar teléfono',
-      next_template_id: 'actualizar_telefono'
-    },
-    {
-      type: 'button',
-      id: 'btn_ver_empresas',
-      title: '🏢 Ver empresas',
-      next_template_id: 'menu_empresas'
-    },
-    {
-      type: 'button',
-      id: 'btn_volver_principal',
-      title: '← Volver al menú',
-      next_template_id: 'menu_principal_cliente'
+      type: 'list',
+      title: 'Actualizar Datos',
+      description: 'Selecciona una opción',
+      content: JSON.stringify([
+        { id: 'btn_actualizar_email', title: '📧 Actualizar email', description: 'Cambiar correo electrónico' },
+        { id: 'btn_actualizar_telefono', title: '📱 Actualizar teléfono', description: 'Cambiar número de contacto' },
+        { id: 'btn_ver_empresas', title: '🏢 Ver empresas', description: 'Gestionar empresas vinculadas' },
+        { id: 'btn_volver_principal', title: '← Volver al menú', description: 'Regresar al inicio' },
+      ])
     },
   ],
 };
@@ -135,34 +100,16 @@ export const menuTramites: Template = {
   workflow: 'documentos',
   actions: [
     {
-      type: 'button',
-      id: 'btn_tram_iva',
-      title: '🧾 Declaración IVA',
-      next_template_id: 'menu_iva'
-    },
-    {
-      type: 'button',
-      id: 'btn_tram_renta',
-      title: '📊 Declaración Renta',
-      next_template_id: 'menu_renta'
-    },
-    {
-      type: 'button',
-      id: 'btn_tram_nomina',
-      title: '👥 Nómina',
-      next_template_id: 'menu_nomina'
-    },
-    {
-      type: 'button',
-      id: 'btn_tram_balance',
-      title: '📈 Balances',
-      next_template_id: 'menu_balance'
-    },
-    {
-      type: 'button',
-      id: 'btn_volver_tramites',
-      title: '← Volver al menú',
-      next_template_id: 'menu_principal_cliente'
+      type: 'list',
+      title: 'Trámites',
+      description: 'Selecciona una categoría',
+      content: JSON.stringify([
+        { id: 'btn_tram_iva', title: '🧾 Declaración IVA', description: 'Consultar IVAs' },
+        { id: 'btn_tram_renta', title: '📊 Declaración Renta', description: 'Consultar Renta' },
+        { id: 'btn_tram_nomina', title: '👥 Nómina', description: 'Consultar liquidaciones' },
+        { id: 'btn_tram_balance', title: '📈 Balances', description: 'Consultar balances' },
+        { id: 'btn_volver_tramites', title: '← Volver al menú', description: 'Regresar al inicio' },
+      ])
     },
   ],
 };
@@ -188,22 +135,14 @@ export const menuEmpresas: Template = {
   },
   actions: [
     {
-      type: 'button',
-      id: 'btn_empresa_activa',
-      title: '🏢 Empresa activa',
-      next_template_id: 'menu_documentos'
-    },
-    {
-      type: 'button',
-      id: 'btn_cambiar_empresa',
-      title: '🔄 Cambiar empresa',
-      next_template_id: 'seleccionar_empresa'
-    },
-    {
-      type: 'button',
-      id: 'btn_volver_datos',
-      title: '← Volver a mis datos',
-      next_template_id: 'menu_mis_datos'
+      type: 'list',
+      title: 'Gestión de Empresas',
+      description: 'Selecciona una opción',
+      content: JSON.stringify([
+        { id: 'btn_empresa_activa', title: '🏢 Empresa activa', description: 'Ver documentos de la empresa actual' },
+        { id: 'btn_cambiar_empresa', title: '🔄 Cambiar empresa', description: 'Seleccionar otra empresa' },
+        { id: 'btn_volver_datos', title: '← Volver a mis datos', description: 'Regresar a Mis Datos' },
+      ])
     },
   ],
 };
@@ -505,27 +444,14 @@ export const menuRenta: Template = {
   workflow: 'renta',
   actions: [
     {
-      type: 'button',
-      id: 'btn_renta_ultimo',
-      title: '📄 Última declaración',
-      conditions: {
-        show_if: [
-          { field: 'document_type', operator: 'includes', value: 'renta' }
-        ],
-        else_action: { type: 'hide_button' }
-      }
-    },
-    {
-      type: 'button',
-      id: 'btn_renta_solicitar',
-      title: '📝 Solicitar declaración',
-      next_template_id: 'renta_solicitar'
-    },
-    {
-      type: 'button',
-      id: 'btn_volver_renta',
-      title: '← Volver',
-      next_template_id: 'menu_documentos'
+      type: 'list',
+      title: 'Opciones Renta',
+      description: 'Selecciona una opción',
+      content: JSON.stringify([
+        { id: 'btn_renta_ultimo', title: '📄 Última declaración', description: 'Ver la declaración más reciente' },
+        { id: 'btn_renta_solicitar', title: '📝 Solicitar declaración', description: 'Pedir nueva declaración' },
+        { id: 'btn_volver_renta', title: '← Volver', description: 'Regresar a documentos' },
+      ])
     },
   ],
 };
@@ -612,28 +538,14 @@ export const menuNomina: Template = {
   workflow: 'nomina',
   actions: [
     {
-      type: 'button',
-      id: 'btn_nom_liq',
-      title: '💰 Liquidaciones',
-      next_template_id: 'nomina_liquidaciones',
-      conditions: {
-        show_if: [
-          { field: 'document_type', operator: 'includes', value: 'liquidacion' }
-        ],
-        else_action: { type: 'hide_button' }
-      }
-    },
-    {
-      type: 'button',
-      id: 'btn_nom_contratos',
-      title: '📄 Contratos',
-      next_template_id: 'nomina_contratos'
-    },
-    {
-      type: 'button',
-      id: 'btn_nom_solicitar',
-      title: '📋 Solicitar',
-      next_template_id: 'nomina_solicitar'
+      type: 'list',
+      title: 'Opciones Nómina',
+      description: 'Selecciona una opción',
+      content: JSON.stringify([
+        { id: 'btn_nom_liq', title: '💰 Liquidaciones', description: 'Ver liquidaciones de sueldo' },
+        { id: 'btn_nom_contratos', title: '📄 Contratos', description: 'Ver contratos laborales' },
+        { id: 'btn_nom_solicitar', title: '📋 Solicitar', description: 'Pedir documento de nómina' },
+      ])
     },
   ],
 };
@@ -824,32 +736,14 @@ export const menuBalance: Template = {
   workflow: 'documentos',
   actions: [
     {
-      type: 'button',
-      id: 'btn_bal_mensual',
-      title: '📊 Balance Mensual',
-      conditions: {
-        show_if: [
-          { field: 'document_type', operator: 'includes', value: 'balance' }
-        ],
-        else_action: { type: 'hide_button' }
-      }
-    },
-    {
-      type: 'button',
-      id: 'btn_bal_anual',
-      title: '📋 Balance Anual',
-      conditions: {
-        show_if: [
-          { field: 'document_type', operator: 'includes', value: 'balance' }
-        ],
-        else_action: { type: 'hide_button' }
-      }
-    },
-    {
-      type: 'button',
-      id: 'btn_bal_solicitar',
-      title: '📋 Solicitar balance',
-      next_template_id: 'balance_solicitar'
+      type: 'list',
+      title: 'Opciones Balances',
+      description: 'Selecciona una opción',
+      content: JSON.stringify([
+        { id: 'btn_bal_mensual', title: '📊 Balance Mensual', description: 'Ver balance mensual' },
+        { id: 'btn_bal_anual', title: '📋 Balance Anual', description: 'Ver balance anual' },
+        { id: 'btn_bal_solicitar', title: '📋 Solicitar balance', description: 'Pedir nuevo balance' },
+      ])
     },
   ],
 };
@@ -975,22 +869,14 @@ export const serviciosGeneral: Template = {
   workflow: 'general',
   actions: [
     {
-      type: 'button',
-      id: 'btn_serv_iva',
-      title: '🧾 Más info IVA',
-      next_template_id: 'tramite_iva_info'
-    },
-    {
-      type: 'button',
-      id: 'btn_serv_renta',
-      title: '📊 Más info Renta',
-      next_template_id: 'tramite_renta_info'
-    },
-    {
-      type: 'button',
-      id: 'btn_serv_cotizar',
-      title: '💼 Cotizar',
-      next_template_id: 'cotizacion_info'
+      type: 'list',
+      title: 'Servicios',
+      description: 'Selecciona un servicio para más info',
+      content: JSON.stringify([
+        { id: 'btn_serv_iva', title: '🧾 Más info IVA', description: 'Información sobre declaraciones mensuales' },
+        { id: 'btn_serv_renta', title: '📊 Más info Renta', description: 'Información sobre declaración anual' },
+        { id: 'btn_serv_cotizar', title: '💼 Cotizar', description: 'Solicitar una cotización formal' },
+      ])
     },
   ],
 };
@@ -1318,7 +1204,7 @@ export const vincularEmpresa: Template = {
 export const menuDocumentos: Template = {
   id: 'menu_documentos',
   name: '2. Menú Documentos',
-  content: '📋 Tienes {{document_count}} documentos. Selecciona uno:',
+  content: '📄 Selecciona la categoría de documentos que deseas consultar:',
   category: 'menu',
   segment: 'cliente',
   is_active: true,
@@ -1333,15 +1219,15 @@ export const menuDocumentos: Template = {
   actions: [
     {
       type: 'list',
-      title: 'Ver documentos',
-      description: 'Todos',
-      content: '{{documents_list}}'
-    },
-    {
-      type: 'button',
-      id: 'btn_solicitar',
-      title: '📋 Solicitar',
-      next_template_id: 'solicitar_documento'
+      title: 'Categorías',
+      description: 'Selecciona una opción',
+      content: JSON.stringify([
+        { id: 'btn_iva_docs', title: '🧾 IVAs', description: 'Ver declaraciones de IVA' },
+        { id: 'btn_nomina_docs', title: '👥 Remuneraciones', description: 'Ver liquidaciones y contratos' },
+        { id: 'btn_renta_docs', title: '📊 Declaración Renta', description: 'Ver formularios de renta' },
+        { id: 'btn_balance_docs', title: '📈 Balances', description: 'Ver balances y estados' },
+        { id: 'btn_solicitar', title: '📋 Solicitar Documento', description: 'Pedir un documento nuevo' },
+      ])
     },
   ],
 };
