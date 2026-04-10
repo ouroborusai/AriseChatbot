@@ -33,6 +33,7 @@ import {
   detectLoop,
 } from './handlers/condition-engine';
 import { buildContext } from './handlers/base-handler';
+import { classifyIntencion, Intencion } from './ai-service';
 
 // Handlers separados
 import { handleClassification, autoClassifyAsProspect } from './handlers/classification-handler';
@@ -217,7 +218,44 @@ export async function handleInboundUserMessage(messageData: {
       }
     }
 
-    // 12. Fallback a IA (Gemini)
+    // 12. Clasificar intención con Gemini (Structured Output)
+    if (text) {
+      const intencion = await classifyIntencion(text);
+      console.log('[Webhook] Intención:', intencion);
+
+      // Buscar template por categoría (intención)
+      const template = await findTemplateByCategory(intencion, contact.segment);
+      if (template) {
+        // Reemplazar {{nombre}} con el nombre del contacto
+        const content = (template.content || '').replace(
+          '{{nombre}}',
+          contact.name || 'cliente'
+        );
+        
+        // Enviar mensaje de texto
+        await sendWhatsAppMessage(phoneNumber, content);
+        
+        // Enviar botones EXACTOS del template (sin generación libre)
+        if (template.actions && template.actions.length > 0) {
+          const buttons = template.actions
+            .filter((a: any) => a.type === 'button')
+            .slice(0, 3)
+            .map((a: any) => ({ id: a.id, title: a.title }));
+          
+          if (buttons.length > 0) {
+            await sendWhatsAppInteractiveButtons(
+              phoneNumber,
+              'Selecciona una opción:',
+              buttons
+            );
+          }
+        }
+        
+        return;
+      }
+    }
+
+    // 13. Fallback a IA (Gemini) - solo si no hay template
     await handleAI(phoneNumber, conversationId, contact, companies, activeCompanyId, text || '');
 
   } catch (error) {
@@ -477,4 +515,29 @@ export async function findTemplateByActionId(
     }
   }
   return null;
+}
+
+/**
+ * Busca plantilla por categoría (intención)
+ */
+async function findTemplateByCategory(
+  category: Intencion,
+  segment?: string | null
+): Promise<Template | null> {
+  const { data: template } = await getSupabaseAdmin()
+    .from('templates')
+    .select('*')
+    .eq('category', category)
+    .eq('is_active', true)
+    .order('priority', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!template) return null;
+
+  if (template.segment && template.segment !== 'todos' && template.segment !== segment) {
+    return null;
+  }
+
+  return template as Template;
 }
