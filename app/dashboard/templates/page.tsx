@@ -12,6 +12,7 @@ import {
   CATEGORIES,
   SERVICE_TYPES,
   DEFAULT_TEMPLATES,
+  WORKFLOWS,
 } from '@/app/components/templates';
 
 type ViewMode = 'flow' | 'cards';
@@ -27,6 +28,7 @@ export default function TemplatesPage() {
   const [showEditor, setShowEditor] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [workflowFilter, setWorkflowFilter] = useState<string>('todos');
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -50,9 +52,10 @@ export default function TemplatesPage() {
       const catMatch = category === 'todos' || t.category === category;
       const segMatch = segment === 'todos' || t.segment === segment || t.segment === 'todos';
       const servMatch = service === 'todos' || t.service_type === service;
+      const wfMatch = workflowFilter === 'todos' || t.workflow === workflowFilter;
       const searchMatch = !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.content.toLowerCase().includes(search.toLowerCase());
-      return catMatch && segMatch && servMatch && searchMatch;
-    }), [templates, category, segment, service, search]);
+      return catMatch && segMatch && servMatch && wfMatch && searchMatch;
+    }), [templates, category, segment, service, search, workflowFilter]);
 
   const stats = useMemo(() => ({
     total: templates.length,
@@ -65,15 +68,60 @@ export default function TemplatesPage() {
   const handleCopy = (template: Template) => { navigator.clipboard.writeText(template.content); setCopiedId(template.id); setTimeout(() => setCopiedId(null), 2000); };
 
   const handleSaveTemplate = async (form: Partial<Template>) => {
-    const template: Template = { id: editingTemplate?.id || `tpl_${Date.now()}`, name: form.name!, content: form.content!, category: form.category || 'general', service_type: form.service_type, trigger: form.trigger, actions: form.actions || [], is_active: form.is_active ?? true, priority: form.priority || 50, segment: (form.segment as any) || 'todos' };
-    await supabase.from('templates').upsert({ id: template.id, name: template.name, content: template.content, category: template.category, service_type: template.service_type, trigger: template.trigger, actions: template.actions, is_active: template.is_active, priority: template.priority, segment: template.segment });
+    console.log('[Templates] handleSaveTemplate called. editingTemplate:', editingTemplate?.name, 'form:', form.name);
+    const template: Template = { 
+      id: editingTemplate?.id || `tpl_${Date.now()}`, 
+      name: form.name!, 
+      content: form.content!, 
+      category: form.category || 'general', 
+      service_type: form.service_type, 
+      trigger: form.trigger, 
+      actions: form.actions || [], 
+      is_active: form.is_active ?? true, 
+      priority: form.priority || 50, 
+      segment: (form.segment as any) || 'todos',
+      workflow: form.workflow || 'general'
+    };
+    console.log('[Templates] Saving template:', template.id, template.name, 'actions:', template.actions?.length, 'workflow:', template.workflow);
+    
+    // Usar upsert con onConflict para actualizar si existe
+    const { data, error } = await supabase
+      .from('templates')
+      .upsert({ 
+        id: template.id, 
+        name: template.name, 
+        content: template.content, 
+        category: template.category, 
+        service_type: template.service_type, 
+        trigger: template.trigger, 
+        actions: template.actions, 
+        is_active: template.is_active, 
+        priority: template.priority, 
+        segment: template.segment,
+        workflow: template.workflow,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id', ignoreDuplicates: false })
+      .select();
+    
+    if (error) {
+      console.error('[Templates] Error saving:', error);
+      alert('Error al guardar: ' + error.message);
+      return;
+    }
+    
+    console.log('[Templates] Save successful, data:', data);
     setTemplates(editingTemplate ? templates.map(t => t.id === template.id ? template : t) : [...templates, template]);
-    setShowEditor(false); setEditingTemplate(null);
+    setShowEditor(false); 
+    setEditingTemplate(null);
   };
 
   const handleDelete = async (id: string) => { if (!confirm('¿Eliminar?')) return; await supabase.from('templates').delete().eq('id', id); setTemplates(templates.filter(t => t.id !== id)); if (selectedTemplateId === id) setSelectedTemplateId(null); };
   const handleToggleActive = async (id: string) => { const t = templates.find(x => x.id === id); if (!t) return; const u = { ...t, is_active: !t.is_active }; await supabase.from('templates').update({ is_active: u.is_active }).eq('id', id); setTemplates(templates.map(x => x.id === id ? u : x)); };
-  const openEdit = (template?: Template) => { setEditingTemplate(template || null); setShowEditor(true); };
+  const openEdit = (template?: Template) => { 
+    console.log('[Templates] openEdit called with:', template?.name, template?.id);
+    setEditingTemplate(template || null); 
+    setShowEditor(true); 
+  };
   const handleSelectTemplate = (id: string) => setSelectedTemplateId(id);
 
   if (loading) return <div className="h-full flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-green-500 border-t-transparent rounded-full" /></div>;
@@ -110,6 +158,10 @@ export default function TemplatesPage() {
 
       <div className="flex flex-wrap gap-3 items-center">
         <div className="w-48"><SearchInput value={search} onChange={setSearch} placeholder="Buscar..." /></div>
+        <select value={workflowFilter} onChange={(e) => setWorkflowFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+          <option value="todos">Todos los workflows</option>
+          {WORKFLOWS.map(w => <option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
+        </select>
         <select value={segment} onChange={(e) => setSegment(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
           <option value="todos">Todos los segmentos</option><option value="cliente">👤 Clientes</option><option value="prospecto">🔍 Prospectos</option>
         </select>

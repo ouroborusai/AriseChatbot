@@ -158,6 +158,7 @@ CREATE TABLE IF NOT EXISTS public.templates (
   is_active boolean NOT NULL DEFAULT true,
   priority integer NOT NULL DEFAULT 50,
   segment text NOT NULL DEFAULT 'todos',
+  workflow text DEFAULT 'general',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -165,6 +166,7 @@ CREATE TABLE IF NOT EXISTS public.templates (
 CREATE INDEX IF NOT EXISTS idx_templates_category ON public.templates(category);
 CREATE INDEX IF NOT EXISTS idx_templates_priority ON public.templates(priority);
 CREATE INDEX IF NOT EXISTS idx_templates_is_active ON public.templates(is_active);
+CREATE INDEX IF NOT EXISTS idx_templates_workflow ON public.templates(workflow);
 CREATE TABLE IF NOT EXISTS public.client_access_codes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   phone_number text NOT NULL,

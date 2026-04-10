@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Template, Action } from './types';
+import { Template, Action, WORKFLOWS } from './types';
 import { CATEGORIES, SERVICE_TYPES } from './constants';
 
 interface ListOption {
@@ -29,13 +29,16 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
     actions: [],
     is_active: true,
     priority: 50,
+    workflow: 'general',
   });
 
   const [listOptions, setListOptions] = useState<ListOption[]>([]);
 
   useEffect(() => {
+    console.log('[TemplateEditor] useEffect triggered. template:', template?.name, template?.id, 'isOpen:', isOpen);
     if (template) {
       setForm({ ...template });
+      console.log('[TemplateEditor] Form set to template:', template.name, 'actions:', template.actions);
       if (template.actions && template.actions.some(a => a.type === 'list')) {
         const listAction = template.actions.find(a => a.type === 'list');
         if (listAction?.description) {
@@ -57,14 +60,19 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
         actions: [],
         is_active: true,
         priority: 50,
+        workflow: 'general',
       });
       setListOptions([]);
     }
   }, [template, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
+    console.log('[TemplateEditor] handleSubmit called. form.name:', form.name);
     e.preventDefault();
-    if (!form.name || !form.content) return;
+    if (!form.name || !form.content) {
+      console.log('[TemplateEditor] Validation failed - missing name or content');
+      return;
+    }
     
     // Si hay acciones tipo list, guardar las opciones en description
     if (form.actions && form.actions.length > 0) {
@@ -74,18 +82,23 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
         }
         return action;
       });
+      console.log('[TemplateEditor] Saving with actions:', updatedActions);
       onSave({ ...form, actions: updatedActions });
     } else {
+      console.log('[TemplateEditor] Saving without actions');
       onSave(form);
     }
   };
 
+  const MAX_ACTIONS = 10;
+
   const addAction = () => {
-    if ((form.actions?.length || 0) >= 3) return;
+    if ((form.actions?.length || 0) >= MAX_ACTIONS) return;
     setForm(prev => ({
       ...prev,
       actions: [...(prev.actions || []), { type: 'button', id: '', title: '', next_template_id: '' }]
     }));
+    console.log('[TemplateEditor] addAction, total actions:', (form.actions?.length || 0) + 1);
   };
 
   const updateAction = (index: number, field: keyof Action, value: string) => {
@@ -100,11 +113,12 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
   };
 
   const removeAction = (index: number) => {
+    const actionType = form.actions?.[index]?.type;
     setForm(prev => ({
       ...prev,
       actions: prev.actions?.filter((_, i) => i !== index)
     }));
-    if (form.actions?.[index]?.type === 'list') {
+    if (actionType === 'list') {
       setListOptions([]);
     }
   };
@@ -121,6 +135,8 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
   const removeListOption = (index: number) => {
     setListOptions(prev => prev.filter((_, i) => i !== index));
   };
+
+  console.log('[TemplateEditor] Rendering. isOpen:', isOpen, 'template:', template?.name, 'form.name:', form.name);
 
   if (!isOpen) return null;
 
@@ -185,7 +201,19 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
           </div>
 
           {/* Configuration */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-5 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Workflow</label>
+              <select
+                value={form.workflow || 'general'}
+                onChange={(e) => setForm({ ...form, workflow: e.target.value })}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+              >
+                {WORKFLOWS.map(w => (
+                  <option key={w.id} value={w.id}>{w.icon} {w.name}</option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
               <select
@@ -246,10 +274,10 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
               <button
                 type="button"
                 onClick={addAction}
-                disabled={(form.actions?.length || 0) >= 3}
+                disabled={(form.actions?.length || 0) >= MAX_ACTIONS}
                 className="text-sm text-green-600 hover:text-green-700 font-medium disabled:text-slate-400 disabled:cursor-not-allowed"
               >
-                {form.actions?.length || 0}/3 + Agregar
+                {form.actions?.length || 0}/{MAX_ACTIONS} + Agregar
               </button>
             </div>
 

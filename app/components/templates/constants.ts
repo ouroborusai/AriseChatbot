@@ -1,4 +1,4 @@
-import { Category, ServiceType } from './types';
+import { Category, ServiceType, WORKFLOWS, Template } from './types';
 
 export const SERVICE_TYPES: ServiceType[] = [
   { id: 'inicio_actividades', name: 'Inicio de Actividades', description: 'Altas, cambios y bajas', icon: '🚀' },
@@ -19,7 +19,7 @@ export const CATEGORIES: Category[] = [
   { id: 'general', name: 'General', icon: '💬', color: 'bg-slate-600', colorHex: '#475569', description: 'Mensajes generales' },
 ];
 
-export const DEFAULT_TEMPLATES = [
+export const DEFAULT_TEMPLATES: Template[] = [
   {
     id: 'bienvenida_cliente',
     name: 'Saludo Cliente',
@@ -29,6 +29,7 @@ export const DEFAULT_TEMPLATES = [
     is_active: true,
     priority: 1,
     trigger: 'hola',
+    workflow: 'atencion',
     actions: [
       { type: 'button', id: 'btn_docs', title: '📄 Ver mis documentos', next_template_id: 'menu_cliente' },
       { type: 'button', id: 'btn_iva', title: '🧾 IVAs', next_template_id: 'tramite_iva_info' },
@@ -45,6 +46,7 @@ export const DEFAULT_TEMPLATES = [
     is_active: true,
     priority: 1,
     trigger: 'hola',
+    workflow: 'atencion',
     actions: [
       { type: 'button', id: 'btn_cotizar', title: '💼 Cotizar', next_template_id: 'menu_prospecto' },
       { type: 'button', id: 'btn_info', title: '📝 Información', next_template_id: 'servicios_general' },
@@ -59,6 +61,7 @@ export const DEFAULT_TEMPLATES = [
     segment: 'cliente',
     is_active: true,
     priority: 10,
+    workflow: 'atencion',
     actions: [
       { type: 'button', id: 'btn_docs', title: '📄 Mis Documentos', next_template_id: 'doc_solicitar' },
       { type: 'button', id: 'btn_iva', title: '🧾 IVAs', next_template_id: 'tramite_iva_info' },
@@ -74,6 +77,7 @@ export const DEFAULT_TEMPLATES = [
     segment: 'prospecto',
     is_active: true,
     priority: 10,
+    workflow: 'atencion',
     actions: [
       { type: 'button', id: 'btn_cotizar', title: '💼 Cotizar', next_template_id: 'derivacion_asesor' },
       { type: 'button', id: 'btn_info', title: '📝 Información', next_template_id: 'servicios_general' },
@@ -89,6 +93,7 @@ export const DEFAULT_TEMPLATES = [
     segment: 'todos',
     is_active: true,
     priority: 20,
+    workflow: 'general',
     actions: [],
   },
   {
@@ -100,6 +105,7 @@ export const DEFAULT_TEMPLATES = [
     segment: 'todos',
     is_active: true,
     priority: 30,
+    workflow: 'iva',
     actions: [
       { type: 'button', id: 'btn_iva_mar2026', title: '🧾 Marzo 2026' },
       { type: 'button', id: 'btn_iva_feb2026', title: '🧾 Febrero 2026' },
@@ -115,6 +121,7 @@ export const DEFAULT_TEMPLATES = [
     segment: 'todos',
     is_active: true,
     priority: 30,
+    workflow: 'renta',
     actions: [],
   },
   {
@@ -125,6 +132,7 @@ export const DEFAULT_TEMPLATES = [
     segment: 'todos',
     is_active: true,
     priority: 25,
+    workflow: 'documentos',
     actions: [],
   },
   {
@@ -136,6 +144,7 @@ export const DEFAULT_TEMPLATES = [
     is_active: true,
     priority: 40,
     trigger: 'pago',
+    workflow: 'cobranza',
     actions: [],
   },
   {
@@ -146,6 +155,7 @@ export const DEFAULT_TEMPLATES = [
     segment: 'todos',
     is_active: true,
     priority: 50,
+    workflow: 'asesor',
     actions: [],
   },
   {
@@ -156,6 +166,7 @@ export const DEFAULT_TEMPLATES = [
     segment: 'todos',
     is_active: true,
     priority: 15,
+    workflow: 'documentos',
     actions: [],
   },
   {
@@ -166,6 +177,7 @@ export const DEFAULT_TEMPLATES = [
     segment: 'todos',
     is_active: true,
     priority: 100,
+    workflow: 'general',
     actions: [],
   },
   {
@@ -176,6 +188,7 @@ export const DEFAULT_TEMPLATES = [
     segment: 'cliente',
     is_active: true,
     priority: 35,
+    workflow: 'documentos',
     actions: [],
   },
 ];
@@ -186,4 +199,8 @@ export function getCategoryInfo(catId: string): Category {
 
 export function getServiceInfo(serviceId?: string): ServiceType | undefined {
   return SERVICE_TYPES.find(s => s.id === serviceId);
+}
+
+export function getWorkflowInfo(workflowId?: string) {
+  return WORKFLOWS.find(w => w.id === workflowId);
 }
