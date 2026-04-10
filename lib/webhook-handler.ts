@@ -33,7 +33,62 @@ import {
   detectLoop,
 } from './handlers/condition-engine';
 import { buildContext } from './handlers/base-handler';
-import { classifyIntencion, Intencion } from './ai-service';
+
+/**
+ * Envía el saludo inicial DESDE LA BASE DE DATOS (sin IA)
+ * Busca template por ID, reemplaza {{nombre}} con el nombre del contacto,
+ * y envía los botones EXACTOS del template
+ */
+async function sendSaludoDesdeDB(
+  phoneNumber: string,
+  contact: { id: string; name?: string | null }
+): Promise<void> {
+  // 1. Query a templates para obtener content y actions
+  const { data: template } = await getSupabaseAdmin()
+    .from('templates')
+    .select('content, actions')
+    .eq('id', 'menu_principal_cliente')
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (!template) {
+    console.log('[Webhook] No se encontró template menu_principal_cliente');
+    // Fallback seguro
+    const name = contact.name || 'cliente';
+    await sendWhatsAppMessage(
+      phoneNumber,
+      `¡Hola, ${name}! 👋 Soy el asistente virtual de MTZ Consultores. ¿En qué puedo ayudarte?`
+    );
+    return;
+  }
+
+  // 2. Reemplazar {{nombre}} con el nombre real
+  const content = (template.content || '').replace(
+    '{{nombre}}',
+    contact.name || 'cliente'
+  );
+
+  // 3. Enviar mensaje de texto
+  await sendWhatsAppMessage(phoneNumber, content);
+
+  // 4. Extraer botones EXACTOS del template (sin modificación)
+  if (template.actions && template.actions.length > 0) {
+    const buttons = template.actions
+      .filter((a: any) => a.type === 'button')
+      .slice(0, 3)
+      .map((a: any) => ({ id: a.id, title: a.title }));
+
+    if (buttons.length > 0) {
+      await sendWhatsAppInteractiveButtons(
+        phoneNumber,
+        'Selecciona una opción:',
+        buttons
+      );
+    }
+  }
+
+  console.log('[Webhook] Saludo enviado desde DB:', contact.name);
+}
 
 // Handlers separados
 import { handleClassification, autoClassifyAsProspect } from './handlers/classification-handler';
@@ -179,9 +234,9 @@ export async function handleInboundUserMessage(messageData: {
       return;
     }
 
-    // 7. Si es saludo, enviar menú
+    // 7. Si es saludo, enviar menú DESDE LA BASE DE DATOS (sin IA)
     if (text && isGreeting(text)) {
-      await sendWelcomeMenu(phoneNumber, contact);
+      await sendSaludoDesdeDB(phoneNumber, contact);
       return;
     }
 
@@ -218,44 +273,16 @@ export async function handleInboundUserMessage(messageData: {
       }
     }
 
-    // 12. Clasificar intención con Gemini (Structured Output)
+    // 12. Buscar template por trigger
     if (text) {
-      const intencion = await classifyIntencion(text);
-      console.log('[Webhook] Intención:', intencion);
-
-      // Buscar template por categoría (intención)
-      const template = await findTemplateByCategory(intencion, contact.segment);
-      if (template) {
-        // Reemplazar {{nombre}} con el nombre del contacto
-        const content = (template.content || '').replace(
-          '{{nombre}}',
-          contact.name || 'cliente'
-        );
-        
-        // Enviar mensaje de texto
-        await sendWhatsAppMessage(phoneNumber, content);
-        
-        // Enviar botones EXACTOS del template (sin generación libre)
-        if (template.actions && template.actions.length > 0) {
-          const buttons = template.actions
-            .filter((a: any) => a.type === 'button')
-            .slice(0, 3)
-            .map((a: any) => ({ id: a.id, title: a.title }));
-          
-          if (buttons.length > 0) {
-            await sendWhatsAppInteractiveButtons(
-              phoneNumber,
-              'Selecciona una opción:',
-              buttons
-            );
-          }
-        }
-        
+      const matchedTemplate = await findTemplateByTrigger(text, contact.segment);
+      if (matchedTemplate) {
+        await sendTemplateWithConditions(phoneNumber, matchedTemplate, context, navState);
         return;
       }
     }
 
-    // 13. Fallback a IA (Gemini) - solo si no hay template
+    // 13. Fallback a IA (Gemini) solo si no hay coincidencia
     await handleAI(phoneNumber, conversationId, contact, companies, activeCompanyId, text || '');
 
   } catch (error) {
@@ -451,7 +478,7 @@ async function findTemplateById(
     .eq('is_active', true)
     .maybeSingle();
 
-  if (!template) return null;
+if (!template) return null;
 
   // Verificar segmento
   if (template.segment && template.segment !== 'todos' && template.segment !== segment) {
@@ -459,33 +486,6 @@ async function findTemplateById(
   }
 
   return template as Template;
-}
-
-/**
- * Busca plantilla que coincida con el trigger
- */
-async function findTemplateByTrigger(text: string, segment?: string | null): Promise<Template | null> {
-  const lowerText = text.toLowerCase().trim();
-
-  const { data: templates } = await getSupabaseAdmin()
-    .from('templates')
-    .select('*')
-    .eq('is_active', true)
-    .order('priority', { ascending: false })
-    .limit(10);
-
-  if (!templates) return null;
-
-  for (const t of templates) {
-    if (!t.trigger) continue;
-
-    const triggers = t.trigger.split(',').map((s: string) => s.trim().toLowerCase());
-    if (triggers.some((tr: string) => lowerText.includes(tr))) {
-      if (t.segment && t.segment !== 'todos' && t.segment !== segment) continue;
-      return t as Template;
-    }
-  }
-  return null;
 }
 
 /**
@@ -518,26 +518,31 @@ export async function findTemplateByActionId(
 }
 
 /**
- * Busca plantilla por categoría (intención)
+ * Busca plantilla por trigger (palabras clave)
  */
-async function findTemplateByCategory(
-  category: Intencion,
+async function findTemplateByTrigger(
+  text: string,
   segment?: string | null
 ): Promise<Template | null> {
-  const { data: template } = await getSupabaseAdmin()
+  const lowerText = text.toLowerCase().trim();
+
+  const { data: templates } = await getSupabaseAdmin()
     .from('templates')
     .select('*')
-    .eq('category', category)
     .eq('is_active', true)
     .order('priority', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(10);
 
-  if (!template) return null;
+  if (!templates) return null;
 
-  if (template.segment && template.segment !== 'todos' && template.segment !== segment) {
-    return null;
+  for (const t of templates) {
+    if (!t.trigger) continue;
+
+    const triggers = t.trigger.split(',').map((s: string) => s.trim().toLowerCase());
+    if (triggers.some((tr: string) => lowerText.includes(tr))) {
+      if (t.segment && t.segment !== 'todos' && t.segment !== segment) continue;
+      return t as Template;
+    }
   }
-
-  return template as Template;
+  return null;
 }

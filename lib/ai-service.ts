@@ -6,58 +6,12 @@
  */
 
 import { resolveGeminiModel } from './gemini-model';
-import { GoogleGenerativeAI, type GenerateContentResult } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 
-export type Intencion = 'saludo' | 'soporte' | 'documento' | 'desconocido';
 
-const SYSTEM_PROMPT_CLASIFICADOR = `Eres un clasificador de intenciones. Lee el mensaje del usuario y devuelve únicamente un JSON con la intención. Las intenciones válidas son: 'saludo', 'soporte', 'documento'.JSON de respuesta: {"intencion": "valor"}`;
-
-export const CLASIFICADOR_SCHEMA = {
-  type: "object",
-  properties: {
-    intencion: {
-      type: "string",
-      enum: ["saludo", "soporte", "documento"]
-    }
-  },
-  required: ["intencion"]
-};
-
-/**
- * Clasifica la intención del mensaje usando Gemini con Structured Output
- * Gemini SOLO devuelve JSON, no texto自由
- */
-export async function classifyIntencion(userMessage: string): Promise<Intencion> {
-  const modelName = resolveGeminiModel();
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    systemInstruction: SYSTEM_PROMPT_CLASIFICADOR,
-    generationConfig: {
-      responseSchema: CLASIFICADOR_SCHEMA,
-      responseMimeType: "application/json",
-    },
-  });
-
-  try {
-    const result: GenerateContentResult = await model.generateContent(userMessage);
-    const response = await result.response;
-    const text = response.text();
-    
-    const parsed = JSON.parse(text);
-    const intencion = parsed.intencion as Intencion;
-    
-    console.log('[AI] Intención clasificada:', intencion);
-    return intencion || 'desconocido';
-  } catch (error) {
-    console.error('[AI] Error clasificando:', error);
-    return 'desconocido';
-  }
-}
 
 export interface ConversationTurn {
   role: 'user' | 'assistant';
