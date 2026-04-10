@@ -101,9 +101,10 @@ export interface ElseAction {
 
 export interface Action {
   type: 'button' | 'list' | 'show_document';
-  id: string;
-  title: string;
+  id?: string;
+  title?: string;
   description?: string;
+  content?: string;
   next_template_id?: string;
   /** Condiciones para mostrar esta acción */
   conditions?: ActionConditions;

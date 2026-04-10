@@ -437,8 +437,7 @@ export const menuDocumentos: Template = {
 // ============================================
 
 /**
- * Menú de IVAs con lista dinámica de documentos
- * Usa lista si hay más de 3 IVAs disponibles
+ * Menú de IVAs - muestra lista dinámica
  */
 export const menuIva: Template = {
   id: 'menu_iva',
@@ -459,36 +458,16 @@ export const menuIva: Template = {
   },
   actions: [
     {
-      type: 'button',
-      id: 'btn_iva_ultimo',
-      title: '📄 Último IVA',
-      conditions: {
-        show_if: [
-          { field: 'document_count', operator: 'greater_than', value: 0 }
-        ]
-      }
-    },
-    {
-      type: 'button',
-      id: 'btn_iva_lista',
-      title: '📋 Ver todos los IVAs',
-      conditions: {
-        show_if: [
-          { field: 'document_count', operator: 'greater_than', value: 3 }
-        ]
-      }
+      type: 'list',
+      title: 'IVAs',
+      description: 'Tus declaraciones de IVA',
+      content: '{{iva_list}}'
     },
     {
       type: 'button',
       id: 'btn_iva_solicitar',
       title: '📋 Solicitar IVA',
       next_template_id: 'iva_solicitar'
-    },
-    {
-      type: 'button',
-      id: 'btn_volver_docs',
-      title: '← Volver a documentos',
-      next_template_id: 'menu_documentos'
     },
   ],
 };

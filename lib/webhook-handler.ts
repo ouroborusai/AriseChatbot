@@ -41,7 +41,8 @@ import { buildContext } from './handlers/base-handler';
  */
 async function sendSaludoDesdeDB(
   phoneNumber: string,
-  contact: { id: string; name?: string | null }
+  contact: { id: string; name?: string | null },
+  context: TemplateContext
 ): Promise<void> {
   // 1. Query a templates para obtener content y actions
   const { data: template } = await getSupabaseAdmin()
@@ -62,20 +63,91 @@ async function sendSaludoDesdeDB(
     return;
   }
 
-  // 2. Reemplazar {{nombre}} con el nombre real
-  const content = (template.content || '').replace(
+  // 2. Reemplazar variables del template
+  let content = (template.content || '').replace(
     '{{nombre}}',
     contact.name || 'cliente'
   );
+  
+  // Reemplazar document_count
+  if (context.documents) {
+    content = content.replace('{{document_count}}', String(context.documents.length));
+  }
+  
+  // Generar lists
+  if (context.documents && context.documents.length > 0) {
+    const docsList = context.documents.map((d: any) => ({
+      id: d.id,
+      title: d.title?.slice(0, 24) || 'Documento',
+      description: new Date(d.created_at).toLocaleDateString('es-CL')
+    }));
+    content = content.replace('{{documents_list}}', JSON.stringify(docsList));
+    
+    const ivaDocs = context.documents.filter((d: any) => 
+      d.document_type === 'iva' || d.title?.toLowerCase().includes('iva')
+    );
+    const ivaList = ivaDocs.slice(0, 12).map((d: any) => ({
+      id: d.id,
+      title: d.title?.slice(0, 24) || 'IVA',
+      description: new Date(d.created_at).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' })
+    }));
+    content = content.replace('{{iva_list}}', JSON.stringify(ivaList));
+  }
 
-  // 3. Extraer botones EXACTOS del template (sin modificación)
+  // 3. Procesar acciones - listas primero, luego botones
   if (template.actions && template.actions.length > 0) {
-    const buttons = template.actions
-      .filter((a: any) => a.type === 'button')
+    const listActions = template.actions.filter((a: any) => a.type === 'list');
+    const buttonActions = template.actions.filter((a: any) => a.type === 'button');
+    
+    // Procesar listas
+    for (const listAction of listActions) {
+      try {
+        let listContent = listAction.content || '';
+        
+        // Reemplazar variables en el content de la lista
+        if (listContent.includes('{{')) {
+          if (context.documents && context.documents.length > 0) {
+            const docsList = context.documents.map((d: any) => ({
+              id: d.id,
+              title: d.title?.slice(0, 24) || 'Documento',
+              description: new Date(d.created_at).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' })
+            }));
+            listContent = listContent.replace('{{documents_list}}', JSON.stringify(docsList));
+            
+            const ivaDocs = context.documents.filter((d: any) => 
+              d.document_type === 'iva' || d.title?.toLowerCase().includes('iva')
+            );
+            const ivaList = ivaDocs.slice(0, 12).map((d: any) => ({
+              id: d.id,
+              title: d.title?.slice(0, 24) || 'IVA',
+              description: new Date(d.created_at).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' })
+            }));
+            listContent = listContent.replace('{{iva_list}}', JSON.stringify(ivaList));
+          }
+        }
+        
+        const rows = JSON.parse(listContent);
+        if (Array.isArray(rows)) {
+          await sendWhatsAppListMessage(phoneNumber, {
+            body: content,
+            buttonText: listAction.title || 'Seleccionar',
+            sections: [{
+              title: listAction.description || 'Opciones',
+              rows: rows
+            }]
+          });
+          return;
+        }
+      } catch (e) {
+        console.log('[Webhook] Error procesando lista:', e);
+      }
+    }
+    
+    // Botones normales (máx 3)
+    const buttons = buttonActions
       .slice(0, 3)
       .map((a: any) => ({ id: a.id, title: a.title }));
 
-    // 4. Enviar mensaje interactivo con el saludo en el body (un solo POST)
     if (buttons.length > 0) {
       await sendWhatsAppInteractiveButtons(
         phoneNumber,
@@ -246,7 +318,7 @@ export async function handleInboundUserMessage(messageData: {
 
     // 7. Si es saludo, enviar menú DESDE LA BASE DE DATOS (sin IA)
     if (text && isGreeting(text)) {
-      await sendSaludoDesdeDB(phoneNumber, contact);
+      await sendSaludoDesdeDB(phoneNumber, contact, context);
       return;
     }
 
