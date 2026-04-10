@@ -103,7 +103,6 @@ export async function handleInboundUserMessage(messageData: {
           return false;
         },
         async () => (await handleCompanyButton(interactive, phoneNumber, conversationId, companies)).handled,
-        async () => (await handleMenuButton(interactive, phoneNumber, contact, companies, activeCompanyId)).handled,
         async () => (await handleDocumentButton(interactive, phoneNumber, conversationId)).handled,
         async () => (await handleDocCategoryButton(interactive, phoneNumber, contact.id, activeCompanyId)).handled,
       ];
