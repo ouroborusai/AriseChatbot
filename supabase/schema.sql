@@ -147,6 +147,9 @@ ALTER TABLE public.client_documents DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.service_requests DISABLE ROW LEVEL SECURITY;
 
 -- PLANTILLAS DE MENSAJES
+-- Si la tabla ya existe, agregar columna workflow:
+ALTER TABLE public.templates ADD COLUMN IF NOT EXISTS workflow text DEFAULT 'general';
+
 CREATE TABLE IF NOT EXISTS public.templates (
   id text PRIMARY KEY,
   name text NOT NULL,
