@@ -222,6 +222,11 @@ export async function handleInboundUserMessage(messageData: {
         await sendTemplateWithConditions(phoneNumber, nextTemplate, context, navState);
         return;
       }
+
+      // Si ningún handler procesó el interactive y no hay template, evitar fallback de IA
+      // Esto previene mensajes contradictorios después de enviar menús válidos
+      console.log('[Webhook] Interactive no manejado:', interactive, '- Evitando fallback de IA');
+      return;
     }
 
     // 6. Si no tiene segment, asignar prospecto automáticamente
@@ -271,17 +276,15 @@ export async function handleInboundUserMessage(messageData: {
       }
     }
 
-    // 12. Buscar template por trigger
-    if (text) {
-      const matchedTemplate = await findTemplateByTrigger(text, contact.segment);
-      if (matchedTemplate) {
-        await sendTemplateWithConditions(phoneNumber, matchedTemplate, context, navState);
-        return;
-      }
-    }
+    // 12. Fallback a IA (Gemini) - ÚNICAMENTE si es mensaje de texto PURo (no interactive button)
+    // Cuando hay interactive, YA se procesó arriba con los handlers y se retornó
+    // Si hay text PERO también hubo interactive, NO ejecutar IA para evitar doble mensaje
+    const wasInteractiveProcessed = !!interactive;
 
-    // 13. Fallback a IA (Gemini) solo si no hay coincidencia
-    await handleAI(phoneNumber, conversationId, contact, companies, activeCompanyId, text || '');
+    if (text && !wasInteractiveProcessed) {
+      // Solo texto sin interactive - usar IA como fallback
+      await handleAI(phoneNumber, conversationId, contact, companies, activeCompanyId, text);
+    }
 
   } catch (error) {
     console.error('💥 ERROR en webhook:', error);
