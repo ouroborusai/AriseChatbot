@@ -1346,6 +1346,22 @@ export const menuDocumentos: Template = {
   ],
 };
 
+/**
+ * Template SELECCIONAR EMPRESA
+ * Usado cuando el cliente quiere cambiar la empresa activa
+ */
+export const seleccionarEmpresa: Template = {
+  id: 'seleccionar_empresa',
+  name: 'Seleccionar Empresa',
+  content: '🏢 Por favor, selecciona la empresa que deseas gestionar:',
+  category: 'general',
+  segment: 'cliente',
+  is_active: true,
+  priority: 89,
+  workflow: 'general',
+  actions: [], // Las empresas se envían dinámicamente mediante el handler
+};
+
 // ============================================
 // ARRAY DE TODOS LOS TEMPLATES
 // ============================================
