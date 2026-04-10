@@ -1,0 +1,98 @@
+import { getSupabaseAdmin } from '../supabase-admin';
+import { 
+  sendWhatsAppMessage, 
+  sendWhatsAppInteractiveButtons, 
+  sendWhatsAppListMessage, 
+  sendWhatsAppDocument 
+} from '../whatsapp-service';
+import { Action, TemplateContext } from '../../app/components/templates/types';
+import { TemplateService } from './template-service';
+
+export class ActionService {
+  /**
+   * Ejecuta las acciones de una plantilla evaluando condiciones y enviando la respuesta adecuada
+   */
+  static async executeActions(
+    phoneNumber: string,
+    actions: Action[],
+    context: TemplateContext
+  ): Promise<boolean> {
+    // 1. Procesar acciones de tipo 'show_document' primero (tienen prioridad)
+    for (const action of actions) {
+      if (action.type === 'show_document' && action.condition?.required_document_type) {
+        const docType = action.condition.required_document_type;
+        const { data: doc } = await getSupabaseAdmin()
+          .from('client_documents')
+          .select('id, title, file_url, file_name, storage_bucket, storage_path')
+          .eq('contact_id', context.contact.id)
+          .or(`file_type.eq.${docType},title.ilike.%${docType}%`)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (doc) {
+          await sendWhatsAppDocument(phoneNumber, doc.file_url, doc.title);
+          return true; // Acción ejecutada con éxito
+        } else if (action.else_action?.message) {
+          await sendWhatsAppMessage(phoneNumber, action.else_action.message);
+          return true;
+        }
+      }
+    }
+
+    // 2. Evaluar acciones finales (filtradas por el condition-engine)
+    // Nota: getFinalActions viene de condition-engine, pero la ejecución es aquí
+    // Para evitar dependencias circulares, pasamos el resultado de getFinalActions si es necesario, 
+    // o lo importamos aquí.
+    return false;
+  }
+
+  /**
+   * Envía la respuesta interactiva (Lista o Botones) basada en las acciones filtradas
+   */
+  static async sendInteractiveResponse(
+    phoneNumber: string,
+    buttons: any[],
+    listAction: any | null,
+    elseActions: any[],
+    context: TemplateContext
+  ): Promise<void> {
+    // 1. Manejar else_actions cuando no hay botones visibles
+    if (buttons.length === 0 && elseActions.length > 0) {
+      const firstElseAction = elseActions[0];
+      if (firstElseAction.type === 'show_message' && firstElseAction.message) {
+        await sendWhatsAppMessage(phoneNumber, firstElseAction.message);
+        return;
+      }
+    }
+
+    // 2. Enviar lista si existe
+    if (listAction) {
+      const options = TemplateService.parseListContent(listAction.description || '[]', context);
+      if (options.length > 0) {
+        await sendWhatsAppListMessage(phoneNumber, {
+          body: 'Selecciona una opción:',
+          buttonText: listAction.title || 'Seleccionar',
+          sections: [{
+            title: 'Opciones',
+            rows: options.map((o: any) => ({
+              id: o.id || 'opt',
+              title: o.title || 'Opción',
+              description: o.description || ''
+            }))
+          }]
+        });
+        return;
+      }
+    }
+
+    // 3. Enviar botones (máx 3)
+    if (buttons.length > 0) {
+      const buttonPayloads = buttons.slice(0, 3).map(b => ({
+        id: b.id || 'btn',
+        title: b.title || 'Opción'
+      }));
+      await sendWhatsAppInteractiveButtons(phoneNumber, 'Selecciona una opción:', buttonPayloads);
+    }
+  }
+}

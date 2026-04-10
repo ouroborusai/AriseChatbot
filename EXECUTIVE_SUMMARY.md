@@ -61,13 +61,12 @@ Versioning:     Git-ready
 │         ⬇️ (webhook POST)                                    │
 │  [/api/webhook] ← Recibe y valida token                    │
 │         ⬇️                                                    │
-│  [webhook-handler.ts] ← Orquesta 7 pasos                   │
-│    ├─ Paso 1-2: Crea/busca contacto y conversación (BD)    │
-│    ├─ Paso 3: Guarda mensaje del usuario (BD)             │
-│    ├─ Paso 4: Obtiene historial (BD)                      │
-│    ├─ Paso 5: Genera respuesta con IA                     │
-│    ├─ Paso 6: Guarda respuesta en BD                      │
-│    └─ Paso 7: Envía a WhatsApp                            │
+│  [webhook-handler.ts] ← Orquestador de flujo
+│    ├─ Paso 1-3: Identidad y Guardado (ContextService)
+│    ├─ Paso 4: Evaluación de Handlers (Classification, Company, Menu, etc.)
+│    ├─ Paso 5: Navegación por Templates (TemplateService)
+│    ├─ Paso 6: Ejecución de Acciones (ActionService)
+│    └─ Paso 7: Fallback a IA (AI-Handler)
 │         ⬇️                                                    │
 │  [Supabase PostgreSQL] ← Almacena datos                    │
 │  [Gemini/OpenAI API] ← IA generativa                       │

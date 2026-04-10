@@ -426,7 +426,7 @@ export const menuDocumentos: Template = {
     {
       type: 'button',
       id: 'btn_solicitar_otro',
-      title: '📋 Solicitar otro',
+      title: '📋 Solicitar',
       next_template_id: 'solicitar_documento'
     },
   ],
@@ -1394,40 +1394,35 @@ export const vincularEmpresa: Template = {
 };
 
 /**
- * Template SELECCIONAR EMPRESA
+ * Muestra lista con todos los documentos
  */
-export const seleccionarEmpresa: Template = {
-  id: 'seleccionar_empresa',
-  name: 'Seleccionar Empresa',
-  content: '🏢 *Seleccionar Empresa*\n\nTienes varias empresas vinculadas. Selecciona la que necesitas gestionar:',
-  category: 'general',
+export const menuDocumentos: Template = {
+  id: 'menu_documentos',
+  name: '2. Menú Documentos',
+  content: '📋 Tienes {{document_count}} documentos. Selecciona uno:',
+  category: 'menu',
   segment: 'cliente',
   is_active: true,
-  priority: 82,
-  workflow: 'general',
+  priority: 10,
+  workflow: 'documentos',
   rules: {
     required_context: {
-      has_company: true
-    }
+      has_documents: true
+    },
+    fallback_template_id: 'solicitar_documento'
   },
   actions: [
     {
-      type: 'button',
-      id: 'btn_seleccionar_empresa_1',
-      title: '🏢 Empresa 1',
-      next_template_id: 'menu_documentos'
+      type: 'list',
+      title: 'Ver documentos',
+      description: 'Todos',
+      content: '{{documents_list}}'
     },
     {
       type: 'button',
-      id: 'btn_seleccionar_empresa_2',
-      title: '🏢 Empresa 2',
-      next_template_id: 'menu_documentos'
-    },
-    {
-      type: 'button',
-      id: 'btn_seleccionar_volver',
-      title: '← Volver',
-      next_template_id: 'menu_empresas'
+      id: 'btn_solicitar',
+      title: '📋 Solicitar',
+      next_template_id: 'solicitar_documento'
     },
   ],
 };
