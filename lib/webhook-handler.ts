@@ -68,20 +68,18 @@ async function sendSaludoDesdeDB(
     contact.name || 'cliente'
   );
 
-  // 3. Enviar mensaje de texto
-  await sendWhatsAppMessage(phoneNumber, content);
-
-  // 4. Extraer botones EXACTOS del template (sin modificación)
+  // 3. Extraer botones EXACTOS del template (sin modificación)
   if (template.actions && template.actions.length > 0) {
     const buttons = template.actions
       .filter((a: any) => a.type === 'button')
       .slice(0, 3)
       .map((a: any) => ({ id: a.id, title: a.title }));
 
+    // 4. Enviar mensaje interactivo con el saludo en el body (un solo POST)
     if (buttons.length > 0) {
       await sendWhatsAppInteractiveButtons(
         phoneNumber,
-        'Selecciona una opción:',
+        content,
         buttons
       );
     }
