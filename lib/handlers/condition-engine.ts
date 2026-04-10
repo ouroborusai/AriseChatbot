@@ -408,36 +408,37 @@ function evaluateRequiredContext(
  * @returns Acciones convertidas (máx 3 botones + 1 lista si corresponde)
  */
 export function convertButtonsToList(actions: Action[]): Action[] {
-  const buttonActions = actions.filter(a => a.type === 'button');
+  // 1. Separar listas explícitas de botones
   const listActions = actions.filter(a => a.type === 'list');
+  const buttonActions = actions.filter(a => a.type === 'button');
 
-  // Si hay 3 o menos botones, no hay que convertir
-  if (buttonActions.length <= 3) {
-    return actions;
-  }
-
-  // Si ya hay lista, no hacer nada
+  // 2. Si hay al menos una lista explícita, priorizar esa lista y sus botones
   if (listActions.length > 0) {
-    return actions;
+    // Retornamos la primera lista y hasta 2 botones adicionales (WhatsApp permite 3 items totales en interactive)
+    // Pero usualmente se prefiere enviar solo la lista si existe para evitar confusión
+    return [listActions[0], ...buttonActions.slice(0, 2)];
   }
 
-  // Mantener primeros 3 botones
-  const visibleButtons = buttonActions.slice(0, 3);
-  const remainingButtons = buttonActions.slice(3);
+  // 3. Si no hay lista pero hay más de 3 botones, convertir el excedente
+  if (buttonActions.length > 3) {
+    const visibleButtons = buttonActions.slice(0, 2); // Dejamos 2 botones visibles
+    const remainingButtons = buttonActions.slice(2);  // El resto a la lista
 
-  // Crear lista con los botones restantes
-  const listAction: Action = {
-    type: 'list',
-    id: 'more_options_list',
-    title: 'Más opciones',
-    content: JSON.stringify(remainingButtons.map(b => ({
-      id: b.id,
-      title: b.title,
-      description: b.description || '',
-    }))),
-  };
+    const listFromButtons: Action = {
+      type: 'list',
+      id: 'more_options_list',
+      title: 'Más opciones',
+      content: JSON.stringify(remainingButtons.map(b => ({
+        id: b.id,
+        title: b.title,
+        description: b.description || '',
+      }))),
+    };
 
-  return [...visibleButtons, listAction];
+    return [...visibleButtons, listFromButtons];
+  }
+
+  return actions;
 }
 
 /**
@@ -459,14 +460,17 @@ export function getFinalActions(
 } {
   const evaluations = filterVisibleActions(actions, context);
 
-  const buttons: Action[] = [];
+  const visibleActions: Action[] = [];
   const elseActions: ElseAction[] = [];
   let redirectTemplateId: string | undefined;
 
-  // Procesar resultados
+  // Procesar resultados de evaluación
   for (const evaluation of evaluations) {
     if (evaluation.isVisible) {
-      buttons.push(evaluation.action);
+      // No incluimos show_document aquí porque se procesa antes en ActionService.executeActions
+      if (evaluation.action.type !== 'show_document') {
+        visibleActions.push(evaluation.action);
+      }
     } else if (evaluation.elseAction) {
       elseActions.push(evaluation.elseAction);
       if (evaluation.elseAction.type === 'redirect' && evaluation.redirectTemplateId) {
@@ -475,8 +479,9 @@ export function getFinalActions(
     }
   }
 
-  // Limitar a 3 botones, convertir resto a lista
-  const processed = convertButtonsToList(buttons);
+  // Aplicar lógica de conversión si es necesario (limitar a lo que WhatsApp soporta)
+  const processed = convertButtonsToList(visibleActions);
+  
   const finalButtons = processed.filter(a => a.type === 'button');
   const listAction = processed.find(a => a.type === 'list');
 

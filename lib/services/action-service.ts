@@ -99,10 +99,13 @@ export class ActionService {
       console.log(`[ActionService] Enviando ${buttons.length} botones`);
       const buttonPayloads = buttons.slice(0, 3).map(b => ({
         id: b.id || 'btn',
-        title: b.title || 'Opción'
+        title: b.title.substring(0, 20) || 'Opción'
       }));
       await sendWhatsAppInteractiveButtons(phoneNumber, content, buttonPayloads);
-    } else if (listAction) {
+      return;
+    } 
+    
+    if (listAction) {
       // Si llegamos aquí y había un listAction pero no se envió, y no hay botones, 
       // enviamos al menos el mensaje de texto para no dejar al usuario en blanco
       console.log('[ActionService] No hay botones y la lista falló, enviando texto plano como fallback');
