@@ -493,6 +493,9 @@ function getLastActionFromHistory(history: Array<{ role: string; content: string
     if (content.startsWith('[button:')) {
       return content.replace('[button:', '').replace(']', '');
     }
+    if (content.startsWith('[list:')) {
+      return content.replace('[list:', '').replace(']', '');
+    }
   }
   return null;
 }
