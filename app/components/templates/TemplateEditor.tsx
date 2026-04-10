@@ -19,6 +19,8 @@ interface TemplateEditorProps {
 }
 
 export default function TemplateEditor({ template, allTemplates, isOpen, onClose, onSave }: TemplateEditorProps) {
+  console.log('[TemplateEditor] PROPS ==== template:', template?.name, 'isOpen:', isOpen);
+  
   const [form, setForm] = useState<Partial<Template>>({
     name: '',
     content: '',
@@ -35,10 +37,13 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
   const [listOptions, setListOptions] = useState<ListOption[]>([]);
 
   useEffect(() => {
-    console.log('[TemplateEditor] useEffect triggered. template:', template?.name, template?.id, 'isOpen:', isOpen);
+    console.log('[TemplateEditor] ========== USE EFFECT ==========');
+    console.log('[TemplateEditor] template:', template?.name, template?.id);
+    console.log('[TemplateEditor] isOpen:', isOpen);
+    console.log('[TemplateEditor] current form.name:', form.name);
     if (template) {
       setForm({ ...template });
-      console.log('[TemplateEditor] Form set to template:', template.name, 'actions:', template.actions);
+      console.log('[TemplateEditor] Form set to template:', template.name, 'actions:', template.actions?.length);
       if (template.actions && template.actions.some(a => a.type === 'list')) {
         const listAction = template.actions.find(a => a.type === 'list');
         if (listAction?.description) {
@@ -65,6 +70,9 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
       setListOptions([]);
     }
   }, [template, isOpen]);
+
+  console.log('[TemplateEditor] ========== RENDER ==========');
+  console.log('[TemplateEditor] isOpen:', isOpen, 'template:', template?.name, 'form.name:', form.name);
 
   const handleSubmit = (e: React.FormEvent) => {
     console.log('[TemplateEditor] handleSubmit called. form.name:', form.name);
@@ -136,9 +144,13 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
     setListOptions(prev => prev.filter((_, i) => i !== index));
   };
 
-  console.log('[TemplateEditor] Rendering. isOpen:', isOpen, 'template:', template?.name, 'form.name:', form.name);
+  console.log('[TemplateEditor] ========== RENDER ==========');
+  console.log('[TemplateEditor] isOpen:', isOpen, 'template:', template?.name, 'showEditor should be visible');
+  console.log('[TemplateEditor] returning early because isOpen is:', isOpen);
 
   if (!isOpen) return null;
+  
+  console.log('[TemplateEditor] RETURNED NULL - NOT RENDERING MODAL');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

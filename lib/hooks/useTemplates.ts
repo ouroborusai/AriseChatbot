@@ -12,15 +12,35 @@ export function useTemplates() {
   const fetchTemplates = useCallback(async () => {
     const { data } = await supabase.from('templates').select('*').order('priority');
     if (data && data.length > 0) {
-      const merged = [...(await import('@/app/components/templates')).DEFAULT_TEMPLATES as Template[]];
-      data.forEach((t: any) => {
-        if (!merged.find(m => m.id === t.id)) {
-          merged.push({ ...t, actions: t.actions || [], segment: t.segment || 'todos', is_active: t.is_active ?? true, priority: t.priority || 50 });
-        }
-      });
-      setTemplates(merged);
+      // Si hay plantillas en BD, usar SOLO esas (la BD es la fuente de verdad)
+      const normalized = data.map((t: any) => ({
+        ...t,
+        actions: t.actions || [],
+        segment: t.segment || 'todos',
+        is_active: t.is_active ?? true,
+        priority: t.priority || 50
+      }));
+      setTemplates(normalized);
     } else {
-      setTemplates((await import('@/app/components/templates')).DEFAULT_TEMPLATES as Template[]);
+      // Si NO hay plantillas en BD, cargar las DEFAULT y guardarlas en Supabase
+      const defaults = (await import('@/app/components/templates')).DEFAULT_TEMPLATES as Template[];
+      setTemplates(defaults);
+      // Guardar las defaults en Supabase para que estén disponibles
+      for (const t of defaults) {
+        await supabase.from('templates').upsert({
+          id: t.id,
+          name: t.name,
+          content: t.content,
+          category: t.category || 'general',
+          service_type: t.service_type || null,
+          trigger: t.trigger || null,
+          actions: t.actions || [],
+          is_active: t.is_active ?? true,
+          priority: t.priority || 50,
+          segment: t.segment || 'todos',
+          workflow: t.workflow || 'general'
+        });
+      }
     }
     setLoading(false);
   }, [supabase]);
@@ -28,7 +48,7 @@ export function useTemplates() {
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
   const saveTemplate = useCallback(async (template: Partial<Template> & { id: string }) => {
-    const t = { id: template.id, name: template.name!, content: template.content!, category: template.category || 'general', service_type: template.service_type, trigger: template.trigger, actions: template.actions || [], is_active: template.is_active ?? true, priority: template.priority || 50, segment: template.segment || 'todos' };
+    const t = { id: template.id, name: template.name!, content: template.content!, category: template.category || 'general', service_type: template.service_type, trigger: template.trigger, actions: template.actions || [], is_active: template.is_active ?? true, priority: template.priority || 50, segment: template.segment || 'todos', workflow: template.workflow || 'general' };
     await supabase.from('templates').upsert(t);
     setTemplates(prev => prev.find(x => x.id === t.id) ? prev.map(x => x.id === t.id ? t : x) : [...prev, t]);
   }, [supabase]);

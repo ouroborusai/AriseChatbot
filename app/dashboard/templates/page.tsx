@@ -5,9 +5,6 @@ import { createClient } from '@/lib/supabase/client';
 import { useTemplateFilters } from '@/lib/hooks/useTemplates';
 import { SearchInput } from '@/app/components/SearchInput';
 import {
-  FlowCanvas,
-  FlowSimulation,
-  FlowAnalyzer,
   TemplateDetailPanel,
   TemplateEditor,
   Template,
@@ -17,7 +14,7 @@ import {
   WORKFLOWS,
 } from '@/app/components/templates';
 
-type ViewMode = 'flow' | 'cards' | 'simulate' | 'analyze';
+type ViewMode = 'cards';
 
 export default function TemplatesPage() {
   const supabase = createClient();
@@ -25,7 +22,7 @@ export default function TemplatesPage() {
   
   const [templates, setTemplates] = useState<Template[]>(DEFAULT_TEMPLATES as Template[]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('flow');
+  const [viewMode] = useState<ViewMode>('cards');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
@@ -34,8 +31,11 @@ export default function TemplatesPage() {
 
   useEffect(() => {
     const loadTemplates = async () => {
-      const { data } = await supabase.from('templates').select('*').order('priority');
+      console.log('[Templates] Loading from Supabase...');
+      const { data, error } = await supabase.from('templates').select('*').order('priority');
+      console.log('[Templates] Supabase response - data:', data?.length, 'error:', error);
       if (data && data.length > 0) {
+        console.log('[Templates] First template from DB:', data[0]);
         const merged = [...(DEFAULT_TEMPLATES as Template[])];
         data.forEach((t: any) => {
           if (!merged.find(m => m.id === t.id)) {
@@ -49,6 +49,7 @@ export default function TemplatesPage() {
             });
           }
         });
+        console.log('[Templates] Total merged:', merged.length);
         setTemplates(merged);
       }
       setLoading(false);
@@ -127,11 +128,70 @@ export default function TemplatesPage() {
   const handleDelete = async (id: string) => { if (!confirm('¿Eliminar?')) return; await supabase.from('templates').delete().eq('id', id); setTemplates(templates.filter(t => t.id !== id)); if (selectedTemplateId === id) setSelectedTemplateId(null); };
   const handleToggleActive = async (id: string) => { const t = templates.find(x => x.id === id); if (!t) return; const u = { ...t, is_active: !t.is_active }; await supabase.from('templates').update({ is_active: u.is_active }).eq('id', id); setTemplates(templates.map(x => x.id === id ? u : x)); };
   const openEdit = (template?: Template) => { 
-    console.log('[Templates] openEdit called with:', template?.name, template?.id);
-    setEditingTemplate(template || null); 
-    setShowEditor(true); 
+    alert(`Abriendo editor para: ${template?.name || 'nuevo'}`);
+    console.log('[Templates] openEdit - setting showEditor to TRUE');
+    
+    // Usar una función callback para asegurar que se actualice
+    setShowEditor(true);
+    setEditingTemplate(template || null);
+    
+    // Forzar re-render inmediato
+    setTimeout(() => {
+      console.log('[Templates] After timeout - showEditor should be true, editingTemplate:', template?.name);
+    }, 50);
   };
   const handleSelectTemplate = (id: string) => setSelectedTemplateId(id);
+
+  const handleDeleteProspects = async () => {
+    if (!confirm('¿Eliminar todas las plantillas de prospecto? Esto no se puede deshacer.')) return;
+    
+    const prospectTemplates = templates.filter(t => t.segment === 'prospecto');
+    const idsToDelete = prospectTemplates.map(t => t.id);
+    
+    if (idsToDelete.length === 0) {
+      alert('No hay plantillas de prospecto para eliminar');
+      return;
+    }
+    
+    for (const id of idsToDelete) {
+      await supabase.from('templates').delete().eq('id', id);
+    }
+    
+    setTemplates(templates.filter(t => t.segment !== 'prospecto'));
+    alert(`Eliminado(s) ${idsToDelete.length} plantilla(s) de prospecto`);
+  };
+
+  const handleDeleteClients = async () => {
+    if (!confirm('¿Eliminar todas las plantillas de cliente? Esto no se puede deshacer.')) return;
+    
+    const clientTemplates = templates.filter(t => t.segment === 'cliente');
+    const idsToDelete = clientTemplates.map(t => t.id);
+    
+    if (idsToDelete.length === 0) {
+      alert('No hay plantillas de cliente para eliminar');
+      return;
+    }
+    
+    for (const id of idsToDelete) {
+      await supabase.from('templates').delete().eq('id', id);
+    }
+    
+    setTemplates(templates.filter(t => t.segment !== 'cliente'));
+    alert(`Eliminado(s) ${idsToDelete.length} plantilla(s) de cliente`);
+  };
+
+  const handleDeleteAll = async () => {
+    if (!confirm('¿Eliminar TODAS las plantillas? Esto no se puede deshacer.')) return;
+    
+    const allIds = templates.map(t => t.id);
+    
+    for (const id of allIds) {
+      await supabase.from('templates').delete().eq('id', id);
+    }
+    
+    setTemplates([]);
+    alert(`Eliminado(s) ${allIds.length} plantilla(s)`);
+  };
 
   if (loading) return <div className="h-full flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-green-500 border-t-transparent rounded-full" /></div>;
 
@@ -141,12 +201,6 @@ export default function TemplatesPage() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div><h1 className="text-2xl font-bold text-slate-900">Flow de Respuestas</h1><p className="text-sm text-slate-500">Visualiza y configura el flujo conversacional</p></div>
           <div className="flex items-center gap-3">
-            <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-              <button onClick={() => setViewMode('flow')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'flow' ? 'bg-white shadow text-green-600' : 'text-slate-600 hover:text-slate-900'}`}>🔀 <span className="hidden sm:inline">Flujo</span></button>
-              <button onClick={() => setViewMode('cards')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'cards' ? 'bg-white shadow text-green-600' : 'text-slate-600 hover:text-slate-900'}`}>📋 <span className="hidden sm:inline">Lista</span></button>
-              <button onClick={() => setViewMode('simulate')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'simulate' ? 'bg-white shadow text-green-600' : 'text-slate-600 hover:text-slate-900'}`}>▶️ <span className="hidden sm:inline">Simular</span></button>
-              <button onClick={() => setViewMode('analyze')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'analyze' ? 'bg-white shadow text-green-600' : 'text-slate-600 hover:text-slate-900'}`}>🔍 <span className="hidden sm:inline">Analizar</span></button>
-            </div>
             <button onClick={() => openEdit()} className="bg-green-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-green-700">+ Nueva</button>
           </div>
         </div>
@@ -165,6 +219,25 @@ export default function TemplatesPage() {
             <span className="text-xs bg-slate-100 px-1.5 py-0.5 rounded-full">{cat.count}</span>
           </button>
         ))}
+        <div className="flex-1" />
+        <button 
+          onClick={handleDeleteProspects}
+          className="px-3 py-1.5 rounded-xl border border-purple-200 text-purple-600 text-sm hover:bg-purple-50 transition"
+        >
+          🗑️ Prospectos
+        </button>
+        <button 
+          onClick={handleDeleteClients}
+          className="px-3 py-1.5 rounded-xl border border-blue-200 text-blue-600 text-sm hover:bg-blue-50 transition"
+        >
+          🗑️ Clientes
+        </button>
+        <button 
+          onClick={handleDeleteAll}
+          className="px-3 py-1.5 rounded-xl border border-red-300 text-red-600 text-sm hover:bg-red-50 transition"
+        >
+          🗑️ Todo
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
@@ -185,22 +258,8 @@ export default function TemplatesPage() {
       </div>
 
       <div className="flex-1 min-h-0">
-        {viewMode === 'flow' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
-            <div className="lg:col-span-3 min-h-[500px]"><FlowCanvas templates={filteredTemplates} selectedTemplateId={selectedTemplateId} onSelectTemplate={handleSelectTemplate} /></div>
-            <div className="lg:col-span-1"><TemplateDetailPanel template={selectedTemplate} allTemplates={templates} onCopy={handleCopy} onEdit={openEdit} onToggleActive={handleToggleActive} onDelete={handleDelete} copiedId={copiedId} /></div>
-          </div>
-        ) : viewMode === 'simulate' ? (
-          <div className="h-full">
-            <FlowSimulation templates={filteredTemplates} />
-          </div>
-        ) : viewMode === 'analyze' ? (
-          <div className="h-full">
-            <FlowAnalyzer templates={filteredTemplates} />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredTemplates.map((template) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredTemplates.map((template) => {
               const cat = CATEGORIES.find(c => c.id === template.category) || CATEGORIES[6];
               const srv = SERVICE_TYPES.find(s => s.id === template.service_type);
               return (
@@ -214,6 +273,11 @@ export default function TemplatesPage() {
                   <div className="flex flex-wrap gap-1 mb-2">
                     {template.trigger && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">🔑 {template.trigger}</span>}
                     {srv && <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{srv.icon}</span>}
+                    {template.segment && template.segment !== 'todos' && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${template.segment === 'cliente' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                        {template.segment === 'cliente' ? '👤' : '🔍'}
+                      </span>
+                    )}
                   </div>
                   {template.actions && template.actions.length > 0 && (
                     <div className="flex flex-wrap gap-1">
@@ -231,9 +295,20 @@ export default function TemplatesPage() {
                 </div>
               );
             })}
-          </div>
-        )}
+        </div>
       </div>
+
+      {selectedTemplateId && (
+        <TemplateDetailPanel 
+          template={selectedTemplate} 
+          allTemplates={templates} 
+          onCopy={handleCopy} 
+          onEdit={openEdit} 
+          onToggleActive={handleToggleActive} 
+          onDelete={handleDelete} 
+          copiedId={copiedId} 
+        />
+      )}
 
       <TemplateEditor template={editingTemplate} allTemplates={templates} isOpen={showEditor} onClose={() => { setShowEditor(false); setEditingTemplate(null); }} onSave={handleSaveTemplate} />
     </div>
