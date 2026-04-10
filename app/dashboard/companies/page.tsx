@@ -55,6 +55,82 @@ interface CompanyDocumentsTabProps {
   uploading: boolean;
 }
 
+interface MonthRowProps {
+  month: string;
+  index: number;
+  doc: any;
+  year: number;
+  activeTab: DocTab;
+  onUpload: (title: string, file: File) => Promise<void>;
+  onDelete: (docId: string) => Promise<void>;
+  uploading: boolean;
+}
+
+function MonthRow({ month, index, doc, year, activeTab, onUpload, onDelete, uploading }: MonthRowProps) {
+  const [showModal, setShowModal] = useState(false);
+  const [localFile, setLocalFile] = useState<File | null>(null);
+  const [uploadingLocal, setUploadingLocal] = useState(false);
+
+  const handleUpload = async () => {
+    if (!localFile) return;
+    setUploadingLocal(true);
+    const title = formatDocTitle(activeTab === 'iva' ? 'IVA' : activeTab === 'sueldos' ? 'Liquidación' : activeTab, year, index);
+    await onUpload(title, localFile);
+    setLocalFile(null);
+    setShowModal(false);
+    setUploadingLocal(false);
+  };
+
+  return (
+    <>
+      <div className={`flex items-center gap-3 p-3 rounded-xl border ${doc ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-white'}`}>
+        <div className="w-28 shrink-0">
+          <span className="text-sm font-medium text-slate-700">{month}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          {doc ? (
+            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-green-700 hover:underline truncate block">
+              {doc.file_name}
+            </a>
+          ) : (
+            <span className="text-xs text-slate-400">Sin documento</span>
+          )}
+        </div>
+        <div className="shrink-0">
+          {doc ? (
+            <div className="flex items-center gap-1">
+              <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">
+                Ver
+              </a>
+              <button onClick={() => onDelete(doc.id)} className="text-xs text-red-600 hover:text-red-800 px-1">✕</button>
+            </div>
+          ) : (
+            <label className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-lg cursor-pointer hover:bg-slate-200 block">
+              📤 Subir
+              <input type="file" accept=".pdf,.xls,.xlsx,.doc,.docx" className="hidden" onChange={(e) => { setLocalFile(e.target.files?.[0] || null); setShowModal(true); }} />
+            </label>
+          )}
+        </div>
+      </div>
+
+      {showModal && localFile && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-xl max-w-sm w-full mx-4">
+            <p className="text-sm font-medium mb-2">Subir {month} {year}</p>
+            <p className="text-xs text-slate-500 truncate mb-3">{localFile.name}</p>
+            <div className="flex gap-2">
+              <button onClick={() => { setShowModal(false); setLocalFile(null); }} className="flex-1 text-xs border border-slate-200 px-3 py-2 rounded-lg">Cancelar</button>
+              <button onClick={handleUpload} disabled={uploading || uploadingLocal} className="flex-1 text-xs bg-green-600 text-white px-3 py-2 rounded-lg">
+                {uploading || uploadingLocal ? 'Subiendo...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function CompanyDocumentsTab({ documents, activeTab, year, onUpload, onDelete, uploading }: CompanyDocumentsTabProps) {
   const filteredDocs = useMemo(() => {
     return documents.filter(doc => {
@@ -65,74 +141,14 @@ function CompanyDocumentsTab({ documents, activeTab, year, onUpload, onDelete, u
     });
   }, [documents, activeTab, year]);
 
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadingLocal, setUploadingLocal] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!uploadFile) return;
-    setUploadingLocal(true);
-    const title = formatDocTitle(activeTab === 'iva' ? 'IVA' : activeTab === 'sueldos' ? 'Liquidación' : activeTab, year, selectedMonth);
-    await onUpload(title, uploadFile);
-    setUploadFile(null);
-    setUploadingLocal(false);
-  };
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-green-500"
-        >
-          {MONTHS.map((m, i) => (
-            <option key={i} value={i}>{m}</option>
-          ))}
-        </select>
-        <div className="flex-1" />
-        <label className="cursor-pointer rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700 hover:bg-green-100 border border-green-200">
-          📤 Subir archivo
-          <input type="file" accept=".pdf,.xls,.xlsx,.doc,.docx" className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
-        </label>
-      </div>
-
-      {uploadFile && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-xl border border-green-200">
-          <span className="text-sm">📎 {uploadFile.name}</span>
-          <button onClick={() => setUploadFile(null)} className="text-red-600 text-xs">✕</button>
-          <button onClick={handleSubmit} disabled={uploading || uploadingLocal} className="ml-auto text-sm bg-green-600 text-white px-3 py-1 rounded-lg">
-            {uploading || uploadingLocal ? 'Subiendo...' : 'Confirmar'}
-          </button>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-        {MONTHS.map((month, index) => {
-          const doc = filteredDocs.find(d => getMonthFromTitle(d.title || '') === index);
-          return (
-            <div key={index} className={`p-3 rounded-xl border ${doc ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50'}`}>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700">{month}</span>
-                {doc ? (
-                  <span className="text-green-600 text-xs">✓</span>
-                ) : (
-                  <span className="text-slate-400 text-xs">-</span>
-                )}
-              </div>
-              {doc && (
-                <div className="mt-2 pt-2 border-t border-green-200">
-                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-green-700 hover:underline block truncate">
-                    {doc.file_name}
-                  </a>
-                  <button onClick={() => onDelete(doc.id)} className="text-xs text-red-600 mt-1 hover:underline">Eliminar</button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
+    <div className="space-y-2">
+      {MONTHS.map((month, index) => {
+        const doc = filteredDocs.find(d => getMonthFromTitle(d.title || '') === index);
+        return (
+          <MonthRow key={index} month={month} index={index} doc={doc} year={year} activeTab={activeTab} onUpload={onUpload} onDelete={onDelete} uploading={uploading} />
+        );
+      })}
       {filteredDocs.length === 0 && (
         <div className="text-center py-8 text-slate-500 text-sm">
           No hay documentos para {year}
