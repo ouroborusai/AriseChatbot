@@ -80,7 +80,7 @@ export default function FlowCanvas({ templates, selectedTemplateId, onSelectTemp
               fromY: fromPos.y + NODE_BASE_HEIGHT / 2,
               toX: toPos.x,
               toY: toPos.y + NODE_BASE_HEIGHT / 2,
-              label: action.title,
+              label: action.title || 'Acción',
               color: cat.colorHex,
             });
           }

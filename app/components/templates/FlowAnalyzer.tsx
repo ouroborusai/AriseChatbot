@@ -33,7 +33,7 @@ export default function FlowAnalyzer({ templates }: FlowAnalyzerProps) {
           if (target) {
             target.incoming++;
             nodes.get(t.id)?.connections.push({
-              actionTitle: action.title,
+              actionTitle: action.title || 'Acción',
               targetName: target.template.name,
               targetId: action.next_template_id
             });

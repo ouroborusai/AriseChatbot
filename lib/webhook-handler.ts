@@ -507,13 +507,13 @@ async function sendTemplateActionsWithConditions(
       const options = JSON.parse(listAction.description || '[]');
       await sendWhatsAppListMessage(phoneNumber, {
         body: 'Selecciona una opción:',
-        buttonText: listAction.title,
+        buttonText: listAction.title || 'Seleccionar',
         sections: [{
           title: 'Opciones',
           rows: options.map((o: any) => ({
-            id: o.id,
-            title: o.title,
-            description: o.description
+            id: o.id || 'opt',
+            title: o.title || 'Opción',
+            description: o.description || ''
           }))
         }]
       });
@@ -526,8 +526,8 @@ async function sendTemplateActionsWithConditions(
   // Enviar botones
   if (buttons.length > 0) {
     const buttonPayloads = buttons.slice(0, 3).map(b => ({
-      id: b.id,
-      title: b.title
+      id: b.id || 'btn',
+      title: b.title || 'Opción'
     }));
 
     await sendWhatsAppInteractiveButtons(

@@ -87,7 +87,7 @@ export default function FlowMap({ templates, selectedTemplateId, onSelectTemplat
           edges.push({ 
             from: t.id, 
             to: action.next_template_id, 
-            label: action.title,
+            label: action.title || 'Acción',
             fromLevel,
             toLevel 
           });

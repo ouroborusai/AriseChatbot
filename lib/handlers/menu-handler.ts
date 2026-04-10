@@ -39,8 +39,6 @@ export class MenuHandler extends BaseHandler {
 
     if (this.isClient()) {
       await this.sendClientMenu(phoneNumber);
-    } else {
-      await this.sendProspectMenu(phoneNumber);
     }
   }
 
@@ -102,78 +100,24 @@ export class MenuHandler extends BaseHandler {
       const options = JSON.parse(listAction.description || '[]');
       await sendWhatsAppListMessage(phoneNumber, {
         body: greetingText,
-        buttonText: listAction.title,
+        buttonText: listAction.title || 'Seleccionar',
         sections: [{
           title: 'Opciones',
           rows: options.map((o: any) => ({
-            id: o.id,
-            title: o.title,
-            description: o.description
+            id: o.id || 'opt',
+            title: o.title || 'Opción',
+            description: o.description || ''
           }))
         }]
       });
       return;
     }
 
-    // Enviar botones (máximo 3)
+// Enviar botones (máximo 3)
     await sendWhatsAppInteractiveButtons(
       phoneNumber,
       greetingText,
-      buttons.slice(0, 3).map(b => ({ id: b.id, title: b.title }))
-    );
-  }
-
-  /**
-   * Menú para prospectos
-   */
-  private async sendProspectMenu(phoneNumber: string): Promise<void> {
-    const actions: Action[] = [
-      {
-        type: 'button',
-        id: BUTTON_IDS.NEW_QUOTE,
-        title: '💼 Quiero cotizar'
-      },
-      {
-        type: 'button',
-        id: BUTTON_IDS.NEW_INFO,
-        title: '📝 Más información'
-      },
-      {
-        type: 'button',
-        id: BUTTON_IDS.CHECK_REQUEST_STATUS,
-        title: '🔎 Estado solicitud'
-      },
-      {
-        type: 'button',
-        id: BUTTON_IDS.NEW_HUMAN,
-        title: '📞 Hablar con asesor'
-      },
-    ];
-
-    // Para prospectos, si hay más de 3 opciones, usar lista
-    const { buttons, listAction } = getFinalActions(actions, this.context);
-
-    if (listAction) {
-      const options = JSON.parse(listAction.description || '[]');
-      await sendWhatsAppListMessage(phoneNumber, {
-        body: '¡Hola! 👋 Bienvenido a MTZ Consultores. ¿En qué podemos ayudarte?',
-        buttonText: listAction.title,
-        sections: [{
-          title: 'Opciones',
-          rows: options.map((o: any) => ({
-            id: o.id,
-            title: o.title,
-            description: o.description
-          }))
-        }]
-      });
-      return;
-    }
-
-    await sendWhatsAppInteractiveButtons(
-      phoneNumber,
-      '¡Hola! 👋 Bienvenido a MTZ Consultores. ¿En qué podemos ayudarte?',
-      buttons.slice(0, 3).map(b => ({ id: b.id, title: b.title }))
+      buttons.slice(0, 3).map(b => ({ id: b.id || 'btn', title: b.title || 'Opción' }))
     );
   }
 
