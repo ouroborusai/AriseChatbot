@@ -52,7 +52,8 @@ export async function POST(request: NextRequest) {
       storagePath += `/${period}`;
     }
     
-    storagePath += `/${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const cleanName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9.-]/g, '_');
+    storagePath += `/${timestamp}-${cleanName}`;
 
     console.log('[Upload] Subiendo a:', storagePath);
 

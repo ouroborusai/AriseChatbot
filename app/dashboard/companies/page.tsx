@@ -6,13 +6,15 @@ import { useCompanies, useCompanyContacts, useCompanyDocuments } from '@/lib/hoo
 import { SearchInput } from '@/app/components/SearchInput';
 import { Modal } from '@/app/components/Modal';
 
-type DocTab = 'iva' | 'sueldos' | 'libros' | 'otros';
+type DocTab = 'iva' | 'sueldos' | 'carpeta' | 'rut' | 'libros' | 'otros';
 
 const TAB_CONFIG = {
   iva: { label: '🧾 IVA', icon: '🧾' },
   sueldos: { label: '💰 Sueldos', icon: '💰' },
+  carpeta: { label: '📁 Carpeta Tributaria', icon: '📁' },
+  rut: { label: '🆔 RUT Electrónico', icon: '🆔' },
   libros: { label: '📒 Libro Remuneraciones', icon: '📒' },
-  otros: { label: '📁 Otros', icon: '📁' },
+  otros: { label: '📄 Otros', icon: '📄' },
 };
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -21,6 +23,8 @@ function getDocTypeFromTitle(title: string): DocTab {
   const t = title.toLowerCase();
   if (t.includes('iva')) return 'iva';
   if (t.includes('sueldo') || t.includes('liquidación') || t.includes('salario')) return 'sueldos';
+  if (t.includes('carpeta')) return 'carpeta';
+  if (t.includes('rut')) return 'rut';
   if (t.includes('libro') || t.includes('remuneracion')) return 'libros';
   return 'otros';
 }
@@ -131,15 +135,48 @@ function MonthRow({ month, index, doc, year, activeTab, onUpload, onDelete, uplo
   );
 }
 
+const NON_MONTHLY_TABS: DocTab[] = ['carpeta', 'rut', 'libros', 'otros'];
+
 function CompanyDocumentsTab({ documents, activeTab, year, onUpload, onDelete, uploading }: CompanyDocumentsTabProps) {
   const filteredDocs = useMemo(() => {
     return documents.filter(doc => {
       const docType = getDocTypeFromTitle(doc.title || '');
       if (docType !== activeTab) return false;
+      if (NON_MONTHLY_TABS.includes(activeTab)) return true;
       const docYear = parseYearFromTitle(doc.title || '');
       return docYear === year;
     });
   }, [documents, activeTab, year]);
+
+  if (NON_MONTHLY_TABS.includes(activeTab)) {
+    return (
+      <div className="space-y-2">
+        {filteredDocs.length === 0 ? (
+          <div className="text-center py-8 text-slate-500 text-sm">
+            No hay documentos
+          </div>
+        ) : (
+          filteredDocs.map((doc) => (
+            <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-green-200 bg-green-50">
+              <div className="flex-1 min-w-0">
+                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-green-700 hover:underline truncate block">
+                  {doc.title || doc.file_name}
+                </a>
+                <p className="text-xs text-slate-500">{new Date(doc.created_at).toLocaleDateString('es-CL')}</p>
+              </div>
+              <div className="shrink-0 flex items-center gap-1">
+                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">
+                  Ver
+                </a>
+                <button onClick={() => onDelete(doc.id)} className="text-xs text-red-600 hover:text-red-800 px-1">✕</button>
+              </div>
+            </div>
+          ))
+        )}
+        <UploadSingleButton onUpload={onUpload} uploading={uploading} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -155,6 +192,44 @@ function CompanyDocumentsTab({ documents, activeTab, year, onUpload, onDelete, u
         </div>
       )}
     </div>
+  );
+}
+
+function UploadSingleButton({ onUpload, uploading }: { onUpload: (title: string, file: File) => Promise<void>; uploading: boolean }) {
+  const [showModal, setShowModal] = useState(false);
+  const [localFile, setLocalFile] = useState<File | null>(null);
+  const [uploadingLocal, setUploadingLocal] = useState(false);
+
+  const handleUpload = async () => {
+    if (!localFile) return;
+    setUploadingLocal(true);
+    await onUpload(localFile.name.replace(/\.[^/.]+$/, ''), localFile);
+    setLocalFile(null);
+    setShowModal(false);
+    setUploadingLocal(false);
+  };
+
+  return (
+    <>
+      <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-slate-300 text-sm text-slate-600 cursor-pointer hover:bg-slate-50">
+        📤 Subir documento
+        <input type="file" accept=".pdf,.xls,.xlsx,.doc,.docx" className="hidden" onChange={(e) => { setLocalFile(e.target.files?.[0] || null); setShowModal(true); }} />
+      </label>
+      {showModal && localFile && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-xl max-w-sm w-full mx-4">
+            <p className="text-sm font-medium mb-2">Subir documento</p>
+            <p className="text-xs text-slate-500 truncate mb-3">{localFile.name}</p>
+            <div className="flex gap-2">
+              <button onClick={() => { setShowModal(false); setLocalFile(null); }} className="flex-1 text-xs border border-slate-200 px-3 py-2 rounded-lg">Cancelar</button>
+              <button onClick={handleUpload} disabled={uploading || uploadingLocal} className="flex-1 text-xs bg-green-600 text-white px-3 py-2 rounded-lg">
+                {uploading || uploadingLocal ? 'Subiendo...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -204,22 +279,58 @@ export default function CompaniesPage() {
     if (!selectedCompanyId) return;
     setUploading(true);
     try {
-      const fileName = `${selectedCompanyId}/${selectedYear}/${title}_${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('client-documents').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('client-documents').getPublicUrl(fileName);
+      let bucketName = 'client-documents';
+      
+      console.log('[Upload] Verificando bucket...');
+      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket(bucketName);
+      
+      if (bucketError || !bucketData) {
+        console.log('[Upload] Bucket no existe, intentando crear...');
+        const { error: createErr } = await supabase.storage.createBucket(bucketName, {
+          public: true,
+          fileSizeLimit: 50000000,
+        });
+        if (createErr) {
+          console.error('[Upload] Error creando bucket:', createErr);
+          alert('Error: Storage deshabilitado. '+createErr.message);
+          setUploading(false);
+          return;
+        }
+      }
+      
+      const cleanName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = `${selectedCompanyId}/${selectedYear}/${title}_${Date.now()}_${cleanName}`;
+      console.log('[Upload] Subiendo:', fileName);
+      
+      const { error: uploadError } = await supabase.storage.from(bucketName).upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+      
+      if (uploadError) {
+        console.error('[Upload] Error:', uploadError);
+        alert('Error uploading: ' + uploadError.message);
+        setUploading(false);
+        return;
+      }
+      
+      const { data: { publicUrl } } = supabase.storage.from(bucketName).getPublicUrl(fileName);
       await supabase.from('client_documents').insert({
         contact_id: contacts[0]?.contact_id || null,
         company_id: selectedCompanyId,
         title,
         file_name: file.name,
         file_url: publicUrl,
-        storage_bucket: 'client-documents',
+        storage_bucket: bucketName,
         storage_path: fileName,
         file_type: file.type,
       });
       refetchDocs();
-    } catch (e) { console.error('Error:', e); }
+      alert('Documento subido exitosamente');
+    } catch (e: any) { 
+      console.error('Error:', e); 
+      alert('Error: ' + (e?.message || e)); 
+    }
     setUploading(false);
   };
 
