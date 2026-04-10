@@ -260,6 +260,18 @@ export const menuIva: Template = {
       title: '📋 Solicitar IVA',
       next_template_id: 'iva_solicitar'
     },
+    {
+      type: 'button',
+      id: 'btn_iva_otro',
+      title: '📋 Ver otro IVA',
+      next_template_id: 'menu_iva'
+    },
+    {
+      type: 'button',
+      id: 'btn_iva_volver',
+      title: '← Volver',
+      next_template_id: 'menu_tramites'
+    },
   ],
 };
 
@@ -378,13 +390,27 @@ export const menuRenta: Template = {
   actions: [
     {
       type: 'list',
-      title: 'Opciones Renta',
-      description: 'Selecciona una opción',
-      content: JSON.stringify([
-        { id: 'btn_renta_ultimo', title: '📄 Última declaración', description: 'Ver la declaración más reciente' },
-        { id: 'btn_renta_solicitar', title: '📝 Solicitar declaración', description: 'Pedir nueva declaración' },
-        { id: 'btn_volver_renta', title: '← Volver', description: 'Regresar a documentos' },
-      ])
+      title: 'Declaraciones Renta',
+      description: 'Tus declaraciones',
+      content: '{{renta_list}}'
+    },
+    {
+      type: 'button',
+      id: 'btn_renta_solicitar',
+      title: '📝 Solicitar',
+      next_template_id: 'renta_solicitar'
+    },
+    {
+      type: 'button',
+      id: 'btn_renta_otro',
+      title: '📋 Ver otra',
+      next_template_id: 'menu_renta'
+    },
+    {
+      type: 'button',
+      id: 'btn_renta_volver',
+      title: '← Volver',
+      next_template_id: 'menu_documentos'
     },
   ],
 };
@@ -1137,7 +1163,7 @@ export const vincularEmpresa: Template = {
 export const menuDocumentos: Template = {
   id: 'menu_documentos',
   name: '2. Menú Documentos',
-  content: '📄 Selecciona la categoría de documentos que deseas consultar:',
+  content: '📋 Tienes {{document_count}} documentos. Selecciona uno:',
   category: 'menu',
   segment: 'cliente',
   is_active: true,
@@ -1152,15 +1178,21 @@ export const menuDocumentos: Template = {
   actions: [
     {
       type: 'list',
-      title: 'Categorías',
-      description: 'Selecciona una opción',
-      content: JSON.stringify([
-        { id: 'btn_iva_docs', title: '🧾 IVAs', description: 'Ver declaraciones de IVA' },
-        { id: 'btn_nomina_docs', title: '👥 Remuneraciones', description: 'Ver liquidaciones y contratos' },
-        { id: 'btn_renta_docs', title: '📊 Declaración Renta', description: 'Ver formularios de renta' },
-        { id: 'btn_balance_docs', title: '📈 Balances', description: 'Ver balances y estados' },
-        { id: 'btn_solicitar', title: '📋 Solicitar Documento', description: 'Pedir un documento nuevo' },
-      ])
+      title: 'Ver documentos',
+      description: 'Todos',
+      content: '{{documents_list}}'
+    },
+    {
+      type: 'button',
+      id: 'btn_solicitar',
+      title: '📋 Solicitar',
+      next_template_id: 'solicitar_documento'
+    },
+    {
+      type: 'button',
+      id: 'btn_volver_principal',
+      title: '← Volver',
+      next_template_id: 'menu_principal_cliente'
     },
   ],
 };

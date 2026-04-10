@@ -29,7 +29,6 @@ import { ContextService } from './services/context-service';
 import { ActionService } from './services/action-service';
 
 import { handleClassification, autoClassifyAsProspect } from './handlers/classification-handler';
-import { sendWelcomeMenu, handleMenuButton, isGreeting } from './handlers/menu-handler';
 import { handleDocumentButton, handlePeriodText, handleDocCategoryButton } from './handlers/documents-handler';
 import { handleCompanyButton, handleCompanyText, autoSelectCompany } from './handlers/company-handler';
 import { handleAI } from './handlers/ai-handler';
@@ -93,7 +92,12 @@ export async function handleInboundUserMessage(messageData: {
           const res = await handleClassification(interactive, contact);
           if (res.handled && res.response) {
             await sendWhatsAppMessage(phoneNumber, res.response);
-            await sendWelcomeMenu(phoneNumber, contact);
+            const menuTemplate = await TemplateService.findTemplateById('menu_principal_cliente', contact.segment);
+            if (menuTemplate) {
+              await sendTemplateWithConditions(phoneNumber, menuTemplate, context, navState);
+            } else {
+              await sendWhatsAppMessage(phoneNumber, `¡Hola, ${contact.name || 'cliente'}! 👋 Soy el asistente virtual de MTZ Consultores. ¿En qué puedo ayudarte?`);
+            }
             return true;
           }
           return false;

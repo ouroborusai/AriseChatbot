@@ -131,7 +131,18 @@ export class TemplateService {
   }
 
   /**
-   * Procesa el contenido de una acción de lista, reemplazando variables y parseando a JSON
+   * Procesa el contenido de una acción de lista, reemplazando variables y parseando a JSON.
+   * 
+   * NOTA: En WhatsApp, las Listas Interactivas muestran filas de opciones, pero las acciones
+   * como "Volver" o "Solicitar" deben definirse como acciones de tipo 'button' por separado
+   * en la plantilla. Asegúrate de que cada template con una lista también incluya al menos
+   * un botón de navegación (ej: { type: 'button', title: '← Volver', ... }) para una mejor UX.
+   * 
+   * Ejemplo correcto:
+   *   actions: [
+   *     { type: 'list', title: 'Documentos', description: 'Lista', content: '{{doc_list}}' },
+   *     { type: 'button', id: 'btn_volver', title: '← Volver', next_template_id: 'menu_principal' }
+   *   ]
    */
   static parseListContent(content: string, context: TemplateContext): any[] {
     try {
