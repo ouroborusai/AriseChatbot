@@ -386,7 +386,7 @@ export class MenuHandler extends BaseHandler {
 // Funciones exportadas para compatibilidad con código existente
 export function isGreeting(text: string): boolean {
   const handler = new MenuHandler({
-    contact: { id: '', name: null, phone_number: null, segment: null },
+    contact: { id: '', phone_number: '' },
     companies: [],
     activeCompanyId: null,
     documents: [],
@@ -422,7 +422,7 @@ export async function handleMenuButton(
 
 export async function deriveToHuman(phoneNumber: string): Promise<void> {
   const handler = new MenuHandler({
-    contact: { id: '', name: null, phone_number: null, segment: null },
+    contact: { id: '', phone_number: '' },
     companies: [],
     activeCompanyId: null,
     documents: [],

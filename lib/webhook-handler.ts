@@ -211,7 +211,7 @@ export async function handleInboundUserMessage(messageData: {
 
       if (lastBtn) {
         const periodResult = await handlePeriodText(
-          text, lastBtn, phoneNumber, conversationId
+          text, lastBtn, phoneNumber, conversationId, contact.id, activeCompanyId
         );
         if (periodResult.handled) return;
       }

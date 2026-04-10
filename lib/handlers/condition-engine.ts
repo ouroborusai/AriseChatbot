@@ -386,12 +386,13 @@ function evaluateRequiredContext(
 
   // Verificar tipo de documento específico
   if (required.required_document_type) {
+    const docType = required.required_document_type;
     const hasType = context.documents?.some(d =>
-      d.document_type === required.required_document_type ||
-      d.title.toLowerCase().includes(required.required_document_type.toLowerCase())
+      d.document_type === docType ||
+      d.title.toLowerCase().includes(docType.toLowerCase())
     );
     if (!hasType) {
-      console.log('[ConditionEngine] No hay documentos del tipo:', required.required_document_type);
+      console.log('[ConditionEngine] No hay documentos del tipo:', docType);
       return false;
     }
   }
@@ -463,14 +464,13 @@ export function getFinalActions(
   let redirectTemplateId: string | undefined;
 
   // Procesar resultados
-  for (const eval of evaluations) {
-    if (eval.isVisible) {
-      buttons.push(eval.action);
-    } else if (eval.elseAction) {
-      elseActions.push(eval.elseAction);
-      if (eval.elseAction.type === 'redirect' && eval.redirectTemplateId) {
-        // Usar primera redirección encontrada
-        redirectTemplateId = eval.redirectTemplateId;
+  for (const evaluation of evaluations) {
+    if (evaluation.isVisible) {
+      buttons.push(evaluation.action);
+    } else if (evaluation.elseAction) {
+      elseActions.push(evaluation.elseAction);
+      if (evaluation.elseAction.type === 'redirect' && evaluation.redirectTemplateId) {
+        redirectTemplateId = evaluation.redirectTemplateId;
       }
     }
   }

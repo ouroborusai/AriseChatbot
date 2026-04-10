@@ -374,7 +374,7 @@ export abstract class BaseHandler {
  */
 export function createEmptyContext(): TemplateContext {
   return {
-    contact: { id: '', name: null, phone_number: null, segment: null },
+    contact: { id: '', phone_number: '' },
     companies: [],
     activeCompanyId: null,
     documents: [],

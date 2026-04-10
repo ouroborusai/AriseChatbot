@@ -202,7 +202,7 @@ export class AIHandler extends BaseHandler {
 // Funciones exportadas para compatibilidad con código existente
 export function wantsHumanAgent(text: string): boolean {
   const handler = new AIHandler({
-    contact: { id: '', name: null, phone_number: null, segment: null },
+    contact: { id: '', phone_number: '' },
     companies: [],
     activeCompanyId: null,
     documents: [],

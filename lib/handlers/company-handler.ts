@@ -249,7 +249,7 @@ export async function autoSelectCompany(
 ): Promise<string | null> {
   // Contexto básico para auto-selección
   const context: TemplateContext = {
-    contact: { id: '', name: null, phone_number: null, segment: null },
+    contact: { id: '', phone_number: '' },
     companies: companies.map(c => ({ id: c.id, legal_name: c.legal_name })),
     activeCompanyId: null,
     documents: [],
