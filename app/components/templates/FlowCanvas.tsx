@@ -75,7 +75,11 @@ export default function FlowCanvas({ templates, selectedTemplateId, onSelectTemp
   const maxY = Math.max(...templates.map(t => (templatePositions[t.id]?.y || 0) + NODE_BASE_HEIGHT + 100), 600);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
+    try {
+      e.preventDefault();
+    } catch {
+      // Ignore passive event listener warning
+    }
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     setScale(prev => Math.min(Math.max(prev * delta, 0.3), 2));
   }, []);

@@ -6,6 +6,8 @@ import { useTemplateFilters } from '@/lib/hooks/useTemplates';
 import { SearchInput } from '@/app/components/SearchInput';
 import {
   FlowCanvas,
+  FlowSimulation,
+  FlowAnalyzer,
   TemplateDetailPanel,
   TemplateEditor,
   Template,
@@ -15,7 +17,7 @@ import {
   WORKFLOWS,
 } from '@/app/components/templates';
 
-type ViewMode = 'flow' | 'cards';
+type ViewMode = 'flow' | 'cards' | 'simulate' | 'analyze';
 
 export default function TemplatesPage() {
   const supabase = createClient();
@@ -37,7 +39,14 @@ export default function TemplatesPage() {
         const merged = [...(DEFAULT_TEMPLATES as Template[])];
         data.forEach((t: any) => {
           if (!merged.find(m => m.id === t.id)) {
-            merged.push({ ...t, actions: t.actions || [], segment: t.segment || 'todos', is_active: t.is_active ?? true, priority: t.priority || 50 });
+            merged.push({ 
+              ...t, 
+              actions: t.actions || [], 
+              segment: t.segment || 'todos', 
+              is_active: t.is_active ?? true, 
+              priority: t.priority || 50,
+              workflow: t.workflow || 'general'
+            });
           }
         });
         setTemplates(merged);
@@ -135,6 +144,8 @@ export default function TemplatesPage() {
             <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
               <button onClick={() => setViewMode('flow')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'flow' ? 'bg-white shadow text-green-600' : 'text-slate-600 hover:text-slate-900'}`}>🔀 <span className="hidden sm:inline">Flujo</span></button>
               <button onClick={() => setViewMode('cards')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'cards' ? 'bg-white shadow text-green-600' : 'text-slate-600 hover:text-slate-900'}`}>📋 <span className="hidden sm:inline">Lista</span></button>
+              <button onClick={() => setViewMode('simulate')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'simulate' ? 'bg-white shadow text-green-600' : 'text-slate-600 hover:text-slate-900'}`}>▶️ <span className="hidden sm:inline">Simular</span></button>
+              <button onClick={() => setViewMode('analyze')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${viewMode === 'analyze' ? 'bg-white shadow text-green-600' : 'text-slate-600 hover:text-slate-900'}`}>🔍 <span className="hidden sm:inline">Analizar</span></button>
             </div>
             <button onClick={() => openEdit()} className="bg-green-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-green-700">+ Nueva</button>
           </div>
@@ -178,6 +189,14 @@ export default function TemplatesPage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
             <div className="lg:col-span-3 min-h-[500px]"><FlowCanvas templates={filteredTemplates} selectedTemplateId={selectedTemplateId} onSelectTemplate={handleSelectTemplate} /></div>
             <div className="lg:col-span-1"><TemplateDetailPanel template={selectedTemplate} allTemplates={templates} onCopy={handleCopy} onEdit={openEdit} onToggleActive={handleToggleActive} onDelete={handleDelete} copiedId={copiedId} /></div>
+          </div>
+        ) : viewMode === 'simulate' ? (
+          <div className="h-full">
+            <FlowSimulation templates={filteredTemplates} />
+          </div>
+        ) : viewMode === 'analyze' ? (
+          <div className="h-full">
+            <FlowAnalyzer templates={filteredTemplates} />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
