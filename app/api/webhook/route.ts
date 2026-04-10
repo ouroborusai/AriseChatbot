@@ -21,11 +21,11 @@ function isMessageDuplicate(messageId: string): boolean {
   const now = Date.now();
 
   // Limpiar mensajes expirados
-  for (const [id, timestamp] of processedMessages.entries()) {
+  processedMessages.forEach((timestamp, id) => {
     if (now - timestamp > MESSAGE_CACHE_TTL) {
       processedMessages.delete(id);
     }
-  }
+  });
 
   // Verificar si ya existe
   if (processedMessages.has(messageId)) {
