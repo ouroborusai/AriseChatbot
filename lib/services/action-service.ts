@@ -69,8 +69,13 @@ export class ActionService {
 
     // 2. Enviar lista si existe
     if (listAction) {
-      const options = TemplateService.parseListContent(listAction.description || '[]', context);
+      console.log('[ActionService] Detectada acción de lista:', listAction.title);
+      // Intentar obtener opciones de content (prioridad) o description
+      const listContent = listAction.content || listAction.description || '[]';
+      const options = TemplateService.parseListContent(listContent, context);
+      
       if (options.length > 0) {
+        console.log(`[ActionService] Enviando lista con ${options.length} opciones`);
         await sendWhatsAppListMessage(phoneNumber, {
           body: content,
           buttonText: listAction.title || 'Seleccionar',
@@ -84,16 +89,24 @@ export class ActionService {
           }]
         });
         return;
+      } else {
+        console.warn('[ActionService] La acción de lista no tiene opciones válidas tras parsear');
       }
     }
 
     // 3. Enviar botones (máx 3)
     if (buttons.length > 0) {
+      console.log(`[ActionService] Enviando ${buttons.length} botones`);
       const buttonPayloads = buttons.slice(0, 3).map(b => ({
         id: b.id || 'btn',
         title: b.title || 'Opción'
       }));
       await sendWhatsAppInteractiveButtons(phoneNumber, content, buttonPayloads);
+    } else if (listAction) {
+      // Si llegamos aquí y había un listAction pero no se envió, y no hay botones, 
+      // enviamos al menos el mensaje de texto para no dejar al usuario en blanco
+      console.log('[ActionService] No hay botones y la lista falló, enviando texto plano como fallback');
+      await sendWhatsAppMessage(phoneNumber, content);
     }
   }
 }

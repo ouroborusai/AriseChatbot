@@ -430,7 +430,7 @@ export function convertButtonsToList(actions: Action[]): Action[] {
     type: 'list',
     id: 'more_options_list',
     title: 'Más opciones',
-    description: JSON.stringify(remainingButtons.map(b => ({
+    content: JSON.stringify(remainingButtons.map(b => ({
       id: b.id,
       title: b.title,
       description: b.description || '',

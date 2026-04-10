@@ -97,7 +97,8 @@ export class MenuHandler extends BaseHandler {
 
     // Si hay lista, enviar lista
     if (listAction) {
-      const options = JSON.parse(listAction.description || '[]');
+      const listContent = listAction.content || listAction.description || '[]';
+      const options = JSON.parse(listContent);
       await sendWhatsAppListMessage(phoneNumber, {
         body: greetingText,
         buttonText: listAction.title || 'Seleccionar',

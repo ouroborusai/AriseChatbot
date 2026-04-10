@@ -11,22 +11,15 @@ export async function POST() {
       content: '¡Hola, {{nombre}}! 👋 Soy el asistente virtual de MTZ Consultores Tributarios. Para poder guiarte de la mejor manera, por favor selecciona una de las siguientes opciones:',
       actions: [
         {
-          type: 'button',
-          id: 'btn_mis_documentos',
-          title: '📄 Mis Documentos',
-          next_template_id: 'menu_documentos'
-        },
-        {
-          type: 'button',
-          id: 'btn_mis_datos',
-          title: '👤 Mis Datos',
-          next_template_id: 'menu_mis_datos'
-        },
-        {
-          type: 'button',
-          id: 'btn_tramites',
-          title: '⚙️ Trámites',
-          next_template_id: 'menu_tramites'
+          type: 'list',
+          title: 'Opciones',
+          description: 'Selecciona una opción',
+          content: JSON.stringify([
+            { id: 'btn_mis_documentos', title: '📄 Mis Documentos', description: 'Consultar y descargar archivos' },
+            { id: 'btn_mis_datos', title: '👤 Mis Datos', description: 'Actualizar información personal' },
+            { id: 'btn_tramites', title: '⚙️ Trámites', description: 'Gestiones y servicios' },
+            { id: 'btn_asesor_principal', title: '📞 Hablar con asesor', description: 'Atención personalizada' },
+          ])
         }
       ] as any,
       category: 'bienvenida',

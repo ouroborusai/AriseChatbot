@@ -159,7 +159,7 @@ export async function sendWhatsAppInteractiveButtons(
       type: 'reply' as const,
       reply: {
         id: button.id,
-        title: button.title,
+        title: button.title.substring(0, 20),
       },
     }));
 
