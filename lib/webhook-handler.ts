@@ -75,7 +75,18 @@ export async function handleInboundUserMessage(messageData: {
     }
 
     if (interactive) {
-      await saveMessage(conversationId, 'user', `[button:${interactive}]`);
+      // Determinar si fue un botón o una lista y guardar apropiadamente
+      const isButtonReply = !!messageData.interactive?.button_reply?.id;
+      const isListReply = !!messageData.interactive?.list_reply?.id;
+      
+      if (isButtonReply) {
+        await saveMessage(conversationId, 'user', `[button:${interactive}]`);
+      } else if (isListReply) {
+        await saveMessage(conversationId, 'user', `[list:${interactive}]`);
+      } else {
+        // Fallback genérico
+        await saveMessage(conversationId, 'user', `[selected:${interactive}]`);
+      }
     } else if (text) {
       await saveMessage(conversationId, 'user', text);
     } else {
