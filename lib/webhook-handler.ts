@@ -1,17 +1,38 @@
 /**
- * Webhook Handler - Orquestación de handlers
- * Este archivo solo coordina, la lógica está en los handlers separados
+ * Webhook Handler - Orquestación de handlers con sistema de condicionales
+ *
+ * Este archivo coordina todos los handlers e integra el motor de evaluación
+ * de condiciones para navegación dinámica en templates.
+ *
+ * Flujo principal:
+ * 1. Recepción de mensaje
+ * 2. Obtención de contexto (contacto, empresas, documentos)
+ * 3. Evaluación de condiciones para acciones
+ * 4. Envío de respuesta con acciones filtradas
+ * 5. Fallback a IA si no hay coincidencias
  */
 
 import { getSupabaseAdmin } from './supabase-admin';
 import { sendWhatsAppMessage, sendWhatsAppInteractiveButtons, sendWhatsAppListMessage } from './whatsapp-service';
-import { 
-  getOrCreateContact, 
-  getOrCreateConversation, 
-  listCompaniesForContact, 
+import {
+  getOrCreateContact,
+  getOrCreateConversation,
+  listCompaniesForContact,
   getActiveCompanyForConversation,
-  saveMessage 
+  saveMessage
 } from './database-service';
+import {
+  Template,
+  TemplateContext,
+  Action,
+  TemplateRule,
+} from '../app/components/templates/types';
+import {
+  evaluateTemplateRules,
+  getFinalActions,
+  detectLoop,
+} from './handlers/condition-engine';
+import { buildContext } from './handlers/base-handler';
 
 // Handlers separados
 import { handleClassification, autoClassifyAsProspect } from './handlers/classification-handler';
@@ -22,7 +43,31 @@ import { handleAI } from './handlers/ai-handler';
 import { HandlerContext } from './handlers/types';
 
 /**
+ * Estado de navegación para tracking de loops
+ */
+interface NavigationState {
+  visitedTemplates: string[];
+  redirectCount: number;
+  lastTemplateId?: string;
+}
+
+/**
  * Procesa mensaje entrante de WhatsApp
+ *
+ * Este es el punto de entrada principal del webhook.
+ * Sigue el siguiente flujo:
+ *
+ * 1. Validación inicial (teléfono, ignore list)
+ * 2. Obtención de contacto y conversación
+ * 3. Verificación de chatbot enabled
+ * 4. Guardado de mensaje en DB
+ * 5. Procesamiento de interactive buttons
+ * 6. Clasificación automática
+ * 7. Búsqueda de templates por trigger
+ * 8. Navegación por next_template_id
+ * 9. Auto-selección de empresa
+ * 10. Procesamiento de períodos (IVA, Renta)
+ * 11. Fallback a IA
  */
 export async function handleInboundUserMessage(messageData: {
   from?: string;
@@ -31,11 +76,11 @@ export async function handleInboundUserMessage(messageData: {
 }): Promise<void> {
   const phoneNumber = messageData.from;
   const text = messageData.text?.body?.trim();
-  const interactive = 
-    messageData.interactive?.button_reply?.id || 
+  const interactive =
+    messageData.interactive?.button_reply?.id ||
     messageData.interactive?.list_reply?.id;
 
-  console.log('🚀 WEBHOOK:', phoneNumber, '- Texto:', text?.slice(0, 30));
+  console.log('🚀 WEBHOOK:', phoneNumber, '- Texto:', text?.slice(0, 30), '- Interactive:', interactive);
 
   if (!phoneNumber) {
     console.log('❌ Ignorado: falta teléfono');
@@ -82,7 +127,16 @@ export async function handleInboundUserMessage(messageData: {
       return;
     }
 
-    // 4. Si es interactive, procesar con handlers específicos
+    // 4. Construir contexto completo para evaluación de condiciones
+    const context = await buildContext(phoneNumber, contact.id, conversationId);
+
+    // Estado de navegación para detectar loops
+    const navState: NavigationState = {
+      visitedTemplates: [],
+      redirectCount: 0,
+    };
+
+    // 5. Si es interactive, procesar con handlers específicos
     if (interactive) {
       // Clasificación cliente/prospecto
       const classResult = await handleClassification(interactive, contact);
@@ -107,68 +161,63 @@ export async function handleInboundUserMessage(messageData: {
       // Botones de categorías de documentos
       const catResult = await handleDocCategoryButton(interactive, phoneNumber, contact.id, activeCompanyId);
       if (catResult.handled) return;
+
+      // Si el interactive es un next_template_id, navegar con evaluación de condiciones
+      const nextTemplate = await findTemplateById(interactive, contact.segment);
+      if (nextTemplate) {
+        await sendTemplateWithConditions(phoneNumber, nextTemplate, context, navState);
+        return;
+      }
     }
 
-    // 5. Si no tiene segment, asignar prospecto automáticamente
+    // 6. Si no tiene segment, asignar prospecto automáticamente
     if (!contact.segment) {
       await autoClassifyAsProspect(contact);
-      contact.segment = 'prospect';
+      contact.segment = 'prospecto';
       await sendWelcomeMenu(phoneNumber, contact);
       return;
     }
 
-    // 6. Si es saludo, enviar menú
+    // 7. Si es saludo, enviar menú
     if (text && isGreeting(text)) {
       await sendWelcomeMenu(phoneNumber, contact);
       return;
     }
 
-    // 6b. Buscar plantilla por trigger
+    // 8. Buscar plantilla por trigger
     if (text) {
       const matchedTemplate = await findTemplateByTrigger(text, contact.segment);
-      if (matchedTemplate && matchedTemplate.actions && matchedTemplate.actions.length > 0) {
-        await sendWhatsAppMessage(phoneNumber, matchedTemplate.content);
-        await sendTemplateActions(phoneNumber, matchedTemplate.actions);
+      if (matchedTemplate) {
+        await sendTemplateWithConditions(phoneNumber, matchedTemplate, context, navState);
         return;
       }
     }
 
-    // 6c. Si es interactive (button o list) y tiene next_template, navegar
-    if (interactive) {
-      const nextTemplate = await findTemplateByActionId(interactive, contact.segment);
-      if (nextTemplate) {
-        await sendWhatsAppMessage(phoneNumber, nextTemplate.content);
-        if (nextTemplate.actions && nextTemplate.actions.length > 0) {
-          await sendTemplateActions(phoneNumber, nextTemplate.actions);
-        }
-        return;
-      }
-    }
-
-    // 7. Auto-seleccionar empresa si solo tiene una
+    // 9. Auto-seleccionar empresa si solo tiene una
     if (!activeCompanyId && companies.length === 1) {
       activeCompanyId = await autoSelectCompany(conversationId, companies);
+      context.activeCompanyId = activeCompanyId;
     }
 
-    // 8. Si es cliente con múltiples empresas y no tiene selección, pedir empresa
+    // 10. Si es cliente con múltiples empresas y no tiene selección, pedir empresa
     if (contact.segment === 'cliente' && companies.length > 1 && !activeCompanyId) {
       // Por ahora derivar a IA que pregunte
     }
 
-    // 9. Verificar última acción para procesar períodos (IVA, Renta, etc.)
+    // 11. Verificar última acción para procesar períodos (IVA, Renta, etc.)
     if (text) {
-      const history = await getConversationHistory(phoneNumber);
+      const history = await getConversationHistory(conversationId);
       const lastBtn = getLastButtonFromHistory(history);
 
       if (lastBtn) {
         const periodResult = await handlePeriodText(
-          text, lastBtn, phoneNumber, conversationId, contact.id, activeCompanyId
+          text, lastBtn, phoneNumber, conversationId
         );
         if (periodResult.handled) return;
       }
     }
 
-    // 10. Fallback a IA (Gemini)
+    // 12. Fallback a IA (Gemini)
     await handleAI(phoneNumber, conversationId, contact, companies, activeCompanyId, text || '');
 
   } catch (error) {
@@ -178,26 +227,156 @@ export async function handleInboundUserMessage(messageData: {
 }
 
 /**
+ * Envía un template evaluando condiciones y reglas
+ *
+ * @param phoneNumber - Número de destino
+ * @param template - Template a enviar
+ * @param context - Contexto del usuario
+ * @param navState - Estado de navegación para detectar loops
+ */
+async function sendTemplateWithConditions(
+  phoneNumber: string,
+  template: Template,
+  context: TemplateContext,
+  navState: NavigationState
+): Promise<void> {
+  console.log('[Webhook] Enviando template:', template.id);
+
+  // Actualizar estado de navegación
+  navState.visitedTemplates.push(template.id);
+  navState.lastTemplateId = template.id;
+
+  // Detectar loop infinito
+  if (detectLoop(template.id, navState.visitedTemplates, 3)) {
+    console.warn('[Webhook] Loop detectado en template:', template.id);
+    // Enviar mensaje de error amigable
+    await sendWhatsAppMessage(
+      phoneNumber,
+      'Parece que hay un problema con la navegación. Un asesor te contactará pronto.'
+    );
+    return;
+  }
+
+  // Evaluar reglas del template
+  const ruleResult = evaluateTemplateRules(template, context);
+
+  if (!ruleResult.isValid) {
+    console.log('[Webhook] Template no válido:', ruleResult.reason);
+
+    // Si hay fallback, usar ese template
+    if (ruleResult.fallbackTemplateId) {
+      navState.redirectCount++;
+
+      // Límite de redirecciones
+      if (navState.redirectCount > 5) {
+        console.error('[Webhook] Máximo de redirecciones alcanzado');
+        await sendWhatsAppMessage(
+          phoneNumber,
+          'Hubo un problema. Un asesor te contactará pronto.'
+        );
+        return;
+      }
+
+      const fallbackTemplate = await findTemplateById(ruleResult.fallbackTemplateId, context.contact.segment);
+      if (fallbackTemplate) {
+        await sendTemplateWithConditions(phoneNumber, fallbackTemplate, context, navState);
+        return;
+      }
+    }
+
+    // Sin fallback - enviar mensaje por defecto
+    await sendWhatsAppMessage(phoneNumber, template.content);
+    return;
+  }
+
+  // Enviar contenido del template
+  await sendWhatsAppMessage(phoneNumber, template.content);
+
+  // Procesar acciones con condiciones
+  if (template.actions && template.actions.length > 0) {
+    await sendTemplateActionsWithConditions(phoneNumber, template.actions, context);
+  }
+}
+
+/**
+ * Envía acciones de template evaluando condiciones
+ *
+ * @param phoneNumber - Número de destino
+ * @param actions - Acciones del template
+ * @param context - Contexto del usuario
+ */
+async function sendTemplateActionsWithConditions(
+  phoneNumber: string,
+  actions: Action[],
+  context: TemplateContext
+): Promise<void> {
+  console.log('[Webhook] Procesando', actions.length, 'acciones con condiciones');
+
+  // Obtener acciones finales (filtradas y convertidas)
+  const { buttons, listAction, elseActions, redirectTemplateId } = getFinalActions(actions, context);
+
+  // Manejar redirecciones por else_action
+  if (redirectTemplateId) {
+    console.log('[Webhook] Redirigiendo por else_action:', redirectTemplateId);
+    // La redirección se maneja en el nivel superior
+    return;
+  }
+
+  // Procesar else_actions de tipo show_message
+  for (const elseAction of elseActions) {
+    if (elseAction.type === 'show_message' && elseAction.message) {
+      console.log('[Webhook] Enviando mensaje alternativo:', elseAction.message);
+      // No enviar inmediatamente, solo loguear
+    }
+  }
+
+  // Enviar lista si existe
+  if (listAction) {
+    try {
+      const options = JSON.parse(listAction.description || '[]');
+      await sendWhatsAppListMessage(phoneNumber, {
+        body: 'Selecciona una opción:',
+        buttonText: listAction.title,
+        sections: [{
+          title: 'Opciones',
+          rows: options.map((o: any) => ({
+            id: o.id,
+            title: o.title,
+            description: o.description
+          }))
+        }]
+      });
+      return;
+    } catch (error) {
+      console.error('[Webhook] Error al parsear lista:', error);
+    }
+  }
+
+  // Enviar botones
+  if (buttons.length > 0) {
+    const buttonPayloads = buttons.slice(0, 3).map(b => ({
+      id: b.id,
+      title: b.title
+    }));
+
+    await sendWhatsAppInteractiveButtons(
+      phoneNumber,
+      'Selecciona una opción:',
+      buttonPayloads
+    );
+  } else if (buttons.length === 0 && actions.length > 0) {
+    console.log('[Webhook] Todas las acciones fueron ocultadas por condiciones');
+  }
+}
+
+/**
  * Obtiene historial de conversación
  */
-async function getConversationHistory(phoneNumber: string): Promise<Array<{ role: string; content: string }>> {
-  const { getSupabaseAdmin } = await import('./supabase-admin');
-  const { normalizePhoneNumber } = await import('./utils');
-
-  const normalized = normalizePhoneNumber(phoneNumber);
-  
-  const { data: conv } = await getSupabaseAdmin()
-    .from('conversations')
-    .select('id')
-    .eq('phone_number', normalized)
-    .maybeSingle();
-
-  if (!conv) return [];
-
+async function getConversationHistory(conversationId: string): Promise<Array<{ role: string; content: string }>> {
   const { data: msgs } = await getSupabaseAdmin()
     .from('messages')
     .select('role, content')
-    .eq('conversation_id', conv.id)
+    .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .limit(20);
 
@@ -221,18 +400,38 @@ function getLastButtonFromHistory(history: Array<{ role: string; content: string
 }
 
 /**
+ * Busca plantilla por ID
+ */
+async function findTemplateById(
+  templateId: string,
+  segment?: string | null
+): Promise<Template | null> {
+  const { data: template } = await getSupabaseAdmin()
+    .from('templates')
+    .select('*')
+    .eq('id', templateId)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (!template) return null;
+
+  // Verificar segmento
+  if (template.segment && template.segment !== 'todos' && template.segment !== segment) {
+    return null;
+  }
+
+  return template as Template;
+}
+
+/**
  * Busca plantilla que coincida con el trigger
  */
-async function findTemplateByTrigger(text: string, segment?: string | null): Promise<{
-  id: string;
-  content: string;
-  actions: Array<{ type: string; id: string; title: string; description?: string }>;
-} | null> {
+async function findTemplateByTrigger(text: string, segment?: string | null): Promise<Template | null> {
   const lowerText = text.toLowerCase().trim();
-  
+
   const { data: templates } = await getSupabaseAdmin()
     .from('templates')
-    .select('id, content, actions, trigger, segment, is_active, priority')
+    .select('*')
     .eq('is_active', true)
     .order('priority', { ascending: false })
     .limit(10);
@@ -241,74 +440,27 @@ async function findTemplateByTrigger(text: string, segment?: string | null): Pro
 
   for (const t of templates) {
     if (!t.trigger) continue;
-    
+
     const triggers = t.trigger.split(',').map((s: string) => s.trim().toLowerCase());
     if (triggers.some((tr: string) => lowerText.includes(tr))) {
       if (t.segment && t.segment !== 'todos' && t.segment !== segment) continue;
-      return { id: t.id, content: t.content, actions: t.actions || [] };
+      return t as Template;
     }
   }
   return null;
 }
 
 /**
- * Envía las acciones de una plantilla (buttons o list)
- */
-async function sendTemplateActions(
-  phoneNumber: string,
-  actions: Array<{ type: string; id: string; title: string; description?: string }>
-): Promise<void> {
-  if (actions.length === 0) return;
-
-  const listAction = actions.find(a => a.type === 'list');
-  if (listAction) {
-    let options: Array<{ id: string; title: string; description?: string }> = [];
-    try {
-      if (listAction.description) {
-        options = JSON.parse(listAction.description);
-      }
-    } catch {
-      options = [];
-    }
-    
-    if (options.length > 0) {
-      await sendWhatsAppListMessage(phoneNumber, {
-        body: 'Selecciona una opción:',
-        buttonText: listAction.title || 'Ver opciones',
-        sections: [{
-          title: 'Opciones',
-          rows: options.map(o => ({
-            id: o.id,
-            title: o.title,
-            description: o.description
-          }))
-        }]
-      });
-      return;
-    }
-  }
-
-  const buttonActions = actions.filter(a => a.type === 'button');
-  if (buttonActions.length > 0) {
-    const buttons = buttonActions.map(a => ({
-      id: a.id,
-      title: a.title
-    }));
-    await sendWhatsAppInteractiveButtons(phoneNumber, 'Selecciona una opción:', buttons);
-  }
-}
-
-/**
  * Busca plantilla que tenga una acción con el ID dado
+ * Esta función se usa para navegación por next_template_id
  */
-async function findTemplateByActionId(actionId: string, segment?: string | null): Promise<{
-  id: string;
-  content: string;
-  actions: Array<{ type: string; id: string; title: string; description?: string; next_template_id?: string }>;
-} | null> {
+export async function findTemplateByActionId(
+  actionId: string,
+  segment?: string | null
+): Promise<Template | null> {
   const { data: templates } = await getSupabaseAdmin()
     .from('templates')
-    .select('id, content, actions, segment, is_active, priority')
+    .select('*')
     .eq('is_active', true)
     .order('priority', { ascending: false })
     .limit(20);
@@ -321,16 +473,7 @@ async function findTemplateByActionId(actionId: string, segment?: string | null)
 
     const matchedAction = t.actions.find((a: any) => a.id === actionId);
     if (matchedAction && matchedAction.next_template_id) {
-      const { data: nextTemplate } = await getSupabaseAdmin()
-        .from('templates')
-        .select('id, content, actions')
-        .eq('id', matchedAction.next_template_id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (nextTemplate) {
-        return { id: nextTemplate.id, content: nextTemplate.content, actions: nextTemplate.actions || [] };
-      }
+      return await findTemplateById(matchedAction.next_template_id, segment);
     }
   }
   return null;

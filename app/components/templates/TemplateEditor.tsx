@@ -19,8 +19,6 @@ interface TemplateEditorProps {
 }
 
 export default function TemplateEditor({ template, allTemplates, isOpen, onClose, onSave }: TemplateEditorProps) {
-  console.log('[TemplateEditor] PROPS ==== template:', template?.name, 'isOpen:', isOpen);
-  
   const [form, setForm] = useState<Partial<Template>>({
     name: '',
     content: '',
@@ -37,13 +35,8 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
   const [listOptions, setListOptions] = useState<ListOption[]>([]);
 
   useEffect(() => {
-    console.log('[TemplateEditor] ========== USE EFFECT ==========');
-    console.log('[TemplateEditor] template:', template?.name, template?.id);
-    console.log('[TemplateEditor] isOpen:', isOpen);
-    console.log('[TemplateEditor] current form.name:', form.name);
     if (template) {
       setForm({ ...template });
-      console.log('[TemplateEditor] Form set to template:', template.name, 'actions:', template.actions?.length);
       if (template.actions && template.actions.some(a => a.type === 'list')) {
         const listAction = template.actions.find(a => a.type === 'list');
         if (listAction?.description) {
@@ -71,18 +64,10 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
     }
   }, [template, isOpen]);
 
-  console.log('[TemplateEditor] ========== RENDER ==========');
-  console.log('[TemplateEditor] isOpen:', isOpen, 'template:', template?.name, 'form.name:', form.name);
-
   const handleSubmit = (e: React.FormEvent) => {
-    console.log('[TemplateEditor] handleSubmit called. form.name:', form.name);
     e.preventDefault();
-    if (!form.name || !form.content) {
-      console.log('[TemplateEditor] Validation failed - missing name or content');
-      return;
-    }
+    if (!form.name || !form.content) return;
     
-    // Si hay acciones tipo list, guardar las opciones en description
     if (form.actions && form.actions.length > 0) {
       const updatedActions = form.actions.map(action => {
         if (action.type === 'list' && listOptions.length > 0) {
@@ -90,10 +75,8 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
         }
         return action;
       });
-      console.log('[TemplateEditor] Saving with actions:', updatedActions);
       onSave({ ...form, actions: updatedActions });
     } else {
-      console.log('[TemplateEditor] Saving without actions');
       onSave(form);
     }
   };
@@ -106,7 +89,6 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
       ...prev,
       actions: [...(prev.actions || []), { type: 'button', id: '', title: '', next_template_id: '' }]
     }));
-    console.log('[TemplateEditor] addAction, total actions:', (form.actions?.length || 0) + 1);
   };
 
   const updateAction = (index: number, field: keyof Action, value: string) => {
@@ -144,14 +126,8 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
     setListOptions(prev => prev.filter((_, i) => i !== index));
   };
 
-  console.log('[TemplateEditor] ========== RENDER ==========');
-  console.log('[TemplateEditor] isOpen:', isOpen, 'template:', template?.name, 'showEditor should be visible');
-  console.log('[TemplateEditor] returning early because isOpen is:', isOpen);
-
   if (!isOpen) return null;
   
-  console.log('[TemplateEditor] RETURNED NULL - NOT RENDERING MODAL');
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">

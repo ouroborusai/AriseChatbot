@@ -180,14 +180,12 @@ export default function TemplateDetailPanel({
           >
             {template.is_active ? <><span>🟢</span> Activo</> : <><span>⚪</span> Inactivo</>}
           </button>
-          {!template.id.includes('_') && (
-            <button
-              onClick={() => onDelete(template.id)}
-              className="flex items-center justify-center px-3 py-2 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition"
-            >
-              🗑️
-            </button>
-          )}
+          <button
+            onClick={() => onDelete(template.id)}
+            className="flex items-center justify-center px-3 py-2 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition"
+          >
+            🗑️
+          </button>
         </div>
       </div>
     </div>

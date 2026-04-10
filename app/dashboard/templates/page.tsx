@@ -19,7 +19,7 @@ type ViewMode = 'cards';
 export default function TemplatesPage() {
   const supabase = createClient();
   const { category, setCategory, segment, setSegment, service, setService, search, setSearch } = useTemplateFilters();
-  
+
   const [templates, setTemplates] = useState<Template[]>(DEFAULT_TEMPLATES as Template[]);
   const [loading, setLoading] = useState(true);
   const [viewMode] = useState<ViewMode>('cards');
@@ -29,33 +29,36 @@ export default function TemplatesPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [workflowFilter, setWorkflowFilter] = useState<string>('todos');
 
+  // Cargar templates solo una vez al montar el componente
   useEffect(() => {
+    let isMounted = true;
+
     const loadTemplates = async () => {
-      console.log('[Templates] Loading from Supabase...');
       const { data, error } = await supabase.from('templates').select('*').order('priority');
-      console.log('[Templates] Supabase response - data:', data?.length, 'error:', error);
+      if (!isMounted) return;
+
       if (data && data.length > 0) {
-        console.log('[Templates] First template from DB:', data[0]);
-        const merged = [...(DEFAULT_TEMPLATES as Template[])];
-        data.forEach((t: any) => {
-          if (!merged.find(m => m.id === t.id)) {
-            merged.push({ 
-              ...t, 
-              actions: t.actions || [], 
-              segment: t.segment || 'todos', 
-              is_active: t.is_active ?? true, 
-              priority: t.priority || 50,
-              workflow: t.workflow || 'general'
-            });
-          }
-        });
-        console.log('[Templates] Total merged:', merged.length);
-        setTemplates(merged);
+        const normalized = data.map((t: any) => ({
+          ...t,
+          actions: t.actions || [],
+          segment: t.segment || 'todos',
+          is_active: t.is_active ?? true,
+          priority: t.priority || 50,
+          workflow: t.workflow || 'general'
+        }));
+        setTemplates(normalized);
+      } else {
+        // BD vacía: iniciar con array vacío, NO re-crear defaults automáticamente
+        setTemplates([]);
       }
       setLoading(false);
     };
     loadTemplates();
-  }, [supabase]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredTemplates = useMemo(() => 
     templates.filter((t) => {
@@ -78,7 +81,6 @@ export default function TemplatesPage() {
   const handleCopy = (template: Template) => { navigator.clipboard.writeText(template.content); setCopiedId(template.id); setTimeout(() => setCopiedId(null), 2000); };
 
   const handleSaveTemplate = async (form: Partial<Template>) => {
-    console.log('[Templates] handleSaveTemplate called. editingTemplate:', editingTemplate?.name, 'form:', form.name);
     const template: Template = { 
       id: editingTemplate?.id || `tpl_${Date.now()}`, 
       name: form.name!, 
@@ -92,9 +94,7 @@ export default function TemplatesPage() {
       segment: (form.segment as any) || 'todos',
       workflow: form.workflow || 'general'
     };
-    console.log('[Templates] Saving template:', template.id, template.name, 'actions:', template.actions?.length, 'workflow:', template.workflow);
     
-    // Usar upsert con onConflict para actualizar si existe
     const { data, error } = await supabase
       .from('templates')
       .upsert({ 
@@ -114,83 +114,131 @@ export default function TemplatesPage() {
       .select();
     
     if (error) {
-      console.error('[Templates] Error saving:', error);
       alert('Error al guardar: ' + error.message);
       return;
     }
     
-    console.log('[Templates] Save successful, data:', data);
     setTemplates(editingTemplate ? templates.map(t => t.id === template.id ? template : t) : [...templates, template]);
     setShowEditor(false); 
     setEditingTemplate(null);
   };
 
-  const handleDelete = async (id: string) => { if (!confirm('¿Eliminar?')) return; await supabase.from('templates').delete().eq('id', id); setTemplates(templates.filter(t => t.id !== id)); if (selectedTemplateId === id) setSelectedTemplateId(null); };
-  const handleToggleActive = async (id: string) => { const t = templates.find(x => x.id === id); if (!t) return; const u = { ...t, is_active: !t.is_active }; await supabase.from('templates').update({ is_active: u.is_active }).eq('id', id); setTemplates(templates.map(x => x.id === id ? u : x)); };
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Eliminar?')) return;
+    await supabase.from('templates').delete().eq('id', id);
+    setTemplates(prev => prev.filter(t => t.id !== id));
+    if (selectedTemplateId === id) setSelectedTemplateId(null);
+  };
+  const handleToggleActive = async (id: string) => {
+    const template = templates.find(t => t.id === id);
+    if (!template) return;
+
+    const newIsActive = !template.is_active;
+    setTemplates(prev => prev.map(t => {
+      if (t.id === id) {
+        return { ...t, is_active: newIsActive };
+      }
+      return t;
+    }));
+    await supabase.from('templates').update({ is_active: newIsActive }).eq('id', id);
+  };
   const openEdit = (template?: Template) => { 
-    alert(`Abriendo editor para: ${template?.name || 'nuevo'}`);
-    console.log('[Templates] openEdit - setting showEditor to TRUE');
-    
-    // Usar una función callback para asegurar que se actualice
     setShowEditor(true);
     setEditingTemplate(template || null);
-    
-    // Forzar re-render inmediato
-    setTimeout(() => {
-      console.log('[Templates] After timeout - showEditor should be true, editingTemplate:', template?.name);
-    }, 50);
   };
   const handleSelectTemplate = (id: string) => setSelectedTemplateId(id);
 
+  const reloadTemplates = async () => {
+    const { data } = await supabase.from('templates').select('*').order('priority');
+    if (data) {
+      const normalized = data.map((t: any) => ({
+        ...t,
+        actions: t.actions || [],
+        segment: t.segment || 'todos',
+        is_active: t.is_active ?? true,
+        priority: t.priority || 50,
+        workflow: t.workflow || 'general'
+      }));
+      setTemplates(normalized);
+    } else {
+      setTemplates([]);
+    }
+  };
+
   const handleDeleteProspects = async () => {
     if (!confirm('¿Eliminar todas las plantillas de prospecto? Esto no se puede deshacer.')) return;
-    
+
     const prospectTemplates = templates.filter(t => t.segment === 'prospecto');
     const idsToDelete = prospectTemplates.map(t => t.id);
-    
+
     if (idsToDelete.length === 0) {
       alert('No hay plantillas de prospecto para eliminar');
       return;
     }
-    
+
     for (const id of idsToDelete) {
       await supabase.from('templates').delete().eq('id', id);
     }
-    
-    setTemplates(templates.filter(t => t.segment !== 'prospecto'));
+
+    await reloadTemplates();
     alert(`Eliminado(s) ${idsToDelete.length} plantilla(s) de prospecto`);
   };
 
   const handleDeleteClients = async () => {
     if (!confirm('¿Eliminar todas las plantillas de cliente? Esto no se puede deshacer.')) return;
-    
+
     const clientTemplates = templates.filter(t => t.segment === 'cliente');
     const idsToDelete = clientTemplates.map(t => t.id);
-    
+
     if (idsToDelete.length === 0) {
       alert('No hay plantillas de cliente para eliminar');
       return;
     }
-    
+
     for (const id of idsToDelete) {
       await supabase.from('templates').delete().eq('id', id);
     }
-    
-    setTemplates(templates.filter(t => t.segment !== 'cliente'));
+
+    await reloadTemplates();
     alert(`Eliminado(s) ${idsToDelete.length} plantilla(s) de cliente`);
   };
 
   const handleDeleteAll = async () => {
     if (!confirm('¿Eliminar TODAS las plantillas? Esto no se puede deshacer.')) return;
-    
+
     const allIds = templates.map(t => t.id);
-    
+
     for (const id of allIds) {
       await supabase.from('templates').delete().eq('id', id);
     }
-    
-    setTemplates([]);
+
+    await reloadTemplates();
     alert(`Eliminado(s) ${allIds.length} plantilla(s)`);
+  };
+
+  const handleRestoreDefaults = async () => {
+    if (!confirm('¿Restaurar plantillas por defecto? Se agregarán las plantillas predeterminadas del sistema.')) return;
+
+    const defaults = DEFAULT_TEMPLATES as Template[];
+
+    for (const t of defaults) {
+      await supabase.from('templates').upsert({
+        id: t.id,
+        name: t.name,
+        content: t.content,
+        category: t.category || 'general',
+        service_type: t.service_type || null,
+        trigger: t.trigger || null,
+        actions: t.actions || [],
+        is_active: t.is_active ?? true,
+        priority: t.priority || 50,
+        segment: t.segment || 'todos',
+        workflow: t.workflow || 'general'
+      });
+    }
+
+    await reloadTemplates();
+    alert('Plantillas por defecto restauradas');
   };
 
   if (loading) return <div className="h-full flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-green-500 border-t-transparent rounded-full" /></div>;
@@ -232,11 +280,17 @@ export default function TemplatesPage() {
         >
           🗑️ Clientes
         </button>
-        <button 
+        <button
           onClick={handleDeleteAll}
           className="px-3 py-1.5 rounded-xl border border-red-300 text-red-600 text-sm hover:bg-red-50 transition"
         >
           🗑️ Todo
+        </button>
+        <button
+          onClick={handleRestoreDefaults}
+          className="px-3 py-1.5 rounded-xl border border-green-300 text-green-600 text-sm hover:bg-green-50 transition"
+        >
+          🔄 Restaurar
         </button>
       </div>
 
