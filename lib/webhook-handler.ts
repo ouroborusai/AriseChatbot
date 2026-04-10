@@ -396,7 +396,7 @@ async function sendTemplateActionsWithConditions(
         .from('client_documents')
         .select('id, title, file_url, file_name, storage_bucket, storage_path')
         .eq('contact_id', context.contact.id)
-        .eq('file_type', docType)
+        .or(`file_type.eq.${docType},title.ilike.%${docType}%`)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
