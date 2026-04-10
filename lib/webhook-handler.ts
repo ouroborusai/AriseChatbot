@@ -32,6 +32,7 @@ import { handleClassification, autoClassifyAsProspect } from './handlers/classif
 import { handleDocumentButton, handlePeriodText, handleDocCategoryButton } from './handlers/documents-handler';
 import { handleCompanyButton, handleCompanyText, autoSelectCompany } from './handlers/company-handler';
 import { handleAI } from './handlers/ai-handler';
+import { isGreeting } from './handlers/menu-handler';
 
 /**
  * Procesa mensaje entrante de WhatsApp
