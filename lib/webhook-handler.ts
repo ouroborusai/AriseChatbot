@@ -4,7 +4,7 @@
  */
 
 import { getSupabaseAdmin } from './supabase-admin';
-import { sendWhatsAppMessage } from './whatsapp-service';
+import { sendWhatsAppMessage, sendWhatsAppInteractiveButtons, sendWhatsAppListMessage } from './whatsapp-service';
 import { 
   getOrCreateContact, 
   getOrCreateConversation, 
@@ -123,6 +123,28 @@ export async function handleInboundUserMessage(messageData: {
       return;
     }
 
+    // 6b. Buscar plantilla por trigger
+    if (text) {
+      const matchedTemplate = await findTemplateByTrigger(text, contact.segment);
+      if (matchedTemplate && matchedTemplate.actions && matchedTemplate.actions.length > 0) {
+        await sendWhatsAppMessage(phoneNumber, matchedTemplate.content);
+        await sendTemplateActions(phoneNumber, matchedTemplate.actions);
+        return;
+      }
+    }
+
+    // 6c. Si es interactive (button o list) y tiene next_template, navegar
+    if (interactive) {
+      const nextTemplate = await findTemplateByActionId(interactive, contact.segment);
+      if (nextTemplate) {
+        await sendWhatsAppMessage(phoneNumber, nextTemplate.content);
+        if (nextTemplate.actions && nextTemplate.actions.length > 0) {
+          await sendTemplateActions(phoneNumber, nextTemplate.actions);
+        }
+        return;
+      }
+    }
+
     // 7. Auto-seleccionar empresa si solo tiene una
     if (!activeCompanyId && companies.length === 1) {
       activeCompanyId = await autoSelectCompany(conversationId, companies);
@@ -193,6 +215,122 @@ function getLastButtonFromHistory(history: Array<{ role: string; content: string
     const c = history[i]?.content || '';
     if (c.startsWith('[button:') && c.endsWith(']')) {
       return c.slice('[button:'.length, -1);
+    }
+  }
+  return null;
+}
+
+/**
+ * Busca plantilla que coincida con el trigger
+ */
+async function findTemplateByTrigger(text: string, segment?: string | null): Promise<{
+  id: string;
+  content: string;
+  actions: Array<{ type: string; id: string; title: string; description?: string }>;
+} | null> {
+  const lowerText = text.toLowerCase().trim();
+  
+  const { data: templates } = await getSupabaseAdmin()
+    .from('templates')
+    .select('id, content, actions, trigger, segment, is_active, priority')
+    .eq('is_active', true)
+    .order('priority', { ascending: false })
+    .limit(10);
+
+  if (!templates) return null;
+
+  for (const t of templates) {
+    if (!t.trigger) continue;
+    
+    const triggers = t.trigger.split(',').map((s: string) => s.trim().toLowerCase());
+    if (triggers.some((tr: string) => lowerText.includes(tr))) {
+      if (t.segment && t.segment !== 'todos' && t.segment !== segment) continue;
+      return { id: t.id, content: t.content, actions: t.actions || [] };
+    }
+  }
+  return null;
+}
+
+/**
+ * Envía las acciones de una plantilla (buttons o list)
+ */
+async function sendTemplateActions(
+  phoneNumber: string,
+  actions: Array<{ type: string; id: string; title: string; description?: string }>
+): Promise<void> {
+  if (actions.length === 0) return;
+
+  const listAction = actions.find(a => a.type === 'list');
+  if (listAction) {
+    let options: Array<{ id: string; title: string; description?: string }> = [];
+    try {
+      if (listAction.description) {
+        options = JSON.parse(listAction.description);
+      }
+    } catch {
+      options = [];
+    }
+    
+    if (options.length > 0) {
+      await sendWhatsAppListMessage(phoneNumber, {
+        body: 'Selecciona una opción:',
+        buttonText: listAction.title || 'Ver opciones',
+        sections: [{
+          title: 'Opciones',
+          rows: options.map(o => ({
+            id: o.id,
+            title: o.title,
+            description: o.description
+          }))
+        }]
+      });
+      return;
+    }
+  }
+
+  const buttonActions = actions.filter(a => a.type === 'button');
+  if (buttonActions.length > 0) {
+    const buttons = buttonActions.map(a => ({
+      id: a.id,
+      title: a.title
+    }));
+    await sendWhatsAppInteractiveButtons(phoneNumber, 'Selecciona una opción:', buttons);
+  }
+}
+
+/**
+ * Busca plantilla que tenga una acción con el ID dado
+ */
+async function findTemplateByActionId(actionId: string, segment?: string | null): Promise<{
+  id: string;
+  content: string;
+  actions: Array<{ type: string; id: string; title: string; description?: string; next_template_id?: string }>;
+} | null> {
+  const { data: templates } = await getSupabaseAdmin()
+    .from('templates')
+    .select('id, content, actions, segment, is_active, priority')
+    .eq('is_active', true)
+    .order('priority', { ascending: false })
+    .limit(20);
+
+  if (!templates) return null;
+
+  for (const t of templates) {
+    if (!t.actions || t.actions.length === 0) continue;
+    if (t.segment && t.segment !== 'todos' && t.segment !== segment) continue;
+
+    const matchedAction = t.actions.find((a: any) => a.id === actionId);
+    if (matchedAction && matchedAction.next_template_id) {
+      const { data: nextTemplate } = await getSupabaseAdmin()
+        .from('templates')
+        .select('id, content, actions')
+        .eq('id', matchedAction.next_template_id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (nextTemplate) {
+        return { id: nextTemplate.id, content: nextTemplate.content, actions: nextTemplate.actions || [] };
+      }
     }
   }
   return null;

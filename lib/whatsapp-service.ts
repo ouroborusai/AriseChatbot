@@ -343,3 +343,111 @@ export async function sendWhatsAppImage(
     throw error;
   }
 }
+
+export interface WhatsAppListSection {
+  title: string;
+  rows: Array<{
+    id: string;
+    title: string;
+    description?: string;
+  }>;
+}
+
+export interface WhatsAppListMessage {
+  header?: string;
+  body: string;
+  footer?: string;
+  buttonText: string;
+  sections: WhatsAppListSection[];
+}
+
+export async function sendWhatsAppListMessage(
+  phoneNumber: string,
+  listMessage: WhatsAppListMessage
+): Promise<WhatsAppSendResponse> {
+  try {
+    console.log('[WhatsApp] 📤 Iniciando envío de mensaje de lista...');
+
+    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+    if (!accessToken) {
+      throw new Error('[WhatsApp] WHATSAPP_ACCESS_TOKEN no configurado en .env.local');
+    }
+    if (!phoneNumberId) {
+      throw new Error('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID no configurado en .env.local');
+    }
+
+    const to = formatWhatsAppRecipient(phoneNumber);
+    if (!to || to.length < 8) {
+      throw new Error(`Número destino inválido para WhatsApp API: "${phoneNumber}" → "${to}"`);
+    }
+
+    const sections = listMessage.sections.slice(0, 10).map(section => ({
+      title: section.title,
+      rows: section.rows.slice(0, 10).map(row => ({
+        id: row.id,
+        title: row.title.substring(0, 24),
+        description: row.description?.substring(0, 72),
+      })),
+    }));
+
+    const interactive: any = {
+      type: 'list',
+      body: { text: listMessage.body },
+      action: {
+        button: listMessage.buttonText.substring(0, 20),
+      },
+    };
+
+    if (sections.length > 0) {
+      interactive.action.sections = sections;
+    }
+
+    if (listMessage.header) {
+      interactive.header = { type: 'text', text: listMessage.header.substring(0, 60) };
+    }
+    if (listMessage.footer) {
+      interactive.footer = { text: listMessage.footer.substring(0, 60) };
+    }
+
+    const payload = {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'interactive',
+      interactive,
+    };
+
+    console.log('[WhatsApp] Payload lista:', JSON.stringify(payload));
+
+    const url = `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const raw = await response.text();
+    if (!response.ok) {
+      const detail = parseWhatsAppGraphError(raw);
+      console.error('[WhatsApp] ❌ Graph API error:', response.status, detail);
+      throw new Error(`WhatsApp send failed: ${detail}`);
+    }
+
+    console.log('[WhatsApp] ✅ Mensaje de lista enviado');
+    try {
+      return JSON.parse(raw) as WhatsAppSendResponse;
+    } catch {
+      return { raw };
+    }
+  } catch (error) {
+    console.error('[WhatsApp] ❌ Error en sendWhatsAppListMessage:', error);
+    if (error instanceof Error) {
+      console.error('[WhatsApp] Message:', error.message);
+    }
+    throw error;
+  }
+}

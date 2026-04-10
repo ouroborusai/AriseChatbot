@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { Template, Action } from './types';
 import { CATEGORIES, SERVICE_TYPES } from './constants';
 
+interface ListOption {
+  id: string;
+  title: string;
+  description: string;
+}
+
 interface TemplateEditorProps {
   template: Template | null;
   allTemplates: Template[];
@@ -25,9 +31,21 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
     priority: 50,
   });
 
+  const [listOptions, setListOptions] = useState<ListOption[]>([]);
+
   useEffect(() => {
     if (template) {
       setForm({ ...template });
+      if (template.actions && template.actions.some(a => a.type === 'list')) {
+        const listAction = template.actions.find(a => a.type === 'list');
+        if (listAction?.description) {
+          try {
+            setListOptions(JSON.parse(listAction.description));
+          } catch {
+            setListOptions([]);
+          }
+        }
+      }
     } else {
       setForm({
         name: '',
@@ -40,13 +58,26 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
         is_active: true,
         priority: 50,
       });
+      setListOptions([]);
     }
   }, [template, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.content) return;
-    onSave(form);
+    
+    // Si hay acciones tipo list, guardar las opciones en description
+    if (form.actions && form.actions.length > 0) {
+      const updatedActions = form.actions.map(action => {
+        if (action.type === 'list' && listOptions.length > 0) {
+          return { ...action, description: JSON.stringify(listOptions) };
+        }
+        return action;
+      });
+      onSave({ ...form, actions: updatedActions });
+    } else {
+      onSave(form);
+    }
   };
 
   const addAction = () => {
@@ -58,6 +89,10 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
   };
 
   const updateAction = (index: number, field: keyof Action, value: string) => {
+    const action = form.actions?.[index];
+    if (field === 'type' && value === 'list' && action?.type !== 'list') {
+      setListOptions([{ id: 'opt_1', title: '', description: '' }]);
+    }
     setForm(prev => ({
       ...prev,
       actions: prev.actions?.map((a, i) => i === index ? { ...a, [field]: value } : a)
@@ -69,6 +104,22 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
       ...prev,
       actions: prev.actions?.filter((_, i) => i !== index)
     }));
+    if (form.actions?.[index]?.type === 'list') {
+      setListOptions([]);
+    }
+  };
+
+  const addListOption = () => {
+    if (listOptions.length >= 10) return;
+    setListOptions(prev => [...prev, { id: `opt_${prev.length + 1}`, title: '', description: '' }]);
+  };
+
+  const updateListOption = (index: number, field: keyof ListOption, value: string) => {
+    setListOptions(prev => prev.map((opt, i) => i === index ? { ...opt, [field]: value } : opt));
+  };
+
+  const removeListOption = (index: number) => {
+    setListOptions(prev => prev.filter((_, i) => i !== index));
   };
 
   if (!isOpen) return null;
@@ -264,6 +315,54 @@ export default function TemplateEditor({ template, allTemplates, isOpen, onClose
                 </div>
               )}
             </div>
+
+            {/* List Options Config */}
+            {form.actions?.some(a => a.type === 'list') && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-blue-900">Opciones de Lista</h4>
+                  <button
+                    type="button"
+                    onClick={addListOption}
+                    disabled={listOptions.length >= 10}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:text-blue-300"
+                  >
+                    {listOptions.length}/10 + Agregar opción
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {listOptions.map((opt, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        value={opt.id}
+                        onChange={(e) => updateListOption(idx, 'id', e.target.value)}
+                        placeholder="ID"
+                        className="w-24 rounded-lg border border-blue-200 px-2 py-1.5 text-xs"
+                      />
+                      <input
+                        value={opt.title}
+                        onChange={(e) => updateListOption(idx, 'title', e.target.value)}
+                        placeholder="Título"
+                        className="flex-1 rounded-lg border border-blue-200 px-2 py-1.5 text-xs"
+                      />
+                      <input
+                        value={opt.description}
+                        onChange={(e) => updateListOption(idx, 'description', e.target.value)}
+                        placeholder="Descripción"
+                        className="flex-1 rounded-lg border border-blue-200 px-2 py-1.5 text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeListOption(idx)}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Active Toggle */}

@@ -1,6 +1,6 @@
-# AriseChatbot
+# MTZ Chatbot - Agente de Atención WhatsApp
 
-Chatbot WhatsApp con IA (Gemini/OpenAI), dashboard admin y Supabase.
+Chatbot WhatsApp con IA (Gemini/OpenAI), dashboard admin y Supabase para despacho contable.
 
 ## 🚀 Stack
 
@@ -28,14 +28,11 @@ npm run dev
 | `/api/test-ai` | POST | Test de IA sin WhatsApp |
 | `/api/test-message` | POST | Test completo (guardar + responder) |
 | `/api/contacts` | GET/POST | Listar/crear contactos |
+| `/api/companies` | GET/POST | Listar/crear empresas |
 | `/api/client-documents` | GET/POST | Listar/crear documentos de cliente |
+| `/api/templates` | GET/POST | Listar/crear plantillas de mensajes |
 | `/api/metrics` | GET | Estadísticas del sistema |
 | `/api/check-env` | GET | Verificar variables de entorno |
-
-## 📚 Documentación importante
-
-- [SUPABASE_SQL_GUIDE.md](SUPABASE_SQL_GUIDE.md) - Guía de SQL para Supabase
-- [AGENT_PROMPT.md](AGENT_PROMPT.md) - Prompt del sistema de IA
 
 ## 📱 Dashboard Admin
 
@@ -43,34 +40,63 @@ El dashboard incluye las siguientes secciones:
 
 | Ruta | Descripción |
 |------|-------------|
-| `/dashboard` | 🆕 **Chat en tiempo real** - Responde a clientes directamente desde la interfaz |
+| `/dashboard` | Chat en tiempo real - Responde a clientes directamente |
+| `/dashboard/companies` | Gestión de empresas y documentos (IVA, Sueldos, Libros) |
 | `/dashboard/clients` | Gestión de clientes, envío de mensajes y documentos |
-| `/dashboard/templates` | Plantillas de mensajes rápidos predefinidos |
+| `/dashboard/templates` | Editor de plantillas con botones y listas |
 | `/dashboard/metrics` | Métricas y estadísticas del chatbot |
-| `/dashboard/settings` | Configuración del sistema |
 
-### 🆕 Vista de Chat en Tiempo Real (`/dashboard`)
-- Lista de conversaciones activas del lado izquierdo
-- Historial de mensajes en el centro
-- **Envío directo de respuestas** desde la interfaz hacia WhatsApp
-- Auto-refresh de nuevos mensajes
-- Feedback visual de envío exitoso/error
+### Pestañas de Empresas (`/dashboard/companies`)
+- **IVA** - Grid de 12 meses por año con documentos de declaración
+- **Sueldos** - Liquidaciones de personal
+- **Libros** - Libros contables
+- **Otros** - Documentos adicionales
+
+### Editor de Plantillas (`/dashboard/templates`)
+- **Botones** - Hasta 3 botones interactivos por mensaje
+- **Listas** - List Messages con hasta 10 opciones (para menús grandes)
+- **Triggers** - Palabras clave que disparan la plantilla
+- **Navegación** - Conectar plantillas con `next_template_id`
 
 ## 🗄️ Base de datos
 
 ### Tablas principales
-- `contacts` - Datos de clientes
-- `conversations` - Historial de chat
-- `messages` - Mensajes individuales
 
-Ejecutar migración inicial:
 ```sql
--- En Supabase SQL Editor, abrir supabase/schema.sql
+-- Contactos (clientes y prospectos)
+contacts: id, phone_number, name, email, segment, metadata, ...
+
+-- Empresas vinculadas a contactos
+companies: id, contact_id, legal_name, rut, ...
+
+-- Conversaciones
+conversations: id, phone_number, contact_id, active_company_id, chatbot_enabled, ...
+
+-- Mensajes del historial
+messages: id, conversation_id, role (user/assistant), content, ...
+
+-- Documentos de clientes
+client_documents: id, contact_id, company_id, title, file_url, ...
+
+-- Plantillas de mensajes
+templates: id, name, content, trigger, actions (JSON), segment, priority, ...
 ```
+
+### Relaciones
+- `contacts` 1:N `companies`
+- `contacts` 1:N `conversations`
+- `conversations` 1:N `messages`
+- `contacts` 1:N `client_documents`
+- `companies` 1:N `client_documents`
 
 ## 🔐 Configuración de entorno
 
 Ver [.env.local.example](.env.local.example) para variables requeridas.
+
+**Variables obligatorias:**
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`
+- `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`
+- Una de: `GEMINI_API_KEY`, `OPENAI_API_KEY`
 
 **Nota:** `.env.local` nunca se sube a git.
 
@@ -88,7 +114,14 @@ npm run lint     # Lint
 2. Configurar webhook en `/api/webhook`
 3. Obtener: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`
 4. Agregar a `.env.local`
-4a. Si el token expira, regenera un nuevo `WHATSAPP_ACCESS_TOKEN` en Meta y actualiza la variable en el entorno.
+5. Si el token expira, regenerar en Meta y actualizar en `.env.local`
+
+## 📚 Documentación adicional
+
+- [PROMPT_CONTINUAR.md](PROMPT_CONTINUAR.md) - Estado del proyecto e integración de List Messages
+- [SUPABASE_SQL_GUIDE.md](SUPABASE_SQL_GUIDE.md) - Guía de SQL para Supabase
+- [AGENT_PROMPT.md](AGENT_PROMPT.md) - Prompt del sistema de IA
+- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Guía rápida de referencia
 
 ## ⚙️ Despliegue (Vercel)
 

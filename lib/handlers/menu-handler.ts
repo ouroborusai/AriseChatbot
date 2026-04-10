@@ -2,7 +2,7 @@
 // Maneja el envío de menús interactivos
 
 import { getSupabaseAdmin } from '../supabase-admin';
-import { sendWhatsAppInteractiveButtons, sendWhatsAppMessage } from '../whatsapp-service';
+import { sendWhatsAppInteractiveButtons, sendWhatsAppListMessage, sendWhatsAppMessage } from '../whatsapp-service';
 import { BUTTON_IDS, Contact, Company, HandlerResponse } from './types';
 
 const WELCOME_KEYWORDS = ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'buenas', 'saludos'];
@@ -158,6 +158,25 @@ async function sendDocumentsCategoryMenu(
       phoneNumber,
       '📋 No tengo documentos cargados para ti aún. ¿Prefieres solicitar alguno o hablar con un asesor?'
     );
+    return;
+  }
+
+  // Si hay más de 3 documentos, usar List Message
+  if (docs.length > 3) {
+    const rows = docs.slice(0, 10).map(doc => ({
+      id: `doc_${doc.id}`,
+      title: doc.title.substring(0, 24),
+      description: doc.file_name || 'Ver documento'
+    }));
+
+    await sendWhatsAppListMessage(phoneNumber, {
+      body: `📄 Tienes ${docs.length} documentos disponibles. ¿Cuál ver?`,
+      buttonText: 'Ver documento',
+      sections: [{
+        title: 'Mis Documentos',
+        rows
+      }]
+    });
     return;
   }
 

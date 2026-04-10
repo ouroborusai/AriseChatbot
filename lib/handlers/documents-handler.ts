@@ -2,7 +2,7 @@
 // Maneja documentos, PDFs, envío de archivos
 
 import { getSupabaseAdmin } from '../supabase-admin';
-import { sendWhatsAppDocument, sendWhatsAppMessage, sendWhatsAppInteractiveButtons } from '../whatsapp-service';
+import { sendWhatsAppDocument, sendWhatsAppMessage, sendWhatsAppInteractiveButtons, sendWhatsAppListMessage } from '../whatsapp-service';
 import { BUTTON_IDS, HandlerResponse } from './types';
 
 // Enviar documento por ID
@@ -275,13 +275,35 @@ async function sendTaxDocMenu(
     .eq('company_id', companyId || null)
     .ilike('title', '%iva%')
     .order('created_at', { ascending: false })
-    .limit(6);
+    .limit(10);
 
   if (!ivaDocs || ivaDocs.length === 0) {
     await sendWhatsAppMessage(
       phoneNumber,
       '🧾 No tengo IVAs declarados cargados aún. ¿Prefieres solicitar uno o hablar con un asesor?'
     );
+    return;
+  }
+
+  // Si hay más de 3 IVAs, usar List Message
+  if (ivaDocs.length > 3) {
+    const rows = ivaDocs.slice(0, 10).map(doc => ({
+      id: `iva_${doc.id}`,
+      title: doc.title.substring(0, 24),
+      description: 'Ver documento'
+    }));
+
+    rows.push({ id: 'iva_request', title: '📋 Solicitar IVA', description: 'Pedir nuevo IVA' });
+    rows.push({ id: 'human', title: '📞 Hablar con asesor', description: 'Contacto directo' });
+
+    await sendWhatsAppListMessage(phoneNumber, {
+      body: `🧾 Tienes ${ivaDocs.length} IVAs disponibles. ¿Cuál quieres ver?`,
+      buttonText: 'Ver IVA',
+      sections: [{
+        title: 'Mis IVAs',
+        rows
+      }]
+    });
     return;
   }
 
