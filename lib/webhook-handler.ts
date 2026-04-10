@@ -172,10 +172,13 @@ export async function handleInboundUserMessage(messageData: {
     }
 
     // 3. Guardar mensaje del usuario
-    if (text) {
-      await saveMessage(conversationId, 'user', text);
-    } else if (interactive) {
+    // IMPORTANTE: Si hay interactive, NO guardar el texto también para evitar duplicados
+    // WhatsApp envía ambos cuando se hace clic en un botón
+    if (interactive) {
+      // Solo guardar el interactive button, ignorar el texto asociado
       await saveMessage(conversationId, 'user', `[button:${interactive}]`);
+    } else if (text) {
+      await saveMessage(conversationId, 'user', text);
     } else {
       console.log('❌ Ignorado: mensaje sin texto ni interacción');
       return;
@@ -191,7 +194,11 @@ export async function handleInboundUserMessage(messageData: {
     };
 
     // 5. Si es interactive, procesar con handlers específicos
+    // IMPORTANTE: Cuando hay interactive, ignorar completamente el texto
+    // WhatsApp envía ambos (interactive + text) cuando se hace clic en un botón
     if (interactive) {
+      console.log('[Webhook] Procesando interactive button:', interactive, '(ignorando texto adjunto)');
+
       // Clasificación cliente/prospecto
       const classResult = await handleClassification(interactive, contact);
       if (classResult.handled && classResult.response) {

@@ -6,7 +6,38 @@ type InboundMessage = {
   from?: string;
   type?: string;
   text?: { body?: string };
+  interactive?: { button_reply?: { id?: string }; list_reply?: { id?: string } };
 };
+
+// Cache simple para deduplicación de mensajes (últimos 5 minutos)
+const processedMessages = new Map<string, number>();
+const MESSAGE_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+/**
+ * Verifica si un mensaje ya fue procesado (deduplicación)
+ * WhatsApp a veces envía el mismo mensaje múltiple veces
+ */
+function isMessageDuplicate(messageId: string): boolean {
+  const now = Date.now();
+
+  // Limpiar mensajes expirados
+  for (const [id, timestamp] of processedMessages.entries()) {
+    if (now - timestamp > MESSAGE_CACHE_TTL) {
+      processedMessages.delete(id);
+    }
+  }
+
+  // Verificar si ya existe
+  if (processedMessages.has(messageId)) {
+    console.log('[Webhook] ⚠️ Mensaje duplicado detectado:', messageId);
+    return true;
+  }
+
+  // Registrar nuevo mensaje
+  processedMessages.set(messageId, now);
+  console.log('[Webhook] ✅ Mensaje registrado:', messageId, '(total en cache:', processedMessages.size, ')');
+  return false;
+}
 
 export async function GET(request: NextRequest) {
   console.log('[Webhook] GET - Verificación de webhook');
@@ -76,8 +107,16 @@ export async function POST(request: NextRequest) {
 
         // Procesar cada mensaje
         for (const messageData of messages) {
+          const messageId = messageData.id;
+
+          // Verificar duplicados
+          if (messageId && isMessageDuplicate(messageId)) {
+            console.log('[Webhook] ⚠️ Saltando mensaje duplicado');
+            continue;
+          }
+
           console.log('[Webhook] 📨 Mensaje:', JSON.stringify(messageData, null, 2));
-          
+
           try {
             await handleInboundUserMessage(messageData as InboundMessage);
           } catch (msgError) {
