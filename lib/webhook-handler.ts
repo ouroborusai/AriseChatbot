@@ -13,7 +13,7 @@
  */
 
 import { getSupabaseAdmin } from './supabase-admin';
-import { sendWhatsAppMessage, sendWhatsAppInteractiveButtons, sendWhatsAppListMessage } from './whatsapp-service';
+import { sendWhatsAppMessage, sendWhatsAppInteractiveButtons, sendWhatsAppListMessage, sendWhatsAppDocument } from './whatsapp-service';
 import {
   getOrCreateContact,
   getOrCreateConversation,
@@ -378,6 +378,30 @@ async function sendTemplateActionsWithConditions(
   // Obtener acciones finales (filtradas y convertidas)
   const { buttons, listAction, elseActions, redirectTemplateId } = getFinalActions(actions, context);
 
+  // Procesar acciones show_document (buscar documento y enviar si existe)
+  for (const action of actions) {
+    if (action.type === 'show_document' && action.condition?.required_document_type) {
+      const docType = action.condition.required_document_type;
+      const { data: doc } = await getSupabaseAdmin()
+        .from('client_documents')
+        .select('id, title, file_url, file_name, storage_bucket, storage_path')
+        .eq('contact_id', context.contact.id)
+        .eq('file_type', docType)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (doc) {
+        console.log('[Webhook] Enviando documento:', doc.title);
+        await sendWhatsAppDocument(phoneNumber, doc.file_url, doc.title);
+        return;
+      } else if (action.else_action?.message) {
+        await sendWhatsAppMessage(phoneNumber, action.else_action.message);
+        return;
+      }
+    }
+  }
+
   // Manejar redirecciones por else_action
   if (redirectTemplateId) {
     console.log('[Webhook] Redirigiendo por else_action:', redirectTemplateId);
@@ -385,11 +409,13 @@ async function sendTemplateActionsWithConditions(
     return;
   }
 
-  // Procesar else_actions de tipo show_message
-  for (const elseAction of elseActions) {
-    if (elseAction.type === 'show_message' && elseAction.message) {
-      console.log('[Webhook] Enviando mensaje alternativo:', elseAction.message);
-      // No enviar inmediatamente, solo loguear
+  // Procesar else_actions de tipo show_message (cuando no hay botones visibles)
+  if (buttons.length === 0 && elseActions.length > 0) {
+    const firstElseAction = elseActions[0];
+    if (firstElseAction.type === 'show_message' && firstElseAction.message) {
+      console.log('[Webhook] Enviando mensaje de else_action:', firstElseAction.message);
+      await sendWhatsAppMessage(phoneNumber, firstElseAction.message);
+      return;
     }
   }
 

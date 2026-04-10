@@ -93,14 +93,26 @@ export interface ActionConditions {
 /**
  * Acción dentro de una plantilla (botón o lista)
  */
+export interface ElseAction {
+  type: 'show_message' | 'hide_button' | 'redirect';
+  message?: string;
+  redirect_template_id?: string;
+}
+
 export interface Action {
-  type: 'button' | 'list';
+  type: 'button' | 'list' | 'show_document';
   id: string;
   title: string;
   description?: string;
   next_template_id?: string;
   /** Condiciones para mostrar esta acción */
   conditions?: ActionConditions;
+  /** Condición requerida (ej: required_document_type) */
+  condition?: {
+    required_document_type?: string;
+  };
+  /** Acción alternativa si no se cumple la condición */
+  else_action?: ElseAction;
 }
 
 export type Workflow = {
