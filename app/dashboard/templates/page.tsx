@@ -35,11 +35,12 @@ export default function TemplatesPage() {
     setEditingTemplate(null);
   };
 
-  // Restaurar plantillas por defecto usando SQL
+  // Restaurar plantillas por defecto - recargar desde Supabase
   const handleRestoreDefaults = async () => {
-    if (!confirm('¿Restaurar plantillas por defecto?\n\nSe cargarán todas las plantillas predefinidas (~40 plantillas).\n\nEjecuta el SQL en supabase/insert_templates.sql')) return;
+    if (!confirm('¿Recargar plantillas desde Supabase?\n\nEsto actualizará la lista con las plantillas guardadas en la base de datos.')) return;
     
-    alert('Por favor ejecuta el script SQL:\n\nsupabase/insert_templates.sql\n\nen el SQL Editor de Supabase');
+    await fetchTemplates();
+    alert('✅ Plantillas actualizadas desde Supabase');
   };
 
   const handleDeleteAll = async () => {
