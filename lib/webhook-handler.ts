@@ -113,18 +113,24 @@ export async function handleInboundUserMessage(messageData: {
 
     // 6b. Manejo de Nuevos Usuarios (Auto-clasificación)
     if (!contact.segment) {
+      console.log('[Webhook] 📌 Nuevo usuario detectado, clasificando como prospecto');
       await autoClassifyAsProspect(contact);
+      contact.segment = 'prospecto'; // Actualizar en memoria
       const welcome = await TemplateService.findTemplateById('bienvenida_prospecto', 'prospecto');
+      console.log('[Webhook] 📌 Plantilla bienvenida_prospecto encontrada:', !!welcome);
       if (welcome) {
         await processTemplateResponse(phoneNumber, welcome, context, navState);
         return;
       }
+      console.log('[Webhook] ⚠️ NO se encontró plantilla bienvenida_prospecto');
     }
 
     // 6c. Manejo de Saludos y Triggers de Texto
     if (text) {
+      console.log('[Webhook] 📝 Mensaje texto:', text.substring(0, 50));
       const greetingHandler = new MenuHandler(context);
       if (greetingHandler.isGreeting(text)) {
+        console.log('[Webhook] 👋 Es saludo, enviando menú por defecto');
         await sendDefaultMenu(phoneNumber, contact.id, conversationId);
         return;
       }
@@ -169,14 +175,20 @@ export async function handleInboundUserMessage(messageData: {
  * Helper para enviar el menú por defecto según el segmento
  */
 async function sendDefaultMenu(phoneNumber: string, contactId: string, conversationId: string) {
+  console.log('[Webhook] sendDefaultMenu llamado para:', phoneNumber);
   const { data: contact } = await getSupabaseAdmin().from('contacts').select('segment').eq('id', contactId).single();
   const segment = contact?.segment || 'prospecto';
+  console.log('[Webhook] Segmento del contacto:', segment);
   const templateId = segment === 'cliente' ? 'menu_principal_cliente' : 'bienvenida_prospecto';
+  console.log('[Webhook] Buscando plantilla:', templateId);
   
   const template = await TemplateService.findTemplateById(templateId, segment);
+  console.log('[Webhook] Plantilla encontrada:', !!template);
   if (template) {
     const freshContext = await ContextService.buildContext({id: contactId, segment} as any, [], null, conversationId);
     await processTemplateResponse(phoneNumber, template, freshContext, NavigationService.createInitialState());
+  } else {
+    console.log('[Webhook] ❌ NO se encontró plantilla con ID:', templateId);
   }
 }
 
