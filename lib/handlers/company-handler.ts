@@ -7,10 +7,10 @@
 
 import { getSupabaseAdmin } from '../supabase-admin';
 import { sendWhatsAppMessage, sendWhatsAppInteractiveButtons, sendWhatsAppListMessage } from '../whatsapp-service';
-import { BUTTON_IDS, Company, HandlerResponse } from './types';
+import { BUTTON_IDS, Company, HandlerResponse } from '../types';
 import { BaseHandler, buildContext } from './base-handler';
 import { TemplateContext, Action } from '../../app/components/templates/types';
-import { getFinalActions } from './condition-engine';
+import { getFinalActions } from '@/lib/services/condition-engine';
 
 const COMPANY_PREFIX = 'company_';
 

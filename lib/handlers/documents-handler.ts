@@ -7,7 +7,7 @@
 
 import { getSupabaseAdmin } from '../supabase-admin';
 import { sendWhatsAppDocument, sendWhatsAppMessage, sendWhatsAppInteractiveButtons, sendWhatsAppListMessage } from '../whatsapp-service';
-import { BUTTON_IDS, HandlerResponse } from './types';
+import { BUTTON_IDS, HandlerResponse } from '../types';
 import { BaseHandler } from './base-handler';
 import { TemplateContext } from '../../app/components/templates/types';
 

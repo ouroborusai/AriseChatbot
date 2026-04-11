@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { Template } from './types';
-import { WORKFLOWS } from './types';
+import { WORKFLOWS } from './config';
 
 interface FlowAnalyzerProps {
   templates: Template[];

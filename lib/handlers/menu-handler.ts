@@ -7,10 +7,10 @@
 
 import { getSupabaseAdmin } from '../supabase-admin';
 import { sendWhatsAppInteractiveButtons, sendWhatsAppListMessage, sendWhatsAppMessage } from '../whatsapp-service';
-import { BUTTON_IDS, Contact, Company, HandlerResponse } from './types';
+import { BUTTON_IDS, Contact, Company, HandlerResponse } from '../types';
 import { BaseHandler, buildContext } from './base-handler';
 import { TemplateContext, Action } from '../../app/components/templates/types';
-import { getFinalActions } from './condition-engine';
+import { getFinalActions } from '@/lib/services/condition-engine';
 
 const WELCOME_KEYWORDS = ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'buenas', 'saludos'];
 
@@ -95,9 +95,9 @@ export class MenuHandler extends BaseHandler {
     // Evaluar condiciones y obtener acciones finales
     const { buttons, listAction } = getFinalActions(actions, this.context);
 
-    // Si hay lista, enviar lista
+    // Si hay lista, enviar lista (description tiene prioridad, ahí guarda el TemplateEditor el JSON)
     if (listAction) {
-      const listContent = listAction.content || listAction.description || '[]';
+      const listContent = listAction.description || listAction.content || '[]';
       const options = JSON.parse(listContent);
       await sendWhatsAppListMessage(phoneNumber, {
         body: greetingText,

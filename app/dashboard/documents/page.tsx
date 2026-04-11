@@ -104,7 +104,7 @@ export default function DocumentsPage() {
             {filteredDocuments.map((doc) => (
               <div key={doc.id} className="group relative rounded-2xl border border-slate-200 bg-white p-4 hover:shadow-md transition">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-2xl">{getFileIcon(doc.file_name, doc.file_type)}</div>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-2xl">{getFileIcon(doc.file_name ?? null, doc.file_type ?? null)}</div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-900 truncate">{doc.title}</p>
                     {doc.file_name && <p className="text-xs text-slate-500 truncate mt-0.5">{doc.file_name}</p>}

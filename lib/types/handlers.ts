@@ -1,57 +1,7 @@
-// lib/handlers/types.ts - Tipos para los handlers
-
-export interface InboundMessage {
-  from?: string;
-  text?: { body?: string };
-  interactive?: {
-    button_reply?: { id?: string };
-    list_reply?: { id?: string };
-  };
-}
-
-export interface Contact {
-  id: string;
-  phone_number?: string;
-  name?: string | null;
-  segment?: string | null;
-}
-
-export interface Conversation {
-  id: string;
-  phone_number: string;
-  contact_id: string;
-  active_company_id?: string | null;
-  chatbot_enabled?: boolean;
-}
-
-export interface Company {
-  id: string;
-  legal_name: string;
-}
-
-export interface ClientDocument {
-  id: string;
-  contact_id: string;
-  company_id?: string | null;
-  title: string;
-  file_name?: string | null;
-  file_url?: string | null;
-  storage_bucket?: string | null;
-  storage_path?: string | null;
-}
-
-export interface Message {
-  id: string;
-  conversation_id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  created_at: string;
-}
-
-export interface ButtonOption {
-  id: string;
-  title: string;
-}
+/**
+ * Tipos para el Motor de Handlers (Lógica)
+ */
+import { Contact, Company } from './domain';
 
 export interface HandlerContext {
   phoneNumber: string;
@@ -69,7 +19,13 @@ export interface HandlerResponse {
   shouldContinue?: boolean;
 }
 
-// IDs de botones
+export interface ApiResult<T = void> {
+  success?: boolean;
+  error?: string;
+  data?: T;
+}
+
+// IDs de botones para navegación
 export const BUTTON_IDS = {
   // Clasificación
   CLIENT_YES: 'btn_is_client_yes',

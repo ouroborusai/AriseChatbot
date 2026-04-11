@@ -1,12 +1,9 @@
-// lib/handlers/classification-handler.ts
-// Maneja clasificación cliente/prospecto y segmentación
-
 import { getSupabaseAdmin } from '../supabase-admin';
-import { BUTTON_IDS, HandlerContext, HandlerResponse } from './types';
+import { BUTTON_IDS, HandlerResponse, Contact } from '../types';
 
 export async function handleClassification(
   interactive: string | undefined,
-  contact: { id: string; name?: string | null }
+  contact: Contact
 ): Promise<HandlerResponse> {
   // Botón: Sí soy cliente
   if (interactive === BUTTON_IDS.CLIENT_YES) {
@@ -29,7 +26,7 @@ export async function handleClassification(
   if (interactive === BUTTON_IDS.CLIENT_NO) {
     await getSupabaseAdmin()
       .from('contacts')
-      .update({ segment: 'prospect' })
+      .update({ segment: 'prospecto' })
       .eq('id', contact.id);
 
     return {
@@ -47,19 +44,19 @@ export async function autoClassifyAsProspect(
 ): Promise<boolean> {
   await getSupabaseAdmin()
     .from('contacts')
-    .update({ segment: 'prospect' })
+    .update({ segment: 'prospecto' })
     .eq('id', contact.id);
   
   console.log('🆕 Contacto clasificado automáticamente como prospecto');
   return true;
 }
 
-export function isKnownClient(contact: { segment?: string | null }): boolean {
+export function isKnownClient(contact: Contact): boolean {
   return contact.segment === 'cliente';
 }
 
 export function getSegmentLabel(segment: string | null | undefined): string {
   if (segment === 'cliente') return 'cliente';
-  if (segment === 'prospect') return 'prospect';
+  if (segment === 'prospecto') return 'prospecto';
   return 'sin clasificar';
 }

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Template } from '@/app/components/templates/types';
 
 export function useTemplates() {
-  const supabase = createClient();
+  // Memoizar el cliente para evitar loop infinito de re-renderizado
+  const supabase = useMemo(() => createClient(), []);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,30 +23,13 @@ export function useTemplates() {
       }));
       setTemplates(normalized);
     } else {
-      // Si NO hay plantillas en BD, cargar las DEFAULT y guardarlas en Supabase
-      const defaults = (await import('@/app/components/templates')).DEFAULT_TEMPLATES as Template[];
-      setTemplates(defaults);
-      // Guardar las defaults en Supabase para que estén disponibles
-      for (const t of defaults) {
-        await supabase.from('templates').upsert({
-          id: t.id,
-          name: t.name,
-          content: t.content,
-          category: t.category || 'general',
-          service_type: t.service_type || null,
-          trigger: t.trigger || null,
-          actions: t.actions || [],
-          is_active: t.is_active ?? true,
-          priority: t.priority || 50,
-          segment: t.segment || 'todos',
-          workflow: t.workflow || 'general'
-        });
-      }
+      // Si NO hay plantillas en BD, mantener vacío hasta que el usuario decida restaurar
+      setTemplates([]);
     }
     setLoading(false);
   }, [supabase]);
 
-  useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+  useEffect(() => { fetchTemplates(); }, []); // Solo ejecutar al montar, fetchTemplates ya está memoizado
 
   const saveTemplate = useCallback(async (template: Partial<Template> & { id: string }) => {
     const t = { id: template.id, name: template.name!, content: template.content!, category: template.category || 'general', service_type: template.service_type, trigger: template.trigger, actions: template.actions || [], is_active: template.is_active ?? true, priority: template.priority || 50, segment: template.segment || 'todos', workflow: template.workflow || 'general' };
@@ -66,7 +50,16 @@ export function useTemplates() {
     setTemplates(prev => prev.map(t => t.id === id ? updated : t));
   }, [supabase, templates]);
 
-  return { templates, loading, refetch: fetchTemplates, saveTemplate, deleteTemplate, toggleActive };
+  const deleteAllTemplates = useCallback(async () => {
+    const { data } = await supabase.from('templates').select('id');
+    if (data && data.length > 0) {
+      const ids = data.map(d => d.id);
+      await supabase.from('templates').delete().in('id', ids);
+    }
+    setTemplates([]);
+  }, [supabase]);
+
+  return { templates, loading, refetch: fetchTemplates, fetchTemplates, saveTemplate, deleteTemplate, deleteAllTemplates, toggleActive };
 }
 
 export function useTemplateFilters() {

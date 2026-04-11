@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Template } from './types';
-import { WORKFLOWS } from './types';
+import { WORKFLOWS } from './config';
 
 interface FlowMapProps {
   templates: Template[];
@@ -44,13 +44,23 @@ export default function FlowMap({ templates, selectedTemplateId, onSelectTemplat
       const node = nodes.get(nodeId);
       if (!node) return 0;
 
-      const outgoingActions = node.actions?.filter(a => a.next_template_id) || [];
-      if (outgoingActions.length === 0) return 0;
+      let allTargets: string[] = [];
+      node.actions?.forEach(action => {
+        if (action.next_template_id) allTargets.push(action.next_template_id);
+        if (action.type === 'list' && action.description) {
+          try {
+            const opts = JSON.parse(action.description);
+            opts.forEach((o: any) => { if (o.next_template_id) allTargets.push(o.next_template_id); });
+          } catch {}
+        }
+      });
+
+      if (allTargets.length === 0) return 0;
 
       let maxLevel = 0;
-      outgoingActions.forEach(action => {
-        if (action.next_template_id && nodes.has(action.next_template_id)) {
-          const childLevel = calculateLevel(action.next_template_id, new Set(visited));
+      allTargets.forEach(targetId => {
+        if (nodes.has(targetId)) {
+          const childLevel = calculateLevel(targetId, new Set(visited));
           maxLevel = Math.max(maxLevel, childLevel + 1);
         }
       });
@@ -60,9 +70,19 @@ export default function FlowMap({ templates, selectedTemplateId, onSelectTemplat
 
     // Encontrar nodos raíz
     const rootNodes = filteredTemplates.filter(t => {
-      const hasIncoming = filteredTemplates.some(other => 
-        other.actions?.some(a => a.next_template_id === t.id)
-      );
+      const hasIncoming = filteredTemplates.some(other => {
+        let targets: string[] = [];
+        other.actions?.forEach(a => {
+          if (a.next_template_id) targets.push(a.next_template_id);
+          if (a.type === 'list' && a.description) {
+            try {
+              const opts = JSON.parse(a.description);
+              opts.forEach((o: any) => { if (o.next_template_id) targets.push(o.next_template_id); });
+            } catch {}
+          }
+        });
+        return targets.includes(t.id);
+      });
       return !hasIncoming;
     });
 
@@ -87,10 +107,27 @@ export default function FlowMap({ templates, selectedTemplateId, onSelectTemplat
           edges.push({ 
             from: t.id, 
             to: action.next_template_id, 
-            label: action.title || 'Acción',
+            label: action.title || 'Botón',
             fromLevel,
             toLevel 
           });
+        }
+        if (action.type === 'list' && action.description) {
+          try {
+            const opts = JSON.parse(action.description);
+            opts.forEach((o: any) => {
+              if (o.next_template_id && leveledNodes.has(o.next_template_id)) {
+                const toLevel = leveledNodes.get(o.next_template_id)?.level || 0;
+                edges.push({
+                  from: t.id,
+                  to: o.next_template_id,
+                  label: o.title || 'Opción',
+                  fromLevel,
+                  toLevel
+                });
+              }
+            });
+          } catch {}
         }
       });
     });
@@ -171,7 +208,17 @@ export default function FlowMap({ templates, selectedTemplateId, onSelectTemplat
                 {nodes.sort((a, b) => (a.priority || 50) - (b.priority || 50)).map(node => {
                   const isSelected = selectedTemplateId === node.id;
                   const color = getWorkflowColor(node.workflow);
-                  const outgoingCount = node.actions?.filter(a => a.next_template_id).length || 0;
+
+                  let outgoingCount = node.actions?.filter(a => a.next_template_id).length || 0;
+                  node.actions?.forEach(a => {
+                    if (a.type === 'list' && a.description) {
+                      try {
+                        const opts = JSON.parse(a.description);
+                        outgoingCount += opts.filter((o: any) => o.next_template_id).length;
+                      } catch {}
+                    }
+                  });
+
                   const incomingCount = flowTree.edges.filter(e => e.to === node.id).length;
 
                   return (

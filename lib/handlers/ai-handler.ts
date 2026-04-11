@@ -11,7 +11,7 @@ import { sendWhatsAppMessage } from '../whatsapp-service';
 import { getSupabaseAdmin } from '../supabase-admin';
 import { BaseHandler, buildContext } from './base-handler';
 import { TemplateContext } from '../../app/components/templates/types';
-import { Contact, Company, HandlerResponse } from './types';
+import { Contact, Company, HandlerResponse } from '../types';
 
 const HUMAN_KEYWORDS = [
   'humano', 'asesor', 'urgente', 'multa', 'fiscalización', 'fiscalizacion',

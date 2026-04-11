@@ -1,0 +1,20 @@
+# Antigravity Analysis Skill
+
+Este archivo es una guía ejecutable para que el asistente analice el proyecto de forma rigurosa.
+
+## Paso 1: Mapeo de Archivos
+- Ejecutar `ls -R` para entender la jerarquía.
+- Leer `package.json` para dependencias clave.
+
+## Paso 2: Análisis de Lógica de Negocio
+- Analizar `lib/webhook-handler.ts` para entender el flujo de orquestación.
+- Analizar `lib/ai-service.ts` para entender la integración con modelos de lenguaje.
+- Analizar `lib/database-service.ts` para entender la persistencia y esquemas.
+
+## Paso 3: Auditoría de Seguridad y Configuración
+- Verificar que `.env.local.example` contenga todas las variables necesarias.
+- Asegurarse de que no haya secretos commiteados.
+
+## Paso 4: Generación de Informe
+- Crear un resumen técnico en `docs/SYSTEM_REPORT.md`.
+- Identificar cuellos de botella y oportunidades de optimización.

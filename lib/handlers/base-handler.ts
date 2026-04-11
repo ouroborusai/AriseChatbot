@@ -15,26 +15,23 @@ import {
   Template,
 } from '../../app/components/templates/types';
 import {
+  Contact,
+  Company,
+  ClientDocument,
+  Message,
+} from '../types';
+import {
   evaluateCondition,
   evaluateMultipleConditions,
   filterVisibleActions,
   getFinalActions,
-} from './condition-engine';
+} from '@/lib/services/condition-engine';
 
 /**
- * Documento con tipo inferido
+ * Documento con tipo inferido (Extiende ClientDocument para soportar document_type)
  */
-export interface TypedDocument {
-  id: string;
-  contact_id: string;
-  company_id: string | null;
-  title: string;
-  file_name: string | null;
-  file_url: string | null;
-  storage_bucket: string | null;
-  storage_path: string | null;
+export interface TypedDocument extends ClientDocument {
   document_type?: string;
-  created_at: string;
 }
 
 /**

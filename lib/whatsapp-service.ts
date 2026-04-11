@@ -1,8 +1,4 @@
-/**
- * WhatsApp API Service
- * Maneja todas las interacciones con WhatsApp Cloud API
- */
-
+import { WHATSAPP_CONSTRAINTS, sanitizeWhatsAppText } from './services/whatsapp-skill';
 import { digitsOnly, validateEnvVars } from './utils';
 
 export interface WhatsAppSendResponse {
@@ -22,432 +18,144 @@ function formatWhatsAppRecipient(phone: string): string {
 function validateWhatsAppConfig(): void {
   const missing = validateEnvVars([
     'WHATSAPP_ACCESS_TOKEN',
-    'WHATSAPP_PHONE_NUMBER_ID',
-    'WHATSAPP_VERIFY_TOKEN'
+    'WHATSAPP_PHONE_NUMBER_ID'
   ]);
   
   if (missing.length > 0) {
-    console.warn('[WhatsApp] Algunas variables faltantes. El sistema puede no funcionar correctamente.');
+    console.warn('[WhatsApp] Faltan variables:', missing.join(', '));
   }
 }
 
-function parseWhatsAppGraphError(raw: string): string {
-  try {
-    const parsed = JSON.parse(raw) as {
-      error?: {
-        message?: string;
-        code?: number;
-        error_subcode?: number;
-      };
-    };
-    if (parsed?.error) {
-      const code = parsed.error.code ?? 'n/a';
-      const subcode = parsed.error.error_subcode ?? 'n/a';
-      const base = parsed.error.message || raw;
-      if (code === 190 && subcode === 463) {
-        return `${base} (code=${code}, subcode=${subcode}) - Token expirado. Actualiza WHATSAPP_ACCESS_TOKEN en .env.local.`;
-      }
-      return `${base} (code=${code}, subcode=${subcode})`;
-    }
-  } catch {
-    // raw no es JSON
-  }
-  return raw;
-}
-
-// Validar al cargar el módulo
+// Validar al cargar
 validateWhatsAppConfig();
 
-export async function sendWhatsAppMessage(phoneNumber: string, message: string): Promise<WhatsAppSendResponse> {
-  try {
-    console.log('[WhatsApp] 📤 Iniciando envío de mensaje...');
-    
-    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-    
-    // Validar credenciales ANTES de usarlas
-    if (!accessToken) {
-      throw new Error('[WhatsApp] WHATSAPP_ACCESS_TOKEN no configurado en .env.local');
-    }
-    if (!phoneNumberId) {
-      throw new Error('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID no configurado en .env.local');
-    }
-    
-    const to = formatWhatsAppRecipient(phoneNumber);
-    console.log('[WhatsApp] Número destino:', to);
+async function callWhatsAppAPI(endpoint: string, payload: any): Promise<WhatsAppSendResponse> {
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const url = `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`;
 
-    if (!to || to.length < 8) {
-      throw new Error(`Número destino inválido para WhatsApp API: "${phoneNumber}" → "${to}"`);
-    }
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
 
-    const bodyText = message.length > 4096 ? message.slice(0, 4093) + '...' : message;
-    console.log('[WhatsApp] Tamaño del mensaje:', bodyText.length, 'chars');
-
-    const url = `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`;
-    console.log('[WhatsApp] URL:', url.replace(phoneNumberId, 'REDACTED'));
-
-    const payload = {
-      messaging_product: 'whatsapp',
-      to,
-      type: 'text',
-      text: { preview_url: false, body: bodyText },
-    };
-    console.log('[WhatsApp] Payload:', JSON.stringify(payload));
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    console.log('[WhatsApp] Status HTTP:', response.status);
-
-    const raw = await response.text();
-    if (!response.ok) {
-      const detail = parseWhatsAppGraphError(raw);
-      console.error('[WhatsApp] ❌ Graph API error:', response.status, detail);
-      throw new Error(`WhatsApp send failed: ${detail}`);
-    }
-
-    console.log('[WhatsApp] ✅ Respuesta correcta de Meta');
-    try {
-      return JSON.parse(raw) as WhatsAppSendResponse;
-    } catch {
-      return { raw };
-    }
-  } catch (error) {
-    console.error('[WhatsApp] ❌ Error en sendWhatsAppMessage:', error);
-    if (error instanceof Error) {
-      console.error('[WhatsApp] Message:', error.message);
-    }
-    throw error;
+  const raw = await response.text();
+  if (!response.ok) {
+    console.error('[WhatsApp] API Error:', raw);
+    throw new Error(`WhatsApp API error: ${raw}`);
   }
+
+  return JSON.parse(raw);
 }
 
-export interface WhatsAppInteractiveButton {
-  id: string;
-  title: string;
+export async function sendWhatsAppMessage(phoneNumber: string, message: string): Promise<WhatsAppSendResponse> {
+  const to = formatWhatsAppRecipient(phoneNumber);
+  const body = sanitizeWhatsAppText(message, WHATSAPP_CONSTRAINTS.TEXT.MAX_LENGTH);
+
+  return callWhatsAppAPI('messages', {
+    messaging_product: 'whatsapp',
+    to,
+    type: 'text',
+    text: { body }
+  });
 }
 
 export async function sendWhatsAppInteractiveButtons(
   phoneNumber: string,
   bodyText: string,
-  buttons: WhatsAppInteractiveButton[]
+  buttons: { id: string, title: string }[]
 ): Promise<WhatsAppSendResponse> {
-  try {
-    console.log('[WhatsApp] 📤 Iniciando envío de buttons interactivos...');
-
-    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-
-    if (!accessToken) {
-      throw new Error('[WhatsApp] WHATSAPP_ACCESS_TOKEN no configurado en .env.local');
+  const to = formatWhatsAppRecipient(phoneNumber);
+  
+  const validButtons = buttons.slice(0, WHATSAPP_CONSTRAINTS.BUTTONS.MAX_COUNT).map(btn => ({
+    type: 'reply',
+    reply: {
+      id: btn.id,
+      title: sanitizeWhatsAppText(btn.title, WHATSAPP_CONSTRAINTS.BUTTONS.TITLE_MAX_LENGTH)
     }
-    if (!phoneNumberId) {
-      throw new Error('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID no configurado en .env.local');
+  }));
+
+  return callWhatsAppAPI('messages', {
+    messaging_product: 'whatsapp',
+    to,
+    type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: { text: bodyText },
+      action: { buttons: validButtons }
     }
-
-    const to = formatWhatsAppRecipient(phoneNumber);
-    if (!to || to.length < 8) {
-      throw new Error(`Número destino inválido para WhatsApp API: "${phoneNumber}" → "${to}"`);
-    }
-
-    const validButtons = buttons.slice(0, 3).map((button) => ({
-      type: 'reply' as const,
-      reply: {
-        id: button.id,
-        title: button.title.substring(0, 20),
-      },
-    }));
-
-    const payload = {
-      messaging_product: 'whatsapp',
-      to,
-      type: 'interactive',
-      interactive: {
-        type: 'button',
-        body: { text: bodyText },
-        action: { buttons: validButtons },
-      },
-    };
-
-    console.log('[WhatsApp] Payload interactivo:', JSON.stringify(payload));
-
-    const url = `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const raw = await response.text();
-    if (!response.ok) {
-      const detail = parseWhatsAppGraphError(raw);
-      console.error('[WhatsApp] ❌ Graph API error:', response.status, detail);
-      throw new Error(`WhatsApp send failed: ${detail}`);
-    }
-
-    console.log('[WhatsApp] ✅ Buttons interactivos enviados');
-    try {
-      return JSON.parse(raw) as WhatsAppSendResponse;
-    } catch {
-      return { raw };
-    }
-  } catch (error) {
-    console.error('[WhatsApp] ❌ Error en sendWhatsAppInteractiveButtons:', error);
-    if (error instanceof Error) {
-      console.error('[WhatsApp] Message:', error.message);
-    }
-    throw error;
-  }
-}
-
-export async function sendWhatsAppDocument(
-  phoneNumber: string,
-  documentUrl: string,
-  filename: string,
-  caption?: string
-): Promise<WhatsAppSendResponse> {
-  try {
-    console.log('[WhatsApp] 📤 Iniciando envío de documento...');
-
-    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-
-    if (!accessToken) {
-      throw new Error('[WhatsApp] WHATSAPP_ACCESS_TOKEN no configurado en .env.local');
-    }
-    if (!phoneNumberId) {
-      throw new Error('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID no configurado en .env.local');
-    }
-
-    const to = formatWhatsAppRecipient(phoneNumber);
-    if (!to || to.length < 8) {
-      throw new Error(`Número destino inválido para WhatsApp API: "${phoneNumber}" → "${to}"`);
-    }
-
-    const payload = {
-      messaging_product: 'whatsapp',
-      to,
-      type: 'document',
-      document: {
-        link: documentUrl,
-        filename,
-        caption: caption || 'Documento solicitado',
-      },
-    };
-
-    console.log('[WhatsApp] Payload documento:', JSON.stringify(payload));
-
-    const url = `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const raw = await response.text();
-    if (!response.ok) {
-      const detail = parseWhatsAppGraphError(raw);
-      console.error('[WhatsApp] ❌ Graph API error:', response.status, detail);
-      throw new Error(`WhatsApp send failed: ${detail}`);
-    }
-
-    console.log('[WhatsApp] ✅ Documento enviado');
-    try {
-      return JSON.parse(raw) as WhatsAppSendResponse;
-    } catch {
-      return { raw };
-    }
-  } catch (error) {
-    console.error('[WhatsApp] ❌ Error en sendWhatsAppDocument:', error);
-    if (error instanceof Error) {
-      console.error('[WhatsApp] Message:', error.message);
-    }
-    throw error;
-  }
-}
-
-export async function sendWhatsAppImage(
-  phoneNumber: string,
-  imageUrl: string,
-  caption?: string
-): Promise<WhatsAppSendResponse> {
-  try {
-    console.log('[WhatsApp] 📤 Iniciando envío de imagen...');
-
-    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-
-    if (!accessToken) {
-      throw new Error('[WhatsApp] WHATSAPP_ACCESS_TOKEN no configurado en .env.local');
-    }
-    if (!phoneNumberId) {
-      throw new Error('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID no configurado en .env.local');
-    }
-
-    const to = formatWhatsAppRecipient(phoneNumber);
-    if (!to || to.length < 8) {
-      throw new Error(`Número destino inválido para WhatsApp API: "${phoneNumber}" → "${to}"`);
-    }
-
-    const payload = {
-      messaging_product: 'whatsapp',
-      to,
-      type: 'image',
-      image: {
-        link: imageUrl,
-        caption: caption || 'Imagen enviada desde MTZ',
-      },
-    };
-
-    console.log('[WhatsApp] Payload imagen:', JSON.stringify(payload));
-
-    const url = `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const raw = await response.text();
-    if (!response.ok) {
-      const detail = parseWhatsAppGraphError(raw);
-      console.error('[WhatsApp] ❌ Graph API error:', response.status, detail);
-      throw new Error(`WhatsApp send failed: ${detail}`);
-    }
-
-    console.log('[WhatsApp] ✅ Imagen enviada');
-    try {
-      return JSON.parse(raw) as WhatsAppSendResponse;
-    } catch {
-      return { raw };
-    }
-  } catch (error) {
-    console.error('[WhatsApp] ❌ Error en sendWhatsAppImage:', error);
-    if (error instanceof Error) {
-      console.error('[WhatsApp] Message:', error.message);
-    }
-    throw error;
-  }
-}
-
-export interface WhatsAppListSection {
-  title: string;
-  rows: Array<{
-    id: string;
-    title: string;
-    description?: string;
-  }>;
-}
-
-export interface WhatsAppListMessage {
-  header?: string;
-  body: string;
-  footer?: string;
-  buttonText: string;
-  sections: WhatsAppListSection[];
+  });
 }
 
 export async function sendWhatsAppListMessage(
   phoneNumber: string,
-  listMessage: WhatsAppListMessage
+  list: { body: string, buttonText: string, sections: any[] }
 ): Promise<WhatsAppSendResponse> {
-  try {
-    console.log('[WhatsApp] 📤 Iniciando envío de mensaje de lista...');
+  const to = formatWhatsAppRecipient(phoneNumber);
+  
+  const sections = list.sections.slice(0, WHATSAPP_CONSTRAINTS.LISTS.MAX_SECTIONS).map(sec => ({
+    title: sanitizeWhatsAppText(sec.title, WHATSAPP_CONSTRAINTS.LISTS.SECTION_TITLE_MAX_LENGTH),
+    rows: sec.rows.slice(0, 10).map((row: any) => ({
+      id: row.id,
+      title: sanitizeWhatsAppText(row.title, WHATSAPP_CONSTRAINTS.LISTS.ROW_TITLE_MAX_LENGTH),
+      description: row.description ? sanitizeWhatsAppText(row.description, WHATSAPP_CONSTRAINTS.LISTS.ROW_DESC_MAX_LENGTH) : undefined
+    }))
+  }));
 
-    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-
-    if (!accessToken) {
-      throw new Error('[WhatsApp] WHATSAPP_ACCESS_TOKEN no configurado en .env.local');
-    }
-    if (!phoneNumberId) {
-      throw new Error('[WhatsApp] WHATSAPP_PHONE_NUMBER_ID no configurado en .env.local');
-    }
-
-    const to = formatWhatsAppRecipient(phoneNumber);
-    if (!to || to.length < 8) {
-      throw new Error(`Número destino inválido para WhatsApp API: "${phoneNumber}" → "${to}"`);
-    }
-
-    const sections = listMessage.sections.slice(0, 10).map(section => ({
-      title: section.title,
-      rows: section.rows.slice(0, 10).map(row => ({
-        id: row.id,
-        title: row.title.substring(0, 24),
-        description: row.description?.substring(0, 72),
-      })),
-    }));
-
-    const interactive: any = {
+  return callWhatsAppAPI('messages', {
+    messaging_product: 'whatsapp',
+    to,
+    type: 'interactive',
+    interactive: {
       type: 'list',
-      body: { text: listMessage.body },
+      body: { text: list.body },
       action: {
-        button: listMessage.buttonText.substring(0, 20),
-      },
-    };
-
-    if (sections.length > 0) {
-      interactive.action.sections = sections;
+        button: sanitizeWhatsAppText(list.buttonText, WHATSAPP_CONSTRAINTS.LISTS.BUTTON_TEXT_MAX_LENGTH),
+        sections
+      }
     }
+  });
+}
 
-    if (listMessage.header) {
-      interactive.header = { type: 'text', text: listMessage.header.substring(0, 60) };
+export async function sendWhatsAppDocument(
+  phoneNumber: string,
+  url: string,
+  filename: string,
+  caption?: string
+): Promise<WhatsAppSendResponse> {
+  const to = formatWhatsAppRecipient(phoneNumber);
+  return callWhatsAppAPI('messages', {
+    messaging_product: 'whatsapp',
+    to,
+    type: 'document',
+    document: {
+      link: url,
+      filename: sanitizeWhatsAppText(filename, WHATSAPP_CONSTRAINTS.MEDIA.FILENAME_MAX_LENGTH),
+      caption: caption ? sanitizeWhatsAppText(caption, WHATSAPP_CONSTRAINTS.MEDIA.CAPTION_MAX_LENGTH) : undefined
     }
-    if (listMessage.footer) {
-      interactive.footer = { text: listMessage.footer.substring(0, 60) };
+  });
+}
+
+/**
+ * Skill: Envía una imagen por WhatsApp con validación de subtítulo
+ */
+export async function sendWhatsAppImage(
+  phoneNumber: string,
+  url: string,
+  caption?: string
+): Promise<WhatsAppSendResponse> {
+  const to = formatWhatsAppRecipient(phoneNumber);
+  return callWhatsAppAPI('messages', {
+    messaging_product: 'whatsapp',
+    to,
+    type: 'image',
+    image: {
+      link: url,
+      caption: caption ? sanitizeWhatsAppText(caption, WHATSAPP_CONSTRAINTS.MEDIA.CAPTION_MAX_LENGTH) : undefined
     }
-
-    const payload = {
-      messaging_product: 'whatsapp',
-      to,
-      type: 'interactive',
-      interactive,
-    };
-
-    console.log('[WhatsApp] Payload lista:', JSON.stringify(payload));
-
-    const url = `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const raw = await response.text();
-    if (!response.ok) {
-      const detail = parseWhatsAppGraphError(raw);
-      console.error('[WhatsApp] ❌ Graph API error:', response.status, detail);
-      throw new Error(`WhatsApp send failed: ${detail}`);
-    }
-
-    console.log('[WhatsApp] ✅ Mensaje de lista enviado');
-    try {
-      return JSON.parse(raw) as WhatsAppSendResponse;
-    } catch {
-      return { raw };
-    }
-  } catch (error) {
-    console.error('[WhatsApp] ❌ Error en sendWhatsAppListMessage:', error);
-    if (error instanceof Error) {
-      console.error('[WhatsApp] Message:', error.message);
-    }
-    throw error;
-  }
+  });
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { Company, CompanyDocument } from '@/lib/types';
+import type { Company, ClientDocument } from '@/lib/types';
 
 export function useCompanies() {
   const supabase = createClient();
@@ -78,23 +78,23 @@ export function useCompanyContacts(companyId: string | null) {
   return { contacts, loading, refetch: () => companyId && fetchCompanyContacts(companyId), linkContact, unlinkContact };
 }
 
-export function useCompanyDocuments(companyId: string | null) {
+export function useClientDocuments(companyId: string | null) {
   const supabase = createClient();
-  const [documents, setDocuments] = useState<CompanyDocument[]>([]);
+  const [documents, setDocuments] = useState<ClientDocument[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchCompanyDocuments = useCallback(async (cid: string) => {
+  const fetchClientDocuments = useCallback(async (cid: string) => {
     setLoading(true);
     const { data, error } = await supabase.from('client_documents').select('*, contacts(phone_number, name)').eq('company_id', cid).order('created_at', { ascending: false });
     if (error) console.error('Error fetching company documents:', error);
-    else setDocuments((data || []) as CompanyDocument[]);
+    else setDocuments((data || []) as ClientDocument[]);
     setLoading(false);
   }, [supabase]);
 
   useEffect(() => {
     if (!companyId) { setDocuments([]); return; }
-    fetchCompanyDocuments(companyId);
-  }, [companyId, fetchCompanyDocuments]);
+    fetchClientDocuments(companyId);
+  }, [companyId, fetchClientDocuments]);
 
   const deleteDocument = useCallback(async (docId: string) => {
     const { error } = await supabase.from('client_documents').delete().eq('id', docId);
@@ -102,5 +102,5 @@ export function useCompanyDocuments(companyId: string | null) {
     setDocuments((prev) => prev.filter((d) => d.id !== docId));
   }, [supabase]);
 
-  return { documents, loading, refetch: () => companyId && fetchCompanyDocuments(companyId), deleteDocument };
+  return { documents, loading, refetch: () => companyId && fetchClientDocuments(companyId), deleteDocument };
 }

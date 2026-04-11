@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { CompanyDocument, Contact, Company } from '@/lib/types';
+import type { ClientDocument, Contact, Company } from '@/lib/types';
 
 export function useDocuments() {
   const supabase = createClient();
-  const [documents, setDocuments] = useState<CompanyDocument[]>([]);
+  const [documents, setDocuments] = useState<ClientDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDocuments = useCallback(async () => {
@@ -17,7 +17,7 @@ export function useDocuments() {
       .order('created_at', { ascending: false })
       .limit(200);
     if (error) console.error('Error fetching docs:', error);
-    else setDocuments((data || []) as CompanyDocument[]);
+    else setDocuments((data || []) as ClientDocument[]);
     setLoading(false);
   }, [supabase]);
 
@@ -30,7 +30,7 @@ export function useDocuments() {
   }, [supabase]);
 
   const filterDocuments = useCallback((
-    docs: CompanyDocument[],
+    docs: ClientDocument[],
     filters: { contactId?: string; companyId?: string; type?: string; search?: string }
   ) => {
     return docs.filter((doc) => {

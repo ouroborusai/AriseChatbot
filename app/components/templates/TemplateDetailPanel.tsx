@@ -1,7 +1,8 @@
 'use client';
 
 import { Template, Action } from './types';
-import { getCategoryInfo, getServiceInfo } from './constants';
+import { CATEGORIES, SERVICE_TYPES, WORKFLOWS } from './config';
+import { getCategoryInfo, getServiceInfo } from './helpers';
 
 interface TemplateDetailPanelProps {
   template: Template | null;
@@ -97,6 +98,22 @@ export default function TemplateDetailPanel({
           <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-700 whitespace-pre-line">
             {template.content}
           </div>
+          {/* Preview de variables */}
+          {template.content.includes('{{') && (
+            <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-100">
+              <p className="text-[10px] font-black text-blue-600 uppercase mb-1">📌 Variables a reemplazar:</p>
+              <div className="flex flex-wrap gap-1">
+                {Array.from(template.content.matchAll(/\{\{([^}]+)\}\}/g)).map((match, idx) => (
+                  <span key={idx} className="text-[10px] bg-white text-blue-700 px-2 py-0.5 rounded border border-blue-200">
+                    {match[1]}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[9px] text-blue-500 mt-1">
+                ℹ️ Estas variables se reemplazarán con datos reales cuando se envíe el mensaje
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2 mb-4">

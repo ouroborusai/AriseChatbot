@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useCompanies, useCompanyContacts, useCompanyDocuments } from '@/lib/hooks/useCompanies';
+import { useCompanies, useCompanyContacts, useClientDocuments } from '@/lib/hooks/useCompanies';
 import { SearchInput } from '@/app/components/SearchInput';
 import { Modal } from '@/app/components/Modal';
 
@@ -250,7 +250,7 @@ export default function CompaniesPage() {
 
   const selectedCompany = companies.find(c => c.id === selectedCompanyId) || null;
   const { contacts } = useCompanyContacts(selectedCompanyId);
-  const { documents, refetch: refetchDocs, deleteDocument } = useCompanyDocuments(selectedCompanyId);
+  const { documents, refetch: refetchDocs, deleteDocument } = useClientDocuments(selectedCompanyId);
 
   const filteredCompanies = searchQuery ? searchCompanies(searchQuery) : companies;
   const years = useMemo(() => {

@@ -1,0 +1,28 @@
+# Skill de Auditoría de WhatsApp y Plantillas
+
+Este archivo es una guía ejecutable para que el asistente audite y optimice el flujo de WhatsApp y la gestión de plantillas interactivas.
+
+## Propósito
+- Asegurar que todos los mensajes de WhatsApp cumplan con las restricciones de Meta.
+- Validar la lógica de navegación entre plantillas en Supabase.
+- Verificar que el asistente tenga el contexto necesario para "entender" las respuestas del usuario.
+
+## Paso 1: Mapeo de Lógica de Entrada
+- Analizar `lib/webhook-handler.ts` para entender cómo se diferencian los mensajes de texto de los interactivos (botones/listas).
+- Revisar `lib/handlers/classification-handler.ts` y otros handlers para validar la lógica de segmentación.
+
+## Paso 2: Auditoría de Restricciones Técnicas
+- Revisar `lib/services/whatsapp-skill.ts`.
+- Validar que los límites de caracteres (4096 para texto, 20 para títulos de botones) se estén aplicando correctamente en todos los servicios.
+
+## Paso 3: Análisis de Plantillas y Flujos
+- Revisar `lib/services/template-service.ts` para entender cómo se reemplazan las variables dinámicas (`{{nombre}}`, `{{doc_list}}`, etc.).
+- Consultar `supabase/insert_clasificador_templates.sql` para mapear los IDs de botones actuales y sus destinos (`next_template_id`).
+
+## Paso 4: Verificación de Documentación de IA
+- Asegurarse de que `AGENT_PROMPT.md` esté sincronizado con las opciones de los botones.
+- Crear o actualizar `WHATSAPP_ASSISTANT_SKILL.md` si falta información crítica de operación.
+
+## Paso 5: Informe de Salud del Flujo
+1. Generar un resumen de los botones "huérfanos" (IDs de botones que no tienen un handler o plantilla asociada).
+2. Identificar oportunidades para reducir el uso de tokens mediante el uso de Listas Interactivas en lugar de texto plano con IA.

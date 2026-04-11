@@ -70,8 +70,8 @@ export class ActionService {
     // 2. Enviar lista si existe
     if (listAction) {
       console.log('[ActionService] Detectada acción de lista:', listAction.title);
-      // Intentar obtener opciones de content (prioridad) o description
-      const listContent = listAction.content || listAction.description || '[]';
+      // Intentar obtener opciones de description (prioridad, ahí guarda el TemplateEditor el JSON) o content
+      const listContent = listAction.description || listAction.content || '[]';
       const options = TemplateService.parseListContent(listContent, context);
       
       if (options.length > 0) {

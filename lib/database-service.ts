@@ -5,40 +5,21 @@
 
 import { getSupabaseAdmin } from './supabase-admin';
 import { digitsOnly } from './utils';
-
-export interface Contact {
-  id: string;
-  name?: string;
-  email?: string;
-  segment?: string;
-  location?: string;
-  last_message_at: string;
-}
+import { 
+  Contact, 
+  Company, 
+  ClientDocument as ClientDocumentRow,
+  ServiceRequest,
+  Message,
+} from './types';
 
 function normalizePhoneNumber(phone: string): string {
   return digitsOnly(phone);
 }
 
-export interface ConversationMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-export interface ServiceRequest {
-  id: string;
-  request_code: string;
-  contact_id: string;
-  conversation_id: string;
-  company_id?: string | null;
-  request_type: string;
-  description: string;
-  status: 'pending' | 'in_progress' | 'ready' | 'completed' | 'cancelled';
-  result_url?: string | null;
-  assigned_to?: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
+/**
+ * Genera un código de ticket único para seguimientos
+ */
 function generateRequestCode(type: string): string {
   const prefix = type === 'quote' ? 'COT' : type === 'document' ? 'DOC' : 'REQ';
   const short = Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -53,7 +34,7 @@ export async function getOrCreateContact(phoneNumber: string): Promise<Contact> 
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const { data: existing, error: selectError } = await getSupabaseAdmin()
     .from('contacts')
-    .select('id, name, email, segment, location, last_message_at')
+    .select('id, name, email, segment, location, last_message_at, phone_number')
     .eq('phone_number', normalizedPhone)
     .maybeSingle();
   
@@ -84,7 +65,7 @@ export async function getOrCreateContact(phoneNumber: string): Promise<Contact> 
       phone_number: normalizedPhone,
       last_message_at: new Date().toISOString(),
     })
-    .select('id, name, email, segment, location, last_message_at')
+    .select('id, name, email, segment, location, last_message_at, phone_number')
     .single();
 
   if (error) {
@@ -156,7 +137,7 @@ export async function getOrCreateConversation(phoneNumber: string, contactId: st
 /**
  * Obtiene el historial completo de conversación
  */
-export async function getConversationHistory(phoneNumber: string): Promise<ConversationMessage[]> {
+export async function getConversationHistory(phoneNumber: string): Promise<Pick<Message, 'role' | 'content'>[]> {
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const { data: conversation, error: convError } = await getSupabaseAdmin()
     .from('conversations')
@@ -176,40 +157,26 @@ export async function getConversationHistory(phoneNumber: string): Promise<Conve
     .select('role, content')
     .eq('conversation_id', conversation.id)
     .order('created_at', { ascending: false })
-    .limit(20); // traer los últimos 20 mensajes (más recientes)
+    .limit(25); // Traer últimos 25 para más contexto
   
   if (msgError) {
     console.warn('[DB] Error fetching messages:', msgError);
     return [];
   }
 
-  // Volver a orden cronológico ascendente para que la IA vea la conversación en orden correcto.
+  // Volver a orden cronológico ascendente
   const ordered = (messages || []).slice().reverse();
 
   return ordered.map((m) => ({
-    role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
+    role: m.role as 'user' | 'assistant',
     content: m.content ?? '',
   }));
-}
-
-export interface ClientDocumentRow {
-  id: string;
-  contact_id: string;
-  company_id?: string | null;
-  title: string;
-  description?: string | null;
-  file_name?: string | null;
-  file_url?: string | null;
-  storage_bucket?: string | null;
-  storage_path?: string | null;
-  file_type?: string | null;
-  created_at: string;
 }
 
 export async function getLatestClientDocuments(contactId: string, limit = 3): Promise<ClientDocumentRow[]> {
   const { data, error } = await getSupabaseAdmin()
     .from('client_documents')
-    .select('id, contact_id, company_id, title, description, file_name, file_url, storage_bucket, storage_path, file_type, created_at')
+    .select('*')
     .eq('contact_id', contactId)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -230,15 +197,17 @@ export async function findLatestClientDocumentByQuery(
   const q = query.trim();
   if (!q) return null;
 
-  // Buscar por coincidencia en title / description / file_name / storage_path
-  let qb = getSupabaseAdmin()
+  let queryBuilder = getSupabaseAdmin()
     .from('client_documents')
-    .select('id, contact_id, company_id, title, description, file_name, file_url, storage_bucket, storage_path, file_type, created_at')
+    .select('*')
     .eq('contact_id', contactId);
-  if (companyId) qb = qb.eq('company_id', companyId);
+  
+  if (companyId) {
+    queryBuilder = queryBuilder.eq('company_id', companyId);
+  }
 
-  const { data, error } = await qb
-    .or(`title.ilike.%${q}%,description.ilike.%${q}%,file_name.ilike.%${q}%,storage_path.ilike.%${q}%`)
+  const { data, error } = await queryBuilder
+    .or(`title.ilike.%${q}%,description.ilike.%${q}%,file_name.ilike.%${q}%`)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -251,10 +220,20 @@ export async function findLatestClientDocumentByQuery(
   return (data || null) as ClientDocumentRow | null;
 }
 
-export async function listCompaniesForContact(contactId: string): Promise<Array<{ id: string; legal_name: string }>> {
+export async function listCompaniesForContact(contactId: string): Promise<Company[]> {
   const { data, error } = await getSupabaseAdmin()
     .from('contact_companies')
-    .select('companies(id, legal_name)')
+    .select(`
+      companies (
+        id,
+        legal_name,
+        rut,
+        segment,
+        metadata,
+        created_at,
+        updated_at
+      )
+    `)
     .eq('contact_id', contactId);
 
   if (error) {
@@ -262,16 +241,9 @@ export async function listCompaniesForContact(contactId: string): Promise<Array<
     return [];
   }
 
-  const rows = (data || []) as Array<any>;
-  return rows
-    .map((r) => {
-      const company = r.companies;
-      if (Array.isArray(company)) {
-        return company[0];
-      }
-      return company;
-    })
-    .filter(Boolean) as Array<{ id: string; legal_name: string }>;
+  return (data || [])
+    .map((r: any) => r.companies)
+    .filter(Boolean) as Company[];
 }
 
 export async function setActiveCompanyForConversation(conversationId: string, companyId: string | null): Promise<void> {

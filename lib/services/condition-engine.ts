@@ -18,7 +18,7 @@ import {
   TemplateRule,
   TemplateContext,
   RequiredContext,
-} from '../../app/components/templates/types';
+} from '@/app/components/templates/types';
 
 /**
  * Resultado de evaluar una acción con condiciones

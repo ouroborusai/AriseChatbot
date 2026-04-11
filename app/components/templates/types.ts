@@ -91,49 +91,34 @@ export interface ActionConditions {
 }
 
 /**
- * Acción dentro de una plantilla (botón o lista)
+ * Acción dentro de una plantilla (Botón, Lista o envío de Documento)
  */
-export interface ElseAction {
-  type: 'show_message' | 'hide_button' | 'redirect';
-  message?: string;
-  redirect_template_id?: string;
-}
-
 export interface Action {
   type: 'button' | 'list' | 'show_document';
-  id?: string;
-  title?: string;
-  description?: string;
-  content?: string;
-  next_template_id?: string;
-  /** Condiciones para mostrar esta acción */
+  id?: string;                 /** ID único (máx 128 chars para WA) */
+  title?: string;              /** Texto visible (máx 20 para botón, 24 para lista) */
+  description?: string;        /** Subtexto (solo para listas, máx 72 chars) */
+  content?: string;            /** JSON con opciones para listas o mensaje adicional */
+  next_template_id?: string;   /** Template a disparar tras el click */
+  /** Condiciones dinámicas para que esta acción se muestre */
   conditions?: ActionConditions;
-  /** Condición requerida (ej: required_document_type) */
+  /** Parámetro específico para envío de documentos */
   condition?: {
     required_document_type?: string;
   };
-  /** Acción alternativa si no se cumple la condición */
+  /** Qué hacer si la evaluación de condiciones falla */
   else_action?: ElseAction;
 }
+
 
 export type Workflow = {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   icon: string;
-  colorHex: string;
+  colorHex?: string;
 };
 
-export const WORKFLOWS: Workflow[] = [
-  { id: 'atencion', name: 'Atención Inicial', description: 'Bienvenida y clasificación', icon: '👋', colorHex: '#22c55e' },
-  { id: 'documentos', name: 'Gestión Docs', description: 'Solicitud y entrega de documentos', icon: '📄', colorHex: '#f97316' },
-  { id: 'iva', name: 'IVA', description: 'Declaraciones y trámites IVA', icon: '🧾', colorHex: '#eab308' },
-  { id: 'renta', name: 'Renta', description: 'Declaración anual de renta', icon: '📊', colorHex: '#8b5cf6' },
-  { id: 'nomina', name: 'Nómina', description: 'Liquidaciones y contratos', icon: '👥', colorHex: '#ec4899' },
-  { id: 'cobranza', name: 'Cobranza', description: 'Recordatorios y cobros', icon: '💳', colorHex: '#ef4444' },
-  { id: 'asesor', name: 'Derivación', description: 'Derivación a asesor humano', icon: '📞', colorHex: '#6366f1' },
-  { id: 'general', name: 'General', description: 'Mensajes generales', icon: '💬', colorHex: '#64748b' },
-];
 
 /**
  * Contexto requerido para que un template sea válido

@@ -38,24 +38,50 @@ export class TemplateService {
     actionId: string,
     segment?: string | null
   ): Promise<Template | null> {
+    console.log(`[TemplateService] 🔍 Buscando actionId: "${actionId}" para segmento: ${segment || 'todos'}`);
+
     const { data: templates } = await getSupabaseAdmin()
       .from('templates')
       .select('*')
       .eq('is_active', true)
       .order('priority', { ascending: false })
-      .limit(20);
+      .limit(50);
 
-    if (!templates) return null;
+    if (!templates) {
+      console.log(`[TemplateService] ❌ No se encontraron plantillas activas`);
+      return null;
+    }
 
     for (const t of templates) {
       if (!t.actions || t.actions.length === 0) continue;
       if (t.segment && t.segment !== 'todos' && t.segment !== segment) continue;
 
-      const matchedAction = t.actions.find((a: any) => a.id === actionId);
-      if (matchedAction && matchedAction.next_template_id) {
-        return await this.findTemplateById(matchedAction.next_template_id, segment);
+      for (const action of t.actions) {
+        // 1. Caso: El ID coincide directamente con la acción (botón o lista completa)
+        if (action.id === actionId && action.next_template_id) {
+          console.log(`[TemplateService] ✅ Coincidencia directa en acción "${action.id}" del template "${t.name}" → ${action.next_template_id}`);
+          return await this.findTemplateById(action.next_template_id, segment);
+        }
+
+        // 2. Caso: Es una lista y el ID podría coincidir con una de sus opciones (JSON en description)
+        if (action.type === 'list' && action.description) {
+          try {
+            const options = JSON.parse(action.description);
+            if (Array.isArray(options)) {
+              const matchedOption = options.find((opt: any) => opt.id === actionId);
+              if (matchedOption && matchedOption.next_template_id) {
+                console.log(`[TemplateService] ✅ Coincidencia en LISTA "${action.id}" del template "${t.name}" → Opción: "${matchedOption.title}" → ${matchedOption.next_template_id}`);
+                return await this.findTemplateById(matchedOption.next_template_id, segment);
+              }
+            }
+          } catch (e) {
+            console.warn(`[TemplateService] ⚠️ Error parseando description de lista en template "${t.name}":`, e);
+          }
+        }
       }
     }
+
+    console.log(`[TemplateService] ❌ No se encontró coincidencia para actionId: "${actionId}"`);
     return null;
   }
 
@@ -73,7 +99,7 @@ export class TemplateService {
       .select('*')
       .eq('is_active', true)
       .order('priority', { ascending: false })
-      .limit(10);
+      .limit(100); // Aumentado para soportar más flujos y comandos
 
     if (!templates) return null;
 
