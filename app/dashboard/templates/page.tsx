@@ -7,7 +7,6 @@ import {
   TemplateEditor,
   Template,
   CATEGORIES,
-  DEFAULT_TEMPLATES,
   FlowCanvas
 } from '@/app/components/templates';
 
@@ -36,28 +35,11 @@ export default function TemplatesPage() {
     setEditingTemplate(null);
   };
 
+  // Restaurar plantillas por defecto usando SQL
   const handleRestoreDefaults = async () => {
-    if (!confirm('¿Restaurar plantillas por defecto?\n\nSe cargarán todas las plantillas predefinidas (~35 plantillas).')) return;
-
-    // Restaurar todas las plantillas por defecto
-    for (const t of DEFAULT_TEMPLATES as Template[]) {
-      await supabase.from('templates').upsert({
-        id: t.id,
-        name: t.name,
-        content: t.content,
-        category: t.category || 'general',
-        service_type: t.service_type || null,
-        trigger: t.trigger || null,
-        actions: t.actions || [],
-        is_active: t.is_active ?? true,
-        priority: t.priority || 50,
-        segment: t.segment || 'todos',
-        workflow: t.workflow || 'general'
-      });
-    }
-
-    // Recargar la lista sin refresh de página
-    await fetchTemplates();
+    if (!confirm('¿Restaurar plantillas por defecto?\n\nSe cargarán todas las plantillas predefinidas (~40 plantillas).\n\nEjecuta el SQL en supabase/insert_templates.sql')) return;
+    
+    alert('Por favor ejecuta el script SQL:\n\nsupabase/insert_templates.sql\n\nen el SQL Editor de Supabase');
   };
 
   const handleDeleteAll = async () => {
