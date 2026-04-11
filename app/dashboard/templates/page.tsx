@@ -39,8 +39,15 @@ export default function TemplatesPage() {
   const handleRestoreDefaults = async () => {
     if (!confirm('¿Recargar plantillas desde Supabase?\n\nEsto actualizará la lista con las plantillas guardadas en la base de datos.')) return;
     
-    await fetchTemplates();
-    alert('✅ Plantillas actualizadas desde Supabase');
+    // Forzar recarga bypassing caché
+    const { data } = await supabase.from('templates').select('*').order('priority');
+    if (data && data.length > 0) {
+      alert(`✅ Se cargaron ${data.length} plantillas desde Supabase`);
+    } else {
+      alert('⚠️ No hay plantillas en la base de datos. Ejecuta el SQL primero.');
+    }
+    // Forzar reload de la página para actualizar todo
+    window.location.reload();
   };
 
   const handleDeleteAll = async () => {
