@@ -27,6 +27,7 @@ import { handleClassification } from './handlers/classification-handler';
 import { MenuHandler } from './handlers/menu-handler';
 import { handleAI } from './handlers/ai-handler';
 import { AppointmentHandler } from './handlers/appointment-handler';
+import { ServiceRequestHandler } from './handlers/service-request-handler';
 import { TemplateService } from './services/template-service';
 import { NavigationService } from './services/navigation-service';
 import { ContextService } from './services/context-service';
@@ -138,6 +139,18 @@ export async function handleInboundUserMessage(messageData: {
       }
       if (interactive.startsWith('appt_time_')) {
         await apptHandler.confirmAppointment(phoneNumber, interactive, conversationId);
+        return;
+      }
+
+      // Manejo de Solicitudes (Nivel 5)
+      const serviceHandler = new ServiceRequestHandler(context);
+      if (interactive === 'ver_solicitudes') {
+        await serviceHandler.listActiveRequests(phoneNumber);
+        return;
+      }
+      if (interactive.startsWith('req_detail_')) {
+        const requestId = interactive.replace('req_detail_', '');
+        await serviceHandler.showRequestDetail(phoneNumber, requestId);
         return;
       }
       
