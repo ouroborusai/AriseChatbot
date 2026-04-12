@@ -78,24 +78,40 @@ export async function GET() {
 
     // 3. Procesar Libros (PDFs)
     const rutFolders = fs.readdirSync(BOOKS_ROOT).filter(f => fs.statSync(path.join(BOOKS_ROOT, f)).isDirectory());
+    
+    // Obtener TODAS las empresas primero para hacer el match en memoria (más rápido y seguro)
+    const { data: allCompanies } = await supabase.from('companies').select('id, rut, contact_companies(contact_id)');
+
     for (const rutFolder of rutFolders) {
-        const cleanRut = rutFolder.replace(/[^0-9Kk]/g, '').toUpperCase();
-        const searchBase = cleanRut.slice(0, -1);
+        const cleanFolderRut = rutFolder.replace(/[^0-9Kk]/g, '').toUpperCase();
         
-        const { data: companies } = await supabase.from('companies').select('id, rut, contact_companies(contact_id)').ilike('rut', `%${searchBase}%`);
-        const company = companies?.find(c => c.rut.replace(/[^0-9Kk]/g, '').toUpperCase() === cleanRut) || companies?.[0];
+        // Buscar la empresa que coincida limpiando también el RUT de la BD
+        const company = allCompanies?.find(c => {
+            const cleanDbRut = (c.rut || '').replace(/[^0-9Kk]/g, '').toUpperCase();
+            return cleanDbRut === cleanFolderRut || cleanDbRut.includes(cleanFolderRut) || cleanFolderRut.includes(cleanDbRut);
+        });
 
         if (company) {
-            const contactId = (company.contact_companies as any)?.[0]?.contact_id;
+            const contactIdArr = (company.contact_companies as any);
+            const contactId = contactIdArr && contactIdArr.length > 0 ? contactIdArr[0].contact_id : null;
+            
             const folderPath = path.join(BOOKS_ROOT, rutFolder);
             const files = fs.readdirSync(folderPath).filter(f => f.toLowerCase().endsWith('.pdf'));
 
             for (const file of files) {
-                const fileBuffer = fs.readFileSync(path.join(folderPath, file));
+                const filePath = path.join(folderPath, file);
+                const fileBuffer = fs.readFileSync(filePath);
                 const storagePath = `books/${rutFolder}/${file}`;
-                await supabase.storage.from(bucketName).upload(storagePath, fileBuffer, { contentType: 'application/pdf', upsert: true });
+                
+                // Subir a Storage
+                await supabase.storage.from(bucketName).upload(storagePath, fileBuffer, { 
+                    contentType: 'application/pdf', 
+                    upsert: true 
+                });
+                
                 const { data: { publicUrl } } = supabase.storage.from(bucketName).getPublicUrl(storagePath);
 
+                // Insertar en client_documents
                 await supabase.from('client_documents').insert({
                     contact_id: contactId || defaultContactId, 
                     company_id: company.id,
