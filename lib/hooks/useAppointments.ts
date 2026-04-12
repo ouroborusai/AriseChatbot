@@ -76,6 +76,23 @@ export function useAppointments() {
 
   useEffect(() => {
     fetchAppointments();
+
+    // Suscribirse a cambios en tiempo real
+    const subscription = supabase
+      .channel('appointments_realtime')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'appointments' 
+      }, () => {
+        console.log('[Realtime] Cambio detectado en citas, actualizando...');
+        fetchAppointments();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   return {

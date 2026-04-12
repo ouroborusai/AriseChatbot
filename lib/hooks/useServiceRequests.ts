@@ -61,6 +61,23 @@ export function useServiceRequests() {
 
   useEffect(() => {
     fetchRequests();
+
+    // Suscribirse a cambios en tiempo real
+    const subscription = supabase
+      .channel('requests_realtime')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'service_requests' 
+      }, () => {
+        console.log('[Realtime] Cambio detectado en solicitudes, actualizando...');
+        fetchRequests();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   return {

@@ -62,6 +62,15 @@ export default function ClientsPage() {
     }
   };
 
+  const getActivityStatus = (dateStr?: string) => {
+    if (!dateStr) return { label: 'Inactivo', color: 'bg-slate-300' };
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = diff / (1000 * 60 * 60 * 24);
+    if (days < 1) return { label: '🔥 Caliente', color: 'bg-orange-500' };
+    if (days < 7) return { label: '⚡ Tibio', color: 'bg-yellow-500' };
+    return { label: '❄️ Frío', color: 'bg-blue-400' };
+  };
+
   const handleCreateAndLinkCompany = async () => {
     if (!selectedContact || !newCompanyName.trim()) return;
     try {
@@ -182,20 +191,41 @@ export default function ClientsPage() {
                     <p className="font-medium text-slate-900">{selectedContact.name || 'Sin nombre'}</p>
                     <p className="text-sm text-slate-600">{selectedContact.phone_number}</p>
                     {isEditingSegment ? (
-                      <div className="mt-3 flex gap-2">
-                        <select value={selectedContact.segment || ''} onChange={(e) => handleUpdateSegment(e.target.value)} className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none">
-                          <option value="">Sin clasificar</option>
-                          <option value="cliente">Cliente</option>
-                          <option value="prospecto">Prospecto</option>
-                        </select>
-                        <button type="button" onClick={() => setIsEditingSegment(false)} className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">✕</button>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {['cliente', 'prospecto', 'vip', 'moroso'].map((seg) => (
+                          <button
+                            key={seg}
+                            onClick={() => handleUpdateSegment(seg)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-tight transition ${
+                              selectedContact.segment === seg ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            {seg}
+                          </button>
+                        ))}
+                        <button type="button" onClick={() => handleUpdateSegment('')} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-50 text-red-600">Borrar</button>
+                        <button type="button" onClick={() => setIsEditingSegment(false)} className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold">✕</button>
                       </div>
                     ) : (
                       <div className="mt-2 flex items-center gap-2">
-                        <span className={`inline-block text-xs px-2 py-1 rounded-full ${selectedContact.segment === 'cliente' ? 'bg-green-100 text-green-700' : selectedContact.segment === 'prospecto' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
-                          {selectedContact.segment === 'cliente' ? '✅ Cliente' : selectedContact.segment === 'prospecto' ? '🆕 Prospecto' : '❓ Sin clasificar'}
+                        <span className={`inline-block text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-tight ${
+                          selectedContact.segment === 'cliente' ? 'bg-green-100 text-green-700' : 
+                          selectedContact.segment === 'prospecto' ? 'bg-blue-100 text-blue-700' : 
+                          selectedContact.segment === 'vip' ? 'bg-yellow-100 text-yellow-700' :
+                          selectedContact.segment === 'moroso' ? 'bg-red-100 text-red-700' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
+                          {selectedContact.segment === 'cliente' ? '✅ Cliente' : 
+                           selectedContact.segment === 'prospecto' ? '🆕 Prospecto' : 
+                           selectedContact.segment === 'vip' ? '💎 VIP' :
+                           selectedContact.segment === 'moroso' ? '⚠️ Moroso' :
+                           '❓ Sin clasificar'}
                         </span>
-                        <button type="button" onClick={() => setIsEditingSegment(true)} className="text-xs text-slate-500 hover:text-slate-700">Cambiar</button>
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-100 rounded-full">
+                          <span className={`h-2 w-2 rounded-full ${getActivityStatus(selectedContact.updated_at).color}`}></span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{getActivityStatus(selectedContact.updated_at).label}</span>
+                        </div>
+                        <button type="button" onClick={() => setIsEditingSegment(true)} className="text-xs text-slate-500 hover:text-slate-700 underline decoration-slate-300 underline-offset-2 ml-auto font-medium">Gestionar</button>
                       </div>
                     )}
                   </div>

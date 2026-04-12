@@ -77,6 +77,20 @@ export async function GET(request: NextRequest) {
       ? Math.round(((closedConversations || 0) / totalConversations) * 100)
       : 0;
 
+    // Métricas de Ahorro (Industrial)
+    const { count: totalDocs } = await admin
+      .from('client_documents')
+      .select('id', { count: 'exact' });
+
+    const { count: totalAppointments } = await admin
+      .from('appointments')
+      .select('id', { count: 'exact' });
+
+    const { count: botMessages } = await admin
+      .from('messages')
+      .select('id', { count: 'exact' })
+      .eq('role', 'assistant');
+
     return NextResponse.json({
       total_conversations: totalConversations || 0,
       conversations_today: conversationsToday || 0,
@@ -88,6 +102,9 @@ export async function GET(request: NextRequest) {
       resolution_rate: resolutionRate,
       total_messages: totalMessages || 0,
       messages_today: messagesToday || 0,
+      total_docs_delivered: totalDocs || 0,
+      total_appointments: totalAppointments || 0,
+      bot_responses: botMessages || 0,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

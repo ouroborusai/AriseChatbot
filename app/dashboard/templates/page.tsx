@@ -191,69 +191,88 @@ export default function TemplatesPage() {
     <div className="relative h-full flex overflow-hidden bg-slate-50/30">
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-500 ${showEditor ? 'pr-[450px]' : ''}`}>
-        <div className="space-y-6 h-full flex flex-col p-4 md:p-6 overflow-hidden">
-          {/* Header Premium */}
-          <div className="flex items-center justify-between bg-white/70 backdrop-blur-xl p-5 rounded-[2rem] border border-white shadow-xl shadow-slate-200/50">
-            <div className="flex items-center gap-6">
-              <div className="p-3 bg-slate-900 rounded-2xl shadow-lg shadow-slate-900/20">
-                <span className="text-2xl">⚡</span>
+        <div className="space-y-4 h-full flex flex-col p-4 md:p-6 overflow-hidden">
+          {/* Header Premium Rediseñado */}
+          <div className="flex items-center justify-between bg-white/70 backdrop-blur-xl p-4 rounded-[1.5rem] border border-white shadow-xl shadow-slate-200/50">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-slate-900 rounded-xl shadow-lg">
+                <span className="text-xl">⚡</span>
               </div>
               <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-1">Builder de Flujos</h1>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">WhatsApp Automation Engine</p>
-              </div>
-              
-              <div className="hidden lg:flex items-center gap-6 bg-slate-100/50 px-6 py-2 rounded-2xl border border-slate-100">
-                <div className="flex flex-col border-r border-slate-200 pr-4">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Nodes</span>
-                  <span className="text-base font-black text-slate-800 leading-none">{stats.total}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">Active</span>
-                  <span className="text-base font-black text-green-600 leading-none">{stats.active}</span>
-                </div>
+                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight leading-none mb-1">Estrategia de Comunicación</h1>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Configuración de Canales y Flujos</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex bg-slate-100 p-1 rounded-2xl mr-4 border border-slate-200">
-                <button 
-                  onClick={() => setFilterSegment('prospecto')} 
-                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${filterSegment === 'prospecto' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  🔍 Prospectos
-                </button>
-                <button 
-                  onClick={() => setFilterSegment('cliente')} 
-                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${filterSegment === 'cliente' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  👤 Clientes
-                </button>
-                <button 
-                  onClick={() => setFilterSegment('todos')} 
-                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${filterSegment === 'todos' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  Global
-                </button>
-              </div>
-              <button onClick={handleExportTemplates} className="px-5 py-2.5 bg-white text-blue-600 border border-blue-200 rounded-2xl text-xs font-black hover:bg-blue-50 hover:border-blue-300 transition-all" title="Exportar plantillas a JSON">💾 Exportar</button>
-              <label className="px-5 py-2.5 bg-white text-indigo-600 border border-indigo-200 rounded-2xl text-xs font-black hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer" title="Importar plantillas desde JSON">
+            <div className="flex items-center gap-2">
+              <button onClick={handleExportTemplates} className="px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl text-[11px] font-bold hover:bg-slate-50 transition-all">💾 Exportar</button>
+              <label className="px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl text-[11px] font-bold hover:bg-slate-50 transition-all cursor-pointer">
                 📥 Importar
                 <input type="file" accept=".json" onChange={handleImportTemplates} className="hidden" />
               </label>
-              <button onClick={handleDeleteAll} className="px-5 py-2.5 bg-white text-rose-600 border border-rose-200 rounded-2xl text-xs font-black hover:bg-rose-50 hover:border-rose-300 transition-all">🗑️ Limpiar Todo</button>
-              <button onClick={handleRestoreSystemTemplates} className="px-5 py-2.5 bg-white text-slate-600 border border-slate-200 rounded-2xl text-xs font-black hover:bg-slate-50 transition-all">🔄 Restaurar JSONs</button>
-              <button onClick={() => openEdit()} className="bg-green-600 text-white px-7 py-3 rounded-2xl font-black text-xs shadow-xl shadow-green-600/20 hover:bg-green-500 transition-all">+ Nueva Plantilla</button>
+              <button onClick={() => openEdit()} className="bg-green-600 text-white px-5 py-2 rounded-xl font-bold text-[11px] shadow-lg shadow-green-600/20 hover:bg-green-500 transition-all">+ Nueva Plantilla</button>
             </div>
           </div>
 
-           {/* Builder Canvas Area */}
-          <div className="flex-1 min-h-0 bg-white/40 backdrop-blur-sm rounded-[2.5rem] border border-white shadow-inner overflow-hidden relative">
-             <FlowCanvas 
-               templates={filteredTemplates} 
-               selectedTemplateId={editingTemplate?.id || null} 
-               onSelectTemplate={(id) => openEdit(templates.find(t => t.id === id))}
-             />
+          {/* DOBLE PIZARRA */}
+          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
+            
+            {/* PIZARRA 1: PROSPECTOS */}
+            <div className="flex-1 flex flex-col bg-indigo-50/40 rounded-[2rem] border border-indigo-100 overflow-hidden">
+              <div className="p-4 border-b border-indigo-100 bg-indigo-100/30 flex items-center justify-between">
+                <h3 className="text-xs font-black text-indigo-700 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <span className="text-lg">🎯</span> Pizarra de Prospectos
+                </h3>
+                <span className="bg-white text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-200">
+                  {templates.filter(t => t.segment === 'prospecto').length} flujos
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {templates.filter(t => t.segment === 'prospecto').map(template => (
+                  <button 
+                    key={template.id} 
+                    onClick={() => openEdit(template)}
+                    className="w-full text-left bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{template.category || 'General'}</span>
+                      <span className={`h-2 w-2 rounded-full ${template.is_active ? 'bg-green-500' : 'bg-slate-300'}`}></span>
+                    </div>
+                    <p className="text-sm font-bold text-slate-800 line-clamp-1 group-hover:text-indigo-600">{template.name}</p>
+                    <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">{template.content}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* PIZARRA 2: CLIENTES */}
+            <div className="flex-1 flex flex-col bg-emerald-50/40 rounded-[2rem] border border-emerald-100 overflow-hidden">
+              <div className="p-4 border-b border-emerald-100 bg-emerald-100/30 flex items-center justify-between">
+                <h3 className="text-xs font-black text-emerald-700 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <span className="text-lg">👤</span> Pizarra de Clientes
+                </h3>
+                <span className="bg-white text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                  {templates.filter(t => t.segment === 'cliente').length} flujos
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {templates.filter(t => t.segment === 'cliente').map(template => (
+                  <button 
+                    key={template.id} 
+                    onClick={() => openEdit(template)}
+                    className="w-full text-left bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{template.category || 'Operación'}</span>
+                      <span className={`h-2 w-2 rounded-full ${template.is_active ? 'bg-green-500' : 'bg-slate-300'}`}></span>
+                    </div>
+                    <p className="text-sm font-bold text-slate-800 line-clamp-1 group-hover:text-emerald-600">{template.name}</p>
+                    <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">{template.content}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
       </div>

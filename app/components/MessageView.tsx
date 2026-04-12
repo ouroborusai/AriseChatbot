@@ -300,18 +300,32 @@ export default function MessageView({ selectedConversation, selectedPhone }: Mes
                 );
               }
 
-              // Mensaje de texto normal
+              // Mensaje de texto normal o PDF loggeado
+              const isPDF = !isUser && message.content.includes('📄 [PDF:');
+              
               return (
                 <div key={message.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                   <div
                     className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-sm ${
                       isUser
                         ? 'bg-gradient-to-br from-green-500 to-green-600 text-white'
-                        : 'bg-white text-slate-800 ring-1 ring-slate-200'
+                        : isPDF 
+                          ? 'bg-blue-50 text-blue-800 ring-1 ring-blue-100 border-l-4 border-blue-500' 
+                          : 'bg-white text-slate-800 ring-1 ring-slate-200'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
-                    <div className={`mt-1.5 text-[10px] text-right ${isUser ? 'text-green-100' : 'text-slate-400'}`}>
+                    {isPDF ? (
+                      <div className="flex items-start gap-3 py-1">
+                        <span className="text-2xl">📋</span>
+                        <div>
+                          <p className="font-bold text-sm tracking-tight">Documento Entregado</p>
+                          <p className="text-xs opacity-80 mt-1 leading-relaxed">{message.content}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                    )}
+                    <div className={`mt-1.5 text-[10px] text-right ${isUser ? 'text-green-100' : isPDF ? 'text-blue-500' : 'text-slate-400'}`}>
                       {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>

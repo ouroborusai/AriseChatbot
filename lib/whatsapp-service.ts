@@ -1,5 +1,7 @@
 import { WHATSAPP_CONSTRAINTS, sanitizeWhatsAppText } from './services/whatsapp-skill';
 import { digitsOnly, validateEnvVars } from './utils';
+import { saveMessage } from './database-service';
+import { getSupabaseAdmin } from './supabase-admin';
 
 export interface WhatsAppSendResponse {
   message_id?: string;
@@ -56,12 +58,42 @@ export async function sendWhatsAppMessage(phoneNumber: string, message: string):
   const to = formatWhatsAppRecipient(phoneNumber);
   const body = sanitizeWhatsAppText(message, WHATSAPP_CONSTRAINTS.TEXT.MAX_LENGTH);
 
-  return callWhatsAppAPI('messages', {
+  const result = await callWhatsAppAPI('messages', {
     messaging_product: 'whatsapp',
     to,
     type: 'text',
     text: { body }
   });
+
+  // Autoguardado en DB
+  if (result.message_id) {
+    await saveMessageRecord(phoneNumber, body, 'assistant', result.message_id);
+  }
+
+  return result;
+}
+
+/**
+ * Función auxiliar para guardar registros de mensajes salientes
+ */
+async function saveMessageRecord(phone: string, content: string, role: 'user' | 'assistant', whatsappId: string) {
+  try {
+    const supabase = getSupabaseAdmin();
+    // Buscar la conversación activa primero
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('phone_number', digitsOnly(phone))
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (conv) {
+      await saveMessage(conv.id, content, role, whatsappId);
+    }
+  } catch (error) {
+    console.error('[WhatsApp] Error guardando registro:', error);
+  }
 }
 
 export async function sendWhatsAppInteractiveButtons(
@@ -79,7 +111,7 @@ export async function sendWhatsAppInteractiveButtons(
     }
   }));
 
-  return callWhatsAppAPI('messages', {
+  const result = await callWhatsAppAPI('messages', {
     messaging_product: 'whatsapp',
     to,
     type: 'interactive',
@@ -89,6 +121,12 @@ export async function sendWhatsAppInteractiveButtons(
       action: { buttons: validButtons }
     }
   });
+
+  if (result.message_id) {
+    await saveMessageRecord(phoneNumber, bodyText, 'assistant', result.message_id);
+  }
+
+  return result;
 }
 
 export async function sendWhatsAppListMessage(
@@ -128,7 +166,7 @@ export async function sendWhatsAppDocument(
   caption?: string
 ): Promise<WhatsAppSendResponse> {
   const to = formatWhatsAppRecipient(phoneNumber);
-  return callWhatsAppAPI('messages', {
+  const result = await callWhatsAppAPI('messages', {
     messaging_product: 'whatsapp',
     to,
     type: 'document',
@@ -138,6 +176,13 @@ export async function sendWhatsAppDocument(
       caption: caption ? sanitizeWhatsAppText(caption, WHATSAPP_CONSTRAINTS.MEDIA.CAPTION_MAX_LENGTH) : undefined
     }
   });
+
+  if (result.message_id) {
+    const logContent = caption ? `📄 [PDF: ${filename}] ${caption}` : `📄 [PDF: ${filename}]`;
+    await saveMessageRecord(phoneNumber, logContent, 'assistant', result.message_id);
+  }
+
+  return result;
 }
 
 /**

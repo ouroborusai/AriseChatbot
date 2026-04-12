@@ -66,11 +66,18 @@ export default function ConversationList({ conversations, selectedPhone, onSelec
                           {conversation.messages.length}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 truncate mt-0.5">{conversation.phone}</p>
-                      <p className="mt-2 text-sm text-slate-600 line-clamp-2 text-left">{conversation.preview}</p>
+                        <p className="text-xs text-slate-400 truncate mt-0.5">{conversation.phone}</p>
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <p className="text-[13px] text-slate-600 line-clamp-1 text-left flex-1 font-medium italic">
+                            {conversation.preview.startsWith('📄') ? '📎 Documento enviado' : conversation.preview}
+                          </p>
+                          <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                            {new Date(conversation.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
               );
             })
           )}

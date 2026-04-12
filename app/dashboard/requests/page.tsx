@@ -14,6 +14,11 @@ export default function RequestsPage() {
     }
   };
 
+  const isUrgent = (createdAt: string) => {
+    const hours = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60);
+    return hours > 24;
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50">
       {/* Header Compacto */}
@@ -58,16 +63,21 @@ export default function RequestsPage() {
                     </td>
                   </tr>
                 ) : (
-                  requests.map((req) => (
-                    <tr key={req.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="text-[12px] font-mono font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded inline-block">
-                          {req.request_code}
-                        </div>
-                        <div className="text-[10px] text-slate-500 mt-1 font-medium">
-                          {new Date(req.created_at).toLocaleDateString('es-CL')}
-                        </div>
-                      </td>
+                   requests.map((req) => {
+                     const urgent = req.status === 'pending' && isUrgent(req.created_at);
+                     return (
+                       <tr key={req.id} className={`hover:bg-slate-50/50 transition-colors group ${urgent ? 'bg-red-50/40' : ''}`}>
+                         <td className="px-4 py-3 whitespace-nowrap">
+                           <div className="flex items-center gap-2">
+                             {urgent && <span className="flex h-2 w-2 rounded-full bg-red-500 animate-ping" title="Atrasado (+24h)"></span>}
+                             <div className="text-[12px] font-mono font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded inline-block">
+                               {req.request_code}
+                             </div>
+                           </div>
+                           <div className="text-[10px] text-slate-500 mt-1 font-medium">
+                             {new Date(req.created_at).toLocaleDateString('es-CL')}
+                           </div>
+                         </td>
                       <td className="px-4 py-3">
                         <div className="text-[13px] text-slate-800 font-medium line-clamp-2" title={req.description}>
                           {req.description}
@@ -96,9 +106,16 @@ export default function RequestsPage() {
                             Resolver
                           </button>
                         )}
+                        <a 
+                          href={`/dashboard?phone=${req.contacts?.phone_number}`} 
+                          className="inline-flex items-center justify-center text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors ml-1"
+                        >
+                          👁️ Ver Chat Interno
+                        </a>
                       </td>
-                    </tr>
-                   ))
+                     </tr>
+                    );
+                   })
                 )}
               </tbody>
             </table>

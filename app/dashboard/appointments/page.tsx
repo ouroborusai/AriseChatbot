@@ -24,13 +24,37 @@ export default function AppointmentsPage() {
           </h1>
           <p className="text-xs text-slate-500">Gestión de reuniones agendadas por el chatbot</p>
         </div>
-        <button 
-          onClick={() => refetch()}
-          className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg transition-colors border border-slate-200 font-medium"
-        >
-          🔄 Actualizar
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => refetch()}
+            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg transition-colors border border-slate-200 font-medium"
+          >
+            🔄 Actualizar
+          </button>
+        </div>
       </header>
+
+      {/* Resumen Semanal */}
+      <div className="px-6 pt-6 grid grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hoy</p>
+          <p className="text-2xl font-bold text-slate-900">
+            {appointments.filter(a => a.appointment_date === new Date().toISOString().split('T')[0]).length}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pendientes</p>
+          <p className="text-2xl font-bold text-amber-600">
+            {appointments.filter(a => a.status === 'pending').length}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-green-700">
+          <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider uppercase">Confirmadas</p>
+          <p className="text-2xl font-bold">
+            {appointments.filter(a => a.status === 'confirmed').length}
+          </p>
+        </div>
+      </div>
 
       {/* Contenido principal */}
       <div className="flex-1 overflow-auto p-6">
@@ -43,13 +67,13 @@ export default function AppointmentsPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200">
-                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-32">Fecha y Hora</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cliente / Contacto</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Empresa</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-28">Estado</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-40 text-right">Acciones</th>
-                </tr>
-              </thead>
+                   <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-32">Fecha y Hora</th>
+                   <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cliente / Contacto</th>
+                   <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Motivo de la Cita</th>
+                   <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-22">Estado</th>
+                   <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-40 text-right">Acciones</th>
+                 </tr>
+               </thead>
               <tbody className="divide-y divide-slate-100">
                 {appointments.length === 0 ? (
                   <tr>
@@ -68,11 +92,14 @@ export default function AppointmentsPage() {
                         <div className="text-[13px] font-semibold text-slate-800">{appt.contacts?.name || 'Cargando...'}</div>
                         <div className="text-[11px] text-slate-500 font-mono tracking-tight">{appt.contacts?.phone_number}</div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="text-[12px] text-slate-600 truncate max-w-[200px]" title={appt.companies?.legal_name}>
-                          {appt.companies?.legal_name || 'Individual'}
-                        </div>
-                      </td>
+                       <td className="px-4 py-3">
+                         <div className="text-[12px] text-slate-700 font-medium line-clamp-2" title={appt.notes}>
+                           {appt.notes || <span className="text-slate-400 italic font-normal">Sin notas especificadas</span>}
+                         </div>
+                         <div className="text-[10px] text-slate-400 mt-0.5">
+                           🏢 {appt.companies?.legal_name || 'Individual'}
+                         </div>
+                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusStyle(appt.status)}`}>
                           {appt.status.toUpperCase()}
@@ -101,6 +128,13 @@ export default function AppointmentsPage() {
                         >
                           Eliminar
                         </button>
+                        <a 
+                          href={`https://wa.me/${appt.contacts?.phone_number}`} 
+                          target="_blank"
+                          className="inline-flex items-center justify-center text-[10px] bg-green-50 text-green-600 border border-green-200 font-bold px-2 py-1 rounded shadow-sm hover:bg-green-100 transition-colors"
+                        >
+                          💬 Chat
+                        </a>
                       </td>
                     </tr>
                   ))

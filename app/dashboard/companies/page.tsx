@@ -35,12 +35,28 @@ function parseYearFromTitle(title: string): number | null {
 }
 
 function getMonthFromTitle(title: string): number | null {
-  const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const monthsList = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const lower = title.toLowerCase();
-  for (let i = 0; i < months.length; i++) {
-    if (lower.includes(months[i])) return i;
+  for (let i = 0; i < monthsList.length; i++) {
+    if (lower.includes(monthsList[i])) return i;
   }
   return null;
+}
+
+function calculateCompliance(docs: any[]): 'green' | 'yellow' | 'red' {
+  const currentMonth = new Date().getMonth(); // 0-11
+  const currentYear = new Date().getFullYear();
+  
+  const ivaDocs = docs.filter(d => getDocTypeFromTitle(d.title || '') === 'iva');
+  if (ivaDocs.length === 0) return 'red';
+  
+  const hasCurrentMonth = ivaDocs.some(d => {
+    const dYear = parseYearFromTitle(d.title || '');
+    const dMonth = getMonthFromTitle(d.title || '');
+    return dYear === currentYear && dMonth === currentMonth;
+  });
+
+  return hasCurrentMonth ? 'green' : 'yellow';
 }
 
 function formatDocTitle(docType: string, year: number, month: number): string {
@@ -409,7 +425,16 @@ export default function CompaniesPage() {
                       <button type="button" onClick={handleDeleteCompany} className="text-[10px] text-red-400 hover:text-red-600 font-bold uppercase transition">Eliminar</button>
                     </div>
                     <div className="flex flex-col">
-                      <p className="text-sm font-bold text-slate-900 leading-tight">{selectedCompany.legal_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-slate-900 leading-tight">{selectedCompany.legal_name}</p>
+                        {(() => {
+                          const status = calculateCompliance(documents);
+                          return (
+                            <span className={`h-2 w-2 rounded-full animate-pulse ${status === 'green' ? 'bg-green-500' : status === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`} 
+                                  title={status === 'green' ? 'Al día' : status === 'yellow' ? 'Pendiente mes actual' : 'Sin registros'}></span>
+                          );
+                        })()}
+                      </div>
                       <div className="mt-1 flex gap-3 text-xs text-slate-500">
                         <span>RUT: <b className="text-slate-700">{selectedCompany.rut || 'N/A'}</b></span>
                         <span>Alta: <b className="text-slate-700">{selectedCompany.created_at ? new Date(selectedCompany.created_at).toLocaleDateString() : '-'}</b></span>
@@ -460,6 +485,30 @@ export default function CompaniesPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Acciones Rápidas Industriales */}
+                  <div className="col-span-2 grid grid-cols-3 gap-3">
+                    <button 
+                      onClick={async () => {
+                        const primary = linkedContacts.find(c => c.is_primary) || linkedContacts[0];
+                        if (!primary) return alert('No hay contactos vinculados');
+                        alert('Enviando resumen financiero a ' + primary.contacts?.phone_number);
+                      }}
+                      className="flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 transition shadow-sm"
+                    >
+                      📊 Enviar Resumen
+                    </button>
+                    <button 
+                      className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-50 transition shadow-sm"
+                    >
+                      📩 Solicitar Pendientes
+                    </button>
+                    <button 
+                      className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-50 transition shadow-sm"
+                    >
+                      📝 Notas de Auditoría
+                    </button>
+                  </div>
                 </div>
 
                 {/* Tabs de Documentos Rediseñados */}
@@ -500,7 +549,7 @@ export default function CompaniesPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Razón Social *</label>
-            <input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="Ej: MTZ Consultores SpA" autoFocus />
+            <input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="Ej: Mi Empresa S.A." autoFocus />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">RUT (opcional)</label>

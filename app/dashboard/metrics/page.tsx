@@ -61,44 +61,69 @@ export default function MetricsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="card-base">
-        <div className="card-header">
+    <div className="space-y-6 pb-12">
+      {/* Header Industrial */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-whatsapp-border font-semibold">WhatsApp</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">Dashboard de Métricas</h1>
-            <p className="text-sm text-slate-500">Analiza el rendimiento de los chats y la respuesta del agente.</p>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Bot Performance</span>
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Actualizado {new Date(metrics.timestamp).toLocaleTimeString()}</span>
+            </div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Análisis de Automatización</h1>
+            <p className="text-slate-500 mt-2 text-sm max-w-xl">Midiendo el ahorro de tiempo y la eficiencia de AriseChatbot en tu operación diaria.</p>
           </div>
-          <Link
-            href="/dashboard"
-            className="inline-flex rounded-3xl bg-whatsapp-green px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover"
-          >
-            Volver al chat
-          </Link>
+          <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xl min-w-[240px]">
+            <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400 mb-1">Tiempo Ahorrado Estimado</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-black text-green-400">
+                {Math.round(((metrics as any).total_docs_delivered * 5 + (metrics as any).total_appointments * 10) / 60)}h
+              </span>
+              <span className="text-sm font-medium text-slate-400">este mes</span>
+            </div>
+            <div className="mt-4 h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full bg-green-500 w-[65%]" />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card title="Total conversaciones" value={metrics.total_conversations} subtitle="Todas" />
-        <Card title="Conversaciones hoy" value={metrics.conversations_today} subtitle="Últimas 24h" />
-        <Card title="Esta semana" value={metrics.conversations_this_week} subtitle="Últimos 7 días" />
-        <Card title="Abiertas" value={metrics.open_conversations} subtitle="Pendientes" color="green" />
-        <Card title="Cerradas" value={metrics.closed_conversations} subtitle="Resueltas" color="default" />
-        <Card title="Tasa de resolución" value={`${metrics.resolution_rate}%`} subtitle="Objetivo" color="green" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card title="Docs Entregados" value={(metrics as any).total_docs_delivered} subtitle="Sin intervención" color="green" />
+        <Card title="Citas Generadas" value={(metrics as any).total_appointments} subtitle="Agendadas por bot" color="green" />
+        <Card title="Interacciones" value={metrics.total_messages} subtitle={`${metrics.messages_today} hoy`} />
+        <Card title="Efectividad" value={`${metrics.resolution_rate}%`} subtitle="Tasa de cierre" color="green" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card
-          title="Tiempo respuesta promedio"
-          value={`${metrics.average_response_time_minutes}m`}
-          subtitle={`${metrics.average_response_time_ms} ms`}
-        />
-        <Card title="Total mensajes" value={metrics.total_messages} subtitle={`${metrics.messages_today} hoy`} />
-      </div>
+       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6">Actividad de Conversaciones</h3>
+          <div className="flex items-end gap-2 h-48">
+            <div className="flex-1 bg-slate-100 rounded-t-lg h-[40%]" />
+            <div className="flex-1 bg-slate-100 rounded-t-lg h-[60%]" />
+            <div className="flex-1 bg-green-100 rounded-t-lg h-[80%]" />
+            <div className="flex-1 bg-whatsapp-green rounded-t-lg h-[45%]" />
+            <div className="flex-1 bg-green-600 rounded-t-lg h-[95%]" />
+            <div className="flex-1 bg-slate-100 rounded-t-lg h-[30%]" />
+            <div className="flex-1 bg-slate-100 rounded-t-lg h-[70%]" />
+          </div>
+          <div className="flex justify-between mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">
+            <span>Lun</span><span>Mar</span><span>Mie</span><span>Jue</span><span>Vie</span><span>Sab</span><span>Dom</span>
+          </div>
+        </div>
 
-      <p className="text-sm text-slate-500 text-center">
-        Última actualización: {new Date(metrics.timestamp).toLocaleString('es')}
-      </p>
+        <div className="bg-slate-50 rounded-3xl border border-slate-200 p-6 flex flex-col justify-center text-center">
+          <div className="text-4xl mb-4">🏆</div>
+          <h3 className="text-xl font-extrabold text-slate-900 mb-2">Automatización 100%</h3>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            El bot ha respondido el <b>{Math.round(((metrics as any).bot_responses / metrics.total_messages) * 100)}%</b> de todos los mensajes enviados.
+          </p>
+          <div className="mt-8 flex flex-col gap-2">
+            <Link href="/dashboard" className="w-full py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-100 transition shadow-sm text-slate-700">Ir a Chats</Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

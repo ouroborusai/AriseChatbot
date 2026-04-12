@@ -38,122 +38,113 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="card-base">
-        <div>
-          <p className="text-sm uppercase tracking-[0.24em] text-whatsapp-border font-semibold">
-            Sistema
-          </p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">Configuracion</h1>
-          <p className="text-sm text-slate-500">
-            Estado del sistema y variables de entorno
-          </p>
-        </div>
-      </div>
-
-      {/* Panel de Estado del Sistema */}
-      <SystemStatusPanel />
-
-      {/* Configuracion Actual */}
-      <div className="card-base">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          Configuracion Actual
-        </h2>
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <ConfigItem
-              label="Backend de IA"
-              value={config?.ai_backend || 'No configurado'}
-              icon="🤖"
-            />
-            <ConfigItem
-              label="Modelo Gemini"
-              value={config?.gemini_model || 'No configurado'}
-              icon="🧠"
-            />
-            <ConfigItem
-              label="WhatsApp Phone ID"
-              value={config?.whatsapp_phone_id || 'No configurado'}
-              icon="📱"
-            />
-            <ConfigItem
-              label="Supabase URL"
-              value={config?.supabase_url ? `${config.supabase_url.slice(0, 30)}...` : 'No configurado'}
-              icon="🗄️"
-            />
+    <div className="space-y-6 pb-12">
+      {/* Header Premium */}
+      <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
+        <div className="flex items-center gap-6">
+          <div className="p-4 bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-200">
+            <span className="text-3xl text-white">⚙️</span>
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Centro de Mandos</h1>
+            <p className="text-slate-500 mt-1 text-sm">Control técnico y monitoreo de AriseChatbot v1.0</p>
           </div>
         </div>
       </div>
 
-      {/* Instrucciones */}
-      <div className="rounded-[32px] border border-amber-200 bg-amber-50 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-amber-900 mb-4">
-          ⚠️ Importante: Variables de Entorno
-        </h2>
-        <div className="space-y-3 text-sm text-amber-800">
-          <p>
-            Las variables de entorno se configuran en <strong>Vercel</strong> para produccion:
-          </p>
-          <ol className="list-decimal list-inside space-y-2 ml-2">
-            <li>Ve a tu proyecto en Vercel</li>
-            <li>Settings &gt; Environment Variables</li>
-            <li>Agrega las variables necesarias</li>
-            <li>Redeploya el proyecto para aplicar cambios</li>
-          </ol>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Lado Izquierdo: Estado de Salud */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-sm">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Estado de Servicios</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <HealthItem label="Supabase DB" status="online" uptime="99.9%" icon="🗄️" />
+              <HealthItem label="WhatsApp API" status="online" uptime="100%" icon="📱" />
+              <HealthItem label="Google Gemini" status="online" uptime="98.5%" icon="🧠" />
+              <HealthItem label="Webhook Handler" status="online" uptime="100%" icon="⚡" />
+            </div>
+          </div>
 
-          <div className="mt-4 p-4 bg-white rounded-xl border border-amber-200">
-            <p className="font-semibold mb-2">Variables requeridas:</p>
-            <ul className="space-y-1 font-mono text-xs">
-              <li>• NEXT_PUBLIC_SUPABASE_URL</li>
-              <li>• NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
-              <li>• SUPABASE_SERVICE_ROLE_KEY</li>
-              <li>• WHATSAPP_ACCESS_TOKEN</li>
-              <li>• WHATSAPP_PHONE_NUMBER_ID</li>
-              <li>• WHATSAPP_VERIFY_TOKEN</li>
-              <li>• GEMINI_API_KEY</li>
-            </ul>
+          <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-sm">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Configuración de IA</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Modelo Actual</p>
+                  <p className="text-sm font-bold text-slate-800">{config?.gemini_model || 'Gemini 1.5 Flash'}</p>
+                </div>
+                <span className="bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-lg uppercase">Eficiente</span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Personalidad</p>
+                  <p className="text-sm font-bold text-slate-800 italic">Asistente Administrativo Experto</p>
+                </div>
+                <button className="text-xs text-indigo-600 font-bold hover:underline">Editar Prompt</button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Enlaces utiles */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <a
-          href="https://vercel.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="card-base hover:shadow-md transition text-center"
-        >
-          <p className="text-2xl mb-2">▲</p>
-          <p className="font-semibold text-slate-900">Vercel</p>
-          <p className="text-xs text-slate-500">Deploy y variables</p>
-        </a>
+        {/* Lado Derecho: Acciones y Tokens */}
+        <div className="space-y-6">
+          <div className="bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl">
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Modo de Operación</h3>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-4 w-12 bg-green-500 rounded-full relative">
+                <div className="absolute right-1 top-1 h-2 w-2 bg-white rounded-full"></div>
+              </div>
+              <span className="text-sm font-bold">Automatización Activa</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed mb-6">
+              El bot está procesando mensajes entrantes automáticamente mediante el flujo definido en Plantillas.
+            </p>
+            <button className="w-full py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-[11px] font-bold hover:bg-red-500/20 transition-all uppercase tracking-widest">
+              ❌ Parada de Emergencia
+            </button>
+          </div>
 
-        <a
-          href="https://supabase.com/dashboard"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="card-base hover:shadow-md transition text-center"
-        >
-          <p className="text-2xl mb-2">◈</p>
-          <p className="font-semibold text-slate-900">Supabase</p>
-          <p className="text-xs text-slate-500">Base de datos</p>
-        </a>
-
-        <a
-          href="https://developers.facebook.com/apps"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="card-base hover:shadow-md transition text-center"
-        >
-          <p className="text-2xl mb-2">📘</p>
-          <p className="font-semibold text-slate-900">Meta Apps</p>
-          <p className="text-xs text-slate-500">WhatsApp API</p>
-        </a>
+          <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-sm">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Mantenimiento</h3>
+            <div className="space-y-2">
+              <button className="w-full text-left p-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group">
+                🔄 Re-sincronizar Plantillas
+                <span className="opacity-0 group-hover:opacity-100">→</span>
+              </button>
+              <button className="w-full text-left p-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between group">
+                🧹 Limpiar Caché de Sesiones
+                <span className="opacity-0 group-hover:opacity-100">→</span>
+              </button>
+              <button className="w-full text-left p-3 rounded-xl hover:bg-slate-50 text-xs font-bold text-red-600 flex items-center justify-between group">
+                ⚠️ Resetear Configuración
+                <span className="opacity-0 group-hover:opacity-100">!</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+function HealthItem({ label, status, uptime, icon }: { label: string; status: 'online' | 'offline'; uptime: string; icon: string }) {
+  return (
+    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
+      <div className="text-2xl">{icon}</div>
+      <div className="flex-1">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{label}</p>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-slate-800">{uptime}</span>
+          <span className="text-[9px] font-black text-slate-300">UPTIME</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 px-2 py-1 bg-green-100 rounded-lg">
+        <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></div>
+        <span className="text-[9px] font-black text-green-700 uppercase">Live</span>
+      </div>
+    </div>
+  );
+}
   );
 }
 

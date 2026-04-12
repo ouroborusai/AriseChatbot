@@ -83,15 +83,15 @@ export default function DashboardLayout({
         {/* Capa 1: Logo - Altura fija */}
         <div className="shrink-0 px-4 py-5 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-400 to-green-500 text-white font-bold shadow-lg">
-              M
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-500 text-white font-bold shadow-lg">
+              A
             </span>
             {!collapsed && (
               <div className="overflow-hidden">
                 <p className="text-base font-semibold whitespace-nowrap">
-                  MTZ Consultores
+                  AriseChatbot
                 </p>
-                <p className="text-xs text-slate-400">Panel de atención</p>
+                <p className="text-xs text-slate-400">Automatización Inteligente</p>
               </div>
             )}
           </div>
