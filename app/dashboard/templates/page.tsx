@@ -49,6 +49,22 @@ export default function TemplatesPage() {
     setEditingTemplate(null);
   };
 
+  const handleRestoreSystemTemplates = async () => {
+    if (!confirm('¿Restaurar plantillas de sistema?\n\nSe sobrescribirá la base de datos con los archivos fuente JSON.')) return;
+    try {
+      const res = await fetch('/api/setup-templates', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert(`✅ Sincronización exitosa: ${data.count} plantillas restauradas`);
+        window.location.reload();
+      } else {
+        alert(`❌ Error del servidor: ${data.error}`);
+      }
+    } catch (e: any) {
+      alert(`❌ Error de conexión: ${e.message}`);
+    }
+  };
+
 
 
   const handleDeleteAll = async () => {
@@ -147,10 +163,16 @@ export default function TemplatesPage() {
           <div className="flex flex-col gap-3">
 
             <button
+              onClick={handleRestoreSystemTemplates}
+              className="w-full bg-blue-600/10 text-blue-600 border border-blue-200 px-6 py-3 rounded-2xl font-black text-xs hover:bg-blue-600/20 transition-all"
+            >
+              🔄 Recuperar JSONs del Sistema
+            </button>
+            <button
               onClick={() => openEdit()}
               className="w-full bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-black text-xs hover:bg-slate-50 transition-all"
             >
-              ➕ Crear Nueva Plantilla
+              ➕ Crear Nueva Plantilla (Vacia)
             </button>
           </div>
         </div>
@@ -213,7 +235,7 @@ export default function TemplatesPage() {
                 <input type="file" accept=".json" onChange={handleImportTemplates} className="hidden" />
               </label>
               <button onClick={handleDeleteAll} className="px-5 py-2.5 bg-white text-rose-600 border border-rose-200 rounded-2xl text-xs font-black hover:bg-rose-50 hover:border-rose-300 transition-all">🗑️ Limpiar Todo</button>
-
+              <button onClick={handleRestoreSystemTemplates} className="px-5 py-2.5 bg-white text-slate-600 border border-slate-200 rounded-2xl text-xs font-black hover:bg-slate-50 transition-all">🔄 Restaurar JSONs</button>
               <button onClick={() => openEdit()} className="bg-green-600 text-white px-7 py-3 rounded-2xl font-black text-xs shadow-xl shadow-green-600/20 hover:bg-green-500 transition-all">+ Nueva Plantilla</button>
             </div>
           </div>
