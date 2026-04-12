@@ -1,0 +1,18 @@
+{
+  "id": "validacion_cliente",
+  "name": "01_C_Validación Cliente",
+  "content": "¡Excelente! Para identificarte y mostrarte tu información privada, por favor **responde con tu RUT** (sin puntos y con guion, ej: 12345678-9) o el nombre de tu empresa.",
+  "category": "bienvenida",
+  "segment": "prospecto",
+  "is_active": true,
+  "priority": 90,
+  "workflow": "onboarding",
+  "actions": [
+    {
+      "type": "button",
+      "id": "btn_cancel_validation",
+      "title": "❌ Cancelar",
+      "next_template_id": "bienvenida_prospecto"
+    }
+  ]
+}

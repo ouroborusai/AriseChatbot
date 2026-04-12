@@ -5,8 +5,8 @@ let cached: SupabaseClient | null = null;
 /** Lazy: evita fallar en `next build` cuando aún no hay env (p. ej. Vercel sin variables). */
 export function getSupabaseAdmin(): SupabaseClient {
   if (cached) return cached;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!supabaseUrl || !supabaseServiceKey) {
     throw new Error(
       'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY'

@@ -14,6 +14,7 @@ import buzon_recepcion from './03_clientes/03_B_buzon_recepcion.json';
 import estado_cuenta from './03_clientes/03_C_estado_cuenta.json';
 import solicitud_tramite from './03_clientes/03_D_solicitud_tramite.json';
 import soporte_ejecutivo from './03_clientes/03_E_soporte_ejecutivo.json';
+import validacion_cliente from './01_bienvenida/01_C_validacion_cliente.json';
 
 export const systemTemplates = [
   prospecto,
@@ -27,5 +28,6 @@ export const systemTemplates = [
   buzon_recepcion,
   estado_cuenta,
   solicitud_tramite,
-  soporte_ejecutivo
+  soporte_ejecutivo,
+  validacion_cliente
 ];

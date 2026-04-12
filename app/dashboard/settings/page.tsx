@@ -14,6 +14,31 @@ type EnvConfig = {
 export default function SettingsPage() {
   const [config, setConfig] = useState<EnvConfig | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const handleAction = async (action: string, confirmMsg: string) => {
+    if (!confirm(confirmMsg)) return;
+
+    setActionLoading(action);
+    try {
+      const res = await fetch('/api/admin/system', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        alert(`✅ Éxito: ${data.message}`);
+      } else {
+        alert(`❌ Error: ${data.error}`);
+      }
+    } catch (e: any) {
+      alert(`❌ Error de conexión: ${e.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   useEffect(() => {
     setConfig({
@@ -122,17 +147,29 @@ export default function SettingsPage() {
           <div className="bg-white rounded-[2.5rem] border border-slate-200 p-8 md:p-10 shadow-sm">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">System Engineering</h3>
             <div className="space-y-2 md:space-y-3">
-              <button className="w-full group h-12 flex items-center justify-between px-5 rounded-[1.2rem] hover:bg-slate-50 text-[10px] font-black text-slate-700 uppercase tracking-widest border border-transparent hover:border-slate-100 transition-all">
-                <span>🔄 Sync Plantillas</span>
+              <button 
+                onClick={() => handleAction('sync-templates', '¿Sincronizar plantillas con los archivos JSON del sistema?')}
+                disabled={!!actionLoading}
+                className="w-full group h-12 flex items-center justify-between px-5 rounded-[1.2rem] hover:bg-slate-50 text-[10px] font-black text-slate-700 uppercase tracking-widest border border-transparent hover:border-slate-100 transition-all disabled:opacity-50"
+              >
+                <span>{actionLoading === 'sync-templates' ? 'Sincronizando...' : '🔄 Sync Plantillas'}</span>
                 <span className="text-sm transition-transform group-hover:translate-x-1">→</span>
               </button>
-              <button className="w-full group h-12 flex items-center justify-between px-5 rounded-[1.2rem] hover:bg-slate-50 text-[10px] font-black text-slate-700 uppercase tracking-widest border border-transparent hover:border-slate-100 transition-all">
-                <span>🧹 Purge Sessions</span>
+              <button 
+                onClick={() => handleAction('purge-sessions', '¿ELIMINAR TODO EL HISTORIAL DE CONVERSACIONES? Esta acción no se puede deshacer.')}
+                disabled={!!actionLoading}
+                className="w-full group h-12 flex items-center justify-between px-5 rounded-[1.2rem] hover:bg-slate-50 text-[10px] font-black text-slate-700 uppercase tracking-widest border border-transparent hover:border-slate-100 transition-all disabled:opacity-50"
+              >
+                <span>{actionLoading === 'purge-sessions' ? 'Purgando...' : '🧹 Purge Sessions'}</span>
                 <span className="text-sm transition-transform group-hover:translate-x-1">→</span>
               </button>
               <div className="h-px bg-slate-100 my-4" />
-              <button className="w-full group h-14 flex items-center justify-between px-5 rounded-[1.2rem] bg-rose-50/50 hover:bg-rose-600 hover:text-white text-[10px] font-black text-rose-600 uppercase tracking-widest transition-all">
-                <span>⚠️ Master Reset</span>
+              <button 
+                onClick={() => handleAction('master-reset', '¡ATENCIÓN! El Master Reset eliminará todas las plantillas y las volverá a crear desde los archivos originales. ¿Continuar?')}
+                disabled={!!actionLoading}
+                className="w-full group h-14 flex items-center justify-between px-5 rounded-[1.2rem] bg-rose-50/50 hover:bg-rose-600 hover:text-white text-[10px] font-black text-rose-600 uppercase tracking-widest transition-all disabled:opacity-50"
+              >
+                <span>{actionLoading === 'master-reset' ? 'Reseteando...' : '⚠️ Master Reset'}</span>
                 <span className="text-sm group-hover:animate-bounce">!!</span>
               </button>
             </div>

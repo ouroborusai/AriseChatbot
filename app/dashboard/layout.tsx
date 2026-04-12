@@ -152,14 +152,14 @@ export default function DashboardLayout({
         </main>
 
         {/* Bottom Navigation Bar - Solid Industrial Design */}
-        <nav className="shrink-0 bg-white border-t border-slate-200 h-20 flex items-center justify-around px-2 z-50 pb-safe">
-          {menuItems.slice(0, 5).map((item) => {
+        <nav className="shrink-0 bg-white border-t border-slate-200 h-20 flex items-center justify-around px-2 z-50 pb-safe overflow-x-auto">
+          {menuItems.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
+                className={`flex flex-col items-center justify-center min-w-[64px] h-full transition-colors relative ${
                   active ? 'text-indigo-600' : 'text-slate-400'
                 }`}
               >
@@ -167,7 +167,7 @@ export default function DashboardLayout({
                   <span className="text-xl">
                     {item.icon}
                   </span>
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                  <span className={`text-[9px] font-bold uppercase tracking-widest ${
                     active ? 'opacity-100' : 'opacity-40'
                   }`}>
                     {item.label}
