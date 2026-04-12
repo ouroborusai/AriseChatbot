@@ -1,15 +1,12 @@
 {
   "id": "prospecto_cotizacion",
+  "name": "02_A_Cotización Contextual",
+  "content": "¡Nos encantaría ser tu aliado estratégico! 🤝\n\nPara poder armarte un plan a tu medida, por favor cuéntanos brevemente:\n\n*1. ¿En qué rubro está tu negocio?*\n*2. ¿Cuál es tu facturación mensual aproximada?*",
   "category": "ventas",
-  "name": "Cotización Contextual",
   "segment": "prospecto",
   "is_active": true,
-  "description": "Trampa conversacional para que el usuario ingrese la info de su empresa antes de entregárselo a la IA",
-  "actions": [
-    {
-      "type": "text",
-      "content": "¡Nos encantaría ser tu aliado estratégico! 🤝\n\nPara poder armarte un plan a tu medida, por favor cuéntanos brevemente:\n\n*1. ¿En qué rubro está tu negocio?*\n*2. ¿Cuál es tu facturación mensual aproximada?*",
-      "next_template_id": ""
-    }
-  ]
+  "priority": 90,
+  "trigger": "",
+  "workflow": "ventas",
+  "actions": []
 }

@@ -1,16 +1,14 @@
 {
   "id": "derivacion_asesor",
+  "name": "02_C_Derivación a Asesor de Ventas",
+  "content": "¡Anotado! 📝 He notificado a uno de nuestros asesores para que converse directamente contigo por aquí en breve.\n\nMientras tanto, ¡puedes darte una vuelta por nuestro portal oficial para conocer un poco más de nosotros!",
   "category": "general",
-  "name": "Derivación a Asesor de Ventas",
   "segment": "todos",
   "is_active": true,
-  "description": "Nodo de espera para conversar con agente comercial MTZ",
+  "priority": 90,
+  "trigger": "",
+  "workflow": "ventas",
   "actions": [
-    {
-      "type": "text",
-      "content": "¡Anotado! 📝 He notificado a uno de nuestros asesores para que converse directamente contigo por aquí en breve.\n\nMientras tanto, ¡puedes darte una vuelta por nuestro portal oficial para conocer un poco más de nosotros!",
-      "next_template_id": ""
-    },
     {
       "type": "button",
       "id": "btn_sitio_web",
