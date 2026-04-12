@@ -169,6 +169,7 @@ export async function handleInboundUserMessage(messageData: {
       const welcome = await TemplateService.findTemplateById('bienvenida_prospecto', 'prospecto');
       console.log('[Webhook] 📌 Plantilla bienvenida_prospecto encontrada:', !!welcome);
       if (welcome) {
+        context.contact.segment = 'prospecto'; // Sincronizar segmento en contexto
         await processTemplateResponse(phoneNumber, welcome, context, navState);
         return;
       }
@@ -253,13 +254,15 @@ async function sendDefaultMenu(phoneNumber: string, contactId: string, conversat
   let template = await TemplateService.findTemplateById(templateId, segment);
   
   if (!template) {
-    console.log(`[Webhook] ⚠️ No se encontró por ID (${templateId}). Intentando buscar por trigger "hola"...`);
+    console.log(`[Webhook] ⚠️ No se encontró por ID (${templateId}). Intentando buscar por trigger "hola" para el segmento ${segment}...`);
     template = await TemplateService.findTemplateByTrigger('hola', segment);
   }
 
   console.log('[Webhook] Plantilla encontrada finalmente:', !!template);
   if (template) {
-    const freshContext = await ContextService.buildContext({id: contactId, segment} as any, [], null, conversationId);
+    // Recuperar contacto completo para que variables como {{nombre}} funcionen
+    const { data: fullContact } = await getSupabaseAdmin().from('contacts').select('*').eq('id', contactId).single();
+    const freshContext = await ContextService.buildContext(fullContact || { id: contactId, segment }, [], null, conversationId);
     await processTemplateResponse(phoneNumber, template, freshContext, NavigationService.createInitialState());
   } else {
     console.log('[Webhook] ❌ NO se encontró plantilla con ID:', templateId);

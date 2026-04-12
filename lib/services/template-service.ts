@@ -136,11 +136,11 @@ export class TemplateService {
     const friendlyName = rawName.split(' ')[0].split('_')[0].trim();
     const capitalizedName = friendlyName.charAt(0).toUpperCase() + friendlyName.slice(1).toLowerCase();
     
-    result = result.replace('{{nombre}}', capitalizedName);
-
+    result = result.replace(/{{nombre}}/g, capitalizedName);
+    
     // Cantidad de documentos
     if (context.documents) {
-      result = result.replace('{{document_count}}', String(context.documents.length));
+      result = result.replace(/{{document_count}}/g, String(context.documents.length));
 
       // Lista general de documentos
       if (result.includes('{{documents_list}}')) {
@@ -149,7 +149,7 @@ export class TemplateService {
           title: d.title?.slice(0, 24) || 'Documento',
           description: new Date(d.created_at).toLocaleDateString('es-CL')
         }));
-        result = result.replace('{{documents_list}}', JSON.stringify(docsList));
+        result = result.replace(/{{documents_list}}/g, JSON.stringify(docsList));
       }
 
       // Lista de IVA
@@ -162,18 +162,18 @@ export class TemplateService {
           title: d.title?.slice(0, 24) || 'IVA',
           description: new Date(d.created_at).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' })
         }));
-        result = result.replace('{{iva_list}}', JSON.stringify(ivaList));
+        result = result.replace(/{{iva_list}}/g, JSON.stringify(ivaList));
       }
 
-      // Resumen financiero dinámico del suspenso
+      // Resumen financiero dinámico
       if (result.includes('{{financial_summary}}')) {
         const activeComp = context.companies.find(c => c.id === context.activeCompanyId) || context.companies[0];
         const summary = (activeComp as any)?.metadata?.financial_summary;
         
         if (summary && summary.whatsapp_proposal) {
-          result = result.replace('{{financial_summary}}', summary.whatsapp_proposal);
+          result = result.replace(/{{financial_summary}}/g, summary.whatsapp_proposal);
         } else {
-          result = result.replace('{{financial_summary}}', 'Para ver tu resumen financiero, selecciona una empresa activa.');
+          result = result.replace(/{{financial_summary}}/g, 'Para ver tu resumen financiero, selecciona una empresa activa.');
         }
       }
     }

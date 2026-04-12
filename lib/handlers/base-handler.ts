@@ -403,14 +403,29 @@ export async function buildContext(
     context.contact = contact;
   }
 
-  // Obtener empresas
-  const { data: companies } = await getSupabaseAdmin()
-    .from('companies')
-    .select('id, legal_name, tax_id')
+  // Obtener empresas mediante tabla relacional (SSOT)
+  const { data: companiesRel } = await getSupabaseAdmin()
+    .from('contact_companies')
+    .select(`
+      companies (
+        id,
+        legal_name,
+        rut,
+        metadata
+      )
+    `)
     .eq('contact_id', contactId);
 
-  if (companies) {
-    context.companies = companies;
+  if (companiesRel) {
+    context.companies = (companiesRel as any[])
+      .map(r => r.companies)
+      .filter(Boolean)
+      .map(c => ({
+        id: c.id,
+        legal_name: c.legal_name,
+        tax_id: c.rut, // Mapear rut a tax_id para retrocompatibilidad con el tipo TemplateContext
+        metadata: c.metadata || {}
+      }));
   }
 
   // Obtener empresa activa
