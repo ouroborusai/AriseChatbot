@@ -18,18 +18,14 @@ export default function TemplatesPage() {
   const [showEditor, setShowEditor] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   
-  // Estados para filtros
-  const [filterCategory, setFilterCategory] = useState<string>('todos');
   const [filterSegment, setFilterSegment] = useState<string>('todos');
 
   // Filtrado de plantillas
   const filteredTemplates = useMemo(() => {
     return templates.filter(t => {
-      const matchCategory = filterCategory === 'todos' || t.category === filterCategory;
-      const matchSegment = filterSegment === 'todos' || t.segment === filterSegment;
-      return matchCategory && matchSegment;
+      return filterSegment === 'todos' || t.segment === filterSegment;
     });
-  }, [templates, filterCategory, filterSegment]);
+  }, [templates, filterSegment]);
 
   const stats = useMemo(() => ({
     total: templates.length,
@@ -220,15 +216,26 @@ export default function TemplatesPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 border border-slate-200">
-                <option value="todos">Todas las categorías</option>
-                {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <select value={filterSegment} onChange={(e) => setFilterSegment(e.target.value)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 border border-slate-200">
-                <option value="todos">Todos los segmentos</option>
-                <option value="cliente">Cliente</option>
-                <option value="prospecto">Prospecto</option>
-              </select>
+              <div className="flex bg-slate-100 p-1 rounded-2xl mr-4 border border-slate-200">
+                <button 
+                  onClick={() => setFilterSegment('prospecto')} 
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${filterSegment === 'prospecto' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  🔍 Prospectos
+                </button>
+                <button 
+                  onClick={() => setFilterSegment('cliente')} 
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${filterSegment === 'cliente' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  👤 Clientes
+                </button>
+                <button 
+                  onClick={() => setFilterSegment('todos')} 
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${filterSegment === 'todos' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Global
+                </button>
+              </div>
               <button onClick={handleExportTemplates} className="px-5 py-2.5 bg-white text-blue-600 border border-blue-200 rounded-2xl text-xs font-black hover:bg-blue-50 hover:border-blue-300 transition-all" title="Exportar plantillas a JSON">💾 Exportar</button>
               <label className="px-5 py-2.5 bg-white text-indigo-600 border border-indigo-200 rounded-2xl text-xs font-black hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer" title="Importar plantillas desde JSON">
                 📥 Importar
