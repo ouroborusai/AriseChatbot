@@ -26,6 +26,7 @@ import { handleDocumentButton } from './handlers/documents-handler';
 import { handleClassification } from './handlers/classification-handler';
 import { MenuHandler } from './handlers/menu-handler';
 import { handleAI } from './handlers/ai-handler';
+import { AppointmentHandler } from './handlers/appointment-handler';
 import { TemplateService } from './services/template-service';
 import { NavigationService } from './services/navigation-service';
 import { ContextService } from './services/context-service';
@@ -124,6 +125,33 @@ export async function handleInboundUserMessage(messageData: {
       // Handlers Industriales
       if ((await handleCompanyButton(interactive, phoneNumber, conversationId, companies)).handled) return;
       if ((await handleDocumentButton(interactive, phoneNumber, conversationId, contact, companies, activeCompanyId)).handled) return;
+      
+      // Manejo de Citas (Nuevo)
+      const apptHandler = new AppointmentHandler(context);
+      if (interactive === 'agendar_cita' || interactive === 'appt_start') {
+        await apptHandler.startBooking(phoneNumber);
+        return;
+      }
+      if (interactive.startsWith('appt_date_')) {
+        await apptHandler.handleDateSelection(phoneNumber, interactive);
+        return;
+      }
+      if (interactive.startsWith('appt_time_')) {
+        await apptHandler.confirmAppointment(phoneNumber, interactive, conversationId);
+        return;
+      }
+      
+      // Modalidades de cita (venir de la plantilla agendar_cita)
+      if (interactive === 'cita_presencial' || interactive === 'cita_virtual' || interactive === 'cita_llamada') {
+        const modalityNames: any = { 
+          'cita_presencial': 'Presencial 🏢', 
+          'cita_virtual': 'Videollamada 💻', 
+          'cita_llamada': 'Llamada 📞' 
+        };
+        await sendWhatsAppMessage(phoneNumber, `Has seleccionado la modalidad: *${modalityNames[interactive]}*.\n\nAhora busquemos un cupo disponible...`);
+        await apptHandler.startBooking(phoneNumber);
+        return;
+      }
       
       const nextTemplate = await TemplateService.findTemplateByActionId(interactive, contact.segment || 'prospecto');
       if (nextTemplate) {
