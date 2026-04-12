@@ -1,0 +1,19 @@
+{
+  "id": "menu_principal_cliente",
+  "name": "01_B_Menú Principal Clientes",
+  "content": "¡Hola de nuevo, {{nombre}}! 👋 Qué gusto saludarte.\n\nAquí tienes tu panel de atención directa. Selecciona una opción:",
+  "category": "bienvenida",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 100,
+  "trigger": "hola,buenas,menu,inicio",
+  "workflow": "atencion_cliente",
+  "actions": [
+    {
+      "type": "list",
+      "id": "lista_cliente",
+      "title": "📋 Menú de Opciones",
+      "content": "[{\"id\":\"btn_mis_documentos\",\"title\":\"📄 Mis Documentos\",\"description\":\"Accede a tus facturas y balances\"},{\"id\":\"btn_solicitudes\",\"title\":\"⚙️ Mis Trámites\",\"description\":\"Revisa el estado de procesos\"},{\"id\":\"btn_hablar_asesor\",\"title\":\"📞 Soporte Humano\",\"description\":\"Habla con tu ejecutivo\"}]"
+    }
+  ]
+}

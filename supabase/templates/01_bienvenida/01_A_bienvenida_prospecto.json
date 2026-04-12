@@ -1,0 +1,19 @@
+{
+  "id": "bienvenida_prospecto",
+  "name": "01_A_Bienvenida Prospectos",
+  "content": "¡Hola! 👋 Bienvenido a MTZ Consultores.\n\nSomos especialistas en contabilidad y tributación. ¿En qué podemos ayudarte hoy?",
+  "category": "bienvenida",
+  "segment": "prospecto",
+  "is_active": true,
+  "priority": 100,
+  "trigger": "hola,buenas,inicio,start",
+  "workflow": "onboarding",
+  "actions": [
+    {
+      "type": "list",
+      "id": "lista_prospecto",
+      "title": "📋 Ver Opciones",
+      "content": "[{\"id\":\"btn_cotizar_servicios\",\"title\":\"💼 Cotizar Servicios\",\"description\":\"Servicios contables\"},{\"id\":\"btn_hablar_asesor\",\"title\":\"📞 Hablar con un Asesor\",\"description\":\"Atención personalizada\"}]"
+    }
+  ]
+}
