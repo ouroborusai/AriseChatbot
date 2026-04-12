@@ -7,9 +7,9 @@ import {
   Contact, 
   Company, 
   ClientDocument, 
-  ServiceRequest, 
-  TemplateContext 
+  ServiceRequest 
 } from '../types';
+import { TemplateContext } from '@/app/components/templates/types';
 
 export class ContextService {
   /**
