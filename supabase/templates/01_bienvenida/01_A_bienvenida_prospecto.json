@@ -11,9 +11,9 @@
   "actions": [
     {
       "type": "list",
-      "id": "lista_prospecto",
+      "id": "menu_list_prospecto",
       "title": "📋 Ver Opciones",
-      "content": "[{\"id\":\"btn_cotizar_servicios\",\"title\":\"💼 Cotizar Servicios\",\"description\":\"Servicios contables\"},{\"id\":\"btn_hablar_asesor\",\"title\":\"📞 Hablar con un Asesor\",\"description\":\"Atención personalizada\"}]"
+      "content": "[{\"id\":\"btn_cotizar\",\"title\":\"📊 Cotizar Servicios\",\"description\":\"Conoce nuestros planes contables\",\"next_template_id\":\"\"},{\"id\":\"btn_especialidades\",\"title\":\"📚 Especialidades\",\"description\":\"Descubre qué podemos hacer por ti\",\"next_template_id\":\"\"},{\"id\":\"btn_faq\",\"title\":\"❓ Preguntas Frecuentes\",\"description\":\"Plazos, valores y formas de trabajo\",\"next_template_id\":\"\"},{\"id\":\"btn_asesor_ventas\",\"title\":\"👨‍💼 Hablar con un Asesor\",\"description\":\"Atención humana personalizada\",\"next_template_id\":\"\"}]"
     }
   ]
 }

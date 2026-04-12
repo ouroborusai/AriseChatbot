@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useTemplates } from '@/lib/hooks/useTemplates';
-import { saludosTemplates } from '@/lib/templates-config/saludos';
+
 import { 
   TemplateEditor,
   Template,
@@ -49,17 +49,7 @@ export default function TemplatesPage() {
     setEditingTemplate(null);
   };
 
-  // Restaurar plantillas por defecto - re-insertar en Supabase
-  const handleRestoreDefaults = async () => {
-    if (!confirm('¿Restaurar plantillas por defecto?\n\nSolo se restaurarán los saludos principales.')) return;
-    
-    for (const t of saludosTemplates) {
-      await supabase.from('templates').upsert(t);
-    }
-    
-    alert(`✅ Se restauraron ${saludosTemplates.length} plantillas de saludo`);
-    window.location.reload();
-  };
+
 
   const handleDeleteAll = async () => {
     if (!confirm('¡ATENCIÓN! ¿Estás seguro de que quieres eliminar TODAS las plantillas del servidor? Esta acción destruirá tu Canvas y no se puede deshacer.')) return;
@@ -142,6 +132,7 @@ export default function TemplatesPage() {
   // Estado vacío cuando no hay plantillas
   if (templates.length === 0) {
     return (
+      <>
       <div className="h-full flex flex-col items-center justify-center bg-slate-50/30 p-6">
         <div className="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 text-center">
           <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center text-4xl">
@@ -154,12 +145,7 @@ export default function TemplatesPage() {
             Tu base de datos está vacía. Puedes restaurar las plantillas por defecto o crear nuevas manualmente.
           </p>
           <div className="flex flex-col gap-3">
-            <button
-              onClick={handleRestoreDefaults}
-              className="w-full bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-xs shadow-xl shadow-green-600/20 hover:bg-green-500 transition-all"
-            >
-              🔄 Restaurar Plantillas por Defecto
-            </button>
+
             <button
               onClick={() => openEdit()}
               className="w-full bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-black text-xs hover:bg-slate-50 transition-all"
@@ -169,6 +155,17 @@ export default function TemplatesPage() {
           </div>
         </div>
       </div>
+      
+      {/* Es CRÍTICO renderizar el editor incluso en el estado vacío */}
+      <TemplateEditor
+        template={editingTemplate}
+        allTemplates={templates}
+        isOpen={showEditor}
+        onClose={() => { setShowEditor(false); setEditingTemplate(null); }}
+        onSave={handleSaveTemplate}
+        onDelete={handleDeleteTemplate}
+      />
+    </>
     );
   }
 
@@ -216,7 +213,7 @@ export default function TemplatesPage() {
                 <input type="file" accept=".json" onChange={handleImportTemplates} className="hidden" />
               </label>
               <button onClick={handleDeleteAll} className="px-5 py-2.5 bg-white text-rose-600 border border-rose-200 rounded-2xl text-xs font-black hover:bg-rose-50 hover:border-rose-300 transition-all">🗑️ Limpiar Todo</button>
-              <button onClick={handleRestoreDefaults} className="px-5 py-2.5 bg-white text-slate-600 border border-slate-200 rounded-2xl text-xs font-black hover:bg-slate-50 transition-all">🔄 Restaurar</button>
+
               <button onClick={() => openEdit()} className="bg-green-600 text-white px-7 py-3 rounded-2xl font-black text-xs shadow-xl shadow-green-600/20 hover:bg-green-500 transition-all">+ Nueva Plantilla</button>
             </div>
           </div>
