@@ -1,4 +1,4 @@
--- Plantillas para el clasificador de intenciones
+-- Plantillas para el clasificador de intenciones (SOLO SALUDOS)
 -- Estas plantillas se cargan según la intención devuelta por Gemini
 
 -- SALUDO: Menú principal de bienvenida
@@ -8,23 +8,7 @@ VALUES (
   'Bienvenida - Saludo',
   '¡Hola, {{nombre}}! 👋 Soy el asistente virtual de MTZ Consultores Tributarios. Para poder guiarte de la mejor manera, por favor selecciona una de las siguientes opciones:',
   'saludo',
-  '[
-    {
-      "type": "button",
-      "id": "btn_mis_documentos",
-      "title": "📄 Mis Documentos"
-    },
-    {
-      "type": "button",
-      "id": "btn_mis_datos", 
-      "title": "👤 Mis Datos"
-    },
-    {
-      "type": "button",
-      "id": "btn_tramites",
-      "title": "⚙️ Trámites"
-    }
-  ]'::jsonb,
+  '[]'::jsonb,
   true,
   100,
   'todos',
@@ -42,18 +26,7 @@ VALUES (
   'Bienvenida - Documento',
   '¡Claro! Puedo ayudarte con tus documentos tributarios. ¿Cuál necesitas?',
   'documento',
-  '[
-    {
-      "type": "button",
-      "id": "btn_ver_docs",
-      "title": "📄 Ver mis documentos"
-    },
-    {
-      "type": "button",
-      "id": "btn_solicitar_doc",
-      "title": "📋 Solicitar documento"
-    }
-  ]'::jsonb,
+  '[]'::jsonb,
   true,
   100,
   'todos',
@@ -71,18 +44,7 @@ VALUES (
   'Bienvenida - Soporte',
   'Entiendo que necesitas ayuda. ¿En qué puedo asistirte?',
   'soporte',
-  '[
-    {
-      "type": "button",
-      "id": "btn_estado_solicitud",
-      "title": "🔎 Estado de solicitud"
-    },
-    {
-      "type": "button",
-      "id": "btn_hablar_asesor",
-      "title": "📞 Hablar con asesor"
-    }
-  ]'::jsonb,
+  '[]'::jsonb,
   true,
   100,
   'todos',
