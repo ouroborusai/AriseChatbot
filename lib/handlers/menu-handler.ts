@@ -8,10 +8,11 @@
 import { getSupabaseAdmin } from '../supabase-admin';
 import { sendWhatsAppInteractiveButtons, sendWhatsAppListMessage, sendWhatsAppMessage } from '../whatsapp-service';
 import { BUTTON_IDS, Contact, Company, HandlerResponse } from '../types';
-import { BaseHandler, buildContext } from './base-handler';
+import { BaseHandler } from './base-handler';
 import { TemplateContext, Action } from '../../app/components/templates/types';
 import { TemplateService } from '@/lib/services/template-service';
 import { getFinalActions } from '@/lib/services/condition-engine';
+import { ContextService } from '../services/context-service';
 
 const WELCOME_KEYWORDS = ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'buenas', 'saludos'];
 
@@ -341,6 +342,7 @@ export function isGreeting(text: string): boolean {
     companies: [],
     activeCompanyId: null,
     documents: [],
+    serviceRequests: [],
     lastAction: null,
     conversationHistory: [],
     redirectCount: 0,
@@ -350,10 +352,12 @@ export function isGreeting(text: string): boolean {
 
 export async function sendWelcomeMenu(
   phoneNumber: string,
-  contact: Contact
+  contact: Contact,
+  companies: Company[],
+  activeCompanyId: string | null,
+  conversationId: string
 ): Promise<void> {
-  const { buildContext } = await import('./base-handler');
-  const context = await buildContext(phoneNumber, contact.id, '');
+  const context = await ContextService.buildContext(contact, companies, activeCompanyId, conversationId);
   const handler = new MenuHandler(context);
   return handler.sendWelcomeMenu(phoneNumber);
 }
@@ -363,10 +367,10 @@ export async function handleMenuButton(
   phoneNumber: string,
   contact: Contact,
   companies: Company[],
-  activeCompanyId: string | null
+  activeCompanyId: string | null,
+  conversationId: string
 ): Promise<HandlerResponse> {
-  const { buildContext } = await import('./base-handler');
-  const context = await buildContext(phoneNumber, contact.id, '');
+  const context = await ContextService.buildContext(contact, companies, activeCompanyId, conversationId);
   const handler = new MenuHandler(context);
   return handler.handleMenuButton(interactive, phoneNumber, contact, companies, activeCompanyId);
 }
@@ -377,6 +381,7 @@ export async function deriveToHuman(phoneNumber: string): Promise<void> {
     companies: [],
     activeCompanyId: null,
     documents: [],
+    serviceRequests: [],
     lastAction: null,
     conversationHistory: [],
     redirectCount: 0,

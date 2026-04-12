@@ -297,6 +297,7 @@ export async function autoSelectCompany(
     companies: companies.map(c => ({ id: c.id, legal_name: c.legal_name })),
     activeCompanyId: null,
     documents: [],
+    serviceRequests: [],
     lastAction: null,
     conversationHistory: [],
     redirectCount: 0,

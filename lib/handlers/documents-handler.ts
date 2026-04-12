@@ -7,9 +7,10 @@
 
 import { getSupabaseAdmin } from '../supabase-admin';
 import { sendWhatsAppDocument, sendWhatsAppMessage, sendWhatsAppInteractiveButtons, sendWhatsAppListMessage } from '../whatsapp-service';
-import { BUTTON_IDS, HandlerResponse } from '../types';
+import { BUTTON_IDS, HandlerResponse, Contact, Company } from '../types';
 import { BaseHandler } from './base-handler';
 import { TemplateContext } from '../../app/components/templates/types';
+import { ContextService } from '../services/context-service';
 
 /**
  * Handler especializado para documentos
@@ -407,11 +408,13 @@ export class DocumentsHandler extends BaseHandler {
 export async function handleDocumentButton(
   interactive: string,
   phoneNumber: string,
-  conversationId: string
+  conversationId: string,
+  contact: Contact,
+  companies: Company[],
+  activeCompanyId: string | null
 ): Promise<HandlerResponse> {
-  // Crear handler con contexto básico
-  const context = await import('./base-handler').then(m => m.buildContext(phoneNumber, '', conversationId));
-  const handler = new DocumentsHandler(await context);
+  const context = await ContextService.buildContext(contact, companies, activeCompanyId, conversationId);
+  const handler = new DocumentsHandler(context);
   return handler.handleDocumentButton(interactive, phoneNumber, conversationId);
 }
 
@@ -420,11 +423,11 @@ export async function handlePeriodText(
   lastButton: string | null,
   phoneNumber: string,
   conversationId: string,
-  contactId: string,
-  companyId: string | null
+  contact: Contact,
+  companies: Company[],
+  activeCompanyId: string | null
 ): Promise<HandlerResponse> {
-  const { buildContext } = await import('./base-handler');
-  const context = await buildContext(phoneNumber, contactId, conversationId);
+  const context = await ContextService.buildContext(contact, companies, activeCompanyId, conversationId);
   const handler = new DocumentsHandler(context);
   return handler.handlePeriodText(text, lastButton, phoneNumber, conversationId);
 }
@@ -432,11 +435,11 @@ export async function handlePeriodText(
 export async function handleDocCategoryButton(
   interactive: string,
   phoneNumber: string,
-  contactId: string,
-  companyId: string | null
+  contact: Contact,
+  companies: Company[],
+  activeCompanyId: string | null
 ): Promise<HandlerResponse> {
-  const { buildContext } = await import('./base-handler');
-  const context = await buildContext(phoneNumber, contactId, '');
+  const context = await ContextService.buildContext(contact, companies, activeCompanyId, '');
   const handler = new DocumentsHandler(context);
 
   if (interactive === BUTTON_IDS.DOC_CAT_TAX) {
@@ -481,12 +484,12 @@ export async function handleDocCategoryButton(
 export async function requestDocument(
   phoneNumber: string,
   conversationId: string,
-  contactId: string,
-  description: string,
-  companyId: string | null
+  contact: Contact,
+  companies: Company[],
+  activeCompanyId: string | null,
+  description: string
 ): Promise<HandlerResponse> {
-  const { buildContext } = await import('./base-handler');
-  const context = await buildContext(phoneNumber, contactId, conversationId);
+  const context = await ContextService.buildContext(contact, companies, activeCompanyId, conversationId);
   const handler = new DocumentsHandler(context);
   return handler.requestDocument(phoneNumber, conversationId, description);
 }

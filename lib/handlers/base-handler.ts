@@ -375,6 +375,7 @@ export function createEmptyContext(): TemplateContext {
     companies: [],
     activeCompanyId: null,
     documents: [],
+    serviceRequests: [],
     lastAction: null,
     conversationHistory: [],
     redirectCount: 0,

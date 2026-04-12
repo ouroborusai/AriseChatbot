@@ -39,7 +39,7 @@ export class ContextService {
       let effectiveSegment = hasCompanies ? 'cliente' : currentSegment;
 
       // Sincronizar segmento en DB si hay cambio a cliente
-      if (hasCompanies && currentSegment !== 'cliente') {
+      if (hasCompanies && currentSegment !== 'cliente' && contact.id) {
         console.log(`[ContextService] 📈 Promocionando a ${contact.name} como CLIENTE`);
         await getSupabaseAdmin()
           .from('contacts')
@@ -55,6 +55,23 @@ export class ContextService {
         console.warn('[ContextService] ⚠️ No se pudieron cargar solicitudes:', e);
       }
 
+      // 4. Obtener historial (Necesario para TemplateContext)
+      const { data: messages } = await getSupabaseAdmin()
+        .from('messages')
+        .select('role, content, created_at')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+        .limit(20);
+
+      const conversationHistory = (messages || []).map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+        created_at: m.created_at
+      }));
+
+      // Inferencia de última acción
+      const lastAction = this.getLastActionFromHistory(conversationHistory);
+
       const result: TemplateContext = {
         contact: {
           ...contact,
@@ -69,48 +86,42 @@ export class ContextService {
         activeCompanyId,
         documents,
         serviceRequests,
-        metadata: contact.metadata || {},
+        lastAction,
+        conversationHistory,
+        redirectCount: 0,
+        customVariables: contact.metadata || {},
       };
 
-      console.log(`[ContextService] ✅ Contexto listo: ${result.contact.segment.toUpperCase()}`);
+      console.log(`[ContextService] ✅ Contexto listo: ${(result.contact.segment || 'prospecto').toUpperCase()}`);
       return result;
 
     } catch (globalError: any) {
       console.error('[ContextService] ❌ ERROR CRÍTICO:', globalError.message);
-      // Fallback mínimo de emergencia
+      // Fallback mínimo de emergencia 100% compatible con TemplateContext
       return {
         contact: { ...contact, segment: 'prospecto' as any },
         companies: [],
         activeCompanyId: null,
         documents: [],
         serviceRequests: [],
-        metadata: {}
+        lastAction: null,
+        conversationHistory: [],
+        redirectCount: 0,
+        customVariables: {}
       };
     }
   }
 
   /**
-   * Helper para extraer historial simplificado para servicios (p. ej. AI)
+   * Helper para extraer la última acción del historial
    */
-  static async getConversationHistory(conversationId: string) {
-    const { data } = await getSupabaseAdmin()
-      .from('messages')
-      .select('role, content')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    
-    return data || [];
-  }
-
-  /**
-   * Helper para obtener el último botón presionado
-   */
-  static getLastButtonFromHistory(history: any[]): string | null {
-    const lastUserMsg = history.find(m => m.role === 'user' && m.content.includes('[button:'));
-    if (!lastUserMsg) return null;
-    
-    const match = lastUserMsg.content.match(/\[button:(.*?)\]/);
-    return match ? match[1] : null;
+  private static getLastActionFromHistory(history: any[]): string | null {
+    for (let i = history.length - 1; i >= 0; i--) {
+      const content = history[i].content;
+      if (content.startsWith('[interactive:')) {
+        return content.replace('[interactive:', '').replace(']', '');
+      }
+    }
+    return null;
   }
 }

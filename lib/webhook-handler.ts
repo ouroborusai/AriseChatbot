@@ -109,7 +109,7 @@ export async function handleInboundUserMessage(messageData: {
 
       // Handlers Industriales
       if ((await handleCompanyButton(interactive, phoneNumber, conversationId, companies)).handled) return;
-      if ((await handleDocumentButton(interactive, phoneNumber, conversationId)).handled) return;
+      if ((await handleDocumentButton(interactive, phoneNumber, conversationId, contact, companies, activeCompanyId)).handled) return;
       
       const nextTemplate = await TemplateService.findTemplateByActionId(interactive, contact.segment || 'prospecto');
       if (nextTemplate) {

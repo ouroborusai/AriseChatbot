@@ -207,6 +207,7 @@ export function wantsHumanAgent(text: string): boolean {
     companies: [],
     activeCompanyId: null,
     documents: [],
+    serviceRequests: [],
     lastAction: null,
     conversationHistory: [],
     redirectCount: 0,

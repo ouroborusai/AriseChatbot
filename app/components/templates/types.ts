@@ -229,6 +229,8 @@ export interface TemplateContext {
     document_type?: string;
     created_at: string;
   }>;
+  /** Solicitudes de servicio activas */
+  serviceRequests: Array<any>;
   /** Última acción realizada (ID del botón) */
   lastAction: string | null;
   /** Historial de acciones en la conversación actual */

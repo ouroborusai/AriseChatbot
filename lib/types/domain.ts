@@ -8,6 +8,7 @@ export interface Contact {
   name?: string | null;
   email?: string | null;
   segment?: string | null; // 'cliente', 'prospecto'
+  metadata?: Record<string, any>;
   location?: string | null;
   last_message_at?: string;
   created_at?: string;
