@@ -90,6 +90,13 @@ export interface ActionConditions {
   else_action?: ElseAction;
 }
 
+export interface ListOption {
+  id: string;
+  title: string;
+  description: string;
+  next_template_id?: string;
+}
+
 /**
  * Acción dentro de una plantilla (Botón, Lista o envío de Documento)
  */

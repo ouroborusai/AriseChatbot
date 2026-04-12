@@ -1,26 +1,42 @@
--- Plantillas para Agente MTZ - WhatsApp Chatbot (SOLO SALUDOS)
--- Ejecutar en Supabase SQL Editor
+-- Limpieza total de plantillas anteriores
+DELETE FROM public.templates;
 
--- ============================================
--- BIENVENIDA Y MENÚS PRINCIPALES
--- ============================================
-
--- Menú Principal Cliente
+-- 1. Bienvenida Cliente
 INSERT INTO public.templates (id, name, content, category, segment, is_active, priority, trigger, workflow, actions)
 VALUES (
-  'menu_principal_cliente',
-  '1. Menú Principal Cliente',
-  '¡Hola, {{nombre}}! 👋 Soy el asistente virtual de MTZ Consultores Tributarios. Para poder guiarte de la mejor manera, por favor selecciona una de las siguientes opciones:',
-  'bienvenida', 'cliente', true, 100, 'hola,hola!,buenos días,buenas,bienvenido,start,menu', 'atencion',
-  '[]'
-) ON CONFLICT (id) DO UPDATE SET content = EXCLUDED.content, actions = EXCLUDED.actions, updated_at = now();
+  'bienvenida_cliente',
+  'Bienvenida Cliente',
+  '¡Hola, {{nombre}}! 👋 Bienvenido a MTZ Consultores. ¿En qué podemos ayudarte hoy?',
+  'bienvenida', 'cliente', true, 100, 'hola,start,menu', 'atencion',
+  '[{"type":"button","id":"btn_documentos","title":"📄 Mis Documentos"},{"type":"button","id":"btn_tramites","title":"⚙️ Trámites"},{"type":"button","id":"btn_asesor","title":"📞 Hablar con Asesor"}]'
+);
 
--- Bienvenida Prospecto
+-- 2. Bienvenida Prospecto
 INSERT INTO public.templates (id, name, content, category, segment, is_active, priority, trigger, workflow, actions)
 VALUES (
   'bienvenida_prospecto',
-  '1. Saludo Prospecto',
+  'Bienvenida Prospecto',
   '¡Hola! 👋 Bienvenido a MTZ Consultores. ¿En qué podemos ayudarte?',
-  'bienvenida', 'prospecto', true, 1, 'hola,hola!,buenos días,buenas', 'atencion',
+  'bienvenida', 'prospecto', true, 100, 'hola,cotizar,informacion', 'atencion',
+  '[{"type":"button","id":"btn_cotizar","title":"💼 Cotizar"},{"type":"button","id":"btn_servicios","title":"📝 Ver Servicios"},{"type":"button","id":"btn_asesor","title":"📞 Hablar con Asesor"}]'
+);
+
+-- 3. Derivación Asesor
+INSERT INTO public.templates (id, name, content, category, segment, is_active, priority, workflow, actions)
+VALUES (
+  'derivacion_asesor',
+  'Derivación a Asesor',
+  'Entendido. Un asesor de MTZ se pondrá en contacto contigo a la brevedad.',
+  'general', 'todos', true, 50, '', 'asesor',
+  '[{"type":"button","id":"btn_gracias","title":"✅ Entendido"}]'
+);
+
+-- 4. Gracias
+INSERT INTO public.templates (id, name, content, category, segment, is_active, priority, workflow, actions)
+VALUES (
+  'gracias',
+  'Mensaje de Gracias',
+  '¡Gracias por contactar MTZ Consultores!',
+  'general', 'todos', true, 50, '', 'general',
   '[]'
-) ON CONFLICT (id) DO UPDATE SET content = EXCLUDED.content, actions = EXCLUDED.actions, updated_at = now();
+);
