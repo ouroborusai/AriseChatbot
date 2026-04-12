@@ -16,8 +16,14 @@ export default function ClientsPage() {
   const [messageForm, setMessageForm] = useState({ message: '', documentUrl: '', documentName: '' });
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success?: boolean; error?: string } | null>(null);
+  const [newCompanyName, setNewCompanyName] = useState('');
   const [existingCompanySearch, setExistingCompanySearch] = useState('');
   const [isLinkingExisting, setIsLinkingExisting] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [isEditingSegment, setIsEditingSegment] = useState(false);
+  const [sendingAccessCode, setSendingAccessCode] = useState(false);
+  const [accessCodeResult, setAccessCodeResult] = useState<{ success?: boolean; error?: string } | null>(null);
 
   const { companies: allCompanies } = useAllCompanies();
   const { companyLinks, selectedCompanyId, setSelectedCompanyId, createAndLinkCompany, setPrimaryCompany, linkExistingCompany } = 
