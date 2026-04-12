@@ -50,6 +50,12 @@ export class AIHandler extends BaseHandler {
       lines.push(`- Nombre del contacto: ${this.context.contact.name}`);
     }
 
+    // MEMORIA ADAPTATIVA: Estilo de comunicación aprendido
+    const metadata = (this.context.contact as any).metadata || {};
+    if (metadata.communication_style) {
+      lines.push(`- PERFIL APRENDIDO: El usuario prefiere un estilo ${metadata.communication_style}. Respóndele de acuerdo a esta preferencia.`);
+    }
+
     // Segmento y recomendaciones de estilo
     if (this.context.contact.segment === 'cliente') {
       lines.push('- Este usuario es un CLIENTE ACTIVO de MTZ. Atiende con prioridad y claridad.');
@@ -97,6 +103,8 @@ export class AIHandler extends BaseHandler {
     lines.push('\n### REGLA DE ORO DE NAVEGACIÓN:');
     lines.push('- Si el usuario pide explícitamente ver uno de estos menús o realizar esa acción, DEBES incluir al final de tu respuesta el tag: [TRIGGER:id_del_menu]');
     lines.push('- Ejemplo: "Claro, aquí tienes el menú de archivos: [TRIGGER:menu_archivo]"');
+    lines.push('\n### INSTRUCCIÓN DE APRENDIZAJE:');
+    lines.push('- Analiza continuamente el estilo del usuario. Si detectas una preferencia clara (ej: responde muy corto, es muy formal, usa muchos tecnicismos), incluye al final del mensaje: [LEARN:Breve descripción del estilo]');
 
     // Instrucción final
     lines.push('\n- FINALMENTE: Si el usuario quiere ver un menú, dile algo como "Puedo mostrarte el menú de [X], ¿quieres verlo?"');
@@ -179,6 +187,23 @@ export class AIHandler extends BaseHandler {
       if (triggerMatch) {
         triggerId = triggerMatch[1];
         cleanResponse = aiResponse.replace(/\[TRIGGER:[a-z0-9_]+\]/i, '').trim();
+      }
+
+      // Detectar si la IA aprendió algo nuevo (Memoria Adaptativa)
+      const learnMatch = aiResponse.match(/\[LEARN:([^\]]+)\]/i);
+      if (learnMatch) {
+        const trait = learnMatch[1];
+        cleanResponse = cleanResponse.replace(/\[LEARN:[^\]]+\]/i, '').trim();
+        console.log(`[AIHandler] 🧠 Aprendiendo rasgo: ${trait}`);
+        
+        // Guardar en Metadata del contacto (Background)
+        const currentMetadata = (this.context.contact as any).metadata || {};
+        await getSupabaseAdmin()
+          .from('contacts')
+          .update({ 
+            metadata: { ...currentMetadata, communication_style: trait } 
+          })
+          .eq('id', this.context.contact.id);
       }
 
       await sendWhatsAppMessage(phoneNumber, cleanResponse);
