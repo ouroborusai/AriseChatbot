@@ -85,30 +85,74 @@ export class CompanyHandler extends BaseHandler {
     }
 
     const query = text.trim().toLowerCase();
-    const match = companies.find(c => c.legal_name.toLowerCase().includes(query));
+    
+    // 1. Buscar en las empresas ya vinculadas (por nombre)
+    const localMatch = companies.find(c => c.legal_name.toLowerCase().includes(query));
 
-    if (match) {
-      await getSupabaseAdmin()
-        .from('conversations')
-        .update({ active_company_id: match.id })
-        .eq('id', conversationId);
-
-      // Actualizar contexto local
-      this.updateContext({ activeCompanyId: match.id });
-
-      await sendWhatsAppMessage(
-        phoneNumber,
-        `Perfecto. Empresa seleccionada: ${match.legal_name}`
-      );
+    if (localMatch) {
+      await this.activateCompany(localMatch.id, conversationId);
+      await sendWhatsAppMessage(phoneNumber, `Perfecto. Empresa seleccionada: ${localMatch.legal_name}`);
       return { handled: true };
     }
 
-    // No encontró coincidencia
-    await sendWhatsAppMessage(
-      phoneNumber,
-      'No encontré esa empresa. ¿Podrías escribir el nombre más exacto?'
-    );
-    return { handled: true };
+    // 2. Si es un prospecto o no encontró local, buscar por RUT en la DB global
+    const looksLikeRut = /^[0-9.-]+[kK]?$/.test(query.replace(/\s/g, ''));
+    if (looksLikeRut) {
+      const cleanRut = query.replace(/[^0-9kK]/g, '').toUpperCase();
+      // Formatear RUT para búsqueda (ej: 12345678-9)
+      const formattedRut = cleanRut.length > 1 
+        ? `${cleanRut.slice(0, -1)}-${cleanRut.slice(-1)}`
+        : cleanRut;
+
+      console.log(`[CompanyHandler] 🔍 Buscando empresa global por RUT: ${formattedRut}`);
+      
+      const { data: globalMatch, error } = await getSupabaseAdmin()
+        .from('companies')
+        .select('*')
+        .or(`rut.eq.${formattedRut},rut.eq.${cleanRut}`)
+        .maybeSingle();
+
+      if (globalMatch) {
+        console.log(`[CompanyHandler] ✅ Empresa encontrada: ${globalMatch.legal_name}. Vinculando...`);
+        
+        // Vincular contacto con esta empresa
+        await getSupabaseAdmin().from('contact_companies').upsert({
+          contact_id: this.context.contact.id,
+          company_id: globalMatch.id,
+          is_primary: true
+        });
+
+        // Ascender a cliente
+        await getSupabaseAdmin().from('contacts').update({ segment: 'cliente' }).eq('id', this.context.contact.id);
+
+        await this.activateCompany(globalMatch.id, conversationId);
+        
+        await sendWhatsAppMessage(
+          phoneNumber, 
+          `¡Identificación exitosa! ✅ He vinculado tu número a *${globalMatch.legal_name}*.\n\nEscribe "Hola" para ver tu nuevo menú de cliente.`
+        );
+        return { handled: true };
+      }
+    }
+
+    // 3. No encontró coincidencia
+    if (companies.length > 0) {
+      await sendWhatsAppMessage(phoneNumber, 'No encontré esa empresa en tu lista. ¿Podrías escribir el nombre más exacto?');
+      return { handled: true };
+    }
+
+    return { handled: false };
+  }
+
+  /**
+   * Helper para activar una empresa
+   */
+  private async activateCompany(companyId: string, conversationId: string) {
+    await getSupabaseAdmin()
+      .from('conversations')
+      .update({ active_company_id: companyId })
+      .eq('id', conversationId);
+    this.updateContext({ activeCompanyId: companyId });
   }
 
   /**

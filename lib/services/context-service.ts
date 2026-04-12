@@ -12,6 +12,10 @@ export class ContextService {
     activeCompanyId: string | null,
     conversationId: string
   ): Promise<TemplateContext> {
+    // Lógica Industrial: Si tiene empresas vinculadas, ES CLIENTE (independiente de su etiqueta manual)
+    const hasCompanies = companies && companies.length > 0;
+    const effectiveSegment = hasCompanies ? 'cliente' : (contact.segment || 'prospecto');
+    
     // Solo recuperamos lo que no tenemos: documentos e historial
     const [
       { data: documents },
@@ -30,12 +34,22 @@ export class ContextService {
         .limit(20),
     ]);
 
+    // Si el segmento cambió dinámicamente, lo actualizamos en la base de datos para consistencia futura
+    if (effectiveSegment === 'cliente' && contact.segment !== 'cliente') {
+      console.log(`[ContextService] 🚀 Auto-ascendiendo contacto ${contact.phone_number} a CLIENTE por tener empresas vinculadas.`);
+      getSupabaseAdmin()
+        .from('contacts')
+        .update({ segment: 'cliente' })
+        .eq('id', contact.id)
+        .then(({ error }) => { if (error) console.error('Error auto-update segment:', error.message); });
+    }
+
     return {
       contact: {
         id: contact.id,
         name: contact.name,
         phone_number: contact.phone_number,
-        segment: contact.segment,
+        segment: effectiveSegment,
       },
       companies: companies.map(c => ({
         id: c.id,
