@@ -12,6 +12,7 @@ import { getSupabaseAdmin } from '../supabase-admin';
 import { BaseHandler, buildContext } from './base-handler';
 import { TemplateContext } from '../../app/components/templates/types';
 import { Contact, Company, HandlerResponse } from '../types';
+import { ContextService } from '../services/context-service';
 
 const HUMAN_KEYWORDS = [
   'humano', 'asesor', 'urgente', 'multa', 'fiscalización', 'fiscalizacion',
@@ -221,8 +222,8 @@ export async function handleAI(
   activeCompanyId: string | null,
   userMessage: string
 ): Promise<void> {
-  // Construir contexto completo
-  const context = await buildContext(phoneNumber, contact.id, conversationId);
+  // USAR EL NUEVO MOTOR DE CONTEXTO UNIFICADO
+  const context = await ContextService.buildContext(contact, companies, activeCompanyId, conversationId);
 
   const handler = new AIHandler(context);
   await handler.handleAI(phoneNumber, conversationId, userMessage);
