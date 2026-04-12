@@ -160,6 +160,18 @@ export class TemplateService {
         }));
         result = result.replace('{{iva_list}}', JSON.stringify(ivaList));
       }
+
+      // Resumen financiero dinámico del suspenso
+      if (result.includes('{{financial_summary}}')) {
+        const activeComp = context.companies.find(c => c.id === context.activeCompanyId) || context.companies[0];
+        const summary = (activeComp as any)?.metadata?.financial_summary;
+        
+        if (summary && summary.whatsapp_proposal) {
+          result = result.replace('{{financial_summary}}', summary.whatsapp_proposal);
+        } else {
+          result = result.replace('{{financial_summary}}', 'Para ver tu resumen financiero, selecciona una empresa activa.');
+        }
+      }
     }
 
     return result;

@@ -40,7 +40,8 @@ export class ContextService {
       companies: companies.map(c => ({
         id: c.id,
         legal_name: c.legal_name,
-        tax_id: c.tax_id
+        tax_id: c.rut,
+        metadata: c.metadata || {}
       })),
       activeCompanyId: activeCompanyId,
       documents: documents || [],

@@ -1,0 +1,23 @@
+{
+  "id": "resumen_financiero",
+  "name": "03_B_Resumen Financiero Proactivo",
+  "content": "{{financial_summary}}",
+  "category": "clientes",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 100,
+  "trigger": "resumen, como voy, estado",
+  "workflow": "contabilidad",
+  "actions": [
+    {
+      "id": "btn_request_status",
+      "title": "🔎 Mis Solititudes",
+      "next_template_id": null
+    },
+    {
+        "id": "btn_existing_human",
+        "title": "📞 Hablar con Asesor",
+        "next_template_id": null
+    }
+  ]
+}
