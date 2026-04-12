@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { useCompanies, useCompanyContacts, useClientDocuments, useAllContacts } from '@/lib/hooks/useCompanies';
 import { SearchInput } from '@/app/components/SearchInput';
 import { Modal } from '@/app/components/Modal';
