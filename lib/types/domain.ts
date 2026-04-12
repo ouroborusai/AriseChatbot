@@ -86,6 +86,8 @@ export interface ServiceRequest {
   status: string;
   priority: number;
   description?: string | null;
+  request_code?: string | null;
   created_at?: string;
   updated_at?: string;
 }
+
