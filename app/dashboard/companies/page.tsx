@@ -338,7 +338,7 @@ export default function CompaniesPage() {
       
       const { data: { publicUrl } } = supabase.storage.from(bucketName).getPublicUrl(fileName);
       await supabase.from('client_documents').insert({
-        contact_id: contacts[0]?.contact_id || null,
+        contact_id: linkedContacts[0]?.contact_id || null,
         company_id: selectedCompanyId,
         title,
         file_name: file.name,
