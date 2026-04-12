@@ -20,14 +20,12 @@ import {
 
 import { TemplateContext, Template } from '@/app/components/templates/types';
 import { getFinalActions } from './services/condition-engine';
-import { Contact, Company, HandlerResponse, BUTTON_IDS } from './types';
-import { handleCompanyButton, handleCompanyText } from './handlers/company-handler';
-import { handleDocumentButton, handleDocCategoryButton, handlePeriodText, DocumentsHandler } from './handlers/documents-handler';
-import { handleClassification, autoClassifyAsProspect } from './handlers/classification-handler';
+import { Contact, Company } from './types';
+import { handleCompanyButton } from './handlers/company-handler';
+import { handleDocumentButton } from './handlers/documents-handler';
+import { handleClassification } from './handlers/classification-handler';
 import { MenuHandler } from './handlers/menu-handler';
 import { handleAI } from './handlers/ai-handler';
-import { EmailService } from './services/email-service';
-import { AppointmentHandler } from './handlers/appointment-handler';
 import { TemplateService } from './services/template-service';
 import { NavigationService } from './services/navigation-service';
 import { ContextService } from './services/context-service';
@@ -57,9 +55,9 @@ export async function handleInboundUserMessage(messageData: {
   if (ignoreFrom && phoneNumber.includes(ignoreFrom)) return;
 
   try {
-    console.log(`[Webhook] 📥 Entrando mensaje de: ${phoneNumber} (${profileName || 'Sin nombre'})`);
+    console.log(`[Webhook] 📥 Entrando mensaje de: ${phoneNumber}`);
     
-    // 2. Obtener Contexto Inicial
+    // 2. Obtener Contexto Inicial (Deducción de Carlos Villagra 111 clientes)
     const contact = await getOrCreateContact(phoneNumber, profileName);
     const conversationId = await getOrCreateConversation(phoneNumber, contact.id);
     const companies = await listCompaniesForContact(contact.id);
@@ -90,7 +88,10 @@ export async function handleInboundUserMessage(messageData: {
       console.warn('[Webhook] ⚠️ Error guardando en DB, continuando...', saveErr);
     }
 
-    if (!text && !interactive) return;
+    if (!text && !interactive) {
+       console.log('[Webhook] ℹ️ Mensaje vacío ignorado');
+       return;
+    }
 
     // 5. Construir Contexto
     const context = await ContextService.buildContext(contact, companies, activeCompanyId, conversationId);
@@ -98,7 +99,7 @@ export async function handleInboundUserMessage(messageData: {
 
     // 6. FLUJO DE PROCESAMIENTO
     if (interactive) {
-      // Handlers de prioridad
+      // Handlers de prioridad (Etiquetado/Clasificación)
       const classification = await handleClassification(interactive, contact);
       if (classification.handled) {
         if (classification.response) await sendWhatsAppMessage(phoneNumber, classification.response);
@@ -106,6 +107,7 @@ export async function handleInboundUserMessage(messageData: {
         return;
       }
 
+      // Handlers Industriales
       if ((await handleCompanyButton(interactive, phoneNumber, conversationId, companies)).handled) return;
       if ((await handleDocumentButton(interactive, phoneNumber, conversationId)).handled) return;
       
@@ -116,7 +118,7 @@ export async function handleInboundUserMessage(messageData: {
       }
     }
 
-    // Manejo de Saludos
+    // Manejo de Saludos y Triggers de Texto
     if (text) {
       const greetingHandler = new MenuHandler(context);
       if (greetingHandler.isGreeting(text)) {
@@ -131,15 +133,15 @@ export async function handleInboundUserMessage(messageData: {
       }
 
       // IA Fallback
-    await handleAI(phoneNumber, conversationId, contact, companies, activeCompanyId, text);
+      await handleAI(phoneNumber, conversationId, contact, companies, activeCompanyId, text);
+    }
 
   } catch (error: any) {
     console.error('💥 ERROR en Webhook:', error.message);
-    // Enviar un saludo básico como último recurso
     try {
       await sendWhatsAppMessage(phoneNumber, '¡Hola! ☕ Recibí tu mensaje. En un momento te responderé.');
     } catch (e) {
-      console.error('No se pudo enviar ni el saludo de error');
+      console.error('Fallo crítico al enviar saludo de emergencia');
     }
   }
 }
@@ -148,7 +150,12 @@ export async function handleInboundUserMessage(messageData: {
  * Helper para enviar el menú por defecto
  */
 async function sendDefaultMenu(phoneNumber: string, contactId: string, conversationId: string) {
-  const { data: contact } = await getSupabaseAdmin().from('contacts').select('segment').eq('id', contactId).single();
+  const { data: contact } = await getSupabaseAdmin()
+    .from('contacts')
+    .select('segment')
+    .eq('id', contactId)
+    .single();
+
   const segment = (contact?.segment || 'prospecto').toLowerCase();
   const templateId = segment === 'cliente' ? 'menu_principal_cliente' : 'bienvenida_prospecto';
   
@@ -173,6 +180,7 @@ async function processTemplateResponse(
   try {
     const content = TemplateService.replaceVariables(template.content, context);
     
+    // Procesar acciones interactivas con blindaje
     if (template.actions && template.actions.length > 0) {
       try {
         const handled = await ActionService.executeActions(phoneNumber, template.actions, context);
