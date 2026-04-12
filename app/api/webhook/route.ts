@@ -93,11 +93,21 @@ export async function POST(request: NextRequest) {
         }
 
         const messages = change?.value?.messages;
-        const customers = change?.value?.customers;
+        const contacts = change?.value?.contacts;
         const statuses = change?.value?.statuses;
 
+        // Mapear Nombres de Perfil de WhatsApp
+        const profilesMap: Record<string, string> = {};
+        if (Array.isArray(contacts)) {
+          contacts.forEach(c => {
+            if (c.wa_id && c.profile?.name) {
+              profilesMap[c.wa_id] = c.profile.name;
+            }
+          });
+        }
+
         console.log('[Webhook] Messages:', messages ? messages.length : 0);
-        console.log('[Webhook] Customers:', customers ? customers.length : 0);
+        console.log('[Webhook] Contacts:', contacts ? contacts.length : 0);
         console.log('[Webhook] Statuses:', statuses ? statuses.length : 0);
 
         if (!Array.isArray(messages) || messages.length === 0) {
@@ -115,7 +125,13 @@ export async function POST(request: NextRequest) {
             continue;
           }
 
-          console.log('[Webhook] 📨 Mensaje:', JSON.stringify(messageData, null, 2));
+          // Inyectar el nombre del perfil
+          const waId = messageData.from;
+          if (waId && profilesMap[waId]) {
+            (messageData as any).profileName = profilesMap[waId];
+          }
+
+          console.log('[Webhook] 📨 Mensaje de', (messageData as any).profileName || waId);
 
           try {
             await handleInboundUserMessage(messageData as InboundMessage);

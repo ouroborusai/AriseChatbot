@@ -30,7 +30,7 @@ function generateRequestCode(type: string): string {
 /**
  * Obtiene o crea un contacto
  */
-export async function getOrCreateContact(phoneNumber: string): Promise<Contact> {
+export async function getOrCreateContact(phoneNumber: string, profileName?: string): Promise<Contact> {
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const { data: existing, error: selectError } = await getSupabaseAdmin()
     .from('contacts')
@@ -46,10 +46,16 @@ export async function getOrCreateContact(phoneNumber: string): Promise<Contact> 
   if (existing) {
     console.log('[DB] Found existing contact:', existing.id);
     
-    // Actualizar last_message_at
+    // Actualizar last_message_at (y el nombre si no lo tenía)
+    const updates: any = { last_message_at: new Date().toISOString() };
+    if (profileName && (!existing.name || existing.name === 'cliente' || existing.name === 'prospecto')) {
+      updates.name = profileName;
+      existing.name = profileName;
+    }
+
     const { error: updateError } = await getSupabaseAdmin()
       .from('contacts')
-      .update({ last_message_at: new Date().toISOString() })
+      .update(updates)
       .eq('id', existing.id);
     
     if (updateError) {
@@ -63,6 +69,7 @@ export async function getOrCreateContact(phoneNumber: string): Promise<Contact> 
     .from('contacts')
     .insert({
       phone_number: normalizedPhone,
+      name: profileName || null,
       last_message_at: new Date().toISOString(),
     })
     .select('id, name, email, segment, location, last_message_at, phone_number')

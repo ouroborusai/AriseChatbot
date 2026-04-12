@@ -31,6 +31,7 @@ import { MenuHandler } from './handlers/menu-handler';
  */
 export async function handleInboundUserMessage(messageData: {
   from?: string;
+  profileName?: string;
   text?: { body?: string };
   interactive?: { 
     button_reply?: { id?: string }; 
@@ -38,6 +39,7 @@ export async function handleInboundUserMessage(messageData: {
   };
 }): Promise<void> {
   const phoneNumber = messageData.from;
+  const profileName = messageData.profileName;
   const text = messageData.text?.body?.trim();
   const interactive = messageData.interactive?.button_reply?.id || messageData.interactive?.list_reply?.id;
 
@@ -49,7 +51,7 @@ export async function handleInboundUserMessage(messageData: {
 
   try {
     // 2. Obtener Contexto Inicial
-    const contact = await getOrCreateContact(phoneNumber);
+    const contact = await getOrCreateContact(phoneNumber, profileName);
     const conversationId = await getOrCreateConversation(phoneNumber, contact.id);
     const companies = await listCompaniesForContact(contact.id);
     let activeCompanyId = await getActiveCompanyForConversation(conversationId);
@@ -182,8 +184,14 @@ async function sendDefaultMenu(phoneNumber: string, contactId: string, conversat
   const templateId = segment === 'cliente' ? 'menu_principal_cliente' : 'bienvenida_prospecto';
   console.log('[Webhook] Buscando plantilla:', templateId);
   
-  const template = await TemplateService.findTemplateById(templateId, segment);
-  console.log('[Webhook] Plantilla encontrada:', !!template);
+  let template = await TemplateService.findTemplateById(templateId, segment);
+  
+  if (!template) {
+    console.log(`[Webhook] ⚠️ No se encontró por ID (${templateId}). Intentando buscar por trigger "hola"...`);
+    template = await TemplateService.findTemplateByTrigger('hola', segment);
+  }
+
+  console.log('[Webhook] Plantilla encontrada finalmente:', !!template);
   if (template) {
     const freshContext = await ContextService.buildContext({id: contactId, segment} as any, [], null, conversationId);
     await processTemplateResponse(phoneNumber, template, freshContext, NavigationService.createInitialState());
