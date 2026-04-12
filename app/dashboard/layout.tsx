@@ -72,15 +72,21 @@ export default function DashboardLayout({
   if (!mounted) return null;
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="flex h-full w-full">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col md:flex-row">
+      <style jsx global>{`
+        @media (max-width: 768px) {
+          .hide-scrollbar::-webkit-scrollbar { display: none; }
+          .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        }
+      `}</style>
+      
       {/* Sidebar - Desktop only */}
       <aside
-        className={`transition-all duration-300 bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl flex flex-col ${
+        className={`hidden md:flex transition-all duration-300 bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl flex-col ${
           collapsed ? 'w-20' : 'w-72'
         }`}
       >
-        {/* Capa 1: Logo - Altura fija */}
+        {/* Capa 1: Logo */}
         <div className="shrink-0 px-4 py-5 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-500 text-white font-bold shadow-lg">
@@ -97,24 +103,7 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Botón collapse - Separado */}
-        <div className="shrink-0 px-2 py-2 border-b border-slate-700/30">
-          <button
-            type="button"
-            onClick={() => setCollapsed(!collapsed)}
-            className={`flex items-center gap-2 w-full rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:text-white hover:bg-white/5 transition ${
-              collapsed ? 'justify-center' : 'justify-end'
-            }`}
-            aria-label={collapsed ? 'Expandir menú' : 'Contraer menú'}
-          >
-            <span className={`text-xs transition-transform ${collapsed ? '' : 'rotate-180'}`}>
-              {collapsed ? '▶' : '◀'}
-            </span>
-            {!collapsed && <span className="text-xs">Contraer</span>}
-          </button>
-        </div>
-
-        {/* Capa 2: Navegación - Crece y ocupa espacio disponible */}
+        {/* Capa Navegación Desktop */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
           {menuItems.map((item) => {
             const active = pathname === item.href;
@@ -131,35 +120,59 @@ export default function DashboardLayout({
                 <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-lg group-hover:bg-white/10 transition">
                   {item.icon}
                 </span>
-                {!collapsed && (
-                  <span className="truncate">{item.label}</span>
-                )}
+                {!collapsed && <span className="truncate">{item.label}</span>}
               </Link>
             );
           })}
         </nav>
 
-        {/* Capa 3: Botón logout - Altura fija */}
+        {/* Logout Desktop */}
         <div className="shrink-0 px-4 py-4 border-t border-slate-700/50">
-          <button
-            onClick={handleLogout}
-            className={`flex w-full items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/20 active:bg-red-500/30 ${
-              collapsed ? 'justify-center' : ''
-            }`}
-          >
+          <button onClick={handleLogout} className={`flex w-full items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/20 active:bg-red-500/30 ${collapsed ? 'justify-center' : ''}`}>
             <span className="text-base">⏻</span>
             {!collapsed && <span>Cerrar sesión</span>}
           </button>
         </div>
       </aside>
 
-        {/* Contenido Principal */}
-        <main className="flex-1 overflow-hidden">
-          <div className="h-full w-full">
-            {children}
+      {/* MOBILE HEADER & NAVIGATION */}
+      <div className="md:hidden flex flex-col h-full w-full overflow-hidden">
+        {/* Mobile Header */}
+        <header className="shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4 flex items-center justify-between shadow-sm z-30">
+          <div className="flex items-center gap-3">
+             <span className="h-8 w-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white font-bold text-xs">A</span>
+             <h1 className="font-extrabold text-slate-900 tracking-tight">AriseChatbot</h1>
           </div>
+          <button onClick={handleLogout} className="text-red-500 text-sm font-bold bg-red-50 px-3 py-1.5 rounded-lg active:scale-95 transition-transform">Salir</button>
+        </header>
+
+        {/* Content Area - Scrollable */}
+        <main className="flex-1 overflow-y-auto hide-scrollbar bg-slate-50 relative pb-20">
+          {children}
         </main>
+
+        {/* Bottom Navigation Bar (Thumb Friendly) */}
+        <nav className="shrink-0 bg-white/90 backdrop-blur-xl border-t border-slate-200 px-2 py-3 flex items-center justify-around shadow-[0_-10px_30px_rgba(0,0,0,0.05)] z-40">
+          {menuItems.slice(0, 5).map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-indigo-600' : 'text-slate-400'}`}
+              >
+                <span className={`text-xl transition-transform ${active ? 'scale-110' : ''}`}>{item.icon}</span>
+                <span className={`text-[10px] font-bold uppercase tracking-widest ${active ? 'opacity-100' : 'opacity-60'}`}>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
+
+      {/* Main Content Area - Desktop */}
+      <main className="hidden md:block flex-1 overflow-hidden relative">
+        {children}
+      </main>
     </div>
   );
 }

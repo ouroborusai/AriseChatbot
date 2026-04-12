@@ -347,7 +347,6 @@ export default function MessageView({ selectedConversation, selectedPhone }: Mes
         )}
       </div>
 
-      {/* Área de input para responder desde la interfaz */}
       <div className="shrink-0 border-t border-slate-100 bg-white px-5 py-4 relative">
         {/* Menu de comandos / workflows */}
         {showCommands && (
@@ -376,9 +375,9 @@ export default function MessageView({ selectedConversation, selectedPhone }: Mes
           </div>
         )}
 
-        <form onSubmit={handleSendReply} className="space-y-3">
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <span className="text-xl">💬</span>
+        <form onSubmit={handleSendReply} className="relative">
+          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 md:px-4 md:py-3 shadow-inner">
+            <span className="text-lg hidden sm:inline">💬</span>
             <input
               value={replyText}
               onChange={handleInputChange}
@@ -386,33 +385,35 @@ export default function MessageView({ selectedConversation, selectedPhone }: Mes
               disabled={!selectedConversation || !selectedPhone || sending}
               placeholder={
                 selectedConversation
-                  ? 'Escribe tu respuesta o usa / para workflows...'
-                  : 'Selecciona una conversación para responder'
+                  ? 'Escribe...'
+                  : 'Selecciona chat...'
               }
-              className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+              className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed py-1"
             />
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
               type="submit"
               disabled={!selectedConversation || !selectedPhone || !replyText.trim() || sending}
-              className="inline-flex items-center justify-center rounded-2xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+              className="h-9 w-9 shrink-0 flex items-center justify-center rounded-xl bg-green-600 text-white transition hover:bg-green-700 disabled:opacity-50 shadow-md active:scale-90"
             >
-              {sending ? 'Enviando...' : 'Enviar respuesta'}
+              {sending ? (
+                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <span className="text-lg">↗️</span>
+              )}
             </button>
-            {sendResult && (
-              <div
-                className={`rounded-2xl px-4 py-3 text-sm ${
-                  sendResult.success
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
-                }`}
-              >
-                {sendResult.success ? 'Respuesta enviada' : `Error: ${sendResult.error}`}
-              </div>
-            )}
           </div>
+
+          {sendResult && (
+            <div
+              className={`absolute bottom-full left-5 right-5 mb-4 rounded-xl px-4 py-2 text-xs text-center shadow-lg animate-in fade-in slide-in-from-bottom-2 ${
+                sendResult.success
+                  ? 'bg-green-600 text-white'
+                  : 'bg-red-600 text-white'
+              }`}
+            >
+              {sendResult.success ? '✓ Enviado' : `Error: ${sendResult.error}`}
+            </div>
+          )}
         </form>
       </div>
     </main>
