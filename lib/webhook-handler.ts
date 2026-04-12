@@ -11,6 +11,10 @@ import {
   sendWhatsAppListMessage 
 } from './whatsapp-service';
 import { 
+  getOrCreateContact,
+  getOrCreateConversation,
+  listCompaniesForContact,
+  getActiveCompanyForConversation,
   saveMessage, 
 } from './database-service';
 
