@@ -58,7 +58,21 @@ export async function handleInboundUserMessage(messageData: {
     console.log(`[Webhook] 📥 Entrando mensaje de: ${phoneNumber}`);
     
     // 2. Obtener Contexto Inicial (Deducción de Carlos Villagra 111 clientes)
-    const contact = await getOrCreateContact(phoneNumber, profileName);
+    // 2. Obtener/Actualizar Contacto
+    let contact = await getOrCreateContact(phoneNumber, profileName);
+    
+    // Si el nombre es genérico o nulo y tenemos un profileName real, actualizarlo
+    if ((!contact.name || contact.name.toLowerCase() === 'cliente') && profileName && profileName.toLowerCase() !== 'cliente') {
+      console.log(`[Webhook] 👤 Actualizando nombre de contacto: ${profileName}`);
+      const { data: updatedContact } = await getSupabaseAdmin()
+        .from('contacts')
+        .update({ name: profileName })
+        .eq('id', contact.id)
+        .select()
+        .single();
+      if (updatedContact) contact = updatedContact as Contact;
+    }
+
     const conversationId = await getOrCreateConversation(phoneNumber, contact.id);
     const companies = await listCompaniesForContact(contact.id);
     let activeCompanyId = await getActiveCompanyForConversation(conversationId);
