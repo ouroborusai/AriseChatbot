@@ -90,7 +90,8 @@ export class DocumentsHandler extends BaseHandler {
       '¿También lo necesitas en tu correo? 📧',
       [
         { id: `${BUTTON_IDS.SEND_BY_EMAIL}_${doc.id}`, title: 'Enviar a mi Email' },
-        { id: BUTTON_IDS.EXISTING_DOCS, title: 'Ver otros' }
+        { id: BUTTON_IDS.EXISTING_DOCS, title: '📁 Ver otros' },
+        { id: 'menu_principal_cliente', title: '🏠 Menú Inicio' }
       ]
     );
 

@@ -84,9 +84,15 @@ export class AppointmentHandler extends BaseHandler {
 
     if (error) {
       console.error('[AppointmentHandler] Error:', error);
-      await sendWhatsAppMessage(phoneNumber, 'Hubo un error al guardar tu cita. Un asesor te contactará para confirmar manualmente. 📞');
+      await sendWhatsAppMessage(phoneNumber, 'Hubo un error al procesar tu solicitud. Un asesor te contactará para agendar manualmente. 📞');
     } else {
-      await sendWhatsAppMessage(phoneNumber, `¡Cita Agendada! ✅\n\n📅 Fecha: *${date}*\n⏰ Hora: *${time}*\n\nTe hemos enviado un correo de confirmación y un asesor de MTZ revisará los detalles. ¡Nos vemos!`);
+      await sendWhatsAppMessage(phoneNumber, `¡Solicitud Recibida! 📩\n\n📅 Fecha sugerida: *${date}*\n⏰ Hora sugerida: *${time}*\n\nHe enviado tu requerimiento al equipo de MTZ. *Te llegará una notificación automática* en cuanto tu asesor confirme la disponibilidad oficial. ¡Hablamos pronto! ✨`);
+      
+      const { sendWhatsAppInteractiveButtons } = await import('../whatsapp-service');
+      await sendWhatsAppInteractiveButtons(phoneNumber, "¿Deseas realizar otra gestión mientras tanto?", [
+        { id: 'menu_principal_cliente', title: '🏠 Menú Inicio' },
+        { id: 'btn_humano', title: '📞 Hablar con Asesor' }
+      ]);
     }
 
     return { handled: true };
