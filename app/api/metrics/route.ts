@@ -11,12 +11,12 @@ export async function GET(request: NextRequest) {
       .select('id', { count: 'exact' });
 
     // Get conversations created today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const todayBegin = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const { count: conversationsToday } = await admin
       .from('conversations')
       .select('id', { count: 'exact' })
-      .gte('created_at', today.toISOString());
+      .gte('created_at', todayBegin.toISOString());
 
     // Get conversations created this week
     const weekAgo = new Date();
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     const { count: messagesToday } = await admin
       .from('messages')
       .select('id', { count: 'exact' })
-      .gte('created_at', today.toISOString());
+      .gte('created_at', todayBegin.toISOString());
 
     // Calculate resolution rate (closed conversations / total)
     const { count: closedConversations } = await admin
@@ -91,6 +91,28 @@ export async function GET(request: NextRequest) {
       .select('id', { count: 'exact' })
       .eq('role', 'assistant');
 
+    // Get weekly stats (activity by day)
+    const daily_activity = [];
+    const days = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+      
+      const { count } = await admin
+        .from('messages')
+        .select('id', { count: 'exact' })
+        .gte('created_at', dayStart.toISOString())
+        .lte('created_at', dayEnd.toISOString());
+        
+      daily_activity.push({
+        day: days[d.getDay()],
+        count: count || 0
+      });
+    }
+
     return NextResponse.json({
       total_conversations: totalConversations || 0,
       conversations_today: conversationsToday || 0,
@@ -105,6 +127,7 @@ export async function GET(request: NextRequest) {
       total_docs_delivered: totalDocs || 0,
       total_appointments: totalAppointments || 0,
       bot_responses: botMessages || 0,
+      daily_activity,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

@@ -37,6 +37,7 @@ Configuración de las respuestas del chatbot.
 ### `appointments`
 Gestión de citas agendadas por el bot.
 - `contact_id` (uuid): Referencia al cliente.
+- `company_id` (uuid): Referencia a la empresa (opcional).
 - `appointment_date` (date): Fecha de la cita.
 - `appointment_time` (time): Hora de la cita.
 - `status` (text): p.ej. "pending", "confirmed".

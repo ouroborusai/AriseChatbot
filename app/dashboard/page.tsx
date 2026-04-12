@@ -16,22 +16,45 @@ export default function DashboardPage() {
   );
 
   if (loading) {
-    return <div className="h-full flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-green-500 border-t-transparent rounded-full" /></div>;
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-slate-50">
+        <div className="animate-spin h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full mb-4" />
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest animate-pulse">Sincronizando Comunicaciones...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="h-full flex">
-      <div className="w-80 shrink-0 border-r border-slate-200 bg-white">
-        <div className="p-4 border-b border-slate-100">
+    <div className="h-full flex overflow-hidden bg-white">
+      {/* Sidebar de Conversaciones */}
+      <div className={`
+        ${selectedPhone ? 'hidden md:flex' : 'flex'} 
+        w-full md:w-80 shrink-0 border-r border-slate-200 bg-white flex-col h-full
+      `}>
+        <div className="px-5 py-4 border-b border-slate-100 bg-white">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-slate-900">Conversaciones</h2>
-            <span className="text-xs text-slate-500">{realtimeStatus}</span>
+            <h2 className="text-[11px] font-bold text-slate-800 uppercase tracking-widest">Canales Vivos</h2>
+            <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">En Vivo</span>
+            </div>
           </div>
         </div>
-        <ConversationList conversations={convList} selectedPhone={selectedPhone} onSelect={setSelectedPhone} />
+        <div className="flex-1 overflow-hidden">
+          <ConversationList conversations={convList} selectedPhone={selectedPhone} onSelect={setSelectedPhone} />
+        </div>
       </div>
-      <div className="flex-1">
-        <MessageView selectedConversation={selectedConversation} selectedPhone={selectedPhone} />
+
+      {/* Vista de Mensajes */}
+      <div className={`
+        ${selectedPhone ? 'flex' : 'hidden md:flex'} 
+        flex-1 h-full bg-slate-50 overflow-hidden
+      `}>
+        <MessageView 
+          selectedConversation={selectedConversation} 
+          selectedPhone={selectedPhone} 
+          onBack={() => setSelectedPhone(null)}
+        />
       </div>
     </div>
   );

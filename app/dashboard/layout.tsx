@@ -74,98 +74,119 @@ export default function DashboardLayout({
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col md:flex-row">
       
-      {/* Sidebar - Desktop only */}
+      {/* Sidebar - Desktop only (MD and UP) */}
       <aside
-        className={`hidden md:flex transition-all duration-300 bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl flex-col ${
-          collapsed ? 'w-20' : 'w-72'
+        className={`hidden md:flex transition-all duration-300 bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl flex-col shrink-0 ${
+          collapsed ? 'w-20' : 'w-64 lg:w-72'
         }`}
       >
-        {/* Capa 1: Logo */}
-        <div className="shrink-0 px-4 py-5 border-b border-slate-700/50">
+        {/* Logo Section */}
+        <div className="shrink-0 px-4 py-5 lg:px-6 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-500 text-white font-bold shadow-lg">
+            <span className="inline-flex h-10 w-10 lg:h-11 lg:w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-500 text-white font-black shadow-lg shadow-indigo-500/20">
               A
             </span>
             {!collapsed && (
-              <div className="overflow-hidden">
-                <p className="text-base font-semibold whitespace-nowrap">
+              <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-300">
+                <p className="text-sm lg:text-base font-black tracking-tight whitespace-nowrap">
                   AriseChatbot
                 </p>
-                <p className="text-xs text-slate-400">Automatización Inteligente</p>
+                <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Neural Engine</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Capa Navegación Desktop */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        {/* Navigation Desktop */}
+        <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-1 lg:space-y-1.5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           {menuItems.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                className={`group flex items-center gap-3 rounded-2xl px-3 py-2.5 lg:py-3 text-sm font-black transition-all ${
                   active
-                    ? 'bg-white/15 text-white shadow-sm'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    ? 'bg-white/10 text-white shadow-sm ring-1 ring-white/10'
+                    : 'text-white/40 hover:bg-white/5 hover:text-white'
                 } ${collapsed ? 'justify-center' : ''}`}
               >
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-lg group-hover:bg-white/10 transition">
+                <span className={`inline-flex shrink-0 items-center justify-center rounded-xl text-lg transition-all duration-300 ${active ? 'h-9 w-9 bg-indigo-500 shadow-lg shadow-indigo-500/20' : 'h-8 w-8 bg-white/5 group-hover:bg-white/10'}`}>
                   {item.icon}
                 </span>
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                {!collapsed && <span className="truncate tracking-tight">{item.label}</span>}
               </Link>
             );
           })}
         </nav>
 
         {/* Logout Desktop */}
-        <div className="shrink-0 px-4 py-4 border-t border-slate-700/50">
-          <button onClick={handleLogout} className={`flex w-full items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/20 active:bg-red-500/30 ${collapsed ? 'justify-center' : ''}`}>
+        <div className="shrink-0 px-4 py-6 border-t border-white/5">
+          <button onClick={handleLogout} className={`flex w-full items-center gap-3 rounded-2xl bg-rose-500/10 px-4 py-3 text-sm font-black text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all ${collapsed ? 'justify-center' : ''}`}>
             <span className="text-base">⏻</span>
-            {!collapsed && <span>Cerrar sesión</span>}
+            {!collapsed && <span className="tracking-tight">Finalizar Sesión</span>}
           </button>
         </div>
       </aside>
 
-      {/* MOBILE HEADER & NAVIGATION */}
+      {/* MOBILE INTERFACE (UP TO MD) */}
       <div className="md:hidden flex flex-col h-full w-full overflow-hidden">
-        {/* Mobile Header */}
-        <header className="shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4 flex items-center justify-between shadow-sm z-30">
-          <div className="flex items-center gap-3">
-             <span className="h-8 w-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white font-bold text-xs">A</span>
-             <h1 className="font-extrabold text-slate-900 tracking-tight">AriseChatbot</h1>
+        {/* Mobile Header - Ultra Clean */}
+        <header className="shrink-0 bg-white/90 backdrop-blur-xl border-b border-slate-100 px-5 h-16 flex items-center justify-between shadow-sm z-30">
+          <div className="flex items-center gap-2.5">
+             <span className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-900 text-white font-black text-sm shadow-lg shadow-slate-200">A</span>
+             <h1 className="font-black text-slate-900 tracking-tighter text-lg uppercase">Arise<span className="text-indigo-600">Bot</span></h1>
           </div>
-          <button onClick={handleLogout} className="text-red-500 text-sm font-bold bg-red-50 px-3 py-1.5 rounded-lg active:scale-95 transition-transform">Salir</button>
+          <button 
+            onClick={handleLogout} 
+            className="flex items-center justify-center h-10 w-10 bg-rose-50 text-rose-500 rounded-xl active:scale-90 transition-transform shadow-sm"
+            title="Salir"
+          >
+            ⏻
+          </button>
         </header>
 
         {/* Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto hide-scrollbar bg-slate-50 relative pb-20">
+        <main className="flex-1 overflow-y-auto bg-slate-50 relative pb-24">
           {children}
         </main>
 
-        {/* Bottom Navigation Bar (Thumb Friendly) */}
-        <nav className="shrink-0 bg-white/90 backdrop-blur-xl border-t border-slate-200 px-2 py-3 flex items-center justify-around shadow-[0_-10px_30px_rgba(0,0,0,0.05)] z-40">
+        {/* Bottom Navigation Bar - Solid Industrial Design */}
+        <nav className="shrink-0 bg-white border-t border-slate-200 h-20 flex items-center justify-around px-2 z-50 pb-safe">
           {menuItems.slice(0, 5).map((item) => {
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-indigo-600' : 'text-slate-400'}`}
+                className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
+                  active ? 'text-indigo-600' : 'text-slate-400'
+                }`}
               >
-                <span className={`text-xl transition-transform ${active ? 'scale-110' : ''}`}>{item.icon}</span>
-                <span className={`text-[10px] font-bold uppercase tracking-widest ${active ? 'opacity-100' : 'opacity-60'}`}>{item.label}</span>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xl">
+                    {item.icon}
+                  </span>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                    active ? 'opacity-100' : 'opacity-40'
+                  }`}>
+                    {item.label}
+                  </span>
+                </div>
+                {active && (
+                   <span className="absolute bottom-0 h-1 w-12 bg-indigo-600 rounded-t-full" />
+                )}
               </Link>
             );
           })}
         </nav>
       </div>
 
-      {/* Main Content Area - Desktop */}
+      {/* Main Content Area - Desktop (MD and UP) */}
       <main className="hidden md:block flex-1 overflow-hidden relative">
-        {children}
+        <div className="h-full w-full overflow-y-auto scroll-smooth custom-scrollbar">
+          {children}
+        </div>
       </main>
     </div>
   );

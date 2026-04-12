@@ -146,188 +146,267 @@ export default function ClientsPage() {
   };
 
   if (loading) {
-    return <div className="h-full flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-green-500 border-t-transparent rounded-full" /></div>;
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-slate-200 border-t-indigo-600 rounded-full" />
+      </div>
+    );
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Clientes</h1>
-        <p className="text-sm text-slate-500">Gestiona tus clientes y contactos</p>
+    <div className="h-full flex flex-col p-4 md:p-8">
+      {/* Header Sólido */}
+      <div className={`mb-6 ${selectedContact ? 'hidden md:block' : 'block'}`}>
+        <div className="flex items-center gap-3 mb-1">
+          <h1 className="text-xl md:text-3xl font-bold text-slate-800 uppercase tracking-tighter">Clientes</h1>
+          <span className="bg-slate-800 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">Base de Datos</span>
+        </div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gestión de Contactos Operativos</p>
       </div>
-      <div className="flex-1 min-h-0 flex gap-6">
-        <div className="w-80 shrink-0 flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="p-4 border-b border-slate-100">
-            <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Buscar contacto..." />
+
+      <div className="flex-1 min-h-0 flex gap-0 md:gap-6 relative overflow-hidden">
+        
+        {/* LISTA DE CONTACTOS */}
+        <div className={`w-full md:w-[350px] shrink-0 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${selectedContact ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+            <SearchInput 
+              value={searchQuery} 
+              onChange={setSearchQuery} 
+              placeholder="Buscar contacto..." 
+            />
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
+          
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {filteredContacts.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 text-sm">Sin contactos</div>
-            ) : (
-              <div className="space-y-1">
-                {filteredContacts.map((contact) => (
-                  <ContactCard key={contact.id} contact={contact} isSelected={selectedContact?.id === contact.id} onClick={() => setSelectedContact(contact)} />
-                ))}
+              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                <p className="text-[10px] font-bold uppercase tracking-widest">Sin resultados</p>
               </div>
+            ) : (
+              filteredContacts.map((contact) => (
+                <ContactCard 
+                  key={contact.id} 
+                  contact={contact} 
+                  isSelected={selectedContact?.id === contact.id} 
+                  onClick={() => setSelectedContact(contact)} 
+                />
+              ))
             )}
           </div>
         </div>
-        <div className="flex-1 min-w-0 bg-white rounded-2xl border border-slate-200 overflow-y-auto">
+
+        {/* PANEL DE DETALLE */}
+        <div className={`flex-1 min-w-0 bg-white rounded-2xl border border-slate-200 overflow-y-auto shadow-sm ${!selectedContact ? 'hidden md:block' : 'block'}`}>
           {selectedContact ? (
-            <div className="p-6 space-y-6">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-900">Contacto</h3>
-                  <button type="button" onClick={() => { setEditName(selectedContact.name || ''); setIsEditingName(true); }} className="text-xs text-whatsapp-green hover:underline">Editar nombre</button>
+            <div className="p-5 md:p-8 space-y-6">
+              
+              {/* Navegación Móvil */}
+              <div className="md:hidden flex items-center justify-between mb-6">
+                <button 
+                  onClick={() => setSelectedContact(null)}
+                  className="h-12 w-12 flex items-center justify-center bg-slate-100 rounded-xl active:bg-slate-200"
+                >
+                  <span className="text-xl">⬅️</span>
+                </button>
+                <div className="text-right">
+                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Perfil de Cliente</p>
+                   <p className="text-sm font-bold text-slate-900 truncate max-w-[150px]">{selectedContact.name || 'S/N'}</p>
                 </div>
-                {isEditingName ? (
-                  <div className="mt-3 flex gap-2">
-                    <input value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none" placeholder="Nombre del contacto" autoFocus />
-                    <button type="button" onClick={handleUpdateContactName} className="rounded-xl bg-whatsapp-green px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-whatsapp-greenHover">Guardar</button>
-                    <button type="button" onClick={() => setIsEditingName(false)} className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">✕</button>
-                  </div>
-                ) : (
-                  <div className="mt-2">
-                    <p className="font-medium text-slate-900">{selectedContact.name || 'Sin nombre'}</p>
-                    <p className="text-sm text-slate-600">{selectedContact.phone_number}</p>
-                    {isEditingSegment ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {['cliente', 'prospecto', 'vip', 'moroso'].map((seg) => (
-                          <button
-                            key={seg}
-                            onClick={() => handleUpdateSegment(seg)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-tight transition ${
-                              selectedContact.segment === seg ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
-                          >
-                            {seg}
-                          </button>
-                        ))}
-                        <button type="button" onClick={() => handleUpdateSegment('')} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-50 text-red-600">Borrar</button>
-                        <button type="button" onClick={() => setIsEditingSegment(false)} className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold">✕</button>
-                      </div>
-                    ) : (
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className={`inline-block text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-tight ${
-                          selectedContact.segment === 'cliente' ? 'bg-green-100 text-green-700' : 
-                          selectedContact.segment === 'prospecto' ? 'bg-blue-100 text-blue-700' : 
-                          selectedContact.segment === 'vip' ? 'bg-yellow-100 text-yellow-700' :
-                          selectedContact.segment === 'moroso' ? 'bg-red-100 text-red-700' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>
-                          {selectedContact.segment === 'cliente' ? '✅ Cliente' : 
-                           selectedContact.segment === 'prospecto' ? '🆕 Prospecto' : 
-                           selectedContact.segment === 'vip' ? '💎 VIP' :
-                           selectedContact.segment === 'moroso' ? '⚠️ Moroso' :
-                           '❓ Sin clasificar'}
-                        </span>
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-100 rounded-full">
-                          <span className={`h-2 w-2 rounded-full ${getActivityStatus(selectedContact.updated_at).color}`}></span>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{getActivityStatus(selectedContact.updated_at).label}</span>
-                        </div>
-                        <button type="button" onClick={() => setIsEditingSegment(true)} className="text-xs text-slate-500 hover:text-slate-700 underline decoration-slate-300 underline-offset-2 ml-auto font-medium">Gestionar</button>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-slate-900">🏢 Empresas</h3>
-                  <button type="button" onClick={() => setIsLinkingExisting(!isLinkingExisting)} className="text-xs text-whatsapp-green hover:underline">
-                    {isLinkingExisting ? 'Cancelar' : '+ Vincular existente'}
-                  </button>
-                </div>
-
-                {isLinkingExisting && (
-                  <div className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <p className="text-xs font-medium text-slate-700 mb-2">Buscar empresa por nombre o RUT</p>
-                    <input 
-                      type="text" 
-                      value={existingCompanySearch} 
-                      onChange={(e) => setExistingCompanySearch(e.target.value)}
-                      placeholder="Ej: Inversiones Rojas..."
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none mb-2"
-                    />
-                    <div className="space-y-1">
-                      {filteredAllCompanies.map(c => (
-                        <button 
-                          key={c.id} 
-                          onClick={() => handleLinkExisting(c.id)}
-                          className="w-full text-left p-2 hover:bg-white rounded-lg text-sm border border-transparent hover:border-slate-200 transition"
-                        >
-                          <p className="font-medium text-slate-900">{c.legal_name}</p>
-                          <p className="text-xs text-slate-500">{c.rut}</p>
-                        </button>
-                      ))}
-                      {existingCompanySearch && filteredAllCompanies.length === 0 && (
-                        <p className="text-xs text-slate-500 p-2 italic">No se encontraron resultados</p>
-                      )}
+              {/* CARD DE PERFIL SÓLIDO */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 md:p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+                  <div className="flex items-center gap-4">
+                    <div className="h-16 w-16 rounded-2xl bg-slate-800 text-white flex items-center justify-center text-2xl font-bold shadow-sm">
+                      {selectedContact.name ? selectedContact.name[0].toUpperCase() : 'C'}
+                    </div>
+                    <div>
+                       {isEditingName ? (
+                         <div className="flex gap-2">
+                           <input 
+                             value={editName} 
+                             onChange={(e) => setEditName(e.target.value)} 
+                             className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-bold focus:outline-none" 
+                             autoFocus 
+                           />
+                           <button onClick={handleUpdateContactName} className="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase">Ok</button>
+                         </div>
+                       ) : (
+                         <div className="flex flex-col">
+                            <h2 className="text-xl font-bold text-slate-900 leading-tight mb-1">{selectedContact.name || 'Sin nombre'}</h2>
+                            <p className="text-xs font-mono font-bold text-slate-400">+{selectedContact.phone_number}</p>
+                         </div>
+                       )}
+                       <button onClick={() => { setEditName(selectedContact.name || ''); setIsEditingName(!isEditingName); }} className="text-[10px] font-bold uppercase text-indigo-500 mt-2 hover:underline tracking-widest">
+                         {isEditingName ? 'Cancelar' : 'Editar nombre'}
+                       </button>
                     </div>
                   </div>
-                )}
 
-                {companyLinks.length === 0 ? (
-                  <p className="text-sm text-slate-500">No hay empresas vinculadas</p>
-                ) : (
-                  <div className="space-y-2">
-                    {companyLinks.map((link) => (
-                      <div key={link.company_id} className={`p-3 rounded-xl border cursor-pointer transition ${selectedCompanyId === link.company_id ? 'border-whatsapp-green bg-green-50' : 'border-slate-200 hover:border-slate-300'}`} onClick={() => setSelectedCompanyId(link.company_id)}>
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-slate-900">{link.companies?.legal_name}</p>
-                          {link.is_primary && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Principal</span>}
-                        </div>
-                        {!link.is_primary && <button type="button" onClick={(e) => { e.stopPropagation(); handleSetPrimaryCompany(link.company_id); }} className="text-xs text-slate-500 hover:text-slate-700 mt-1">Definir como principal</button>}
+                  <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-100 rounded-full w-fit">
+                    <span className={`h-2 w-2 rounded-full ${getActivityStatus(selectedContact.updated_at).color}`}></span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{getActivityStatus(selectedContact.updated_at).label}</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-slate-100">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Clasificación</p>
+                   <div className="flex flex-wrap gap-2">
+                      {['cliente', 'prospecto', 'vip', 'moroso'].map((seg) => (
+                        <button
+                          key={seg}
+                          onClick={() => handleUpdateSegment(seg)}
+                          className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                            selectedContact.segment === seg 
+                            ? 'bg-slate-800 text-white' 
+                            : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          {seg}
+                        </button>
+                      ))}
+                   </div>
+                </div>
+              </div>
+
+              {/* GRID DE ACCIONES */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* PORTAL DE ACCESO */}
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 md:p-6 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight mb-2">Portal de Acceso</h3>
+                    <p className="text-[11px] font-medium text-slate-500 leading-relaxed uppercase">
+                      Generar enlace de visualización para el cliente.
+                    </p>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <button 
+                      onClick={handleSendAccessCode} 
+                      disabled={sendingAccessCode} 
+                      className="w-full h-12 rounded-xl bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-900 disabled:opacity-50"
+                    >
+                      {sendingAccessCode ? 'Enviando...' : '📤 Enviar Código de Acceso'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* EMPRESAS */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6 flex flex-col min-h-[250px]">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">🏢 Entidades</h3>
+                    <button 
+                      onClick={() => setIsLinkingExisting(!isLinkingExisting)} 
+                      className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded border ${isLinkingExisting ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+                    >
+                      {isLinkingExisting ? 'Cerrar' : '+ Vincular'}
+                    </button>
+                  </div>
+
+                  {isLinkingExisting && (
+                    <div className="mb-4">
+                      <input 
+                        type="text" 
+                        value={existingCompanySearch} 
+                        onChange={(e) => setExistingCompanySearch(e.target.value)}
+                        placeholder="Buscar RUT/Nombre..."
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold focus:border-indigo-500 focus:outline-none mb-2"
+                      />
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {filteredAllCompanies.map(c => (
+                          <button 
+                            key={c.id} 
+                            onClick={() => handleLinkExisting(c.id)}
+                            className="w-full text-left p-2 hover:bg-slate-50 rounded text-xs border border-transparent hover:border-slate-100 transition"
+                          >
+                             <p className="font-bold text-slate-800 uppercase">{c.legal_name}</p>
+                          </button>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                  <div className="flex-1 space-y-2">
+                    {companyLinks.length === 0 ? (
+                      <div className="h-full flex items-center justify-center border-2 border-dashed border-slate-100 rounded-xl py-8">
+                         <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Sin empresas</p>
+                      </div>
+                    ) : (
+                      companyLinks.map((link) => (
+                        <div 
+                          key={link.company_id} 
+                          className={`p-3 rounded-xl border transition-colors ${selectedCompanyId === link.company_id ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-100 bg-slate-50/50'}`} 
+                          onClick={() => setSelectedCompanyId(link.company_id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-slate-900 uppercase tracking-tighter">{link.companies?.legal_name}</p>
+                            {link.is_primary && <span className="text-[8px] font-bold bg-slate-800 text-white px-2 py-0.5 rounded uppercase">Master</span>}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900">🔐 Acceso Portal</h3>
-                    <p className="text-xs text-slate-500 mt-1">Envía un código para ver documentos</p>
+              {/* TERMINAL DE MENSAJERÍA */}
+              <form onSubmit={handleSendMessage} className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8">
+                <div className="flex items-center gap-3 mb-6">
+                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Mensajería Directa</h3>
+                </div>
+
+                <div className="space-y-4">
+                  <textarea 
+                    value={messageForm.message} 
+                    onChange={(e) => setMessageForm({ ...messageForm, message: e.target.value })} 
+                    rows={4} 
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium focus:bg-white focus:border-indigo-500 focus:outline-none transition-colors placeholder:text-slate-300" 
+                    placeholder="Escribe el mensaje..." 
+                    required 
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input 
+                      type="text" 
+                      value={messageForm.documentUrl} 
+                      onChange={(e) => setMessageForm({ ...messageForm, documentUrl: e.target.value })} 
+                      className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-mono focus:outline-none" 
+                      placeholder="Url del documento..." 
+                    />
+                    <input 
+                      type="text" 
+                      value={messageForm.documentName} 
+                      onChange={(e) => setMessageForm({ ...messageForm, documentName: e.target.value })} 
+                      className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-bold focus:outline-none" 
+                      placeholder="Nombre del archivo..." 
+                    />
                   </div>
-                  <button type="button" onClick={handleSendAccessCode} disabled={sendingAccessCode} className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
-                    {sendingAccessCode ? 'Enviando...' : '📤 Enviar Código'}
+
+                  <button 
+                    type="submit" 
+                    disabled={sending || !messageForm.message} 
+                    className="w-full h-14 rounded-xl bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest active:bg-slate-900 transition-colors disabled:opacity-40"
+                  >
+                    {sending ? 'Procesando...' : '🚀 Enviar Mensaje'}
                   </button>
-                </div>
-                {accessCodeResult && <div className={`mt-3 text-sm ${accessCodeResult.success ? 'text-green-700' : 'text-red-700'}`}>{accessCodeResult.success ? '✅ Código enviado correctamente' : `❌ ${accessCodeResult.error}`}</div>}
-              </div>
-
-              <form onSubmit={handleSendMessage} className="space-y-4">
-                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200">
-                  <p className="text-sm text-slate-500">Enviando a:</p>
-                  <p className="font-medium text-slate-900">{selectedContact.name || `Cliente ${selectedContact.phone_number.slice(-4)}`}</p>
-                  <p className="text-sm text-slate-600">{selectedContact.phone_number}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Mensaje</label>
-                  <textarea value={messageForm.message} onChange={(e) => setMessageForm({ ...messageForm, message: e.target.value })} rows={4} className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none" placeholder="Escribe tu mensaje..." required />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">URL de documento (opcional)</label>
-                    <input type="text" value={messageForm.documentUrl} onChange={(e) => setMessageForm({ ...messageForm, documentUrl: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none" placeholder="https://..." />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Nombre del archivo (opcional)</label>
-                    <input type="text" value={messageForm.documentName} onChange={(e) => setMessageForm({ ...messageForm, documentName: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-whatsapp-green focus:outline-none" placeholder="documento.pdf" />
-                  </div>
-                </div>
-                {sendResult && <div className={`rounded-2xl p-4 text-sm ${sendResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>{sendResult.success ? '✓ Mensaje enviado' : `✗ ${sendResult.error}`}</div>}
-                <div className="flex gap-3">
-                  <button type="submit" disabled={sending || !messageForm.message} className="flex-1 rounded-3xl bg-whatsapp-green px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-whatsapp-greenHover disabled:opacity-60">{sending ? 'Enviando...' : 'Enviar mensaje'}</button>
-                  <button type="button" onClick={() => setSelectedContact(null)} className="px-4 py-3 rounded-3xl border border-slate-300 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Cancelar</button>
+                  
+                  {selectedContact && (
+                    <button 
+                      type="button" 
+                      onClick={() => setSelectedContact(null)} 
+                      className="w-full h-12 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest md:hidden"
+                    >
+                      Regresar
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center p-6">
-              <div className="text-center"><p className="text-slate-500 text-sm mb-4">Selecciona un cliente de la lista para gestionar</p></div>
+            <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-4">
+              <div className="text-4xl grayscale opacity-20">👥</div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Selecciona un contacto para gestionar</h3>
             </div>
           )}
         </div>

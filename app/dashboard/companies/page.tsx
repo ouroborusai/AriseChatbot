@@ -382,185 +382,294 @@ export default function CompaniesPage() {
   }
 
   return (
-    <div className="flex h-full flex-col w-full">
-      <div className="mb-4 flex items-center justify-between px-6 py-4">
+    <div className="flex h-full flex-col w-full p-4 md:p-8 animate-in fade-in duration-700">
+      
+      {/* Header Responsivo Industrial */}
+      <div className={`mb-6 md:mb-10 flex items-center justify-between ${selectedCompanyId ? 'hidden md:flex' : 'flex'}`}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Empresas</h1>
-          <p className="text-sm text-slate-500 mt-1">{companies.length} {companies.length === 1 ? 'empresa' : 'empresas'} registradas</p>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter">Empresas</h1>
+            <span className="bg-emerald-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-lg uppercase tracking-widest shadow-lg shadow-emerald-200">
+              {companies.length} Entidades
+            </span>
+          </div>
+          <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest leading-none">Gestión de Personas Jurídicas</p>
         </div>
-        <button onClick={() => setShowCreateModal(true)} className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700">+ Nueva Empresa</button>
+        <button 
+          onClick={() => setShowCreateModal(true)} 
+          className="h-12 md:h-14 px-5 md:px-8 rounded-2xl bg-slate-900 text-white text-[10px] md:text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
+        >
+          + Nueva Entidad
+        </button>
       </div>
 
-      <div className="flex-1 min-h-0 px-6 pb-6">
-        <div className="flex h-full gap-4">
-          <div className="w-96 shrink-0 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <div className="p-4 border-b border-slate-100">
-              <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Buscar empresa..." />
-            </div>
-            <div className="flex-1 overflow-y-auto p-2">
-              {filteredCompanies.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 text-sm">{searchQuery ? 'No se encontraron' : 'No hay empresas'}</div>
-              ) : (
-                <div className="space-y-1">
-                  {filteredCompanies.map((company) => (
-                    <button key={company.id} type="button" onClick={() => setSelectedCompanyId(company.id)}
-                      className={`w-full text-left p-3 rounded-xl transition ${selectedCompanyId === company.id ? 'bg-green-50 ring-1 ring-green-200' : 'hover:bg-slate-50'}`}>
-                      <p className="font-semibold text-slate-900 truncate">{company.legal_name}</p>
-                      {company.rut && <p className="text-xs text-slate-500 truncate">RUT: {company.rut}</p>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+      <div className="flex-1 min-h-0 flex gap-0 md:gap-8 relative overflow-hidden">
+        
+        {/* LISTADO DE EMPRESAS: Lógica de Panel Único */}
+        <div className={`w-full md:w-[400px] shrink-0 flex flex-col bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm transition-all duration-500 ${selectedCompanyId ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-4 md:p-6 border-b border-slate-100 bg-slate-50/50">
+            <SearchInput 
+              value={searchQuery} 
+              onChange={setSearchQuery} 
+              placeholder="Filtrar por nombre o RUT..." 
+            />
           </div>
-
-          <div className="flex-1 min-w-0 bg-white rounded-2xl border border-slate-200 overflow-y-auto">
-            {selectedCompany ? (
-              <div className="p-6 space-y-6">
-                {/* Header Compacto con info y contactos */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+          
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-3 space-y-2">
+            {filteredCompanies.length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-20 text-slate-300">
+                 <span className="text-4xl mb-4">🏢</span>
+                 <p className="text-[10px] font-black uppercase tracking-widest">Sin Entidades Registradas</p>
+               </div>
+            ) : (
+              filteredCompanies.map((company) => {
+                const status = calculateCompliance(documents.filter(d => d.company_id === company.id));
+                return (
+                  <button 
+                    key={company.id} 
+                    onClick={() => setSelectedCompanyId(company.id)}
+                    className={`w-full text-left p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] transition-all group relative overflow-hidden ${selectedCompanyId === company.id ? 'bg-slate-900 text-white shadow-2xl scale-[0.98]' : 'hover:bg-slate-50 border border-transparent hover:border-slate-100'}`}
+                  >
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-[11px] font-bold uppercase tracking-tight text-slate-500">Datos Empresa</h3>
-                      <button type="button" onClick={handleDeleteCompany} className="text-[10px] text-red-400 hover:text-red-600 font-bold uppercase transition">Eliminar</button>
+                       <p className={`text-xs font-black uppercase tracking-tighter truncate max-w-[80%] ${selectedCompanyId === company.id ? 'text-white' : 'text-slate-900'}`}>
+                         {company.legal_name}
+                       </p>
+                       <span className={`h-2 w-2 rounded-full ${status === 'green' ? 'bg-emerald-500' : status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500'} shadow-[0_0_8px] shadow-current`} />
                     </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-slate-900 leading-tight">{selectedCompany.legal_name}</p>
-                        {(() => {
-                          const status = calculateCompliance(documents);
-                          return (
-                            <span className={`h-2 w-2 rounded-full animate-pulse ${status === 'green' ? 'bg-green-500' : status === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`} 
-                                  title={status === 'green' ? 'Al día' : status === 'yellow' ? 'Pendiente mes actual' : 'Sin registros'}></span>
-                          );
-                        })()}
-                      </div>
-                      <div className="mt-1 flex gap-3 text-xs text-slate-500">
-                        <span>RUT: <b className="text-slate-700">{selectedCompany.rut || 'N/A'}</b></span>
-                        <span>Alta: <b className="text-slate-700">{selectedCompany.created_at ? new Date(selectedCompany.created_at).toLocaleDateString() : '-'}</b></span>
-                      </div>
+                    <p className={`text-[10px] font-mono font-bold tracking-widest ${selectedCompanyId === company.id ? 'text-slate-400' : 'text-slate-400'}`}>
+                      {company.rut || 'RUT NO DEFINIDO'}
+                    </p>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* PANEL DE DETALLE: Lógica de Panel Único */}
+        <div className={`flex-1 min-w-0 bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 overflow-y-auto custom-scrollbar shadow-sm transition-all duration-500 ${!selectedCompanyId ? 'hidden md:block' : 'block'}`}>
+          {selectedCompany ? (
+            <div className="p-6 md:p-10 space-y-8 animate-in slide-in-from-right-4 duration-500">
+              
+              {/* Navegación Móvil */}
+              <div className="md:hidden flex items-center justify-between mb-8">
+                <button 
+                  onClick={() => setSelectedCompanyId(null)}
+                  className="h-12 w-12 flex items-center justify-center bg-slate-100 text-slate-900 rounded-2xl active:scale-90 transition-transform"
+                >
+                  <span className="text-xl">⬅️</span>
+                </button>
+                <div className="text-right">
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dashboard Entidad</p>
+                   <p className="text-xs font-black text-indigo-600 truncate max-w-[180px]">{selectedCompany.legal_name}</p>
+                </div>
+              </div>
+
+              {/* GRID DE INFORMACIÓN DE EMPRESA */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                
+                {/* CARD DE IDENTIDAD */}
+                <div className="rounded-[2rem] border border-slate-100 bg-slate-50/30 p-6 md:p-8 relative overflow-hidden shadow-sm shadow-slate-100/50">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Certificación de Datos</h3>
+                    <button onClick={handleDeleteCompany} className="text-[10px] font-black text-rose-500 uppercase hover:underline">Eliminar registro</button>
+                  </div>
+                  
+                  <div className="flex items-center gap-6 mb-8">
+                    <div className="h-20 w-20 rounded-[1.8rem] bg-slate-900 text-white flex items-center justify-center text-3xl font-black shadow-2xl">
+                       {selectedCompany.legal_name[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                       <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase truncate leading-tight mb-1">{selectedCompany.legal_name}</h2>
+                       <div className="flex flex-wrap items-center gap-3">
+                         <span className="text-xs font-mono font-bold text-slate-500">{selectedCompany.rut || 'RUT PENDIENTE'}</span>
+                         <span className="h-1 w-1 bg-slate-300 rounded-full"></span>
+                         <span className="text-[10px] font-black text-slate-400 uppercase">Alta: {new Date(selectedCompany.created_at).toLocaleDateString()}</span>
+                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm relative overflow-hidden group">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-[11px] font-bold uppercase tracking-tight text-slate-500">Contactos ({linkedContacts.length})</h3>
-                      <button type="button" onClick={() => setIsLinkingContact(!isLinkingContact)} className="text-[10px] text-whatsapp-green hover:text-green-700 font-bold uppercase transition">
-                        {isLinkingContact ? '✕ Cerrar' : '+ Vincular'}
-                      </button>
-                    </div>
+                  <div className="flex gap-4 p-4 rounded-2xl bg-white border border-slate-100">
+                     <span className="text-2xl">🛡️</span>
+                     <div>
+                       <p className="text-[10px] font-black uppercase text-slate-900 tracking-tight">Estado de Cumplimiento</p>
+                       <p className="text-[11px] font-bold text-slate-500 leading-relaxed">
+                          {calculateCompliance(documents) === 'green' ? 'Entidad regularizada con flujos mensuales al día.' : 'Se requieren actualizaciones de documentos pendientes.'}
+                       </p>
+                     </div>
+                  </div>
+                </div>
 
-                    {isLinkingContact ? (
-                      <div className="absolute inset-0 bg-white p-2 z-10 flex flex-col animate-in fade-in duration-200">
-                        <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            value={contactSearch} 
-                            onChange={(e) => setContactSearch(e.target.value)}
-                            placeholder="Buscar por nombre/cel..."
-                            className="flex-1 rounded-lg border border-slate-300 px-2 py-1 text-xs focus:ring-1 focus:ring-whatsapp-green outline-none"
-                            autoFocus
-                          />
-                          <button onClick={() => setIsLinkingContact(false)} className="text-slate-400 text-xs">✕</button>
-                        </div>
-                        <div className="mt-1 overflow-y-auto flex-1 bg-slate-50 rounded border border-slate-100">
+                {/* CARD DE CONTACTOS ASOCIADOS */}
+                <div className="rounded-[2rem] border border-slate-100 bg-white p-6 md:p-8 flex flex-col shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Puntos de Contacto ({linkedContacts.length})</h3>
+                    <button 
+                      onClick={() => setIsLinkingContact(!isLinkingContact)} 
+                      className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${isLinkingContact ? 'bg-red-50 text-red-500 border-red-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}
+                    >
+                      {isLinkingContact ? 'Cerrar' : '+ Vincular'}
+                    </button>
+                  </div>
+
+                  <div className="flex-1 relative">
+                    {isLinkingContact && (
+                      <div className="absolute inset-0 bg-white z-10 space-y-3 animate-in fade-in duration-300">
+                        <input 
+                          type="text" 
+                          value={contactSearch} 
+                          onChange={(e) => setContactSearch(e.target.value)}
+                          placeholder="Buscar por nombre o celular..."
+                          className="w-full rounded-xl border border-slate-200 px-4 py-3 text-xs font-bold focus:border-indigo-600 focus:outline-none shadow-sm"
+                          autoFocus
+                        />
+                        <div className="max-h-36 overflow-y-auto custom-scrollbar space-y-1">
                           {filteredAllContacts.map(c => (
                             <button key={c.id} onClick={async () => { if (selectedCompanyId) { await linkContact(c.id, selectedCompanyId); setIsLinkingContact(false); setContactSearch(''); } }}
-                              className="w-full text-left px-2 py-1 hover:bg-green-100 text-[11px] border-b border-white last:border-0 truncate">
-                              <b>{c.name || 'S/N'}</b> ({c.phone_number})
+                              className="w-full text-left p-3 hover:bg-slate-50 rounded-xl text-[11px] font-black uppercase tracking-tighter border border-transparent hover:border-slate-100 transition truncate">
+                              {c.name || 'S/N'} <span className="text-slate-400 font-mono ml-2">+{c.phone_number}</span>
                             </button>
                           ))}
                         </div>
                       </div>
-                    ) : linkedContacts.length === 0 ? (
-                      <p className="text-[11px] text-slate-400 italic">Sin contactos vinculados.</p>
-                    ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {linkedContacts.map((link) => (
-                          <div key={link.contact_id} className={`flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg border text-[11px] ${link.is_primary ? 'border-green-200 bg-green-50 text-green-800' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-                            <span className="font-bold truncate max-w-[80px]">{link.contacts?.name?.split(' ')[0] || 'Cliente'}</span>
-                            <button onClick={() => unlinkContact(link.contact_id, selectedCompanyId!)} className="text-slate-400 hover:text-red-500 transition">✕</button>
-                          </div>
-                        ))}
-                      </div>
                     )}
-                  </div>
 
-                  {/* Acciones Rápidas Industriales */}
-                  <div className="col-span-2 grid grid-cols-3 gap-3">
-                    <button 
-                      onClick={async () => {
-                        const primary = linkedContacts.find(c => c.is_primary) || linkedContacts[0];
-                        if (!primary) return alert('No hay contactos vinculados');
-                        alert('Enviando resumen financiero a ' + primary.contacts?.phone_number);
-                      }}
-                      className="flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 transition shadow-sm"
-                    >
-                      📊 Enviar Resumen
-                    </button>
-                    <button 
-                      className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-50 transition shadow-sm"
-                    >
-                      📩 Solicitar Pendientes
-                    </button>
-                    <button 
-                      className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-50 transition shadow-sm"
-                    >
-                      📝 Notas de Auditoría
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                       {linkedContacts.length === 0 ? (
+                         <div className="w-full py-10 flex flex-col items-center border-2 border-dashed border-slate-50 rounded-[1.5rem] text-slate-300">
+                            <span className="text-2xl mb-2">👤</span>
+                            <p className="text-[10px] font-black uppercase tracking-widest">Sin representantes vinculados</p>
+                         </div>
+                       ) : (
+                         linkedContacts.map((link) => (
+                           <div key={link.contact_id} className={`flex items-center gap-3 pl-4 pr-2 py-2.5 rounded-2xl border transition-all ${link.is_primary ? 'border-emerald-200 bg-emerald-50/50 text-emerald-900' : 'border-slate-100 bg-slate-50/50 text-slate-600'}`}>
+                             <span className="text-[11px] font-black uppercase tracking-tighter truncate max-w-[120px]">{link.contacts?.name || 'Representante'}</span>
+                             <button onClick={() => unlinkContact(link.contact_id, selectedCompanyId!)} className="w-6 h-6 flex items-center justify-center rounded-lg bg-white shadow-sm text-[10px] hover:text-red-500 transition">✕</button>
+                           </div>
+                         ))
+                       )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Tabs de Documentos Rediseñados */}
-                <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-                  <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-100">
-                    {(Object.keys(TAB_CONFIG) as DocTab[]).map((tab) => (
-                      <button key={tab} onClick={() => setActiveTab(tab)}
-                        className={`px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-tight transition-all flex items-center gap-1.5 ${activeTab === tab ? 'bg-white text-green-700 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                        <span>{TAB_CONFIG[tab].icon}</span>
-                        <span className="hidden lg:inline">{TAB_CONFIG[tab].label.split(' ')[1] || TAB_CONFIG[tab].label}</span>
-                      </button>
-                    ))}
-                    <div className="flex-1" />
-                    <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-bold outline-none ring-offset-1 focus:ring-1 focus:ring-whatsapp-green">
-                      {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                  </div>
-                  <div className="mt-2">
-                    <CompanyDocumentsTab documents={documents} activeTab={activeTab} year={selectedYear} onUpload={handleUploadDocument} onDelete={handleDeleteDocument} uploading={uploading} />
-                  </div>
+                {/* ACCIONES DE CENTRALIZACIÓN EXPRESO */}
+                <div className="xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <button className="h-16 rounded-[1.5rem] bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all">
+                    📊 <span className="pt-0.5">Enviar Resumen Financiero</span>
+                  </button>
+                  <button className="h-16 rounded-[1.5rem] bg-white border border-slate-200 text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm flex items-center justify-center gap-3 hover:bg-slate-50 hover:scale-[1.02] active:scale-95 transition-all">
+                    📩 <span className="pt-0.5">Solicitar Pendientes</span>
+                  </button>
+                   <button className="h-16 rounded-[1.5rem] bg-white border border-slate-200 text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm flex items-center justify-center gap-3 hover:bg-slate-50 hover:scale-[1.02] active:scale-95 transition-all">
+                    📝 <span className="pt-0.5">Notas de Auditoría</span>
+                  </button>
                 </div>
               </div>
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <div className="text-center">
-                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl mb-4">🏢</div>
-                  <p className="text-slate-500 text-sm font-medium">Selecciona una empresa</p>
-                  <p className="text-slate-400 text-xs mt-1">para ver sus detalles</p>
+
+              {/* TERMINAL DE DOCUMENTACIÓN ASOCIADA */}
+              <div className="rounded-[2.5rem] border border-slate-200 bg-white p-6 md:p-10 shadow-2xl relative overflow-hidden">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl shadow-xl shadow-indigo-100 italic font-black">D</div>
+                    <div>
+                       <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase">Terminal de Documentación</h3>
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Repositorio SSOT de Auditoría</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-1.5 bg-slate-50 border border-slate-100 rounded-2xl">
+                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3">Ciclo</span>
+                     <select 
+                       value={selectedYear} 
+                       onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                       className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                     >
+                       {years.map(y => <option key={y} value={y}>{y}</option>)}
+                     </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-8 p-1.5 bg-slate-50/50 border border-slate-100 rounded-[2rem]">
+                  {(Object.keys(TAB_CONFIG) as DocTab[]).map((tab) => (
+                    <button 
+                      key={tab} 
+                      onClick={() => setActiveTab(tab)}
+                      className={`flex-1 min-w-[100px] h-12 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === tab ? 'bg-white text-indigo-600 shadow-xl shadow-slate-200/50 ring-1 ring-slate-200 scale-105 z-10' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      <span className="text-base">{TAB_CONFIG[tab].icon}</span>
+                      <span>{TAB_CONFIG[tab].label.split(' ')[1] || TAB_CONFIG[tab].label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <CompanyDocumentsTab 
+                    documents={documents} 
+                    activeTab={activeTab} 
+                    year={selectedYear} 
+                    onUpload={handleUploadDocument} 
+                    onDelete={handleDeleteDocument} 
+                    uploading={uploading} 
+                  />
                 </div>
               </div>
-            )}
-          </div>
+
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-6">
+              <div className="w-40 h-40 bg-slate-50 rounded-full flex items-center justify-center text-6xl grayscale opacity-30 shadow-inner">🏢</div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Selección de Entidad Inteligente</h3>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2 max-w-sm leading-loose">
+                  Despliega el panel izquierdo para auditar documentos, gestionar contactos o emitir reportes financieros.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Nueva Empresa">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Razón Social *</label>
-            <input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="Ej: Mi Empresa S.A." autoFocus />
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="REGISTRO DE NUEVA ENTIDAD">
+        <div className="space-y-6 p-2">
+          <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-5">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-4">Razón Social Jurídica</label>
+              <input 
+                value={newCompanyName} 
+                onChange={(e) => setNewCompanyName(e.target.value)} 
+                className="w-full h-14 rounded-2xl border-2 border-slate-200 bg-white px-6 text-sm font-black uppercase focus:border-indigo-600 focus:outline-none transition-all" 
+                placeholder="Ej: INVERSIONES ROJAS SPA" 
+                autoFocus 
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-4">Identificación Fiscal (RUT)</label>
+              <input 
+                value={newCompanyRut} 
+                onChange={(e) => setNewCompanyRut(e.target.value)} 
+                className="w-full h-14 rounded-2xl border-2 border-slate-200 bg-white px-6 text-sm font-mono focus:border-indigo-600 focus:outline-none transition-all" 
+                placeholder="76.000.000-K" 
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">RUT (opcional)</label>
-            <input value={newCompanyRut} onChange={(e) => setNewCompanyRut(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="Ej: 76.123.456-7" />
+          
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <button 
+              type="button" 
+              onClick={() => setShowCreateModal(false)} 
+              className="flex-1 h-14 rounded-[1.5rem] border-2 border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+            >
+              Cerrar
+            </button>
+            <button 
+              type="button" 
+              onClick={handleCreateCompany} 
+              disabled={!newCompanyName.trim() || saving} 
+              className="flex-1 h-14 rounded-[1.5rem] bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-40"
+            >
+              {saving ? 'Codificando Entidad...' : 'Confirmar Registro'}
+            </button>
           </div>
-        </div>
-        <div className="mt-6 flex gap-3">
-          <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancelar</button>
-          <button type="button" onClick={handleCreateCompany} disabled={!newCompanyName.trim() || saving} className="flex-1 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
-            {saving ? 'Guardando...' : 'Guardar'}
-          </button>
         </div>
       </Modal>
     </div>

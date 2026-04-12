@@ -61,8 +61,6 @@ export default function TemplatesPage() {
     }
   };
 
-
-
   const handleDeleteAll = async () => {
     if (!confirm('¡ATENCIÓN! ¿Estás seguro de que quieres eliminar TODAS las plantillas del servidor? Esta acción destruirá tu Canvas y no se puede deshacer.')) return;
     await deleteAllTemplates();
@@ -131,6 +129,8 @@ export default function TemplatesPage() {
     setShowEditor(true);
   };
 
+  const [activeBoard, setActiveBoard] = useState<'prospecto' | 'cliente'>('prospecto');
+
   if (loading) return (
     <div className="h-full flex flex-col items-center justify-center bg-slate-50/50">
       <div className="relative">
@@ -144,130 +144,152 @@ export default function TemplatesPage() {
   // Estado vacío cuando no hay plantillas
   if (templates.length === 0) {
     return (
-      <>
-      <div className="h-full flex flex-col items-center justify-center bg-slate-50/30 p-6">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 text-center">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center text-4xl">
-            📋
+      <div className="h-full flex flex-col p-4 md:p-8 animate-in fade-in duration-700">
+        <div className="flex-1 flex flex-col items-center justify-center bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-8 text-center max-w-2xl mx-auto w-full my-10">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-[2rem] bg-slate-900 text-white flex items-center justify-center text-5xl shadow-2xl">
+            🏗️
           </div>
-          <h2 className="text-xl font-black text-slate-900 mb-2">
-            No hay plantillas configuradas
-          </h2>
-          <p className="text-sm text-slate-500 mb-6">
-            Tu base de datos está vacía. Puedes restaurar las plantillas por defecto o crear nuevas manualmente.
+          <h2 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tight">Arquitectura de Comunicación Vacía</h2>
+          <p className="text-sm text-slate-500 mb-8 leading-relaxed max-w-sm mx-auto">
+            No se han detectado flujos operativos en el SSOT. Puedes restaurar el esquema original o iniciar un desarrollo manual.
           </p>
-          <div className="flex flex-col gap-3">
-
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
             <button
               onClick={handleRestoreSystemTemplates}
-              className="w-full bg-blue-600/10 text-blue-600 border border-blue-200 px-6 py-3 rounded-2xl font-black text-xs hover:bg-blue-600/20 transition-all"
+              className="flex-1 h-14 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100"
             >
-              🔄 Recuperar JSONs del Sistema
+              🔄 Restaurar del Sistema
             </button>
             <button
               onClick={() => openEdit()}
-              className="w-full bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-black text-xs hover:bg-slate-50 transition-all"
+              className="flex-1 h-14 bg-white text-slate-900 border-2 border-slate-200 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-slate-900 transition-all"
             >
-              ➕ Crear Nueva Plantilla (Vacia)
+              ➕ Nueva Plantilla
             </button>
           </div>
         </div>
+        
+        <TemplateEditor
+          template={editingTemplate}
+          allTemplates={templates}
+          isOpen={showEditor}
+          onClose={() => { setShowEditor(false); setEditingTemplate(null); }}
+          onSave={handleSaveTemplate}
+          onDelete={handleDeleteTemplate}
+        />
       </div>
-      
-      {/* Es CRÍTICO renderizar el editor incluso en el estado vacío */}
-      <TemplateEditor
-        template={editingTemplate}
-        allTemplates={templates}
-        isOpen={showEditor}
-        onClose={() => { setShowEditor(false); setEditingTemplate(null); }}
-        onSave={handleSaveTemplate}
-        onDelete={handleDeleteTemplate}
-      />
-    </>
     );
   }
 
   return (
-    <div className="relative h-full flex overflow-hidden bg-slate-50/30">
+    <div className="relative h-full flex overflow-hidden bg-slate-50/50">
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-500 ${showEditor ? 'pr-[450px]' : ''}`}>
-        <div className="space-y-4 h-full flex flex-col p-4 md:p-6 overflow-hidden">
-          {/* Header Premium Rediseñado */}
-          <div className="flex items-center justify-between bg-white/70 backdrop-blur-xl p-4 rounded-[1.5rem] border border-white shadow-xl shadow-slate-200/50">
-            <div className="flex items-center gap-4">
-              <div className="p-2.5 bg-slate-900 rounded-xl shadow-lg">
-                <span className="text-xl">⚡</span>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-500 ${showEditor ? 'md:pr-[450px]' : ''}`}>
+        <div className="h-full flex flex-col p-4 md:p-8 overflow-hidden space-y-6 md:space-y-8 animate-in fade-in duration-700">
+          
+          {/* Header Premium Industrial */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white/80 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/50">
+            <div className="flex items-center gap-5">
+              <div className="h-14 w-14 md:h-16 md:w-16 bg-slate-900 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center text-2xl shadow-xl shadow-slate-200">
+                <span className="animate-pulse">⚡</span>
               </div>
-              <div>
-                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight leading-none mb-1">Estrategia de Comunicación</h1>
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Configuración de Canales y Flujos</p>
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-3xl font-black text-slate-900 tracking-tighter leading-none mb-2 uppercase">Estrategia de Flujos</h1>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Neural Communication Pipeline</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button onClick={handleExportTemplates} className="px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl text-[11px] font-bold hover:bg-slate-50 transition-all">💾 Exportar</button>
-              <label className="px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl text-[11px] font-bold hover:bg-slate-50 transition-all cursor-pointer">
+            <div className="grid grid-cols-2 sm:flex items-center gap-2 md:gap-3">
+              <button onClick={handleExportTemplates} className="px-4 py-3 bg-white text-slate-900 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">💾 Exportar</button>
+              <label className="px-4 py-3 bg-white text-slate-900 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm cursor-pointer text-center">
                 📥 Importar
                 <input type="file" accept=".json" onChange={handleImportTemplates} className="hidden" />
               </label>
-              <button onClick={() => openEdit()} className="bg-green-600 text-white px-5 py-2 rounded-xl font-bold text-[11px] shadow-lg shadow-green-600/20 hover:bg-green-500 transition-all">+ Nueva Plantilla</button>
+              <button 
+                onClick={() => openEdit()} 
+                className="col-span-2 md:col-span-1 h-12 md:h-14 px-6 bg-slate-900 text-white rounded-[1.2rem] font-black text-[10px] uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-indigo-600 transition-all active:scale-95"
+              >
+                + Nueva Plantilla
+              </button>
             </div>
           </div>
 
-          {/* DOBLE PIZARRA */}
-          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
+          {/* SELECTOR DE PIZARRA (MÓVIL) */}
+          <div className="md:hidden flex p-1.5 bg-slate-200/50 rounded-2xl">
+            <button 
+              onClick={() => setActiveBoard('prospecto')}
+              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeBoard === 'prospecto' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+            >
+              Prospectos
+            </button>
+            <button 
+              onClick={() => setActiveBoard('cliente')}
+              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeBoard === 'cliente' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}
+            >
+              Clientes
+            </button>
+          </div>
+
+          {/* DOBLE PIZARRA RESPONSIVA */}
+          <div className="flex-1 flex flex-col md:flex-row gap-6 md:gap-8 min-h-0 overflow-hidden relative">
             
             {/* PIZARRA 1: PROSPECTOS */}
-            <div className="flex-1 flex flex-col bg-indigo-50/40 rounded-[2rem] border border-indigo-100 overflow-hidden">
-              <div className="p-4 border-b border-indigo-100 bg-indigo-100/30 flex items-center justify-between">
-                <h3 className="text-xs font-black text-indigo-700 uppercase tracking-[0.2em] flex items-center gap-2">
-                  <span className="text-lg">🎯</span> Pizarra de Prospectos
-                </h3>
-                <span className="bg-white text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-200">
-                  {templates.filter(t => t.segment === 'prospecto').length} flujos
+            <div className={`flex-1 flex-col bg-slate-900 rounded-[2.5rem] border border-slate-800 overflow-hidden shadow-2xl transition-all duration-500 ${activeBoard === 'prospecto' || 'hidden md:flex' ? 'flex scale-100 opacity-100' : 'hidden scale-95 opacity-0'}`}>
+              <div className="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <span className="text-xl">🎯</span>
+                   <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">Pizarra Prospectos</h3>
+                </div>
+                <span className="bg-white/10 text-white text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest border border-white/10">
+                  {templates.filter(t => t.segment === 'prospecto').length} Sprints
                 </span>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4">
                 {templates.filter(t => t.segment === 'prospecto').map(template => (
                   <button 
                     key={template.id} 
                     onClick={() => openEdit(template)}
-                    className="w-full text-left bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group"
+                    className="w-full text-left bg-white/5 p-5 md:p-6 rounded-[1.8rem] border border-white/5 shadow-sm hover:bg-white/[0.08] hover:border-indigo-500/30 transition-all group animate-in slide-in-from-bottom-2 duration-500"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{template.category || 'General'}</span>
-                      <span className={`h-2 w-2 rounded-full ${template.is_active ? 'bg-green-500' : 'bg-slate-300'}`}></span>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em]">{template.category || 'Pipeline'}</span>
+                      <span className={`h-1.5 w-1.5 rounded-full ${template.is_active ? 'bg-emerald-500' : 'bg-slate-600'} shadow-[0_0_8px] shadow-current`}></span>
                     </div>
-                    <p className="text-sm font-bold text-slate-800 line-clamp-1 group-hover:text-indigo-600">{template.name}</p>
-                    <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">{template.content}</p>
+                    <p className="text-sm font-black text-white uppercase tracking-tight line-clamp-1 group-hover:text-indigo-400 transition-colors">{template.name}</p>
+                    <div className="mt-3 bg-black/20 p-3 rounded-xl border border-white/5">
+                       <p className="text-[11px] font-medium text-slate-400 line-clamp-2 leading-relaxed italic">"{template.content}"</p>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* PIZARRA 2: CLIENTES */}
-            <div className="flex-1 flex flex-col bg-emerald-50/40 rounded-[2rem] border border-emerald-100 overflow-hidden">
-              <div className="p-4 border-b border-emerald-100 bg-emerald-100/30 flex items-center justify-between">
-                <h3 className="text-xs font-black text-emerald-700 uppercase tracking-[0.2em] flex items-center gap-2">
-                  <span className="text-lg">👤</span> Pizarra de Clientes
-                </h3>
-                <span className="bg-white text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">
-                  {templates.filter(t => t.segment === 'cliente').length} flujos
+            <div className={`flex-1 flex-col bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-xl transition-all duration-500 ${activeBoard === 'cliente' || 'hidden md:flex' ? 'flex scale-100 opacity-100' : 'hidden md:flex scale-95 opacity-0'}`}>
+              <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <span className="text-xl">🤝</span>
+                   <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em]">Pizarra Fidelización</h3>
+                </div>
+                <span className="bg-slate-900 text-white text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest">
+                  {templates.filter(t => t.segment === 'cliente').length} Flujos
                 </span>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4">
                 {templates.filter(t => t.segment === 'cliente').map(template => (
                   <button 
                     key={template.id} 
                     onClick={() => openEdit(template)}
-                    className="w-full text-left bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all group"
+                    className="w-full text-left bg-slate-50 p-5 md:p-6 rounded-[1.8rem] border border-slate-100 shadow-sm hover:bg-white hover:border-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-100/50 transition-all group animate-in slide-in-from-bottom-2 duration-500"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{template.category || 'Operación'}</span>
-                      <span className={`h-2 w-2 rounded-full ${template.is_active ? 'bg-green-500' : 'bg-slate-300'}`}></span>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.2em]">{template.category || 'Loyalty'}</span>
+                      <span className={`h-1.5 w-1.5 rounded-full ${template.is_active ? 'bg-emerald-500' : 'bg-slate-300'} shadow-[0_0_8px] shadow-current`}></span>
                     </div>
-                    <p className="text-sm font-bold text-slate-800 line-clamp-1 group-hover:text-emerald-600">{template.name}</p>
-                    <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">{template.content}</p>
+                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight line-clamp-1 group-hover:text-emerald-600 transition-colors">{template.name}</p>
+                    <div className="mt-3 bg-white p-3 rounded-xl border border-slate-200/50 shadow-inner">
+                       <p className="text-[11px] font-medium text-slate-500 line-clamp-2 leading-relaxed italic">"{template.content}"</p>
+                    </div>
                   </button>
                 ))}
               </div>

@@ -27,22 +27,13 @@ interface ConversationListProps {
 
 export default function ConversationList({ conversations, selectedPhone, onSelect }: ConversationListProps) {
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white">
-      {/* Header */}
-      <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
-        <h2 className="text-base font-semibold text-slate-800">Conversaciones</h2>
-        <p className="text-xs text-slate-500 mt-0.5">{conversations.length} {conversations.length === 1 ? 'chat' : 'chats'}</p>
-      </div>
-
+    <div className="flex h-full flex-col overflow-hidden bg-white">
       {/* Lista de conversaciones */}
-      <div className="flex-1 overflow-y-auto p-2.5">
-        <div className="space-y-1.5">
+      <div className="flex-1 overflow-y-auto px-1 py-1 no-scrollbar">
+        <div className="space-y-0.5">
           {conversations.length === 0 ? (
-            <div className="flex h-40 items-center justify-center text-center">
-              <div>
-                <p className="text-2xl mb-2">💬</p>
-                <p className="text-sm text-slate-500">Sin conversaciones</p>
-              </div>
+            <div className="flex flex-col h-40 items-center justify-center p-8 text-center bg-slate-50 border border-slate-100 rounded-2xl mx-2">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-loose">Sin Canales Activos</p>
             </div>
           ) : (
             conversations.map((conversation) => {
@@ -52,37 +43,44 @@ export default function ConversationList({ conversations, selectedPhone, onSelec
                   key={conversation.phone}
                   type="button"
                   onClick={() => onSelect(conversation.phone)}
-                  className={`w-full rounded-xl px-3.5 py-3 text-left transition-all ${
-                    active
-                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 shadow-sm ring-1 ring-green-200'
-                      : 'hover:bg-slate-50'
+                  className={`w-full px-4 py-3 text-left transition-colors border-b border-slate-50 ${
+                    active ? 'bg-slate-100' : 'hover:bg-slate-50 active:bg-slate-100'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-4">
+                    {/* Avatar Sólido */}
+                    <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold border ${active ? 'bg-indigo-600 border-indigo-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                      {conversation.label[0].toUpperCase()}
+                    </div>
+
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900 truncate">{conversation.label}</p>
-                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700 shrink-0">
-                          {conversation.messages.length}
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <p className={`text-[13px] font-bold truncate tracking-tight ${active ? 'text-indigo-600' : 'text-slate-900'}`}>
+                          {conversation.label}
+                        </p>
+                        <span className="text-[9px] font-bold text-slate-400 tracking-tighter shrink-0">
+                          {new Date(conversation.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                        <p className="text-xs text-slate-400 truncate mt-0.5">{conversation.phone}</p>
-                        <div className="flex items-center gap-1.5 mt-2">
-                          <p className="text-[13px] text-slate-600 line-clamp-1 text-left flex-1 font-medium italic">
-                            {conversation.preview.startsWith('📄') ? '📎 Documento enviado' : conversation.preview}
-                          </p>
-                          <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                            {new Date(conversation.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] line-clamp-1 font-medium text-slate-500 tracking-tight">
+                          {conversation.preview.startsWith('📄') ? '📎 Documento...' : conversation.preview}
+                        </p>
+                        {conversation.messages.length > 0 && !active && (
+                          <span className="flex h-4 min-w-[16px] items-center justify-center rounded bg-indigo-500 px-1 text-[8px] font-bold text-white uppercase tracking-tighter">
+                            {conversation.messages.length}
                           </span>
-                        </div>
+                        )}
                       </div>
                     </div>
-                  </button>
+                  </div>
+                </button>
               );
             })
           )}
         </div>
       </div>
-    </aside>
+    </div>
   );
-}
+}

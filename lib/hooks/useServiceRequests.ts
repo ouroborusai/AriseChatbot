@@ -63,8 +63,9 @@ export function useServiceRequests() {
     fetchRequests();
 
     // Suscribirse a cambios en tiempo real
+    const channelId = `requests-realtime-${Math.random().toString(36).substring(2, 9)}`;
     const subscription = supabase
-      .channel('requests_realtime')
+      .channel(channelId)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
