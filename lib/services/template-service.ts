@@ -63,10 +63,13 @@ export class TemplateService {
           return await this.findTemplateById(action.next_template_id, segment);
         }
 
-        // 2. Caso: Es una lista y el ID podría coincidir con una de sus opciones (JSON en description)
-        if (action.type === 'list' && action.description) {
+        // 2. Caso: Es una lista y el ID podría coincidir con una de sus opciones (JSON en description o content)
+        const listContent = action.content || action.description;
+        if (action.type === 'list' && listContent) {
           try {
-            const options = JSON.parse(action.description);
+            // Intentar parsear el contenido como JSON si es un string
+            const options = typeof listContent === 'string' ? JSON.parse(listContent) : listContent;
+            
             if (Array.isArray(options)) {
               const matchedOption = options.find((opt: any) => opt.id === actionId);
               if (matchedOption && matchedOption.next_template_id) {
@@ -75,7 +78,7 @@ export class TemplateService {
               }
             }
           } catch (e) {
-            console.warn(`[TemplateService] ⚠️ Error parseando description de lista en template "${t.name}":`, e);
+            console.warn(`[TemplateService] ⚠️ Error parseando contenido de lista en template "${t.name}":`, e);
           }
         }
       }
@@ -132,7 +135,7 @@ export class TemplateService {
       // Lista general de documentos
       if (result.includes('{{documents_list}}')) {
         const docsList = context.documents.map((d) => ({
-          id: d.id,
+          id: `doc_${d.id}`,
           title: d.title?.slice(0, 24) || 'Documento',
           description: new Date(d.created_at).toLocaleDateString('es-CL')
         }));
@@ -145,7 +148,7 @@ export class TemplateService {
           d.document_type === 'iva' || d.title?.toLowerCase().includes('iva')
         );
         const ivaList = ivaDocs.slice(0, 12).map((d) => ({
-          id: d.id,
+          id: `iva_${d.id}`,
           title: d.title?.slice(0, 24) || 'IVA',
           description: new Date(d.created_at).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' })
         }));

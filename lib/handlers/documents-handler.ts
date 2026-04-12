@@ -148,6 +148,12 @@ export class DocumentsHandler extends BaseHandler {
       return await this.sendDocumentById(phoneNumber, conversationId, docId);
     }
 
+    // Botones de documento genéricos
+    if (interactive.startsWith('doc_')) {
+      const docId = interactive.replace('doc_', '');
+      return await this.sendDocumentById(phoneNumber, conversationId, docId);
+    }
+
     // Botones "show_" para mostrar más documentos de un tipo
     if (interactive.startsWith('show_')) {
       const type = interactive.replace('show_', '');

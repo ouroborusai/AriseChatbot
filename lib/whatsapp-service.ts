@@ -85,7 +85,7 @@ export async function sendWhatsAppInteractiveButtons(
     type: 'interactive',
     interactive: {
       type: 'button',
-      body: { text: bodyText },
+      body: { text: sanitizeWhatsAppText(bodyText, WHATSAPP_CONSTRAINTS.INTERACTIVE.BODY_MAX_LENGTH) },
       action: { buttons: validButtons }
     }
   });
@@ -112,7 +112,7 @@ export async function sendWhatsAppListMessage(
     type: 'interactive',
     interactive: {
       type: 'list',
-      body: { text: list.body },
+      body: { text: sanitizeWhatsAppText(list.body, WHATSAPP_CONSTRAINTS.INTERACTIVE.BODY_MAX_LENGTH) },
       action: {
         button: sanitizeWhatsAppText(list.buttonText, WHATSAPP_CONSTRAINTS.LISTS.BUTTON_TEXT_MAX_LENGTH),
         sections

@@ -7,6 +7,9 @@ export const WHATSAPP_CONSTRAINTS = {
   TEXT: {
     MAX_LENGTH: 4096,
   },
+  INTERACTIVE: {
+    BODY_MAX_LENGTH: 1024,
+  },
   BUTTONS: {
     MAX_COUNT: 3,
     TITLE_MAX_LENGTH: 20,

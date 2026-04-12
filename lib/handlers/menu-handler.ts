@@ -10,6 +10,7 @@ import { sendWhatsAppInteractiveButtons, sendWhatsAppListMessage, sendWhatsAppMe
 import { BUTTON_IDS, Contact, Company, HandlerResponse } from '../types';
 import { BaseHandler, buildContext } from './base-handler';
 import { TemplateContext, Action } from '../../app/components/templates/types';
+import { TemplateService } from '@/lib/services/template-service';
 import { getFinalActions } from '@/lib/services/condition-engine';
 
 const WELCOME_KEYWORDS = ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'buenas', 'saludos'];
@@ -98,7 +99,7 @@ export class MenuHandler extends BaseHandler {
     // Si hay lista, enviar lista (description tiene prioridad, ahí guarda el TemplateEditor el JSON)
     if (listAction) {
       const listContent = listAction.description || listAction.content || '[]';
-      const options = JSON.parse(listContent);
+      const options = TemplateService.parseListContent(listContent, this.context);
       await sendWhatsAppListMessage(phoneNumber, {
         body: greetingText,
         buttonText: listAction.title || 'Seleccionar',

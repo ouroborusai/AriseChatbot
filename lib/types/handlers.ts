@@ -39,9 +39,10 @@ export const BUTTON_IDS = {
   CHECK_REQUEST_STATUS: 'btn_check_request_status',
   
   // Menú prospecto
-  NEW_QUOTE: 'btn_new_quote',
-  NEW_INFO: 'btn_new_info',
-  NEW_HUMAN: 'btn_new_human',
+  NEW_QUOTE: 'btn_cotizar',
+  NEW_INFO: 'btn_especialidades',
+  NEW_FAQ: 'btn_faq',
+  NEW_HUMAN: 'btn_asesor_ventas',
   
   // Documentos categorías
   DOC_CAT_TAX: 'btn_doc_cat_tax',
@@ -49,11 +50,11 @@ export const BUTTON_IDS = {
   DOC_CAT_PAYROLL_CONTRACTS: 'btn_doc_cat_payroll_contracts',
   
   // Documentos específicos
-  DOC_IVA: 'btn_doc_iva',
-  DOC_RENTA: 'btn_doc_renta',
-  DOC_BALANCE: 'btn_doc_balance',
-  DOC_LIQUIDACIONES: 'btn_doc_liquidaciones',
-  DOC_CONTRATOS: 'btn_doc_contratos',
+  DOC_IVA: 'doc_iva',
+  DOC_RENTA: 'doc_renta',
+  DOC_BALANCE: 'doc_balances',
+  DOC_LIQUIDACIONES: 'doc_liquidaciones',
+  DOC_CONTRATOS: 'doc_contratos',
   
   // Empresa
   COMPANY_PREFIX: 'company_',
