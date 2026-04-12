@@ -85,8 +85,14 @@ export default function AppointmentsPage() {
                   appointments.map((appt) => (
                     <tr key={appt.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="text-[13px] font-bold text-slate-900">{new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</div>
-                        <div className="text-[11px] text-slate-500 font-medium">{appt.appointment_time.substring(0, 5)} hrs</div>
+                        <div className="text-[13px] font-bold text-slate-900">
+                          {appt.appointment_date 
+                            ? new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })
+                            : '---'}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium">
+                          {appt.appointment_time?.substring(0, 5) || '--:--'} hrs
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="text-[13px] font-semibold text-slate-800">{appt.contacts?.name || 'Cargando...'}</div>

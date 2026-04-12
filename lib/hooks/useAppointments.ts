@@ -78,19 +78,24 @@ export function useAppointments() {
     fetchAppointments();
 
     // Suscribirse a cambios en tiempo real
+    // ID único para evitar colisiones en tiempo real
+    const channelId = Math.random().toString(36).slice(2, 7);
+    const channelName = `appointments-${channelId}`;
+
     const subscription = supabase
-      .channel('appointments_realtime')
+      .channel(channelName)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'appointments' 
       }, () => {
-        console.log('[Realtime] Cambio detectado en citas, actualizando...');
+        console.log('[Realtime] Cambio en citas, refrescando...');
         fetchAppointments();
       })
       .subscribe();
 
     return () => {
+      console.log('[Realtime] Limpiando canal citas...');
       supabase.removeChannel(subscription);
     };
   }, []);
