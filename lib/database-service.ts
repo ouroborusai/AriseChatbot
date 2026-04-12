@@ -18,6 +18,24 @@ function normalizePhoneNumber(phone: string): string {
 }
 
 /**
+ * Limpia el nombre del perfil de WhatsApp para que no sea excesivamente largo 
+ * (ej: "Juan Pérez MTZ TQF" -> "Juan")
+ */
+function sanitizeName(name?: string): string {
+  if (!name || name.trim() === '') return 'cliente';
+  
+  // Limpiar caracteres especiales y emojis básicos
+  const clean = name.trim().split(' ')[0];
+  
+  // Capitalizar formato (ej: JUAN -> Juan)
+  if (clean.length > 0) {
+    return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+  }
+  
+  return 'cliente';
+}
+
+/**
  * Genera un código de ticket único para seguimientos
  */
 function generateRequestCode(type: string): string {
@@ -48,9 +66,11 @@ export async function getOrCreateContact(phoneNumber: string, profileName?: stri
     
     // Actualizar last_message_at (y el nombre si no lo tenía)
     const updates: any = { last_message_at: new Date().toISOString() };
+    const cleanProfileName = sanitizeName(profileName);
+    
     if (profileName && (!existing.name || existing.name === 'cliente' || existing.name === 'prospecto')) {
-      updates.name = profileName;
-      existing.name = profileName;
+      updates.name = cleanProfileName;
+      existing.name = cleanProfileName;
     }
 
     const { error: updateError } = await getSupabaseAdmin()
@@ -69,7 +89,7 @@ export async function getOrCreateContact(phoneNumber: string, profileName?: stri
     .from('contacts')
     .insert({
       phone_number: normalizedPhone,
-      name: profileName || null,
+      name: sanitizeName(profileName),
       last_message_at: new Date().toISOString(),
     })
     .select('id, name, email, segment, location, last_message_at, phone_number')

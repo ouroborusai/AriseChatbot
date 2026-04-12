@@ -1,7 +1,7 @@
 {
   "id": "prospecto_faq",
   "name": "02_B_Asistente IA (FAQ)",
-  "content": "¡Hola! Soy el asistente con Inteligencia Artificial 🤖 de MTZ Consultores.\n\nFui entrenado con la última normativa tributaria de Chile y conozco todas las especialidades de la firma.\n\nEscribe cualquier pregunta que tengas (Ej: *¿Qué es el F29?*, *¿Me ayudan a crear empresa?* o *¿Qué planes tienen?*). O escribe *Menú* para volver atrás.",
+  "content": "¡Hola! Soy el asistente virtual de *MTZ Consultores* 🤖\n\nNuestras especialidades incluyen:\n✅ *Contabilidad Mensual* (PYMEs y Grandes Empresas)\n✅ *Declaraciones de Impuestos* (IVA F29, Renta F22)\n✅ *Auditoría y Peritaje Tributario*\n✅ *Creación y Constitución de Empresas*\n✅ *Recursos Humanos y Nómina*\n\nEscribe cualquier duda específica que tengas o escribe *Menú* para volver a las opciones principales.",
   "category": "ventas",
   "segment": "prospecto",
   "is_active": true,
