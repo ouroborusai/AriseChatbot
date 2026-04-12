@@ -79,24 +79,11 @@ export class CompanyHandler extends BaseHandler {
     conversationId: string,
     companies: Company[]
   ): Promise<HandlerResponse> {
-    // Si tiene 0 o 1 empresa, no necesita selección manual
-    if (companies.length <= 1) {
-      return { handled: false };
-    }
-
     const query = text.trim().toLowerCase();
     
-    // 1. Buscar en las empresas ya vinculadas (por nombre)
-    const localMatch = companies.find(c => c.legal_name.toLowerCase().includes(query));
-
-    if (localMatch) {
-      await this.activateCompany(localMatch.id, conversationId);
-      await sendWhatsAppMessage(phoneNumber, `Perfecto. Empresa seleccionada: ${localMatch.legal_name}`);
-      return { handled: true };
-    }
-
-    // 2. Si es un prospecto o no encontró local, buscar por RUT en la DB global
+    // 1. Validar si los datos ingresados parecen un RUT
     const looksLikeRut = /^[0-9.-]+[kK]?$/.test(query.replace(/\s/g, ''));
+    
     if (looksLikeRut) {
       const cleanRut = query.replace(/[^0-9kK]/g, '').toUpperCase();
       // Formatear RUT para búsqueda (ej: 12345678-9)
@@ -106,7 +93,7 @@ export class CompanyHandler extends BaseHandler {
 
       console.log(`[CompanyHandler] 🔍 Buscando empresa global por RUT: ${formattedRut}`);
       
-      const { data: globalMatch, error } = await getSupabaseAdmin()
+      const { data: globalMatch } = await getSupabaseAdmin()
         .from('companies')
         .select('*')
         .or(`rut.eq.${formattedRut},rut.eq.${cleanRut}`)
@@ -129,20 +116,38 @@ export class CompanyHandler extends BaseHandler {
         
         await sendWhatsAppMessage(
           phoneNumber, 
-          `¡Identificación exitosa! ✅ He vinculado tu número a *${globalMatch.legal_name}*.\n\nEscribe "Hola" para ver tu nuevo menú de cliente.`
+          `¡Identificación exitosa! ✅ He vinculado tu número a *${globalMatch.legal_name}*.\n\nYa puedes acceder a toda la información de tu empresa.`
+        );
+        
+        // Retornamos handled: true. El webhook-handler se encargará de mostrar el menú actualizado.
+        return { handled: true };
+      } else {
+        // Si parecía un RUT pero no se encontró, informamos al usuario
+        await sendWhatsAppMessage(
+          phoneNumber,
+          "No encontré ninguna empresa vinculada a ese RUT en nuestros registros. 🧐 Por favor, asegúrate de escribirlo correctamente o contacta a tu asesor."
         );
         return { handled: true };
       }
     }
 
-    // 3. No encontró coincidencia
-    if (companies.length > 0) {
+    // 2. Si no es RUT y el usuario tiene múltiples empresas, buscar en las ya vinculadas (por nombre)
+    if (companies.length > 1) {
+      const localMatch = companies.find(c => c.legal_name.toLowerCase().includes(query));
+
+      if (localMatch) {
+        await this.activateCompany(localMatch.id, conversationId);
+        await sendWhatsAppMessage(phoneNumber, `Perfecto. Empresa seleccionada: ${localMatch.legal_name}`);
+        return { handled: true };
+      }
+      
       await sendWhatsAppMessage(phoneNumber, 'No encontré esa empresa en tu lista. ¿Podrías escribir el nombre más exacto?');
       return { handled: true };
     }
 
     return { handled: false };
   }
+
 
   /**
    * Helper para activar una empresa

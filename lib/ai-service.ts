@@ -246,3 +246,44 @@ export function invalidateSystemPromptCache(): void {
   cacheTimestamp = 0;
   console.log('[AI] System prompt cache invalidated');
 }
+/**
+ * Transcribe un archivo de audio utilizando Google Gemini (Capacidades Multimodales)
+ */
+export async function transcribeAudio(audioBuffer: Buffer, fileName: string): Promise<string> {
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!geminiKey) {
+    console.warn('[AI/GeminiVoice] GEMINI_API_KEY no configurada.');
+    return 'Mensaje de voz (transcripción no disponible)';
+  }
+
+  try {
+    console.log('[AI/GeminiVoice] Transcribiendo con Gemini Multimodal...');
+    
+    const genAI = new GoogleGenerativeAI(geminiKey);
+    const modelName = resolveGeminiModel();
+    console.log(`[AI/GeminiVoice] Usando modelo: ${modelName}`);
+    const model = genAI.getGenerativeModel({ model: modelName });
+
+
+    // Preparar el audio para Gemini (Base64)
+    const audioPart = {
+      inlineData: {
+        data: audioBuffer.toString('base64'),
+        mimeType: "audio/ogg" // Formato estándar de WhatsApp
+      }
+    };
+
+    const prompt = "Transcribe exactamente lo que se dice en este audio de WhatsApp. Responde solo con la transcripción, sin comentarios adicionales. Si no hay voz inteligible, escribe [Audio vacío o no legible].";
+
+    const result = await model.generateContent([prompt, audioPart]);
+    const response = await result.response;
+    const text = response.text();
+
+    console.log('[AI/GeminiVoice] ✓ Transcripción exitosa');
+    return text.trim();
+  } catch (error) {
+    console.error('[AI/GeminiVoice] ❌ Error en transcripción:', error);
+    return 'Mensaje de voz (error de procesamiento Google)';
+  }
+}
+

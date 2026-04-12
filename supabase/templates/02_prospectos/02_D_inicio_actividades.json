@@ -1,0 +1,25 @@
+{
+  "id": "inicio_actividades",
+  "name": "02_D_Inicio de Actividades",
+  "content": "¡Gracias por contactarnos! 😊\n\nSi necesitas comenzar el proceso de **Inicio de Actividades**, por favor completa el siguiente formulario para poder ayudarte de manera más rápida y eficiente:\n\n🔗 https://forms.gle/rfUFa5sBcrQ1ZKSM7\n\nUna vez lo hayas completado, nos pondremos en contacto contigo para continuar con el proceso. ¡Gracias por confiar en nosotros! 🌟",
+  "category": "ventas",
+  "segment": "prospecto",
+  "is_active": true,
+  "priority": 95,
+  "trigger": "inicio actividades, empezar empresa, crear empresa",
+  "workflow": "onboarding",
+  "actions": [
+    {
+      "type": "button",
+      "id": "btn_ya_complete_form",
+      "title": "✅ Ya lo completé",
+      "next_template_id": "derivacion_asesor"
+    },
+    {
+      "type": "button",
+      "id": "btn_volver_pros",
+      "title": "⬅️ Volver",
+      "next_template_id": "bienvenida_prospecto"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "confirmacion_cita",
+  "name": "03_I_Confirmación de Solicitud de Cita",
+  "content": "¡Recibido! 📅 He enviado tu solicitud de agendamiento al ejecutivo.\n\nTe confirmaremos la hora exacta por este mismo medio en los próximos minutos. \n\n¿Necesitas algo más por ahora?",
+  "category": "citas",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 80,
+  "trigger": "",
+  "workflow": "citas",
+  "actions": [
+    {
+      "type": "button",
+      "id": "btn_volver_home_cita",
+      "title": "🏠 Menú Principal",
+      "next_template_id": "menu_principal_cliente"
+    }
+  ]
+}

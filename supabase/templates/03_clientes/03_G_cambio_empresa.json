@@ -1,0 +1,27 @@
+{
+  "id": "cambio_empresa",
+  "name": "03_G_Selector de Empresa Activa",
+  "content": "Tienes {{company_count}} empresas vinculadas a tu perfil. 🏢\n\n¿De cuál de ellas necesitas revisar información ahora?",
+  "category": "configuracion",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 95,
+  "trigger": "cambiar empresa, otra empresa",
+  "workflow": "atencion_cliente",
+  "actions": [
+    {
+      "type": "list",
+      "id": "menu_selector_empresas",
+      "title": "🏢 Mis Empresas",
+      "content": "{{companies_list}}",
+      "next_template_id": "menu_principal_cliente"
+    },
+    {
+      "type": "button",
+      "id": "btn_volver_home",
+      "title": "⬅️ Volver",
+      "next_template_id": "menu_principal_cliente"
+    }
+  ]
+}
+

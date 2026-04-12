@@ -13,15 +13,20 @@
       "type": "button",
       "id": "btn_ver_cuentas",
       "title": "🏦 Datos Transferencia",
-      "content": "",
-      "next_template_id": ""
+      "next_template_id": "datos_bancarios"
     },
     {
       "type": "button",
       "id": "btn_facturacion_sii",
-      "title": "📄 Solicitar Factura MTZ",
-      "content": "",
+      "title": "📄 Solicitar Factura",
       "next_template_id": "derivacion_asesor"
+    },
+    {
+      "type": "button",
+      "id": "btn_volver_menu_cobranza",
+      "title": "⬅️ Volver al Menú",
+      "next_template_id": "menu_principal_cliente"
     }
   ]
 }
+

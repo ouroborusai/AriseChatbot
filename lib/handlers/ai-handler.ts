@@ -146,13 +146,32 @@ export class AIHandler extends BaseHandler {
   ): Promise<HandlerResponse> {
     console.log('[AIHandler] Procesando con Gemini...');
 
-    // Verificar si quiere hablar con humano
-    if (this.wantsHumanAgent(userMessage)) {
-      const msg = 'Entiendo. Un asesor especializado de MTZ se comunicará contigo desde este número en breve.';
-      await sendWhatsAppMessage(phoneNumber, msg);
-      console.log('[AIHandler] ✅ Derivado a humano');
-      return { handled: true };
+    // DETECCIÓN DE INTENCIÓN: Agendar Cita
+    const citaKeywords = ['agendar', 'cita', 'reunion', 'reunión', 'calendario', 'hablar con contador'];
+    if (citaKeywords.some(kw => userMessage.toLowerCase().includes(kw)) && !userMessage.includes('[interactive:')) {
+       console.log('[AIHandler] 📅 Intención de cita detectada');
+       const { TemplateService } = await import('../services/template-service');
+       const { processTemplateResponse } = await import('../webhook-handler');
+       const template = await TemplateService.findTemplateById('agendar_cita', this.context.contact.segment);
+       if (template) {
+          await processTemplateResponse(phoneNumber, template, this.context, { currentPath: [], history: [] }, conversationId);
+          return { handled: true };
+       }
     }
+
+    // Verificar si quiere hablar con humano
+
+    if (this.wantsHumanAgent(userMessage)) {
+      console.log('[AIHandler] ✅ Derivación a humano solicitada');
+      const { TemplateService } = await import('../services/template-service');
+      const { processTemplateResponse } = await import('../webhook-handler');
+      const template = await TemplateService.findTemplateById('soporte_ejecutivo', this.context.contact.segment);
+      if (template) {
+         await processTemplateResponse(phoneNumber, template, this.context, { currentPath: [], history: [] }, conversationId);
+         return { handled: true };
+      }
+    }
+
 
     try {
       // Enriquecer contexto con datos frescos
@@ -227,12 +246,18 @@ export class AIHandler extends BaseHandler {
       
       if (!suggestedMenu) {
         const { sendWhatsAppInteractiveButtons } = await import('../whatsapp-service');
+        const isProspect = this.context.contact.segment === 'prospecto';
+        const backId = isProspect ? 'bienvenida_prospecto' : 'menu_principal_cliente';
+        const backTitle = isProspect ? '🏠 Volver al Inicio' : '🏠 Menú Principal';
+        const backText = isProspect ? '¿Te gustaría ver nuestros servicios? 💼' : '¿Deseas volver al menú principal de gestiones? 🏢';
+
         await sendWhatsAppInteractiveButtons(
           phoneNumber,
-          '¿Deseas volver al menú principal de gestiones? 🏢',
-          [{ id: 'menu_principal_cliente', title: '🏠 Menú Principal' }]
+          backText,
+          [{ id: backId, title: backTitle }]
         );
       }
+
       return { handled: true };
     } catch (error) {
       console.error('[AIHandler] 💥 Error en AI handler:', error);

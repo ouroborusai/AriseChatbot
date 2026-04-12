@@ -21,7 +21,7 @@ import {
 import { TemplateContext, Template } from '@/app/components/templates/types';
 import { getFinalActions } from './services/condition-engine';
 import { Contact, Company } from './types';
-import { handleCompanyButton } from './handlers/company-handler';
+import { handleCompanyButton, handleCompanyText } from './handlers/company-handler';
 import { handleDocumentButton } from './handlers/documents-handler';
 import { handleClassification } from './handlers/classification-handler';
 import { MenuHandler } from './handlers/menu-handler';
@@ -40,6 +40,9 @@ export async function handleInboundUserMessage(messageData: {
   from?: string;
   profileName?: string;
   text?: { body?: string };
+  audio?: { id: string; mime_type: string };
+  document?: { id: string; filename?: string; mime_type: string };
+  image?: { id: string; mime_type: string };
   interactive?: { 
     button_reply?: { id?: string }; 
     list_reply?: { id?: string } 
@@ -47,10 +50,54 @@ export async function handleInboundUserMessage(messageData: {
 }): Promise<void> {
   const phoneNumber = messageData.from;
   const profileName = messageData.profileName;
-  const text = messageData.text?.body?.trim();
+  let text = messageData.text?.body?.trim();
+  const audio = messageData.audio;
+  const document = messageData.document;
+  const image = messageData.image;
   const interactive = messageData.interactive?.button_reply?.id || messageData.interactive?.list_reply?.id;
 
   if (!phoneNumber) return;
+
+  // Manejo de Documentos e Imágenes (Buzón de Recepción)
+  if (document || image) {
+    const mediaId = document?.id || image?.id;
+    console.log(`[Webhook] 📁 Recibido archivo ID: ${mediaId}`);
+    try {
+      const contact = await getOrCreateContact(phoneNumber, profileName);
+      const conversationId = await getOrCreateConversation(phoneNumber, contact.id);
+      const companies = await listCompaniesForContact(contact.id);
+      const context = await ContextService.buildContext(contact, companies, null, conversationId);
+
+      if (context.lastAction === 'buzon_recepcion') {
+        const typeLabel = document ? 'documento' : 'foto';
+        await saveMessage(conversationId, 'user', `[Archivo recibido: ${typeLabel} ID ${mediaId}]`);
+        await sendWhatsAppMessage(phoneNumber, `✅ He recibido tu ${typeLabel} correctamente. Lo guardaré en tu expediente para que el contador lo revise. ¿Necesitas enviar algo más?`);
+        return;
+      }
+    } catch (err) {
+      console.error('[Webhook] ❌ Error procesando archivo:', err);
+    }
+  }
+
+  // Manejo Industrial de Audio (Mensajes de Voz)
+  if (audio && audio.id) {
+
+    try {
+      console.log(`[Webhook] 🎙️ Procesando audio ID: ${audio.id}`);
+      const { getWhatsAppMediaUrl, downloadWhatsAppMedia } = await import('./whatsapp-service');
+      const { transcribeAudio } = await import('./ai-service');
+      
+      const audioUrl = await getWhatsAppMediaUrl(audio.id);
+      const audioBuffer = await downloadWhatsAppMedia(audioUrl);
+      const transcription = await transcribeAudio(audioBuffer, `voice_${audio.id}.ogg`);
+      
+      console.log(`[Webhook] 📝 Transcripción: "${transcription}"`);
+      text = transcription;
+    } catch (err) {
+      console.error('[Webhook] ❌ Error procesando audio:', err);
+      text = 'Mensaje de voz (error de procesamiento)';
+    }
+  }
 
   // 1. Filtrar números ignorados
   const ignoreFrom = process.env.WHATSAPP_IGNORE_INBOUND_FROM?.trim();
@@ -86,11 +133,24 @@ export async function handleInboundUserMessage(messageData: {
       .eq('id', conversationId)
       .maybeSingle();
 
-    const isBotEnabled = convData ? convData.chatbot_enabled !== false : true;
+    let isBotEnabled = convData ? convData.chatbot_enabled !== false : true;
+
+    // REACTIVACIÓN AUTOMÁTICA: Si el usuario presiona un botón de menú principal o navegación, re-activamos el bot.
+    const RE_ACTIVATION_BUTTONS = ['menu_principal_cliente', 'btn_volver_home', 'bienvenida_prospecto', 'btn_cancelar_soporte'];
+    if (interactive && RE_ACTIVATION_BUTTONS.includes(interactive)) {
+      console.log(`[Webhook] 🔄 Reactivando bot por interacción de navegación: ${interactive}`);
+      await getSupabaseAdmin()
+        .from('conversations')
+        .update({ chatbot_enabled: true })
+        .eq('id', conversationId);
+      isBotEnabled = true;
+    }
+
     if (!isBotEnabled) {
       console.log(`[Webhook] 👤 Modo Manual para ${phoneNumber}`);
       return;
     }
+
 
     // 4. Registrar Mensaje del Usuario (PRIORIDAD ALTA)
     try {
@@ -168,28 +228,58 @@ export async function handleInboundUserMessage(messageData: {
       
       const nextTemplate = await TemplateService.findTemplateByActionId(interactive, contact.segment || 'prospecto');
       if (nextTemplate) {
-        await processTemplateResponse(phoneNumber, nextTemplate, context, navState);
+        await processTemplateResponse(phoneNumber, nextTemplate, context, navState, conversationId);
         return;
       }
     }
 
     // Manejo de Saludos y Triggers de Texto
     if (text) {
+      // CAPTURA INDUSTRIAL: Si el usuario está en flujo de trámites, guardamos el texto como una solicitud
+      if (context.lastAction === 'solicitud_tramite' && text.length > 5 && !text.includes('Menu')) {
+         console.log(`[Webhook] ⚙️ Capturando solicitud de trámite: "${text}"`);
+         const { createServiceRequest } = await import('./database-service');
+         const activeCompanyId = await getActiveCompanyForConversation(conversationId);
+         
+         const request = await createServiceRequest(
+           contact.id,
+           conversationId,
+           'general_request',
+           text,
+           activeCompanyId
+         );
+
+         if (request) {
+           await sendWhatsAppMessage(phoneNumber, `✅ Solicitud registrada con éxito (Ticket: ${request.request_code}).\n\nHe enviado tu requerimiento al equipo contable. Si necesitas algo más, puedes volver al Menú Principal.`);
+           return;
+         }
+      }
+
       const greetingHandler = new MenuHandler(context);
       if (greetingHandler.isGreeting(text)) {
         await sendDefaultMenu(phoneNumber, contact.id, conversationId);
         return;
       }
 
+      // Prioridad: Intentar identificar RUT o Empresa por texto
+      const companySelection = await handleCompanyText(text, phoneNumber, conversationId, companies);
+      if (companySelection.handled) {
+        // Si el usuario se acaba de identificar, enviamos el menú por defecto correspondiente a su nuevo segmento
+        await sendDefaultMenu(phoneNumber, contact.id, conversationId);
+        return;
+      }
+
       const matchedTemplate = await TemplateService.findTemplateByTrigger(text, contact.segment || 'prospecto');
+
       if (matchedTemplate) {
-        await processTemplateResponse(phoneNumber, matchedTemplate, context, navState);
+        await processTemplateResponse(phoneNumber, matchedTemplate, context, navState, conversationId);
         return;
       }
 
       // IA Fallback
       await handleAI(phoneNumber, conversationId, contact, companies, activeCompanyId, text);
     }
+
 
   } catch (error: any) {
     console.error('[WebhookHandler] ❌ ERROR CRÍTICO:', error);
@@ -220,7 +310,7 @@ async function sendDefaultMenu(phoneNumber: string, contactId: string, conversat
   const template = await TemplateService.findTemplateById(templateId, segment);
   if (template) {
     const freshContext = await ContextService.buildContext({ id: contactId, segment } as any, [], null, conversationId);
-    await processTemplateResponse(phoneNumber, template, freshContext, NavigationService.createInitialState());
+    await processTemplateResponse(phoneNumber, template, freshContext, NavigationService.createInitialState(), conversationId);
   } else {
     await sendWhatsAppMessage(phoneNumber, 'Bienvenido a MTZ. Escribe "Menú" para ver mis opciones.');
   }
@@ -233,10 +323,21 @@ export async function processTemplateResponse(
   phoneNumber: string,
   template: Template,
   context: TemplateContext,
-  navState: any
+  navState: any,
+  conversationId?: string
 ): Promise<void> {
   try {
+    // Lógica Industrial: Desactivar bot si es soporte humano
+    if (template.id === 'soporte_ejecutivo' && conversationId) {
+      console.log(`[Webhook] 📉 Desactivando chatbot para soporte humano en ${conversationId}`);
+      await getSupabaseAdmin()
+        .from('conversations')
+        .update({ chatbot_enabled: false })
+        .eq('id', conversationId);
+    }
+
     const content = TemplateService.replaceVariables(template.content, context);
+
     
     // Procesar acciones interactivas con blindaje
     if (template.actions && template.actions.length > 0) {

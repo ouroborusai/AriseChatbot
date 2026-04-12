@@ -8,5 +8,13 @@
   "priority": 90,
   "trigger": "ai_faq",
   "workflow": "ventas",
-  "actions": []
+  "actions": [
+    {
+      "type": "button",
+      "id": "btn_volver_faq",
+      "title": "⬅️ Volver al Menú",
+      "next_template_id": "bienvenida_prospecto"
+    }
+  ]
 }
+

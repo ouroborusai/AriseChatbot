@@ -10,10 +10,71 @@
   "workflow": "documentos",
   "actions": [
     {
-      "type": "list",
-      "id": "menu_tipos_docs",
-      "title": "📂 Ver Categorías",
-      "content": "[{\"id\":\"doc_iva\",\"title\":\"🧾 IVA (F29)\",\"description\":\"Declaraciones mensuales\",\"next_template_id\":\"filtro_tiempo_docs\"},{\"id\":\"doc_renta\",\"title\":\"💼 Operación Renta\",\"description\":\"Declaración anual F22\",\"next_template_id\":\"filtro_tiempo_docs\"},{\"id\":\"doc_contratos\",\"title\":\"👥 Contratos\",\"description\":\"Contratos y finiquitos\",\"next_template_id\":\"filtro_tiempo_docs\"},{\"id\":\"doc_liquidaciones\",\"title\":\"💰 Liquidaciones\",\"description\":\"Liquidaciones de Sueldo\",\"next_template_id\":\"filtro_tiempo_docs\"},{\"id\":\"doc_balances\",\"title\":\"📈 Balances y EERR\",\"description\":\"Estados financieros\",\"next_template_id\":\"filtro_tiempo_docs\"}]"
+      "type": "button",
+      "id": "doc_iva",
+      "title": "🧾 IVA (F29)",
+      "description": "Declaraciones mensuales",
+      "next_template_id": "filtro_tiempo_docs",
+      "conditions": {
+        "show_if": [
+          { "field": "document_type", "operator": "equals", "value": "iva" }
+        ]
+      }
+    },
+    {
+      "type": "button",
+      "id": "doc_renta",
+      "title": "💼 Operación Renta",
+      "description": "Declaración anual F22",
+      "next_template_id": "filtro_tiempo_docs",
+      "conditions": {
+        "show_if": [
+          { "field": "document_type", "operator": "equals", "value": "renta" }
+        ]
+      }
+    },
+    {
+      "type": "button",
+      "id": "doc_contratos",
+      "title": "👥 Contratos",
+      "description": "Contratos y finiquitos",
+      "next_template_id": "filtro_tiempo_docs",
+      "conditions": {
+        "show_if": [
+          { "field": "document_type", "operator": "equals", "value": "contratos" }
+        ]
+      }
+    },
+    {
+      "type": "button",
+      "id": "doc_liquidaciones",
+      "title": "💰 Liquidaciones",
+      "description": "Liquidaciones de Sueldo",
+      "next_template_id": "filtro_tiempo_docs",
+      "conditions": {
+        "show_if": [
+          { "field": "document_type", "operator": "equals", "value": "liquidaciones" }
+        ]
+      }
+    },
+    {
+      "type": "button",
+      "id": "doc_balances",
+      "title": "📈 Balances y EERR",
+      "description": "Estados financieros",
+      "next_template_id": "filtro_tiempo_docs",
+      "conditions": {
+        "show_if": [
+          { "field": "document_type", "operator": "equals", "value": "balances" }
+        ]
+      }
+    },
+    {
+      "type": "button",
+      "id": "btn_volver_menu",
+      "title": "⬅️ Volver",
+      "next_template_id": "menu_principal_cliente"
     }
   ]
 }
+

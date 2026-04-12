@@ -123,7 +123,9 @@ export async function sendWhatsAppInteractiveButtons(
   });
 
   if (result.message_id) {
-    await saveMessageRecord(phoneNumber, bodyText, 'assistant');
+    // Registro enriquecido para el Dashboard
+    const interactiveLog = `${bodyText}\n[buttons:${JSON.stringify(buttons)}]`;
+    await saveMessageRecord(phoneNumber, interactiveLog, 'assistant');
   }
 
   return result;
@@ -144,7 +146,7 @@ export async function sendWhatsAppListMessage(
     }))
   }));
 
-  return callWhatsAppAPI('messages', {
+  const result = await callWhatsAppAPI('messages', {
     messaging_product: 'whatsapp',
     to,
     type: 'interactive',
@@ -157,6 +159,14 @@ export async function sendWhatsAppListMessage(
       }
     }
   });
+
+  if (result.message_id) {
+    // Registro enriquecido para el Dashboard
+    const listLog = `${list.body}\n[list:${JSON.stringify({ buttonText: list.buttonText, sections: list.sections })}]`;
+    await saveMessageRecord(phoneNumber, listLog, 'assistant');
+  }
+
+  return result;
 }
 
 export async function sendWhatsAppDocument(
@@ -204,3 +214,46 @@ export async function sendWhatsAppImage(
     }
   });
 }
+
+/**
+ * Obtiene la URL de descarga de un archivo multimedia desde WhatsApp
+ */
+export async function getWhatsAppMediaUrl(mediaId: string): Promise<string> {
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const url = `https://graph.facebook.com/v25.0/${mediaId}`;
+
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`WhatsApp Media API error: ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.url;
+}
+
+/**
+ * Descarga un archivo multimedia desde WhatsApp
+ */
+export async function downloadWhatsAppMedia(url: string): Promise<Buffer> {
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to download media: ${response.statusText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+

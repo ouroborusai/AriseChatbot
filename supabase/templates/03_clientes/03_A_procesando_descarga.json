@@ -8,5 +8,13 @@
   "priority": 90,
   "trigger": "",
   "workflow": "documentos",
-  "actions": []
+  "actions": [
+    {
+      "type": "button",
+      "id": "btn_volver_after_docs",
+      "title": "⬅️ Volver al Menú",
+      "next_template_id": "menu_principal_cliente"
+    }
+  ]
 }
+

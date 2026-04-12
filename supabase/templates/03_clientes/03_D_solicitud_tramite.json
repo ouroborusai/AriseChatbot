@@ -8,5 +8,13 @@
   "priority": 90,
   "trigger": "ai_tramite",
   "workflow": "operaciones",
-  "actions": []
+  "actions": [
+    {
+      "type": "button",
+      "id": "btn_volver_tramites",
+      "title": "⬅️ Volver al Menú",
+      "next_template_id": "menu_principal_cliente"
+    }
+  ]
 }
+

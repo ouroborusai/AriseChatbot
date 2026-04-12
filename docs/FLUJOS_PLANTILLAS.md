@@ -17,7 +17,15 @@ supabase/
       │    ├── 01_A_bienvenida_prospecto.json
       │    └── 01_B_menu_principal_cliente.json
       ├── 02_documentos/
-      │    └── (Próximamente)
+      ├── 02_prospectos/
+      │    ├── 02_B_prospecto_faq.json
+      │    └── 02_D_inicio_actividades.json
+      ├── 03_clientes/
+      │    ├── 03_A_bandeja_documentos.json
+      │    ├── 03_D_solicitud_tramite.json
+      │    ├── 03_F_datos_bancarios.json
+      │    ├── 03_H_agendar_cita.json
+      │    └── ... (Total 10 archivos)
       └── index.ts (Índice Maestro)
 ```
 
@@ -28,18 +36,26 @@ supabase/
 
 ---
 
-## ⚠️ 2. Regla Crítica: Meta Cloud API (WhatsApp Limits)
+## ⚡ 2. Escalabilidad Industrial: Listas v/s Botones
 
-**ESTRICTAMENTE PROHIBIDO VIOLAR ESTA LEY.**
-Meta rechaza (Http 400 Bad Request) cualquier lista interactiva silenciosamente si detecta este error:
-*   **Título del botón Lista:** Longitud máxima MUNDIAL de **24 caracteres**.
-*   Los Emojis pueden contar como 2, 3 o hasta 5 caracteres (Ej: 👨‍💼 son 5 caracteres).
-*   *Nunca* usar listas con nombres tipo `"👨‍💼 Hablar con un Asesor"`. Se debe usar `"📞 Hablar con Asesor"`.
-*   **Descripción del botón Lista:** Máximo 72 caracteres.
+Para asegurar la estabilidad en despliegues a gran escala (MTZ 110+ clientes):
+1. **Límite de Botones:** WhatsApp solo permite **3 botones** en mensajes tipo 'button'.
+2. **Uso de Listas:** Para menús con más de 3 opciones (como el Menú Principal), se debe usar obligatoriamente el tipo **'list'** con el contenido formateado en JSON en el campo `content`. 
+3. **Circularidad Obligatoria:** Toda plantilla "final" debe poseer un botón de retorno:
+   - `menu_principal_cliente` (Para Clientes)
+   - `bienvenida_prospecto` (Para Prospectos)
 
 ---
 
-## 🟢 3. Flujo Dinámico UI (Canvas)
+## ⚙️ 3. Captura Industrial de Trámites
+
+El sistema posee un motor de escucha inteligente en el `WebhookHandler`:
+- Si `lastAction === 'solicitud_tramite'`, el texto del usuario se guarda directamente como un registro de `service_requests`.
+- **Media Support:** El bot puede recibir comprobantes de pago (Imágenes) y documentos contables (PDF), vinculándolos al buzón de recepción del cliente.
+
+---
+
+## 🟢 4. Flujo Dinámico UI (Canvas)
 
 El Builder UI en el Dashboard lee los "flujos" trazando la variable `next_template_id`.
 *   El Canvas tiene pestañas para separar visualmente: `[ 🔍 Prospectos ]` vs `[ 👤 Clientes ]` vs `[ Global ]`.

@@ -1,0 +1,26 @@
+{
+  "id": "datos_bancarios",
+  "name": "03_F_Datos Bancarios MTZ",
+  "content": "Aquí tienes los datos oficiales para transferencias y pagos de honorarios: 🏦\n\n🔹 *Titular:* Mtz Consultores Tributarios Spa\n🔹 *RUT:* 77.374.419-K\n🔹 *Banco:* Banco Estado\n🔹 *Tipo:* Chequera Electrónica\n🔹 *Cuenta:* 1371940401\n\n📌 *Importante:* Una vez realizada la transferencia, puedes enviar el comprobante directamente por aquí o al correo admin@mtzconsultores.cl",
+
+  "category": "cobranza",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 90,
+  "trigger": "datos, pago, banco, transferencia",
+  "workflow": "cobranza",
+  "actions": [
+    {
+      "type": "button",
+      "id": "btn_subir_comprobante",
+      "title": "📤 Subir Comprobante",
+      "next_template_id": "buzon_recepcion"
+    },
+    {
+      "type": "button",
+      "id": "btn_volver_estado",
+      "title": "⬅️ Volver",
+      "next_template_id": "estado_cuenta"
+    }
+  ]
+}

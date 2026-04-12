@@ -77,8 +77,12 @@ export class TemplateService {
         const listContent = action.content || action.description;
         if (action.type === 'list' && listContent) {
           try {
+            // Evitar parsear si contiene variables dinámicas que se reemplazan en runtime
+            if (typeof listContent === 'string' && listContent.includes('{{')) continue;
+            
             // Intentar parsear el contenido como JSON si es un string
             const options = typeof listContent === 'string' ? JSON.parse(listContent) : listContent;
+
             
             if (Array.isArray(options)) {
               const matchedOption = options.find((opt: any) => opt.id === actionId);
@@ -155,6 +159,20 @@ export class TemplateService {
     result = result.split('{{empresa}}').join(companyName);
     result = result.split('{{legal_name}}').join(companyName); // Aliases
     result = result.split('{{rut}}').join(companyRut);
+
+    // 2.1 Multi-Empresa
+    const companyCount = context.companies?.length || 0;
+    result = result.split('{{company_count}}').join(String(companyCount));
+
+    if (result.includes('{{companies_list}}')) {
+      const companiesList = (context.companies || []).map(c => ({
+        id: `company_${c.id}`,
+        title: String(c.legal_name).slice(0, 24),
+        description: `Seleccionar ${c.tax_id || ''}`
+      }));
+      result = result.split('{{companies_list}}').join(JSON.stringify(companiesList));
+    }
+
 
     // 3. Documentos y Resúmenes
     if (context.documents) {

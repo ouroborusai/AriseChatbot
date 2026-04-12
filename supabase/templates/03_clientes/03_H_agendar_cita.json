@@ -1,0 +1,31 @@
+{
+  "id": "agendar_cita",
+  "name": "03_H_Agendamiento de Reunión",
+  "content": "¡Excelente idea! 📅 Coordinemos una reunión con tu ejecutivo.\n\nContamos con disponibilidad para videollamadas (Google Meet) o reuniones presenciales en nuestras oficinas.\n\nPor favor, dinos qué día y hora te acomoda más, o selecciona una opción rápida:",
+  "category": "citas",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 80,
+  "trigger": "agendar, cita, reunion",
+  "workflow": "citas",
+  "actions": [
+    {
+      "type": "button",
+      "id": "reunion_manana",
+      "title": "🌅 Mañana (AM)",
+      "next_template_id": "confirmacion_cita"
+    },
+    {
+      "type": "button",
+      "id": "reunion_tarde",
+      "title": "🌇 Tarde (PM)",
+      "next_template_id": "confirmacion_cita"
+    },
+    {
+      "type": "button",
+      "id": "btn_volver_cita",
+      "title": "⬅️ Volver",
+      "next_template_id": "menu_principal_cliente"
+    }
+  ]
+}
