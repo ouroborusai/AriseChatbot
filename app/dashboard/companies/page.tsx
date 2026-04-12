@@ -382,22 +382,20 @@ export default function CompaniesPage() {
   }
 
   return (
-    <div className="flex h-full flex-col w-full p-4 md:p-8 animate-in fade-in duration-700">
+    <div className="flex h-full flex-col w-full p-4 md:p-8">
       
-      {/* Header Responsivo Industrial */}
+      {/* Header Industrial */}
       <div className={`mb-6 md:mb-10 flex items-center justify-between ${selectedCompanyId ? 'hidden md:flex' : 'flex'}`}>
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter">Empresas</h1>
-            <span className="bg-emerald-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-lg uppercase tracking-widest shadow-lg shadow-emerald-200">
-              {companies.length} Entidades
-            </span>
+            <h1 className="text-xl md:text-3xl font-bold text-slate-800 uppercase tracking-tighter">Empresas</h1>
+            <span className="bg-slate-800 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">Corporativo</span>
           </div>
-          <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest leading-none">Gestión de Personas Jurídicas</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Administración de Entidades Legales</p>
         </div>
         <button 
           onClick={() => setShowCreateModal(true)} 
-          className="h-12 md:h-14 px-5 md:px-8 rounded-2xl bg-slate-900 text-white text-[10px] md:text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
+          className="h-12 md:h-14 px-5 md:px-8 rounded-2xl bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all"
         >
           + Nueva Entidad
         </button>
@@ -405,8 +403,8 @@ export default function CompaniesPage() {
 
       <div className="flex-1 min-h-0 flex gap-0 md:gap-8 relative overflow-hidden">
         
-        {/* LISTADO DE EMPRESAS: Lógica de Panel Único */}
-        <div className={`w-full md:w-[400px] shrink-0 flex flex-col bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm transition-all duration-500 ${selectedCompanyId ? 'hidden md:flex' : 'flex'}`}>
+        {/* LISTADO DE EMPRESAS */}
+        <div className={`w-full md:w-[400px] shrink-0 flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden ${selectedCompanyId ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 md:p-6 border-b border-slate-100 bg-slate-50/50">
             <SearchInput 
               value={searchQuery} 
@@ -415,11 +413,10 @@ export default function CompaniesPage() {
             />
           </div>
           
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-3 space-y-2">
+          <div className="flex-1 overflow-y-auto p-2 md:p-3 space-y-2">
             {filteredCompanies.length === 0 ? (
                <div className="flex flex-col items-center justify-center py-20 text-slate-300">
-                 <span className="text-4xl mb-4">🏢</span>
-                 <p className="text-[10px] font-black uppercase tracking-widest">Sin Entidades Registradas</p>
+                 <p className="text-[10px] font-bold uppercase tracking-widest">Sin Entidades Registradas</p>
                </div>
             ) : (
               filteredCompanies.map((company) => {
@@ -428,15 +425,15 @@ export default function CompaniesPage() {
                   <button 
                     key={company.id} 
                     onClick={() => setSelectedCompanyId(company.id)}
-                    className={`w-full text-left p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] transition-all group relative overflow-hidden ${selectedCompanyId === company.id ? 'bg-slate-900 text-white shadow-2xl scale-[0.98]' : 'hover:bg-slate-50 border border-transparent hover:border-slate-100'}`}
+                    className={`w-full text-left p-4 md:p-5 rounded-2xl transition-colors relative overflow-hidden ${selectedCompanyId === company.id ? 'bg-slate-800 text-white' : 'hover:bg-slate-50 border border-transparent hover:border-slate-100'}`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                       <p className={`text-xs font-black uppercase tracking-tighter truncate max-w-[80%] ${selectedCompanyId === company.id ? 'text-white' : 'text-slate-900'}`}>
+                       <p className={`text-xs font-bold uppercase tracking-tighter truncate max-w-[80%] ${selectedCompanyId === company.id ? 'text-white' : 'text-slate-900'}`}>
                          {company.legal_name}
                        </p>
-                       <span className={`h-2 w-2 rounded-full ${status === 'green' ? 'bg-emerald-500' : status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500'} shadow-[0_0_8px] shadow-current`} />
+                       <span className={`h-2 w-2 rounded-full ${status === 'green' ? 'bg-emerald-500' : status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500'}`} />
                     </div>
-                    <p className={`text-[10px] font-mono font-bold tracking-widest ${selectedCompanyId === company.id ? 'text-slate-400' : 'text-slate-400'}`}>
+                    <p className={`text-[9px] font-mono font-bold tracking-widest ${selectedCompanyId === company.id ? 'text-slate-400' : 'text-slate-400'}`}>
                       {company.rut || 'RUT NO DEFINIDO'}
                     </p>
                   </button>
@@ -446,10 +443,10 @@ export default function CompaniesPage() {
           </div>
         </div>
 
-        {/* PANEL DE DETALLE: Lógica de Panel Único */}
-        <div className={`flex-1 min-w-0 bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 overflow-y-auto custom-scrollbar shadow-sm transition-all duration-500 ${!selectedCompanyId ? 'hidden md:block' : 'block'}`}>
+        {/* PANEL DE DETALLE */}
+        <div className={`flex-1 min-w-0 bg-white rounded-2xl border border-slate-200 overflow-y-auto ${!selectedCompanyId ? 'hidden md:block' : 'block'}`}>
           {selectedCompany ? (
-            <div className="p-6 md:p-10 space-y-8 animate-in slide-in-from-right-4 duration-500">
+            <div className="p-6 md:p-10 space-y-8">
               
               {/* Navegación Móvil */}
               <div className="md:hidden flex items-center justify-between mb-8">
@@ -468,33 +465,35 @@ export default function CompaniesPage() {
               {/* GRID DE INFORMACIÓN DE EMPRESA */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 
-                {/* CARD DE IDENTIDAD */}
-                <div className="rounded-[2rem] border border-slate-100 bg-slate-50/30 p-6 md:p-8 relative overflow-hidden shadow-sm shadow-slate-100/50">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Certificación de Datos</h3>
-                    <button onClick={handleDeleteCompany} className="text-[10px] font-black text-rose-500 uppercase hover:underline">Eliminar registro</button>
+                {/* CARD DE IDENTIDAD SÓLIDA */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Datos Certificados</h3>
+                    <button onClick={handleDeleteCompany} className="text-[9px] font-bold text-rose-500 uppercase hover:underline">Eliminar</button>
                   </div>
                   
-                  <div className="flex items-center gap-6 mb-8">
-                    <div className="h-20 w-20 rounded-[1.8rem] bg-slate-900 text-white flex items-center justify-center text-3xl font-black shadow-2xl">
+                  <div className="flex items-center gap-5 mb-6">
+                    <div className="h-16 w-16 rounded-2xl bg-slate-800 text-white flex items-center justify-center text-2xl font-bold shadow-sm">
                        {selectedCompany.legal_name[0].toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                       <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase truncate leading-tight mb-1">{selectedCompany.legal_name}</h2>
+                       <h2 className="text-xl font-bold text-slate-900 tracking-tight uppercase truncate leading-tight mb-1">{selectedCompany.legal_name}</h2>
                        <div className="flex flex-wrap items-center gap-3">
                          <span className="text-xs font-mono font-bold text-slate-500">{selectedCompany.rut || 'RUT PENDIENTE'}</span>
                          <span className="h-1 w-1 bg-slate-300 rounded-full"></span>
-                         <span className="text-[10px] font-black text-slate-400 uppercase">Alta: {new Date(selectedCompany.created_at).toLocaleDateString()}</span>
+                         <span className="text-[10px] font-bold text-slate-400 uppercase">
+                           Alta: {selectedCompany.created_at ? new Date(selectedCompany.created_at).toLocaleDateString() : '---'}
+                         </span>
                        </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-4 p-4 rounded-2xl bg-white border border-slate-100">
-                     <span className="text-2xl">🛡️</span>
+                  <div className="flex gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                     <span className="text-xl">🛡️</span>
                      <div>
-                       <p className="text-[10px] font-black uppercase text-slate-900 tracking-tight">Estado de Cumplimiento</p>
+                       <p className="text-[10px] font-bold uppercase text-slate-900 tracking-tight">Cumplimiento</p>
                        <p className="text-[11px] font-bold text-slate-500 leading-relaxed">
-                          {calculateCompliance(documents) === 'green' ? 'Entidad regularizada con flujos mensuales al día.' : 'Se requieren actualizaciones de documentos pendientes.'}
+                          {calculateCompliance(documents) === 'green' ? 'Entidad regularizada al día.' : 'Actualizaciones pendientes.'}
                        </p>
                      </div>
                   </div>
