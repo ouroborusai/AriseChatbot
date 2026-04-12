@@ -89,7 +89,7 @@ async function saveMessageRecord(phone: string, content: string, role: 'user' | 
       .single();
 
     if (conv) {
-      await saveMessage(conv.id, content, role, whatsappId);
+      await saveMessage(conv.id, role, content, whatsappId);
     }
   } catch (error) {
     console.error('[WhatsApp] Error guardando registro:', error);
