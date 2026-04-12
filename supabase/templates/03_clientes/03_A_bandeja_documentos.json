@@ -1,0 +1,19 @@
+{
+  "id": "bandeja_documentos",
+  "name": "03_A_Bóveda de Documentos (Cliente)",
+  "content": "¡Bienvenido a tu Bóveda Documental! 📁\n\nAquí puedes solicitar copias de tus papeles al instante.\nPor favor, selecciona qué tipo de documento necesitas emitir:",
+  "category": "documentos",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 90,
+  "trigger": "",
+  "workflow": "documentos",
+  "actions": [
+    {
+      "type": "list",
+      "id": "menu_tipos_docs",
+      "title": "📂 Ver Categorías",
+      "content": "[{\"id\":\"doc_iva\",\"title\":\"🧾 IVA (F29)\",\"description\":\"Declaraciones mensuales\",\"next_template_id\":\"filtro_tiempo_docs\"},{\"id\":\"doc_renta\",\"title\":\"💼 Operación Renta\",\"description\":\"Declaración anual F22\",\"next_template_id\":\"filtro_tiempo_docs\"},{\"id\":\"doc_contratos\",\"title\":\"👥 Contratos\",\"description\":\"Contratos y finiquitos\",\"next_template_id\":\"filtro_tiempo_docs\"},{\"id\":\"doc_liquidaciones\",\"title\":\"💰 Liquidaciones\",\"description\":\"Liquidaciones de Sueldo\",\"next_template_id\":\"filtro_tiempo_docs\"},{\"id\":\"doc_balances\",\"title\":\"📈 Balances y EERR\",\"description\":\"Estados financieros\",\"next_template_id\":\"filtro_tiempo_docs\"}]"
+    }
+  ]
+}

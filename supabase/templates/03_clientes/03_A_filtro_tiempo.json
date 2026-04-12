@@ -1,0 +1,19 @@
+{
+  "id": "filtro_tiempo_docs",
+  "name": "03_A_Filtro Temporal de Documentos",
+  "content": "Perfecto. ¿De qué período necesitas que busque en el archivo? 🕰️",
+  "category": "documentos",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 90,
+  "trigger": "",
+  "workflow": "documentos",
+  "actions": [
+    {
+      "type": "list",
+      "id": "menu_filtro_tiempo",
+      "title": "📅 Seleccionar Período",
+      "content": "[{\"id\":\"btn_periodo_mes\",\"title\":\"Último Mes\",\"description\":\"El más reciente disponible\",\"next_template_id\":\"procesando_documentos\"},{\"id\":\"btn_periodo_semestre\",\"title\":\"Último Semestre\",\"description\":\"Los últimos 6 meses\",\"next_template_id\":\"procesando_documentos\"},{\"id\":\"btn_periodo_historico\",\"title\":\"Consultar Asesor\",\"description\":\"No sé la fecha exacta / Antiguos\",\"next_template_id\":\"derivacion_asesor\"}]"
+    }
+  ]
+}

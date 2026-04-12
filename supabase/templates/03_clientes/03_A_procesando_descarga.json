@@ -1,0 +1,12 @@
+{
+  "id": "procesando_documentos",
+  "name": "03_A_Procesando Descarga",
+  "content": "Buscando en la bóveda de MTZ... 🔍\n\nSi tengo documentos bajo ese registro, te los enviaré aquí abajo de inmediato. En caso contrario, generaremos un ticket y uno de nuestros expertos verificará si faltó subir la documentación.",
+  "category": "documentos",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 90,
+  "trigger": "",
+  "workflow": "documentos",
+  "actions": []
+}
