@@ -67,7 +67,7 @@ export async function sendWhatsAppMessage(phoneNumber: string, message: string):
 
   // Autoguardado en DB
   if (result.message_id) {
-    await saveMessageRecord(phoneNumber, body, 'assistant', result.message_id);
+    await saveMessageRecord(phoneNumber, body, 'assistant');
   }
 
   return result;
@@ -76,7 +76,7 @@ export async function sendWhatsAppMessage(phoneNumber: string, message: string):
 /**
  * Función auxiliar para guardar registros de mensajes salientes
  */
-async function saveMessageRecord(phone: string, content: string, role: 'user' | 'assistant', whatsappId: string) {
+async function saveMessageRecord(phone: string, content: string, role: 'user' | 'assistant') {
   try {
     const supabase = getSupabaseAdmin();
     // Buscar la conversación activa primero
@@ -89,7 +89,7 @@ async function saveMessageRecord(phone: string, content: string, role: 'user' | 
       .single();
 
     if (conv) {
-      await saveMessage(conv.id, role, content, whatsappId);
+      await saveMessage(conv.id, role, content);
     }
   } catch (error) {
     console.error('[WhatsApp] Error guardando registro:', error);
@@ -123,7 +123,7 @@ export async function sendWhatsAppInteractiveButtons(
   });
 
   if (result.message_id) {
-    await saveMessageRecord(phoneNumber, bodyText, 'assistant', result.message_id);
+    await saveMessageRecord(phoneNumber, bodyText, 'assistant');
   }
 
   return result;
@@ -179,7 +179,7 @@ export async function sendWhatsAppDocument(
 
   if (result.message_id) {
     const logContent = caption ? `📄 [PDF: ${filename}] ${caption}` : `📄 [PDF: ${filename}]`;
-    await saveMessageRecord(phoneNumber, logContent, 'assistant', result.message_id);
+    await saveMessageRecord(phoneNumber, logContent, 'assistant');
   }
 
   return result;

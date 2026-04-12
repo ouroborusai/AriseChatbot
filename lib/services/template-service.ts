@@ -132,19 +132,27 @@ export class TemplateService {
     if (!content) return '';
     let result = content;
 
-    // Nombre del contacto (Normalizado a primer nombre)
+    // 1. Nombre del contacto (Normalizado)
     const rawName = context.contact?.name || 'cliente';
-    const friendlyName = String(rawName).split(' ')[0].split('_')[0].trim();
+    const friendlyName = String(rawName).split(' ')[0].trim();
     const capitalizedName = friendlyName.charAt(0).toUpperCase() + friendlyName.slice(1).toLowerCase();
     
-    // Usar split/join en lugar de regex global para evitar problemas con carácteres especiales en el reemplazo
     result = result.split('{{nombre}}').join(capitalizedName);
+    result = result.split('{{name}}').join(capitalizedName); // Aliases
     
-    // Cantidad de documentos
+    // 2. Datos de la Empresa Activa
+    const activeComp = context.companies?.find(c => c.id === context.activeCompanyId) || context.companies?.[0];
+    const companyName = activeComp?.legal_name || 'tu empresa';
+    const companyRut = activeComp?.tax_id || (activeComp as any)?.rut || 'RUT pendiente';
+
+    result = result.split('{{empresa}}').join(companyName);
+    result = result.split('{{legal_name}}').join(companyName); // Aliases
+    result = result.split('{{rut}}').join(companyRut);
+
+    // 3. Documentos y Resúmenes
     if (context.documents) {
       result = result.split('{{document_count}}').join(String(context.documents.length));
 
-      // Lista general de documentos
       if (result.includes('{{documents_list}}')) {
         const docsList = context.documents.map((d) => ({
           id: `doc_${d.id}`,
@@ -153,30 +161,14 @@ export class TemplateService {
         }));
         result = result.split('{{documents_list}}').join(JSON.stringify(docsList));
       }
+    }
 
-      // Lista de IVA
-      if (result.includes('{{iva_list}}')) {
-        const ivaDocs = context.documents.filter((d) => 
-          d.document_type === 'iva' || String(d.title || '').toLowerCase().includes('iva')
-        );
-        const ivaList = ivaDocs.slice(0, 10).map((d) => ({
-          id: `iva_${d.id}`,
-          title: String(d.title || 'IVA').slice(0, 24),
-          description: d.created_at ? new Date(d.created_at).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' }) : 'Actual'
-        }));
-        result = result.split('{{iva_list}}').join(JSON.stringify(ivaList));
-      }
-
-      // Resumen financiero dinámico
-      if (result.includes('{{financial_summary}}')) {
-        const activeComp = context.companies?.find(c => c.id === context.activeCompanyId) || context.companies?.[0];
-        const summary = (activeComp as any)?.metadata?.financial_summary;
-        
-        if (summary && summary.whatsapp_proposal) {
-          result = result.split('{{financial_summary}}').join(summary.whatsapp_proposal);
-        } else {
-          result = result.split('{{financial_summary}}').join('Para ver tu resumen financiero, selecciona una empresa activa.');
-        }
+    if (result.includes('{{financial_summary}}')) {
+      const summary = (activeComp as any)?.metadata?.financial_summary;
+      if (summary && summary.whatsapp_proposal) {
+        result = result.split('{{financial_summary}}').join(summary.whatsapp_proposal);
+      } else {
+        result = result.split('{{financial_summary}}').join(`Aquí tienes el resumen de ${companyName}.`);
       }
     }
 

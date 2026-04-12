@@ -405,16 +405,14 @@ export async function updateServiceRequestStatus(
 export async function saveMessage(
   conversationId: string,
   role: 'user' | 'assistant',
-  content: string,
-  whatsappId?: string
+  content: string
 ): Promise<void> {
   const { error } = await getSupabaseAdmin()
     .from('messages')
     .insert({ 
       conversation_id: conversationId, 
       role, 
-      content,
-      whatsapp_id: whatsappId || null 
+      content
     });
 
   if (error) {

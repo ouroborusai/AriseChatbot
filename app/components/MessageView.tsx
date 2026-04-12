@@ -201,28 +201,28 @@ export default function MessageView({ selectedConversation, selectedPhone, onBac
     <main className="flex h-full flex-1 flex-col overflow-hidden bg-slate-50 relative">
       {/* Header del chat Sólido */}
       <div className="shrink-0 border-b border-slate-200 bg-white px-4 py-3 z-10">
-        <div className="flex items-center gap-3">
-          {/* Botón Volver (Móvil) */}
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Botón Volver (Móvil) - Mejorado */}
           {onBack && (
             <button 
               onClick={onBack}
-              className="md:hidden flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"
+              className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 active:bg-slate-200 transition-colors"
             >
-              ⬅️
+              <span className="text-lg">←</span>
             </button>
           )}
 
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-base shadow-sm">
+          <div className="flex h-9 w-9 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-sm md:text-base shadow-sm">
             {selectedConversation ? selectedConversation.label[0].toUpperCase() : 'W'}
           </div>
           
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-slate-900 truncate tracking-tight uppercase">
+            <p className="text-xs md:text-sm font-bold text-slate-900 truncate tracking-tight uppercase">
               {selectedConversation ? selectedConversation.label : 'Hilo de Mensajería'}
             </p>
             <div className="flex items-center gap-2">
               <span className={`h-1.5 w-1.5 rounded-full ${selectedConversation ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
+              <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
                 {selectedConversation
                   ? `SESIÓN ACTIVA`
                   : 'SISTEMA EN ESPERA'}
@@ -230,18 +230,18 @@ export default function MessageView({ selectedConversation, selectedPhone, onBac
             </div>
           </div>
           
-          {/* Toggle Chatbot - Sólido */}
+          {/* Toggle Chatbot - Sólido y Responsivo */}
           {selectedConversation && (
             <button
               onClick={handleToggleChatbot}
               disabled={loadingToggle}
-              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-colors border ${
+              className={`flex items-center gap-1.5 rounded-lg px-2 py-1 md:px-3 md:py-1.5 text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-colors border ${
                 chatbotEnabled
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                   : 'bg-slate-50 border-slate-200 text-slate-600'
               }`}
             >
-              {loadingToggle ? '...' : chatbotEnabled ? '🤖 Auto' : '👤 Manual'}
+              {loadingToggle ? '...' : chatbotEnabled ? '🤖 AUTO' : '👤 MANUAL'}
             </button>
           )}
         </div>
@@ -312,57 +312,57 @@ export default function MessageView({ selectedConversation, selectedPhone, onBac
         )}
       </div>
 
-      {/* Input de Respuesta Industrial */}
+      {/* Input de Respuesta Industrial - Más compacto en móvil */}
       {selectedConversation && (
-        <div className="shrink-0 bg-white/80 backdrop-blur-md px-4 py-4 md:px-8 md:py-6 border-t border-slate-100">
+        <div className="shrink-0 bg-white/80 backdrop-blur-md px-3 py-3 md:px-8 md:py-6 border-t border-slate-100">
           <form onSubmit={handleSendReply} className="relative mx-auto max-w-4xl">
             {/* Slash Commands */}
             {showCommands && (
-              <div className="absolute bottom-full left-0 mb-4 w-full md:w-80 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl z-20">
-                <div className="bg-slate-900 px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-white">
+              <div className="absolute bottom-full left-0 mb-4 w-full md:w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl z-20">
+                <div className="bg-slate-900 px-4 py-2 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-white">
                   Workflows Disponibles
                 </div>
-                <div className="max-h-64 overflow-y-auto">
+                <div className="max-h-48 md:max-h-64 overflow-y-auto">
                   {filteredTemplates.map((t, index) => (
                     <button
                       key={t.id}
                       type="button"
                       onClick={() => selectTemplate(t)}
-                      className={`flex w-full flex-col px-5 py-3 text-left transition ${
+                      className={`flex w-full flex-col px-4 py-2.5 text-left transition ${
                         index === selectedIndex ? 'bg-indigo-50 border-l-4 border-indigo-500' : 'hover:bg-slate-50'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-sm font-black text-slate-900 tracking-tight">/{t.trigger || t.id}</span>
-                        <span className="text-[9px] font-bold uppercase text-slate-400">[{t.category}]</span>
+                        <span className="text-xs md:text-sm font-black text-slate-900 tracking-tight">/{t.trigger || t.id}</span>
+                        <span className="text-[8px] font-bold uppercase text-slate-400">[{t.category}]</span>
                       </div>
-                      <div className="truncate text-xs font-medium text-slate-500">{t.name}</div>
+                      <div className="truncate text-[10px] md:text-xs font-medium text-slate-500">{t.name}</div>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="flex items-center gap-3">
-              <div className="flex-1 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 shadow-inner group focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white transition-all">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="flex-1 flex items-center gap-2 rounded-xl md:rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 md:px-4 md:py-2.5 shadow-inner group focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white transition-all">
                 <input
                   value={replyText}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   disabled={sending}
-                  placeholder="Escribe un mensaje o usa / para comandos..."
+                  placeholder="Escribe un mensaje..."
                   className="flex-1 bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400 py-1"
                 />
               </div>
               <button
                 type="submit"
                 disabled={!replyText.trim() || sending}
-                className="h-12 w-12 shrink-0 flex items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-100 transition-all hover:bg-slate-900 disabled:opacity-50 active:scale-90"
+                className="h-10 w-10 md:h-12 md:w-12 shrink-0 flex items-center justify-center rounded-xl md:rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-100 transition-all hover:bg-slate-900 disabled:opacity-50 active:scale-95"
               >
                 {sending ? (
-                  <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                 ) : (
-                  <span className="text-xl">↗️</span>
+                  <span className="text-lg md:text-xl">↗️</span>
                 )}
               </button>
             </div>
