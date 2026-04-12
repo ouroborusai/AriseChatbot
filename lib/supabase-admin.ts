@@ -19,22 +19,19 @@ let cached: SupabaseClient | null = null;
 export function getSupabaseAdmin(): SupabaseClient {
   if (cached) return cached;
   
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+  const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
-  if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('[SupabaseAdmin] ❌ Faltan variables de entorno.');
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !supabaseServiceKey || supabaseServiceKey.startsWith('sb_')) {
+    console.error('[SupabaseAdmin] ❌ ERROR: LLAVE INVÁLIDA O DE SISTEMA DETECTADA.');
+    // Si la llave del sistema es inválida, forzamos de nuevo el .env.local
+    dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
   }
 
-  // Validación Industrial: Las llaves de producción son JWT largos (>150 chars)
-  if (supabaseServiceKey.length < 100) {
-    console.warn(`[SupabaseAdmin] ⚠️ La llave detectada parece ser inválida o demasiado corta (${supabaseServiceKey.length} chars).`);
-  }
+  const finalKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  console.log(`[SupabaseAdmin] 🔌 Conectando a ${supabaseUrl} (Key: ${finalKey.substring(0, 10)}...)`);
 
-  console.log(`[SupabaseAdmin] 🔌 Conectando a ${supabaseUrl} (Key: ${supabaseServiceKey.substring(0, 10)}...)`);
-
-  cached = createClient(supabaseUrl, supabaseServiceKey, {
+  cached = createClient(supabaseUrl, finalKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

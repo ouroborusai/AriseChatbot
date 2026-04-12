@@ -6,7 +6,10 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey
 
 async function simulateClientChat() {
   const { createClient } = await import('@supabase/supabase-js');
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL as string, 
+    process.env.SUPABASE_SERVICE_ROLE_KEY as string
+  );
   console.log('--- 🧪 SIMULACIÓN DE CHAT: CLIENTE (Carlos Villagra) ---');
   
   const CARLOS_PHONE = '56990062213';

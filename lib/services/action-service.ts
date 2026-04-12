@@ -99,7 +99,7 @@ export class ActionService {
       console.log(`[ActionService] Enviando ${buttons.length} botones`);
       const buttonPayloads = buttons.slice(0, 3).map(b => ({
         id: b.id || 'btn',
-        title: b.title.substring(0, 20) || 'Opción'
+        title: (b.title || 'Opción').substring(0, 20)
       }));
       await sendWhatsAppInteractiveButtons(phoneNumber, content, buttonPayloads);
       return;

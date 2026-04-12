@@ -1,102 +1,116 @@
 import { getSupabaseAdmin } from '../supabase-admin';
-import { TemplateContext } from '../../app/components/templates/types';
+import { 
+  getLatestClientDocuments, 
+  getServiceRequestsForContact 
+} from '../database-service';
+import { 
+  Contact, 
+  Company, 
+  ClientDocument, 
+  ServiceRequest, 
+  TemplateContext 
+} from '../types';
 
 export class ContextService {
   /**
-   * Construye el contexto completo para la evaluación de plantillas y condiciones.
-   * Acepta datos ya recuperados para evitar consultas redundantes a la base de datos.
+   * Construye el contexto completo para una conversación, incluyendo datos de contacto,
+   * empresas vinculadas, documentos y estado actual de navegación.
    */
   static async buildContext(
-    contact: any,
-    companies: any[],
+    contact: Contact,
+    companies: Company[],
     activeCompanyId: string | null,
     conversationId: string
   ): Promise<TemplateContext> {
-    // Lógica Industrial: Si tiene empresas vinculadas, ES CLIENTE (independiente de su etiqueta manual)
-    const hasCompanies = companies && companies.length > 0;
-    const effectiveSegment = hasCompanies ? 'cliente' : (contact.segment || 'prospecto');
-    
-    // Solo recuperamos lo que no tenemos: documentos e historial
-    const [
-      { data: documents },
-      { data: messages }
-    ] = await Promise.all([
-      getSupabaseAdmin()
-        .from('client_documents')
-        .select('id, title, file_name, document_type, created_at')
-        .eq('contact_id', contact.id)
-        .order('created_at', { ascending: false }),
-      getSupabaseAdmin()
-        .from('messages')
-        .select('role, content, created_at')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: false })
-        .limit(20),
-    ]);
+    try {
+      console.log(`[ContextService] 🏗️ Construyendo contexto para ${contact.name}...`);
+      
+      // 1. Obtener documentos recientes (Blindado)
+      let documents: ClientDocument[] = [];
+      try {
+        documents = await getLatestClientDocuments(contact.id);
+      } catch (e) {
+        console.warn('[ContextService] ⚠️ No se pudieron cargar documentos:', e);
+      }
 
-    // Si el segmento cambió dinámicamente, lo actualizamos en la base de datos para consistencia futura
-    if (effectiveSegment === 'cliente' && contact.segment !== 'cliente') {
-      console.log(`[ContextService] 🚀 Auto-ascendiendo contacto ${contact.phone_number} a CLIENTE por tener empresas vinculadas.`);
-      getSupabaseAdmin()
-        .from('contacts')
-        .update({ segment: 'cliente' })
-        .eq('id', contact.id)
-        .then(({ error }) => { if (error) console.error('Error auto-update segment:', error.message); });
+      // 2. Determinar segmento efectivo (Lógica industrial: si tiene empresas es CLIENTE)
+      const hasCompanies = (companies || []).length > 0;
+      const currentSegment = contact.segment || 'prospecto';
+      let effectiveSegment = hasCompanies ? 'cliente' : currentSegment;
+
+      // Sincronizar segmento en DB si hay cambio a cliente
+      if (hasCompanies && currentSegment !== 'cliente') {
+        console.log(`[ContextService] 📈 Promocionando a ${contact.name} como CLIENTE`);
+        await getSupabaseAdmin()
+          .from('contacts')
+          .update({ segment: 'cliente' })
+          .eq('id', contact.id);
+      }
+
+      // 3. Obtener solicitudes de servicio (Blindado)
+      let serviceRequests: ServiceRequest[] = [];
+      try {
+        serviceRequests = await getServiceRequestsForContact(contact.id);
+      } catch (e) {
+        console.warn('[ContextService] ⚠️ No se pudieron cargar solicitudes:', e);
+      }
+
+      const result: TemplateContext = {
+        contact: {
+          ...contact,
+          segment: effectiveSegment as any,
+        },
+        companies: (companies || []).map(c => ({
+          id: c.id,
+          legal_name: c.legal_name,
+          tax_id: c.rut || (c as any).rut || 'RUT no disponible',
+          metadata: c.metadata || {},
+        })),
+        activeCompanyId,
+        documents,
+        serviceRequests,
+        metadata: contact.metadata || {},
+      };
+
+      console.log(`[ContextService] ✅ Contexto listo: ${result.contact.segment.toUpperCase()}`);
+      return result;
+
+    } catch (globalError: any) {
+      console.error('[ContextService] ❌ ERROR CRÍTICO:', globalError.message);
+      // Fallback mínimo de emergencia
+      return {
+        contact: { ...contact, segment: 'prospecto' as any },
+        companies: [],
+        activeCompanyId: null,
+        documents: [],
+        serviceRequests: [],
+        metadata: {}
+      };
     }
-
-    return {
-      contact: {
-        id: contact.id,
-        name: contact.name,
-        phone_number: contact.phone_number,
-        segment: effectiveSegment,
-      },
-      companies: companies.map(c => ({
-        id: c.id,
-        legal_name: c.legal_name,
-        tax_id: c.rut,
-        metadata: c.metadata || {}
-      })),
-      activeCompanyId: activeCompanyId,
-      documents: documents || [],
-      lastAction: null,
-      conversationHistory: (messages || []).reverse().map(m => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content || '',
-        created_at: m.created_at
-      })),
-      redirectCount: 0,
-      customVariables: {}
-    };
   }
 
   /**
-   * Obtiene el historial de mensajes para una conversación
+   * Helper para extraer historial simplificado para servicios (p. ej. AI)
    */
   static async getConversationHistory(conversationId: string) {
-    const { data: msgs } = await getSupabaseAdmin()
+    const { data } = await getSupabaseAdmin()
       .from('messages')
       .select('role, content')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: false })
-      .limit(20);
-
-    return (msgs || []).reverse().map(m => ({
-      role: m.role,
-      content: m.content || '',
-    }));
+      .limit(10);
+    
+    return data || [];
   }
 
   /**
-   * Identifica el último botón presionado en el historial
+   * Helper para obtener el último botón presionado
    */
-  static getLastButtonFromHistory(history: Array<{ role: string; content: string }>): string | null {
-    for (let i = history.length - 1; i >= 0; i--) {
-      const c = history[i]?.content || '';
-      if (c.startsWith('[button:') && c.endsWith(']')) {
-        return c.slice('[button:'.length, -1);
-      }
-    }
-    return null;
+  static getLastButtonFromHistory(history: any[]): string | null {
+    const lastUserMsg = history.find(m => m.role === 'user' && m.content.includes('[button:'));
+    if (!lastUserMsg) return null;
+    
+    const match = lastUserMsg.content.match(/\[button:(.*?)\]/);
+    return match ? match[1] : null;
   }
 }
