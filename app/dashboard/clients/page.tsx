@@ -167,14 +167,14 @@ export default function ClientsPage() {
                         <select value={selectedContact.segment || ''} onChange={(e) => handleUpdateSegment(e.target.value)} className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none">
                           <option value="">Sin clasificar</option>
                           <option value="cliente">Cliente</option>
-                          <option value="prospect">Prospecto</option>
+                          <option value="prospecto">Prospecto</option>
                         </select>
                         <button type="button" onClick={() => setIsEditingSegment(false)} className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">✕</button>
                       </div>
                     ) : (
                       <div className="mt-2 flex items-center gap-2">
-                        <span className={`inline-block text-xs px-2 py-1 rounded-full ${selectedContact.segment === 'cliente' ? 'bg-green-100 text-green-700' : selectedContact.segment === 'prospect' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
-                          {selectedContact.segment === 'cliente' ? '✅ Cliente' : selectedContact.segment === 'prospect' ? '🆕 Prospecto' : '❓ Sin clasificar'}
+                        <span className={`inline-block text-xs px-2 py-1 rounded-full ${selectedContact.segment === 'cliente' ? 'bg-green-100 text-green-700' : selectedContact.segment === 'prospecto' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+                          {selectedContact.segment === 'cliente' ? '✅ Cliente' : selectedContact.segment === 'prospecto' ? '🆕 Prospecto' : '❓ Sin clasificar'}
                         </span>
                         <button type="button" onClick={() => setIsEditingSegment(true)} className="text-xs text-slate-500 hover:text-slate-700">Cambiar</button>
                       </div>
