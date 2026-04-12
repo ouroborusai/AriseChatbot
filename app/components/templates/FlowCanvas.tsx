@@ -91,7 +91,7 @@ export default function FlowCanvas({ templates, selectedTemplateId, onSelectTemp
         console.warn('[FlowCanvas] Error guardando posiciones:', e);
       }
     }
-  }, [hasLoadedPositions]); // Solo guardar cuando se carga, no en cada cambio de posiciones
+  }, [nodePositions, hasLoadedPositions]);
 
   // Solo agregar nuevos nodos que no existían (no reorganizar los existentes)
   useEffect(() => {
