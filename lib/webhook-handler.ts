@@ -113,9 +113,10 @@ export async function handleInboundUserMessage(messageData: {
       return;
     }
 
-    // 6b. Manejo de Nuevos Usuarios (Auto-clasificación)
-    if (!contact.segment) {
-      console.log('[Webhook] 📌 Nuevo usuario detectado, clasificando como prospecto');
+    // 6b. Manejo de Nuevos Usuarios o sin segmento (Auto-clasificación)
+    const currentSegment = (contact.segment || '').toLowerCase().trim();
+    if (!currentSegment || currentSegment === 'todos') {
+      console.log('[Webhook] 📌 Usuario sin segmento detectado, clasificando como prospecto');
       await autoClassifyAsProspect(contact);
       contact.segment = 'prospecto'; // Actualizar en memoria
       const welcome = await TemplateService.findTemplateById('bienvenida_prospecto', 'prospecto');
@@ -179,7 +180,7 @@ export async function handleInboundUserMessage(messageData: {
 async function sendDefaultMenu(phoneNumber: string, contactId: string, conversationId: string) {
   console.log('[Webhook] sendDefaultMenu llamado para:', phoneNumber);
   const { data: contact } = await getSupabaseAdmin().from('contacts').select('segment').eq('id', contactId).single();
-  const segment = contact?.segment || 'prospecto';
+  const segment = (contact?.segment || 'prospecto').toLowerCase();
   console.log('[Webhook] Segmento del contacto:', segment);
   const templateId = segment === 'cliente' ? 'menu_principal_cliente' : 'bienvenida_prospecto';
   console.log('[Webhook] Buscando plantilla:', templateId);

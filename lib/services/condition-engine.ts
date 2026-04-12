@@ -351,10 +351,13 @@ function evaluateRequiredContext(
   required: RequiredContext,
   context: TemplateContext
 ): boolean {
-  // Verificar segmento
+  // Verificar segmento (Case-insensitive)
   if (required.required_segment) {
-    if (context.contact.segment !== required.required_segment) {
-      console.log('[ConditionEngine] Segmento no coincide:', context.contact.segment, '!=', required.required_segment);
+    const contactSegment = (context.contact.segment || 'prospecto').toLowerCase();
+    const requiredSegment = required.required_segment.toLowerCase();
+    
+    if (contactSegment !== requiredSegment) {
+      console.log('[ConditionEngine] Segmento no coincide:', contactSegment, '!=', requiredSegment);
       return false;
     }
   }

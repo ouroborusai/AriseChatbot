@@ -22,8 +22,11 @@ export class TemplateService {
 
     if (!template) return null;
 
-    // Verificar segmento
-    if (template.segment && template.segment !== 'todos' && template.segment !== segment) {
+    // Verificar segmento (Case-insensitive)
+    const normalizedSegment = segment?.toLowerCase() || 'todos';
+    const templateSegment = template.segment?.toLowerCase() || 'todos';
+
+    if (templateSegment !== 'todos' && templateSegment !== normalizedSegment) {
       return null;
     }
 
@@ -111,7 +114,10 @@ export class TemplateService {
 
       const triggers = t.trigger.split(',').map((s: string) => s.trim().toLowerCase());
       if (triggers.some((tr: string) => lowerText.includes(tr))) {
-        if (t.segment && t.segment !== 'todos' && t.segment !== segment) continue;
+        const normalizedSegment = segment?.toLowerCase() || 'todos';
+        const templateSegment = t.segment?.toLowerCase() || 'todos';
+
+        if (templateSegment !== 'todos' && templateSegment !== normalizedSegment) continue;
         return t as Template;
       }
     }
