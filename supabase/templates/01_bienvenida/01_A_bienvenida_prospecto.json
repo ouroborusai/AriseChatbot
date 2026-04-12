@@ -13,7 +13,7 @@
       "type": "list",
       "id": "menu_list_prospecto",
       "title": "📋 Ver Opciones",
-      "content": "[{\"id\":\"btn_cotizar\",\"title\":\"📊 Cotizar Servicios\",\"description\":\"Conoce nuestros planes contables\",\"next_template_id\":\"\"},{\"id\":\"btn_especialidades\",\"title\":\"📚 Especialidades\",\"description\":\"Descubre qué podemos hacer por ti\",\"next_template_id\":\"\"},{\"id\":\"btn_faq\",\"title\":\"❓ Preguntas Frecuentes\",\"description\":\"Plazos, valores y formas de trabajo\",\"next_template_id\":\"\"},{\"id\":\"btn_asesor_ventas\",\"title\":\"📞 Hablar con Asesor\",\"description\":\"Atención humana personalizada\",\"next_template_id\":\"\"}]"
+      "content": "[{\"id\":\"btn_cotizar\",\"title\":\"📊 Cotizar Servicios\",\"description\":\"Conoce nuestros planes contables\",\"next_template_id\":\"prospecto_cotizacion\"},{\"id\":\"btn_especialidades\",\"title\":\"📚 Especialidades\",\"description\":\"Descubre qué podemos hacer por ti\",\"next_template_id\":\"prospecto_faq\"},{\"id\":\"btn_faq\",\"title\":\"❓ Preguntas Frecuentes\",\"description\":\"Plazos, valores y formas de trabajo\",\"next_template_id\":\"prospecto_faq\"},{\"id\":\"btn_asesor_ventas\",\"title\":\"📞 Hablar con Asesor\",\"description\":\"Atención humana personalizada\",\"next_template_id\":\"derivacion_asesor\"}]"
     }
   ]
 }

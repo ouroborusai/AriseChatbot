@@ -1,0 +1,15 @@
+{
+  "id": "prospecto_faq",
+  "category": "ventas",
+  "name": "Asistente IA (FAQ)",
+  "segment": "prospecto",
+  "is_active": true,
+  "description": "Embudo que despierta explícitamente a Gemini para responder preguntas tributarias al prospecto",
+  "actions": [
+    {
+      "type": "text",
+      "content": "¡Hola! Soy el asistente con Inteligencia Artificial 🤖 de MTZ Consultores.\n\nFui entrenado con la última normativa tributaria de Chile y conozco todas las especialidades de la firma.\n\nEscribe cualquier pregunta que tengas (Ej: *¿Qué es el F29?*, *¿Me ayudan a crear empresa?* o *¿Qué planes tienen?*). O escribe *Menú* para volver atrás.",
+      "next_template_id": ""
+    }
+  ]
+}
