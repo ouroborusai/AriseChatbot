@@ -88,6 +88,11 @@ export class MenuHandler extends BaseHandler {
       },
       {
         type: 'button',
+        id: BUTTON_IDS.BOOK_APPT,
+        title: '📅 Agendar Cita'
+      },
+      {
+        type: 'button',
         id: BUTTON_IDS.EXISTING_HUMAN,
         title: '📞 Hablar con asesor'
       },

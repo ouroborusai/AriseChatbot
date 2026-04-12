@@ -34,6 +34,13 @@ Configuración de las respuestas del chatbot.
 - `actions` (jsonb): Botones o listas interactivas.
 - `segment` (text): "todos", "cliente", "prospecto".
 
+### `appointments`
+Gestión de citas agendadas por el bot.
+- `contact_id` (uuid): Referencia al cliente.
+- `appointment_date` (date): Fecha de la cita.
+- `appointment_time` (time): Hora de la cita.
+- `status` (text): p.ej. "pending", "confirmed".
+
 ---
 > [!IMPORTANT]
 > **INTEGRIDAD:** No se deben permitir documentos sin un `contact_id`. En caso de ingesta masiva sin contacto asignado, utilizar el contacto de sistema "MTZ ARCHIVOS" (ID vinculado al phone '0').

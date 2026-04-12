@@ -131,8 +131,12 @@ export class TemplateService {
   static replaceVariables(content: string, context: TemplateContext): string {
     let result = content;
 
-    // Nombre del contacto
-    result = result.replace('{{nombre}}', context.contact.name || 'cliente');
+    // Nombre del contacto (Normalizado a primer nombre)
+    const rawName = context.contact.name || 'cliente';
+    const friendlyName = rawName.split(' ')[0].split('_')[0].trim();
+    const capitalizedName = friendlyName.charAt(0).toUpperCase() + friendlyName.slice(1).toLowerCase();
+    
+    result = result.replace('{{nombre}}', capitalizedName);
 
     // Cantidad de documentos
     if (context.documents) {

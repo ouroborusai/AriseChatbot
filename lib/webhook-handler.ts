@@ -4,27 +4,29 @@
  */
 
 import { getSupabaseAdmin } from './supabase-admin';
-import { sendWhatsAppMessage } from './whatsapp-service';
-import {
-  getOrCreateContact,
-  getOrCreateConversation,
-  listCompaniesForContact,
-  getActiveCompanyForConversation,
-  saveMessage,
+import { 
+  sendWhatsAppMessage, 
+  sendWhatsAppInteractiveButtons,
+  sendWhatsAppDocument,
+  sendWhatsAppListMessage 
+} from './whatsapp-service';
+import { 
+  saveMessage, 
 } from './database-service';
 
 import { TemplateContext, Template } from '@/app/components/templates/types';
-import { evaluateTemplateRules, getFinalActions } from '@/lib/services/condition-engine';
-import { TemplateService } from '@/lib/services/template-service';
-import { NavigationService } from '@/lib/services/navigation-service';
-import { ContextService } from '@/lib/services/context-service';
-import { ActionService } from '@/lib/services/action-service';
-
+import { evaluateTemplateRules } from './handlers/condition-handler';
+import { Contact, Company, HandlerResponse, BUTTON_IDS } from './types';
+import { handleCompanyButton, handleCompanyText } from './handlers/company-handler';
+import { handleDocumentButton, handleDocCategoryButton, handlePeriodText, DocumentsHandler } from './handlers/documents-handler';
 import { handleClassification, autoClassifyAsProspect } from './handlers/classification-handler';
-import { handleDocumentButton, handlePeriodText, handleDocCategoryButton } from './handlers/documents-handler';
-import { handleCompanyButton, handleCompanyText, autoSelectCompany } from './handlers/company-handler';
-import { handleAI } from './handlers/ai-handler';
 import { MenuHandler } from './handlers/menu-handler';
+import { handleAI } from './handlers/ai-handler';
+import { EmailService } from './services/email-service';
+import { AppointmentHandler } from './handlers/appointment-handler';
+import { TemplateService } from './services/template-service';
+import { NavigationService } from './services/navigation-service';
+import { ContextService } from './services/context-service';
 
 /**
  * Procesa mensaje entrante de WhatsApp
@@ -100,6 +102,24 @@ export async function handleInboundUserMessage(messageData: {
       if ((await handleDocumentButton(interactive, phoneNumber, conversationId)).handled) return;
       if ((await handleDocCategoryButton(interactive, phoneNumber, contact.id, activeCompanyId)).handled) return;
 
+      // MANEJO DE MAIL
+      if (interactive.startsWith(BUTTON_IDS.SEND_BY_EMAIL)) {
+        const docId = interactive.replace(`${BUTTON_IDS.SEND_BY_EMAIL}_`, '');
+        if (contact.email) {
+          await sendWhatsAppMessage(phoneNumber, `📧 ¡Entendido! Enviando documento a *${contact.email}*...`);
+          const docHandler = new DocumentsHandler(context);
+          const { data: doc } = await getSupabaseAdmin().from('client_documents').select('*').eq('id', docId).single();
+          if (doc) {
+            await EmailService.sendDocumentToClient(contact.email, contact.name || 'Cliente', doc.title, doc.file_url);
+            await sendWhatsAppMessage(phoneNumber, '✓ ¡Email enviado! Revisa tu bandeja de entrada (y la de SPAM por si acaso). 🚀');
+          }
+        } else {
+          await saveMessage(conversationId, 'assistant', 'SOLICITUD_EMAIL'); // Flag interno en historial
+          await sendWhatsAppMessage(phoneNumber, 'No tengo registrado tu correo electrónico. 📧\n\nPor favor, *escríbelo aquí abajo* para enviarte este documento y dejarlo guardado para el futuro.');
+        }
+        return;
+      }
+
       // DETECCIÓN DE ASISTENCIA HUMANA
       if (interactive === 'btn_existing_human' || interactive === 'btn_contactar') {
         await handleHumanHandoff(phoneNumber, conversationId, contact.name || 'Usuario');
@@ -112,7 +132,22 @@ export async function handleInboundUserMessage(messageData: {
         await processTemplateResponse(phoneNumber, nextTemplate, context, navState);
         return;
       }
-      
+
+      // MANEJO DE CITAS
+      const apptHandler = new AppointmentHandler(context);
+      if (interactive === BUTTON_IDS.BOOK_APPT) {
+        await apptHandler.startBooking(phoneNumber);
+        return;
+      }
+      if (interactive.startsWith('appt_date_')) {
+        await apptHandler.handleDateSelection(phoneNumber, interactive);
+        return;
+      }
+      if (interactive.startsWith('appt_time_')) {
+        await apptHandler.confirmAppointment(phoneNumber, interactive, conversationId);
+        return;
+      }
+
       console.warn(`[Webhook] ⚠️ Botón no reconocido: ${interactive}`);
       // FALLBACK: Enviar menú principal para evitar que el usuario quede sin respuesta
       await sendDefaultMenu(phoneNumber, contact.id, conversationId);
@@ -137,6 +172,24 @@ export async function handleInboundUserMessage(messageData: {
     // 6c. Manejo de Saludos y Triggers de Texto
     if (text) {
       console.log('[Webhook] 📝 Mensaje texto:', text.substring(0, 50));
+      
+      // Captura de email si venimos de un prompt
+      const history = await ContextService.getConversationHistory(conversationId);
+      const lastBotMsg = history.reverse().find(m => m.role === 'assistant')?.content;
+      
+      if (lastBotMsg === 'SOLICITUD_EMAIL' || text.includes('@')) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const potentialEmail = text.trim().toLowerCase();
+        
+        if (emailRegex.test(potentialEmail)) {
+          await getSupabaseAdmin().from('contacts').update({ email: potentialEmail }).eq('id', contact.id);
+          await sendWhatsAppMessage(phoneNumber, `¡Excelente! He guardado tu correo: *${potentialEmail}* ✅`);
+          await sendWhatsAppMessage(phoneNumber, 'Ya puedes solicitar el envío de tus documentos por email cuando quieras.');
+          await sendDefaultMenu(phoneNumber, contact.id, conversationId);
+          return;
+        }
+      }
+
       const greetingHandler = new MenuHandler(context);
       if (greetingHandler.isGreeting(text)) {
         console.log('[Webhook] 👋 Es saludo, enviando menú por defecto');

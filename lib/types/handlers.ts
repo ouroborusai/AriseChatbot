@@ -60,6 +60,10 @@ export const BUTTON_IDS = {
   COMPANY_PREFIX: 'company_',
   COMPANY_FREE_TEXT: 'btn_company_free_text',
   SELECT_COMPANY: 'btn_select_company',
+  
+  // Acciones adicionales
+  SEND_BY_EMAIL: 'btn_send_email',
+  BOOK_APPT: 'btn_agendar_cita',
 } as const;
 
 export type ButtonId = typeof BUTTON_IDS[keyof typeof BUTTON_IDS];

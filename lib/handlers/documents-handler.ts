@@ -83,7 +83,17 @@ export class DocumentsHandler extends BaseHandler {
       `Aquí tienes: ${doc.title}`
     );
 
-    console.log('[DocumentsHandler] Documento enviado:', doc.title);
+    // Ofrecer enviarlo por email
+    await sendWhatsAppInteractiveButtons(
+      phoneNumber,
+      '¿También lo necesitas en tu correo? 📧',
+      [
+        { id: `${BUTTON_IDS.SEND_BY_EMAIL}_${doc.id}`, title: 'Enviar a mi Email' },
+        { id: BUTTON_IDS.EXISTING_DOCS, title: 'Ver otros' }
+      ]
+    );
+
+    console.log('[DocumentsHandler] Documento enviado y ofrecido mail:', doc.title);
     return { handled: true };
   }
 
