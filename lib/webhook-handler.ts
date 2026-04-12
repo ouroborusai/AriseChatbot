@@ -100,6 +100,12 @@ export async function handleInboundUserMessage(messageData: {
       if ((await handleDocumentButton(interactive, phoneNumber, conversationId)).handled) return;
       if ((await handleDocCategoryButton(interactive, phoneNumber, contact.id, activeCompanyId)).handled) return;
 
+      // DETECCIÓN DE ASISTENCIA HUMANA
+      if (interactive === 'btn_existing_human' || interactive === 'btn_contactar') {
+        await handleHumanHandoff(phoneNumber, conversationId, contact.name || 'Usuario');
+        return;
+      }
+
       // Buscar si el ID del botón corresponde a una plantilla específica
       const nextTemplate = await TemplateService.findTemplateByActionId(interactive, contact.segment || 'prospecto');
       if (nextTemplate) {
@@ -198,7 +204,27 @@ async function sendDefaultMenu(phoneNumber: string, contactId: string, conversat
     await processTemplateResponse(phoneNumber, template, freshContext, NavigationService.createInitialState());
   } else {
     console.log('[Webhook] ❌ NO se encontró plantilla con ID:', templateId);
+    // Fallback absoluto si hasta la plantilla de bienvenida falla
+    await sendWhatsAppMessage(phoneNumber, '¡Hola! ☕ Soy tu asistente de MTZ. ¿En qué puedo ayudarte hoy? Escribe "Menú" para ver mis opciones.');
   }
+}
+
+/**
+ * Desactiva el chatbot e informa al usuario del paso a humano
+ */
+async function handleHumanHandoff(phoneNumber: string, conversationId: string, name: string) {
+  console.log(`[Webhook] 📞 Activando pase a humano para ${phoneNumber}`);
+  
+  await getSupabaseAdmin()
+    .from('conversations')
+    .update({ chatbot_enabled: false })
+    .eq('id', conversationId);
+
+  await saveMessage(conversationId, 'assistant', 'Un asesor de MTZ se pondrá en contacto contigo pronto.');
+  
+  await sendWhatsAppMessage(phoneNumber, 
+    `Perfecto ${name.split(' ')[0]}, he notificado a nuestro equipo. 👨‍💼\n\nHe desactivado mi respuesta automática para que un asesor pueda hablar contigo directamente en este chat en breve. ¡Gracias por tu paciencia!`
+  );
 }
 
 /**
