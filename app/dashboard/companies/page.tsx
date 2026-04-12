@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useCompanies, useCompanyContacts, useClientDocuments } from '@/lib/hooks/useCompanies';
+import { useCompanies, useCompanyContacts, useClientDocuments, useAllContacts } from '@/lib/hooks/useCompanies';
 import { SearchInput } from '@/app/components/SearchInput';
 import { Modal } from '@/app/components/Modal';
 
@@ -87,45 +86,47 @@ function MonthRow({ month, index, doc, year, activeTab, onUpload, onDelete, uplo
 
   return (
     <>
-      <div className={`flex items-center gap-3 p-3 rounded-xl border ${doc ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-white'}`}>
-        <div className="w-28 shrink-0">
-          <span className="text-sm font-medium text-slate-700">{month}</span>
-        </div>
-        <div className="flex-1 min-w-0">
+      <tr className={`border-b border-slate-100 hover:bg-slate-50 transition ${doc ? 'bg-green-50/30' : ''}`}>
+        <td className="py-2 px-3 text-sm font-medium text-slate-700">{month}</td>
+        <td className="py-2 px-3">
           {doc ? (
-            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-green-700 hover:underline truncate block">
+            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-green-700 hover:underline truncate block max-w-[200px]">
               {doc.file_name}
             </a>
           ) : (
-            <span className="text-xs text-slate-400">Sin documento</span>
+            <span className="text-xs text-slate-400 italic">No disponible</span>
           )}
-        </div>
-        <div className="shrink-0">
+        </td>
+        <td className="py-2 px-3 text-right">
           {doc ? (
-            <div className="flex items-center gap-1">
-              <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200">
+            <div className="flex items-center justify-end gap-2">
+              <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded uppercase font-bold hover:bg-green-200">
                 Ver
               </a>
-              <button onClick={() => onDelete(doc.id)} className="text-xs text-red-600 hover:text-red-800 px-1">✕</button>
+              <button onClick={() => onDelete(doc.id)} className="text-red-400 hover:text-red-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              </button>
             </div>
           ) : (
-            <label className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-lg cursor-pointer hover:bg-slate-200 block">
-              📤 Subir
+            <label className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded cursor-pointer hover:bg-slate-200 uppercase font-bold transition">
+              Subir
               <input type="file" accept=".pdf,.xls,.xlsx,.doc,.docx" className="hidden" onChange={(e) => { setLocalFile(e.target.files?.[0] || null); setShowModal(true); }} />
             </label>
           )}
-        </div>
-      </div>
+        </td>
+      </tr>
 
       {showModal && localFile && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded-xl max-w-sm w-full mx-4">
-            <p className="text-sm font-medium mb-2">Subir {month} {year}</p>
-            <p className="text-xs text-slate-500 truncate mb-3">{localFile.name}</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+          <div className="bg-white p-4 rounded-xl max-w-sm w-full mx-4 shadow-2xl border border-slate-200">
+            <p className="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <span className="text-lg">📤</span> Subir {month} {year}
+            </p>
+            <p className="text-xs text-slate-500 truncate mb-4 bg-slate-50 p-2 rounded border border-slate-100">{localFile.name}</p>
             <div className="flex gap-2">
-              <button onClick={() => { setShowModal(false); setLocalFile(null); }} className="flex-1 text-xs border border-slate-200 px-3 py-2 rounded-lg">Cancelar</button>
-              <button onClick={handleUpload} disabled={uploading || uploadingLocal} className="flex-1 text-xs bg-green-600 text-white px-3 py-2 rounded-lg">
-                {uploading || uploadingLocal ? 'Subiendo...' : 'Confirmar'}
+              <button onClick={() => { setShowModal(false); setLocalFile(null); }} className="flex-1 text-xs font-semibold text-slate-600 py-2 hover:bg-slate-100 rounded-lg">Cancelar</button>
+              <button onClick={handleUpload} disabled={uploading || uploadingLocal} className="flex-1 text-xs font-semibold bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 shadow-sm disabled:opacity-50">
+                {uploading || uploadingLocal ? 'Procesando...' : 'Subir ahora'}
               </button>
             </div>
           </div>
@@ -179,16 +180,27 @@ function CompanyDocumentsTab({ documents, activeTab, year, onUpload, onDelete, u
   }
 
   return (
-    <div className="space-y-2">
-      {MONTHS.map((month, index) => {
-        const doc = filteredDocs.find(d => getMonthFromTitle(d.title || '') === index);
-        return (
-          <MonthRow key={index} month={month} index={index} doc={doc} year={year} activeTab={activeTab} onUpload={onUpload} onDelete={onDelete} uploading={uploading} />
-        );
-      })}
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      <table className="w-full border-collapse text-left">
+        <thead>
+          <tr className="bg-slate-50 text-[10px] uppercase tracking-wider font-bold text-slate-500 border-b border-slate-200">
+            <th className="py-2 px-3">Período</th>
+            <th className="py-2 px-3">Archivo</th>
+            <th className="py-2 px-3 text-right">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {MONTHS.map((month, index) => {
+            const doc = filteredDocs.find(d => getMonthFromTitle(d.title || '') === index);
+            return (
+              <MonthRow key={index} month={month} index={index} doc={doc} year={year} activeTab={activeTab} onUpload={onUpload} onDelete={onDelete} uploading={uploading} />
+            );
+          })}
+        </tbody>
+      </table>
       {filteredDocs.length === 0 && (
-        <div className="text-center py-8 text-slate-500 text-sm">
-          No hay documentos para {year}
+        <div className="text-center py-4 text-slate-400 text-xs italic bg-slate-50/30">
+          No se encontraron documentos cargados para este año
         </div>
       )}
     </div>
@@ -249,8 +261,17 @@ export default function CompaniesPage() {
   const [uploading, setUploading] = useState(false);
 
   const selectedCompany = companies.find(c => c.id === selectedCompanyId) || null;
-  const { contacts } = useCompanyContacts(selectedCompanyId);
+  const { contacts: linkedContacts, linkContact, unlinkContact } = useCompanyContacts(selectedCompanyId);
   const { documents, refetch: refetchDocs, deleteDocument } = useClientDocuments(selectedCompanyId);
+  const { contacts: allContacts } = useAllContacts();
+
+  const [contactSearch, setContactSearch] = useState('');
+  const [isLinkingContact, setIsLinkingContact] = useState(false);
+
+  const filteredAllContacts = allContacts.filter(c => 
+    (c.name || '').toLowerCase().includes(contactSearch.toLowerCase()) || 
+    c.phone_number.includes(contactSearch)
+  ).slice(0, 5);
 
   const filteredCompanies = searchQuery ? searchCompanies(searchQuery) : companies;
   const years = useMemo(() => {
@@ -379,52 +400,86 @@ export default function CompaniesPage() {
           <div className="flex-1 min-w-0 bg-white rounded-2xl border border-slate-200 overflow-y-auto">
             {selectedCompany ? (
               <div className="p-6 space-y-6">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-slate-900">Información de la Empresa</h3>
-                    <button type="button" onClick={handleDeleteCompany} className="text-xs text-red-600 hover:text-red-800">Eliminar</button>
-                  </div>
-                  <div className="mt-4 space-y-3">
-                    <div><p className="text-xs text-slate-500">Razón Social</p><p className="font-medium text-slate-900">{selectedCompany.legal_name}</p></div>
-                    {selectedCompany.rut && <div><p className="text-xs text-slate-500">RUT</p><p className="font-medium text-slate-900">{selectedCompany.rut}</p></div>}
-                    <div><p className="text-xs text-slate-500">Fecha de creación</p><p className="font-medium text-slate-900">{selectedCompany.created_at ? new Date(selectedCompany.created_at).toLocaleDateString('es-CL') : '-'}</p></div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-3">👥 Contactos Vinculados ({contacts.length})</h3>
-                  {contacts.length === 0 ? (
-                    <p className="text-sm text-slate-500">No hay contactos vinculados.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {contacts.map((link) => (
-                        <div key={link.contact_id} className={`p-3 rounded-xl border ${link.is_primary ? 'border-green-200 bg-green-50' : 'border-slate-200'}`}>
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium text-slate-900">{link.contacts?.name || `Cliente ${link.contacts?.phone_number?.slice(-4)}`}</p>
-                            {link.is_primary && <span className="text-xs rounded-full bg-green-100 text-green-700 px-2 py-0.5">Principal</span>}
-                          </div>
-                          <p className="text-xs text-slate-500">{link.contacts?.phone_number}</p>
-                        </div>
-                      ))}
+                {/* Header Compacto con info y contactos */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-[11px] font-bold uppercase tracking-tight text-slate-500">Datos Empresa</h3>
+                      <button type="button" onClick={handleDeleteCompany} className="text-[10px] text-red-400 hover:text-red-600 font-bold uppercase transition">Eliminar</button>
                     </div>
-                  )}
+                    <div className="flex flex-col">
+                      <p className="text-sm font-bold text-slate-900 leading-tight">{selectedCompany.legal_name}</p>
+                      <div className="mt-1 flex gap-3 text-xs text-slate-500">
+                        <span>RUT: <b className="text-slate-700">{selectedCompany.rut || 'N/A'}</b></span>
+                        <span>Alta: <b className="text-slate-700">{selectedCompany.created_at ? new Date(selectedCompany.created_at).toLocaleDateString() : '-'}</b></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm relative overflow-hidden group">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-[11px] font-bold uppercase tracking-tight text-slate-500">Contactos ({linkedContacts.length})</h3>
+                      <button type="button" onClick={() => setIsLinkingContact(!isLinkingContact)} className="text-[10px] text-whatsapp-green hover:text-green-700 font-bold uppercase transition">
+                        {isLinkingContact ? '✕ Cerrar' : '+ Vincular'}
+                      </button>
+                    </div>
+
+                    {isLinkingContact ? (
+                      <div className="absolute inset-0 bg-white p-2 z-10 flex flex-col animate-in fade-in duration-200">
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            value={contactSearch} 
+                            onChange={(e) => setContactSearch(e.target.value)}
+                            placeholder="Buscar por nombre/cel..."
+                            className="flex-1 rounded-lg border border-slate-300 px-2 py-1 text-xs focus:ring-1 focus:ring-whatsapp-green outline-none"
+                            autoFocus
+                          />
+                          <button onClick={() => setIsLinkingContact(false)} className="text-slate-400 text-xs">✕</button>
+                        </div>
+                        <div className="mt-1 overflow-y-auto flex-1 bg-slate-50 rounded border border-slate-100">
+                          {filteredAllContacts.map(c => (
+                            <button key={c.id} onClick={async () => { if (selectedCompanyId) { await linkContact(c.id, selectedCompanyId); setIsLinkingContact(false); setContactSearch(''); } }}
+                              className="w-full text-left px-2 py-1 hover:bg-green-100 text-[11px] border-b border-white last:border-0 truncate">
+                              <b>{c.name || 'S/N'}</b> ({c.phone_number})
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : linkedContacts.length === 0 ? (
+                      <p className="text-[11px] text-slate-400 italic">Sin contactos vinculados.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {linkedContacts.map((link) => (
+                          <div key={link.contact_id} className={`flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg border text-[11px] ${link.is_primary ? 'border-green-200 bg-green-50 text-green-800' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                            <span className="font-bold truncate max-w-[80px]">{link.contacts?.name?.split(' ')[0] || 'Cliente'}</span>
+                            <button onClick={() => unlinkContact(link.contact_id, selectedCompanyId!)} className="text-slate-400 hover:text-red-500 transition">✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+                {/* Tabs de Documentos Rediseñados */}
+                <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                  <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-100">
                     {(Object.keys(TAB_CONFIG) as DocTab[]).map((tab) => (
                       <button key={tab} onClick={() => setActiveTab(tab)}
-                        className={`px-3 py-2 rounded-xl text-sm font-medium transition ${activeTab === tab ? 'bg-green-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
-                        {TAB_CONFIG[tab].label}
+                        className={`px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-tight transition-all flex items-center gap-1.5 ${activeTab === tab ? 'bg-white text-green-700 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
+                        <span>{TAB_CONFIG[tab].icon}</span>
+                        <span className="hidden lg:inline">{TAB_CONFIG[tab].label.split(' ')[1] || TAB_CONFIG[tab].label}</span>
                       </button>
                     ))}
                     <div className="flex-1" />
                     <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm">
+                      className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-bold outline-none ring-offset-1 focus:ring-1 focus:ring-whatsapp-green">
                       {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                   </div>
-                  <CompanyDocumentsTab documents={documents} activeTab={activeTab} year={selectedYear} onUpload={handleUploadDocument} onDelete={handleDeleteDocument} uploading={uploading} />
+                  <div className="mt-2">
+                    <CompanyDocumentsTab documents={documents} activeTab={activeTab} year={selectedYear} onUpload={handleUploadDocument} onDelete={handleDeleteDocument} uploading={uploading} />
+                  </div>
                 </div>
               </div>
             ) : (

@@ -47,6 +47,30 @@ export function useContacts() {
   return { contacts, loading, refetch: fetchContacts, searchContacts, updateContact };
 }
 
+export function useAllCompanies() {
+  const supabase = createClient();
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('companies')
+      .select('id, legal_name, rut')
+      .order('legal_name', { ascending: true });
+    
+    if (error) console.error('Error fetching all companies:', error);
+    else setCompanies(data || []);
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  return { companies, loading, refetch: fetchAll };
+}
+
 export function useContactCompanies(contactId: string | null) {
   const supabase = createClient();
   const [companyLinks, setCompanyLinks] = useState<CompanyLink[]>([]);
@@ -108,6 +132,18 @@ export function useContactCompanies(contactId: string | null) {
     await fetchCompaniesForContact(contactId);
   }, [supabase, fetchCompaniesForContact]);
 
+  const linkExistingCompany = useCallback(async (contactId: string, companyId: string) => {
+    const { error: linkErr } = await supabase
+      .from('contact_companies')
+      .upsert({ 
+        contact_id: contactId, 
+        company_id: companyId, 
+        is_primary: companyLinks.length === 0 
+      });
+    if (linkErr) throw linkErr;
+    await fetchCompaniesForContact(contactId);
+  }, [supabase, companyLinks.length, fetchCompaniesForContact]);
+
   return {
     companyLinks,
     selectedCompanyId,
@@ -115,6 +151,7 @@ export function useContactCompanies(contactId: string | null) {
     loading,
     refetch: () => contactId && fetchCompaniesForContact(contactId),
     createAndLinkCompany,
+    linkExistingCompany,
     setPrimaryCompany,
   };
 }

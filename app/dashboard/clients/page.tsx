@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useContacts, useContactCompanies } from '@/lib/hooks/useContacts';
+import { useContacts, useContactCompanies, useAllCompanies } from '@/lib/hooks/useContacts';
 import { SearchInput } from '@/app/components/SearchInput';
 import { ContactCard } from '@/app/components/ContactCard';
 import type { MessageData } from '@/lib/types';
@@ -16,15 +16,17 @@ export default function ClientsPage() {
   const [messageForm, setMessageForm] = useState({ message: '', documentUrl: '', documentName: '' });
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success?: boolean; error?: string } | null>(null);
-  const [newCompanyName, setNewCompanyName] = useState('');
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [isEditingSegment, setIsEditingSegment] = useState(false);
-  const [sendingAccessCode, setSendingAccessCode] = useState(false);
-  const [accessCodeResult, setAccessCodeResult] = useState<{ success?: boolean; error?: string } | null>(null);
+  const [existingCompanySearch, setExistingCompanySearch] = useState('');
+  const [isLinkingExisting, setIsLinkingExisting] = useState(false);
 
-  const { companyLinks, selectedCompanyId, setSelectedCompanyId, createAndLinkCompany, setPrimaryCompany } = 
+  const { companies: allCompanies } = useAllCompanies();
+  const { companyLinks, selectedCompanyId, setSelectedCompanyId, createAndLinkCompany, setPrimaryCompany, linkExistingCompany } = 
     useContactCompanies(selectedContact?.id || null);
+
+  const filteredAllCompanies = allCompanies.filter(c => 
+    c.legal_name.toLowerCase().includes(existingCompanySearch.toLowerCase()) || 
+    c.rut?.toLowerCase().includes(existingCompanySearch.toLowerCase())
+  ).slice(0, 5); // Mostrar solo top 5 para no saturar 
 
   const filteredContacts = searchQuery ? searchContacts(searchQuery, contacts) : contacts;
 
@@ -70,6 +72,17 @@ export default function ClientsPage() {
       await setPrimaryCompany(selectedContact.id, companyId);
     } catch (e) {
       console.error('Error setting primary company:', e);
+    }
+  };
+
+  const handleLinkExisting = async (companyId: string) => {
+    if (!selectedContact) return;
+    try {
+      await linkExistingCompany(selectedContact.id, companyId);
+      setIsLinkingExisting(false);
+      setExistingCompanySearch('');
+    } catch (e) {
+      console.error('Error linking existing company:', e);
     }
   };
 
@@ -184,7 +197,41 @@ export default function ClientsPage() {
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <h3 className="text-sm font-semibold text-slate-900 mb-3">🏢 Empresas</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-slate-900">🏢 Empresas</h3>
+                  <button type="button" onClick={() => setIsLinkingExisting(!isLinkingExisting)} className="text-xs text-whatsapp-green hover:underline">
+                    {isLinkingExisting ? 'Cancelar' : '+ Vincular existente'}
+                  </button>
+                </div>
+
+                {isLinkingExisting && (
+                  <div className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <p className="text-xs font-medium text-slate-700 mb-2">Buscar empresa por nombre o RUT</p>
+                    <input 
+                      type="text" 
+                      value={existingCompanySearch} 
+                      onChange={(e) => setExistingCompanySearch(e.target.value)}
+                      placeholder="Ej: Inversiones Rojas..."
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-whatsapp-green focus:outline-none mb-2"
+                    />
+                    <div className="space-y-1">
+                      {filteredAllCompanies.map(c => (
+                        <button 
+                          key={c.id} 
+                          onClick={() => handleLinkExisting(c.id)}
+                          className="w-full text-left p-2 hover:bg-white rounded-lg text-sm border border-transparent hover:border-slate-200 transition"
+                        >
+                          <p className="font-medium text-slate-900">{c.legal_name}</p>
+                          <p className="text-xs text-slate-500">{c.rut}</p>
+                        </button>
+                      ))}
+                      {existingCompanySearch && filteredAllCompanies.length === 0 && (
+                        <p className="text-xs text-slate-500 p-2 italic">No se encontraron resultados</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {companyLinks.length === 0 ? (
                   <p className="text-sm text-slate-500">No hay empresas vinculadas</p>
                 ) : (

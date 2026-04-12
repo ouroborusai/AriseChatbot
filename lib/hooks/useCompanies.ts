@@ -45,6 +45,30 @@ export function useCompanies() {
   return { companies, loading, refetch: fetchCompanies, createCompany, updateCompany, deleteCompany, searchCompanies };
 }
 
+export function useAllContacts() {
+  const supabase = createClient();
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('id, phone_number, name')
+      .order('name', { ascending: true });
+    
+    if (error) console.error('Error fetching all contacts:', error);
+    else setContacts(data || []);
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  return { contacts, loading, refetch: fetchAll };
+}
+
 export function useCompanyContacts(companyId: string | null) {
   const supabase = createClient();
   const [contacts, setContacts] = useState<any[]>([]);
