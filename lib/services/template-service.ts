@@ -43,6 +43,13 @@ export class TemplateService {
   ): Promise<Template | null> {
     console.log(`[TemplateService] 🔍 Buscando actionId: "${actionId}" para segmento: ${segment || 'todos'}`);
 
+    // 1. INTENTO DE COINCIDENCIA DIRECTA: ¿El ID es directamente una plantilla? (NUEVO)
+    const directTemplate = await this.findTemplateById(actionId, segment);
+    if (directTemplate) {
+      console.log(`[TemplateService] ✅ Coincidencia DIRECTA por ID de plantilla: "${actionId}"`);
+      return directTemplate;
+    }
+
     const { data: templates } = await getSupabaseAdmin()
       .from('templates')
       .select('*')

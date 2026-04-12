@@ -86,10 +86,21 @@ export class AIHandler extends BaseHandler {
       lines.push(`- Última acción del usuario: ${this.context.lastAction}`);
     }
 
+    // Instrucciones de Navegación (IDs de Plantillas Disponibles)
+    lines.push('\n### Navegación Disponible (Sugiérelas si el usuario las necesita):');
+    lines.push('- 📂 ARCHIVO (menu_archivo): Para IVAs, Renta, Documentos.');
+    lines.push('- 📊 NEGOCIO (menu_finanzas): Para Balances y Estados Financieros.');
+    lines.push('- 👥 PERSONAL (menu_nomina): Para Liquidaciones y RRHH.');
+    lines.push('- 📅 CITAS (agendar_cita): Para agendar reuniones.');
+    lines.push('- 📋 GESTIÓN (btn_nueva_solicitud): Para trámites nuevos o cambios.');
+    lines.push('- 🏢 EMPRESAS (menu_empresas): Para cambiar de empresa.');
+    lines.push('\n### REGLA DE ORO DE NAVEGACIÓN:');
+    lines.push('- Si el usuario pide explícitamente ver uno de estos menús o realizar esa acción, DEBES incluir al final de tu respuesta el tag: [TRIGGER:id_del_menu]');
+    lines.push('- Ejemplo: "Claro, aquí tienes el menú de archivos: [TRIGGER:menu_archivo]"');
+
     // Instrucción final
-    lines.push('- FINALMENTE, haz la conversación más interactiva sugiriendo acciones específicas cuando sea apropiado.');
-    lines.push('- Mantén respuestas concisas (máximo 400 caracteres) para WhatsApp.');
-    lines.push('- Usa emojis moderadamente para hacer la conversación más amigable.');
+    lines.push('\n- FINALMENTE: Si el usuario quiere ver un menú, dile algo como "Puedo mostrarte el menú de [X], ¿quieres verlo?"');
+    lines.push('- Mantén respuestas concisas (máximo 400 caracteres). Usa emojis moderadamente.');
 
     return lines.join('\n');
   }
@@ -160,12 +171,43 @@ export class AIHandler extends BaseHandler {
         });
 
       // Enviar respuesta por WhatsApp
-      await sendWhatsAppMessage(phoneNumber, aiResponse);
+      let cleanResponse = aiResponse;
+      let triggerId = null;
 
-      // Invalidar cache del prompt
-      invalidateSystemPromptCache();
+      // Detectar si la IA quiere disparar un menú
+      const triggerMatch = aiResponse.match(/\[TRIGGER:([a-z0-9_]+)\]/i);
+      if (triggerMatch) {
+        triggerId = triggerMatch[1];
+        cleanResponse = aiResponse.replace(/\[TRIGGER:[a-z0-9_]+\]/i, '').trim();
+      }
 
-      console.log('[AIHandler] ✅ Respuesta Gemini enviada');
+      await sendWhatsAppMessage(phoneNumber, cleanResponse);
+
+      // Si hay un trigger, disparar la plantilla correspondiente
+      if (triggerId) {
+        console.log(`[AIHandler] 🚀 Auto-Trigger detectado: ${triggerId}`);
+        const { TemplateService } = await import('../services/template-service');
+        const { processTemplateResponse } = await import('../webhook-handler');
+        const template = await TemplateService.findTemplateById(triggerId, this.context.contact.segment);
+        if (template) {
+           await processTemplateResponse(phoneNumber, template, this.context, { currentPath: [], history: [] });
+           return { handled: true };
+        }
+      }
+
+      // --- NAVEGACIÓN PROACTIVA (Botón de cierre si no hay trigger) ---
+      // Si la IA no sugirió ya un menú, añadir botón de menú principal
+      const lowerResp = aiResponse.toLowerCase();
+      const suggestedMenu = lowerResp.includes('menú') || lowerResp.includes('menu') || lowerResp.includes('opciones');
+      
+      if (!suggestedMenu) {
+        const { sendWhatsAppInteractiveButtons } = await import('../whatsapp-service');
+        await sendWhatsAppInteractiveButtons(
+          phoneNumber,
+          '¿Deseas volver al menú principal de gestiones? 🏢',
+          [{ id: 'menu_principal_cliente', title: '🏠 Menú Principal' }]
+        );
+      }
       return { handled: true };
     } catch (error) {
       console.error('[AIHandler] 💥 Error en AI handler:', error);

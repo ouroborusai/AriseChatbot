@@ -137,11 +137,14 @@ export async function handleInboundUserMessage(messageData: {
     }
 
   } catch (error: any) {
-    console.error('💥 ERROR en Webhook:', error.message);
+    console.error('[WebhookHandler] ❌ ERROR CRÍTICO:', error);
+    
+    // Fallback amigable en lugar de mensaje técnico
     try {
-      await sendWhatsAppMessage(phoneNumber, '¡Hola! ☕ Recibí tu mensaje. En un momento te responderé.');
+      await sendWhatsAppMessage(phoneNumber, "¡Ups! No pude procesar esa opción. 🔄 Te devuelvo al menú principal para que podamos continuar.");
+      await sendDefaultMenu(phoneNumber, (await getOrCreateContact(phoneNumber)).id, (await getOrCreateConversation(phoneNumber, (await getOrCreateContact(phoneNumber)).id)));
     } catch (e) {
-      console.error('Fallo crítico al enviar saludo de emergencia');
+      console.error('[WebhookHandler] Fallback fallido:', e);
     }
   }
 }
