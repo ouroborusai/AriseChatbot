@@ -1,0 +1,12 @@
+{
+  "id": "buzon_recepcion",
+  "name": "03_B_Buzón de Recepción de Archivos",
+  "content": "¡Excelente! 📤\n\nPuedes enviarme los documentos arrastrándolos aquí (PDF o Foto). Para mantener tu carpeta tributaria ordenada, por favor dime brevemente en el mismo mensaje qué es lo que me estás enviando (Ej: 'Boletas honorarios Marta' o 'Facturas de Compra Abril').",
+  "category": "documentos",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 90,
+  "trigger": "",
+  "workflow": "operaciones",
+  "actions": []
+}

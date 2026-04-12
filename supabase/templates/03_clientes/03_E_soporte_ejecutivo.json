@@ -1,0 +1,12 @@
+{
+  "id": "soporte_ejecutivo",
+  "name": "03_E_Soporte Ejecutivo Humano",
+  "content": "🚨 ¡Entendido! He hecho sonar la alerta en el escritorio central de MTZ. \n\nHe apagado temporalmente mis respuestas automáticas para que tu Asesor de Cuenta pueda leer tu historial completo y te responda por este mismo medio apenas esté disponible.\n\nPor favor, deja escrito tu requerimiento urgente aquí abajo:",
+  "category": "general",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 90,
+  "trigger": "",
+  "workflow": "soporte",
+  "actions": []
+}

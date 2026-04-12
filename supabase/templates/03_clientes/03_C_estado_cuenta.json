@@ -1,0 +1,27 @@
+{
+  "id": "estado_cuenta",
+  "name": "03_C_Estado de Cuenta",
+  "content": "Revisando tus saldos actuales... 💳\n\nTu saldo oficial no presenta discrepancias graves. Si deseas descargar los datos para transferencias u honorarios contables fijos, enviaremos los datos bancarios de MTZ.\n\n(Tu contador actualizará este tablero pronto con las cuotas exactas).",
+  "category": "cobranza",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 90,
+  "trigger": "",
+  "workflow": "cobranza",
+  "actions": [
+    {
+      "type": "button",
+      "id": "btn_ver_cuentas",
+      "title": "🏦 Datos Transferencia",
+      "content": "",
+      "next_template_id": ""
+    },
+    {
+      "type": "button",
+      "id": "btn_facturacion_sii",
+      "title": "📄 Solicitar Factura MTZ",
+      "content": "",
+      "next_template_id": "derivacion_asesor"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "solicitud_tramite",
+  "name": "03_D_Trámites e IA Legal",
+  "content": "Soy tu Inteligencia Operativa de MTZ 🤖.\n\nEstoy conectado con la Municipalidad y el SII. Dime con tus propias palabras qué trámite necesitas hacer hoy (Ej: *'Necesito ampliar el giro de mi empresa'* o *'Quiero contratar a un trabajador nuevo part-time'*). \n\nPrepararé todo el dossier legal para tu aprobación.",
+  "category": "operaciones",
+  "segment": "cliente",
+  "is_active": true,
+  "priority": 90,
+  "trigger": "ai_tramite",
+  "workflow": "operaciones",
+  "actions": []
+}
