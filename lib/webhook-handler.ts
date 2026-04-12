@@ -15,7 +15,7 @@ import {
 } from './database-service';
 
 import { TemplateContext, Template } from '@/app/components/templates/types';
-import { evaluateTemplateRules } from './handlers/condition-handler';
+import { evaluateTemplateRules } from './services/condition-engine';
 import { Contact, Company, HandlerResponse, BUTTON_IDS } from './types';
 import { handleCompanyButton, handleCompanyText } from './handlers/company-handler';
 import { handleDocumentButton, handleDocCategoryButton, handlePeriodText, DocumentsHandler } from './handlers/documents-handler';
