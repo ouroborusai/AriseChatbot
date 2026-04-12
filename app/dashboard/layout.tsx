@@ -73,12 +73,6 @@ export default function DashboardLayout({
 
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col md:flex-row">
-      <style jsx global>{`
-        @media (max-width: 768px) {
-          .hide-scrollbar::-webkit-scrollbar { display: none; }
-          .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        }
-      `}</style>
       
       {/* Sidebar - Desktop only */}
       <aside

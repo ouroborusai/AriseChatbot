@@ -55,12 +55,29 @@ export function useConversations() {
     fetchMessages();
     fetchContacts();
 
-    const msgChannel = supabase.channel('realtime-messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => fetchMessages())
-      .subscribe((status) => setRealtimeStatus(status === 'SUBSCRIBED' ? '🟢 En vivo' : '🔴 Desconectado'));
+    // ID único para evitar colisiones de canales en el cliente
+    const channelId = Math.random().toString(36).slice(2, 7);
+    const msgChannelName = `msg-${channelId}`;
+    const contactChannelName = `contact-${channelId}`;
 
-    const contactChannel = supabase.channel('realtime-contacts').on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => fetchContacts()).subscribe();
+    const msgChannel = supabase.channel(msgChannelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+        console.log('[Realtime] Nuevo mensaje detectado');
+        fetchMessages();
+      })
+      .subscribe((status) => {
+        setRealtimeStatus(status === 'SUBSCRIBED' ? '🟢 En vivo' : '🔴 Desconectado');
+      });
 
-    return () => { supabase.removeChannel(msgChannel); supabase.removeChannel(contactChannel); };
+    const contactChannel = supabase.channel(contactChannelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => fetchContacts())
+      .subscribe();
+
+    return () => {
+      console.log('[Realtime] Limpiando canales...');
+      supabase.removeChannel(msgChannel);
+      supabase.removeChannel(contactChannel);
+    };
   }, [supabase, fetchMessages, fetchContacts]);
 
   const conversations = useCallback(() => {

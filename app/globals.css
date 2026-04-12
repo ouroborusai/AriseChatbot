@@ -38,6 +38,14 @@
   @apply rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] backdrop-blur-sm;
 }
 
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .card-header {
   @apply flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between;
 }
