@@ -231,11 +231,22 @@ export async function handleInboundUserMessage(messageData: {
       await sendDefaultMenu(phoneNumber, contact.id, conversationId);
     }
 
-  } catch (error) {
-    console.error('💥 ERROR en WebhookHandler:', error);
+  } catch (error: any) {
+    console.error('💥 ERROR CRÍTICO en WebhookHandler:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      stack: error.stack,
+      hint: error.hint
+    });
+    
     // Intentar informar al usuario en caso de error crítico
     if (phoneNumber) {
-      await sendWhatsAppMessage(phoneNumber, 'Lo siento, tuve un problema interno. Un asesor de MTZ te contactará en breve para ayudarte. 📞');
+      const errorMsg = process.env.NODE_ENV === 'development' 
+        ? `Error: ${error.message || 'Error desconocido del servidor'}` 
+        : 'Lo siento, tuve un problema interno. Un asesor de MTZ te contactará en breve para ayudarte. 📞';
+      
+      await sendWhatsAppMessage(phoneNumber, errorMsg);
     }
   }
 }

@@ -129,51 +129,53 @@ export class TemplateService {
    * Variables soportadas: {{nombre}}, {{document_count}}, {{documents_list}}, {{iva_list}}
    */
   static replaceVariables(content: string, context: TemplateContext): string {
+    if (!content) return '';
     let result = content;
 
     // Nombre del contacto (Normalizado a primer nombre)
-    const rawName = context.contact.name || 'cliente';
-    const friendlyName = rawName.split(' ')[0].split('_')[0].trim();
+    const rawName = context.contact?.name || 'cliente';
+    const friendlyName = String(rawName).split(' ')[0].split('_')[0].trim();
     const capitalizedName = friendlyName.charAt(0).toUpperCase() + friendlyName.slice(1).toLowerCase();
     
-    result = result.replace(/{{nombre}}/g, capitalizedName);
+    // Usar split/join en lugar de regex global para evitar problemas con carácteres especiales en el reemplazo
+    result = result.split('{{nombre}}').join(capitalizedName);
     
     // Cantidad de documentos
     if (context.documents) {
-      result = result.replace(/{{document_count}}/g, String(context.documents.length));
+      result = result.split('{{document_count}}').join(String(context.documents.length));
 
       // Lista general de documentos
       if (result.includes('{{documents_list}}')) {
         const docsList = context.documents.map((d) => ({
           id: `doc_${d.id}`,
-          title: d.title?.slice(0, 24) || 'Documento',
-          description: new Date(d.created_at).toLocaleDateString('es-CL')
+          title: String(d.title || 'Documento').slice(0, 24),
+          description: d.created_at ? new Date(d.created_at).toLocaleDateString('es-CL') : 'Reciente'
         }));
-        result = result.replace(/{{documents_list}}/g, JSON.stringify(docsList));
+        result = result.split('{{documents_list}}').join(JSON.stringify(docsList));
       }
 
       // Lista de IVA
       if (result.includes('{{iva_list}}')) {
         const ivaDocs = context.documents.filter((d) => 
-          d.document_type === 'iva' || d.title?.toLowerCase().includes('iva')
+          d.document_type === 'iva' || String(d.title || '').toLowerCase().includes('iva')
         );
-        const ivaList = ivaDocs.slice(0, 12).map((d) => ({
+        const ivaList = ivaDocs.slice(0, 10).map((d) => ({
           id: `iva_${d.id}`,
-          title: d.title?.slice(0, 24) || 'IVA',
-          description: new Date(d.created_at).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' })
+          title: String(d.title || 'IVA').slice(0, 24),
+          description: d.created_at ? new Date(d.created_at).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' }) : 'Actual'
         }));
-        result = result.replace(/{{iva_list}}/g, JSON.stringify(ivaList));
+        result = result.split('{{iva_list}}').join(JSON.stringify(ivaList));
       }
 
       // Resumen financiero dinámico
       if (result.includes('{{financial_summary}}')) {
-        const activeComp = context.companies.find(c => c.id === context.activeCompanyId) || context.companies[0];
+        const activeComp = context.companies?.find(c => c.id === context.activeCompanyId) || context.companies?.[0];
         const summary = (activeComp as any)?.metadata?.financial_summary;
         
         if (summary && summary.whatsapp_proposal) {
-          result = result.replace(/{{financial_summary}}/g, summary.whatsapp_proposal);
+          result = result.split('{{financial_summary}}').join(summary.whatsapp_proposal);
         } else {
-          result = result.replace(/{{financial_summary}}/g, 'Para ver tu resumen financiero, selecciona una empresa activa.');
+          result = result.split('{{financial_summary}}').join('Para ver tu resumen financiero, selecciona una empresa activa.');
         }
       }
     }
