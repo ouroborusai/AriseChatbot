@@ -145,8 +145,6 @@ function HealthItem({ label, status, uptime, icon }: { label: string; status: 'o
     </div>
   );
 }
-  );
-}
 
 function ConfigItem({
   label,
