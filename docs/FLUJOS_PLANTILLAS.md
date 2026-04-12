@@ -1,277 +1,57 @@
-# 🗺️ Mapa de Flujos de Plantillas WhatsApp
+# 🗺️ Arquitectura de Plantillas y Flujos (SSOT Json)
 
-**MTZ Consultores Tributarios** - Última actualización: 2026-04-11
-
----
-
-## 📊 Resumen
-
-| Métrica | Valor |
-|---------|-------|
-| Total de plantillas | **33** |
-| Flujos principales | **8** |
-| Segmentos | `cliente`, `prospecto`, `todos` |
+**MTZ Consultores Tributarios** - Última actualización: Abril 2026
 
 ---
 
-## 🟢 1. FLUJO PRINCIPAL CLIENTE
+## 🏛️ 1. Single Source of Truth (SSOT)
 
+Las plantillas del Chatbot NO SE ENCUENTRAN HARDCODEADAS EN EL CÓDIGO NI EN SQL.
+Toda la fuente de verdad está en el directorio `supabase/templates/`.
+
+**Estructura de Carpetas:**
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    MENÚ PRINCIPAL CLIENTE                        │
-│                    id: menu_principal_cliente                    │
-│                                                                  │
-│  "¡Hola, {{nombre}}! 👋 Soy el asistente virtual de MTZ..."     │
-│                                                                  │
-│  LISTA: [Mis Documentos, Mis Datos, Trámites, Hablar con asesor]│
-└─────────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-┌───────────────┐     ┌───────────────┐     ┌──────────────┐
-│ MIS DATOS     │     │ TRÁMITES      │     │ DOCUMENTOS   │
-│ menu_mis_datos│     │menu_tramites  │     │menu_documentos
-│               │     │               │     │              │
-│ • Email       │     │ • IVA         │     │ • Ver docs   │
-│ • Teléfono    │     │ • Renta       │     │ • Solicitar  │
-│ • Empresas    │     │ • Nómina      │     │              │
-└───────────────┘     └───────────────┘     └──────────────┘
+supabase/
+ └── templates/
+      ├── 01_bienvenida/
+      │    ├── 01_A_bienvenida_prospecto.json
+      │    └── 01_B_menu_principal_cliente.json
+      ├── 02_documentos/
+      │    └── (Próximamente)
+      └── index.ts (Índice Maestro)
 ```
+
+### Reglas de Modificación de Plantillas
+1. **Edición:** Nunca editar la base de datos SQL manualmente. Las plantillas se editan vía `TemplateEditor.tsx` en el UI o editando los `.json` locales.
+2. **Sincronización:** Una vez editado el JSON, se debe apretar el botón "Recuperar JSONs del Sistema" en el Dashboard de Vercel. Esto ejecuta el POST a `/api/setup-templates` y vuelca los .json en Supabase.
+3. **Nomenclatura:** Los archivos json deben empezar con `XX_` para asegurar orden numérico. Sus 'ids' son planos, ej. `bienvenida_prospecto`.
 
 ---
 
-## 🟡 2. FLUJO IVA
+## ⚠️ 2. Regla Crítica: Meta Cloud API (WhatsApp Limits)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         MENÚ IVA                                 │
-│                         id: menu_iva                             │
-│                                                                  │
-│  "🧾 Aquí están tus declaraciones de IVA. ¿Cuál necesitas?"     │
-│                                                                  │
-│  LISTA: [{{iva_list}}]                                          │
-│  BOTONES: [Solicitar IVA, Ver otro IVA, ← Volver]               │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-┌───────────────┐     ┌───────────────┐     ┌──────────────┐
-│ IVA NO DISP.  │     │ SOLICITAR IVA │     │ VER IVA      │
-│iva_no_dispon. │     │iva_solicitar  │     │iva_ver_doc   │
-│               │     │               │     │              │
-│ → Solicitar   │     │ → ¿Contactar? │     │ → Envía doc  │
-│ → Asesor      │     │ → Sí: Derivar │     │ → Otro período
-└───────────────┘     └───────────────┘     └──────────────┘
-```
-
-**Condiciones:**
-- `menu_iva` requiere: `min_document_count: 1`, `required_document_type: 'iva'`
-- Fallback: `iva_no_disponible`
+**ESTRICTAMENTE PROHIBIDO VIOLAR ESTA LEY.**
+Meta rechaza (Http 400 Bad Request) cualquier lista interactiva silenciosamente si detecta este error:
+*   **Título del botón Lista:** Longitud máxima MUNDIAL de **24 caracteres**.
+*   Los Emojis pueden contar como 2, 3 o hasta 5 caracteres (Ej: 👨‍💼 son 5 caracteres).
+*   *Nunca* usar listas con nombres tipo `"👨‍💼 Hablar con un Asesor"`. Se debe usar `"📞 Hablar con Asesor"`.
+*   **Descripción del botón Lista:** Máximo 72 caracteres.
 
 ---
 
-## 🔵 3. FLUJO RENTA
+## 🟢 3. Flujo Dinámico UI (Canvas)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        MENÚ RENTA                                │
-│                        id: menu_renta                            │
-│                                                                  │
-│  "📊 ¿Qué necesitas de tu declaración de renta?"                 │
-│                                                                  │
-│  LISTA: [{{renta_list}}]                                        │
-│  BOTONES: [Solicitar, Ver otra, ← Volver]                       │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-┌───────────────┐     ┌───────────────┐     ┌──────────────┐
-│ SOLICITAR     │     │ VER RENTA     │     │ INFO RENTA   │
-│renta_solicitar│     │renta_ver_doc  │     │tramite_renta │
-│               │     │               │     │              │
-│ → ¿Confirmas? │     │ → Envía doc   │     │ → Más info   │
-│ → Derivar     │     │ → Otra decl.  │     │ → Cotizar    │
-└───────────────┘     └───────────────┘     └──────────────┘
-```
+El Builder UI en el Dashboard lee los "flujos" trazando la variable `next_template_id`.
+*   El Canvas tiene pestañas para separar visualmente: `[ 🔍 Prospectos ]` vs `[ 👤 Clientes ]` vs `[ Global ]`.
+*   Las posiciones `X/Y` se guardan en el `localStorage`.
+*   Al apretar **✨ Auto** en el UI, el Canvas lee las conexiones reales (flechas lógicas) basándose puramente en lo guardado en Supabase, y las dibuja cayendo desde Y=80.
 
 ---
 
-## 🟣 4. FLUJO NÓMINA
+## 🧑‍💻 4. Lógica de Perfiles de WhatsApp
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                       MENÚ NÓMINA                                │
-│                       id: menu_nomina                            │
-│                                                                  │
-│  "👥 ¿Qué necesitas de nóminas?"                                 │
-│                                                                  │
-│  LISTA: [Liquidaciones, Contratos, Solicitar]                   │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-┌───────────────┐     ┌───────────────┐     ┌──────────────┐
-│ LIQUIDACIONES │     │ CONTRATOS     │     │ SOLICITAR    │
-│nomina_liq.    │     │nomina_cont.   │     │nomina_sol.   │
-│               │     │               │     │              │
-│ • Última liq. │     │ • Ver contrato│     │ → Derivar    │
-│ • Ver todas   │     │ → Volver      │     │              │
-│ → Volver      │     │               │     │              │
-└───────────────┘     └───────────────┘     └──────────────┘
-        │                     │
-        ▼                     ▼
-┌───────────────┐     ┌───────────────┐
-│ VER LIQ.      │     │ VER CONTRATO  │
-│nomina_ver_liq │     │nomina_ver_cont│
-│               │     │               │
-│ → Envía doc   │     │ → Envía doc   │
-│ → Otra liq.   │     │ → Volver      │
-└───────────────┘     └───────────────┘
-```
-
----
-
-## 🟠 5. FLUJO BALANCES
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      MENÚ BALANCES                               │
-│                      id: menu_balance                            │
-│                                                                  │
-│  "📈 ¿Qué balances necesitas?"                                   │
-│                                                                  │
-│  LISTA: [Mensual, Anual, Solicitar]                             │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-┌───────────────┐     ┌───────────────┐     ┌──────────────┐
-│ SOLICITAR     │     │ VER BALANCE   │     │              │
-│balance_sol.   │     │balance_ver_doc│     │              │
-│               │     │               │     │              │
-│ → Derivar     │     │ → Envía doc   │     │              │
-│ → Volver      │     │ → Otro balance│     │              │
-└───────────────┘     └───────────────┘     └──────────────┘
-```
-
----
-
-## 🔴 6. FLUJO COBRANZA
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                   RECORDATORIO PAGO                              │
-│                 id: cobranza_recordatorio                        │
-│                                                                  │
-│  "Estimado cliente, te recordamos que tu pago está pendiente..."│
-│                                                                  │
-│  BOTONES: [Ver detalles, 💳 Ya pagué]                           │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┴─────────────────────┐
-        ▼                                           ▼
-┌───────────────┐                           ┌───────────────┐
-│ DETALLES      │                           │ CONFIRMAR     │
-│cobranza_det.  │                           │cobranza_conf. │
-│               │                           │               │
-│ → Asesor      │                           │ → Aceptar     │
-│ → Volver      │                           │ → Gracias     │
-└───────────────┘                           └───────────────┘
-```
-
----
-
-## 🟣 7. FLUJO PROSPECTO
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                   BIENVENIDA PROSPECTO                           │
-│                 id: bienvenida_prospecto                         │
-│                                                                  │
-│  "¡Hola! 👋 Bienvenido a MTZ Consultores..."                    │
-│                                                                  │
-│  BOTONES: [Cotizar servicio, Ver servicios, Contactar asesor]   │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-┌───────────────┐     ┌───────────────┐     ┌──────────────┐
-│ COTIZAR       │     │ SERVICIOS     │     │ ASESOR       │
-│cotizacion_info│     │servicios_gen. │     │derivacion_as.│
-│               │     │               │     │              │
-│ → Tengo info  │     │ LISTA:        │     │ → ¿Llamar?   │
-│ → Que llamen  │     │ • IVA, Renta  │     │ → Gracias    │
-│               │     │ • Cotizar     │     │              │
-└───────────────┘     └───────────────┘     └──────────────┘
-        │
-        ▼
-┌───────────────┐
-│ COTIZAR REC.  │
-│cotiz_recoger  │
-│               │
-│ → Envía datos │
-└───────────────┘
-```
-
----
-
-## ⚪ 8. FLUJOS TRANSVERSALES
-
-### Derivación a Asesor
-```
-derivacion_asesor → derivacion_confirmar → gracias
-```
-
-### Cierre
-```
-gracias → [🔄 Nueva consulta → menu_principal_cliente]
-```
-
-### Actualización de Datos
-```
-actualizar_email → menu_mis_datos
-actualizar_telefono → menu_mis_datos
-vincular_empresa → derivacion_asesor / menu_empresas
-```
-
----
-
-## 📋 Tabla de Referencia Rápida
-
-| ID Plantilla | Categoría | Segmento | Workflow | next_template_ids |
-|--------------|-----------|----------|----------|-------------------|
-| `menu_principal_cliente` | bienvenida | cliente | atencion | menu_documentos, menu_mis_datos, menu_tramites |
-| `menu_mis_datos` | general | cliente | general | actualizar_email, actualizar_telefono, menu_empresas |
-| `menu_empresas` | general | cliente | general | vincular_empresa, derivacion_asesor |
-| `menu_tramites` | tramites | cliente | documentos | menu_iva, menu_renta, menu_nomina, menu_balance |
-| `menu_iva` | tramites | cliente | iva | iva_solicitar, iva_ver_documento |
-| `menu_renta` | tramites | cliente | renta | renta_solicitar, renta_ver_documento |
-| `menu_nomina` | tramites | cliente | nomina | nomina_liquidaciones, nomina_contratos |
-| `menu_balance` | tramites | cliente | documentos | balance_solicitar, balance_ver_documento |
-| `bienvenida_prospecto` | bienvenida | prospecto | atencion | cotizacion_info, servicios_general, derivacion_asesor |
-| `derivacion_asesor` | general | todos | asesor | derivacion_confirmar, gracias |
-| `gracias` | general | todos | general | menu_principal_cliente |
-
----
-
-## 🔧 Mantenimiento
-
-### Agregar nueva plantilla
-1. Crear archivo en `app/components/templates/data/` o agregar a existente
-2. Exportar con `id` único
-3. Agregar al `DEFAULT_TEMPLATES` en `index.ts`
-4. Actualizar este documento
-
-### Verificar referencias rotas
-```sql
--- En Supabase, verificar que todos los next_template_id existan
-SELECT DISTINCT action->>'next_template_id' as ref
-FROM templates, jsonb_array_elements(actions) as action
-WHERE action->>'next_template_id' IS NOT NULL
-EXCEPT
-SELECT id FROM templates;
-```
-
----
-
-**Generado automáticamente desde el análisis de código - 2026-04-11**
+Desde Abril 2026, el sistema usa `contacts[].profile.name` directamente del webhook de la API de Cloud de WhatsApp para extraer el nombre Real de WhatsApp del contacto.
+* Se removió el antiguo parche temporal de revisar el campo inválido `customers` de Meta.
+* La ruta `/api/webhook/route.ts` mapea la `wa_id` y captura el nombre.
+* Todo cae a `database-service.ts` -> `getOrCreateContact(phone, profileName)` para guardar de forma permanente su nombre en vez de decirle "cliente".
+* Las condicionales en el webhook permiten doble fallo. Si el webhook de un prospecto no halla la plantilla por el `id` exacto (Ej: fue renombrado), buscará en la base de datos la primer coincidencia de "hola" para un Prospecto como mecanismo redundante de seguridad.
