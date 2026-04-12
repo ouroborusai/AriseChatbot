@@ -174,7 +174,7 @@ async function sendDefaultMenu(phoneNumber: string, contactId: string, conversat
 /**
  * Procesa la respuesta de una plantilla de forma segura
  */
-async function processTemplateResponse(
+export async function processTemplateResponse(
   phoneNumber: string,
   template: Template,
   context: TemplateContext,
