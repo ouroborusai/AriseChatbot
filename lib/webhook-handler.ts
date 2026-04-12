@@ -205,8 +205,8 @@ export async function handleInboundUserMessage(messageData: {
       }
 
       // Manejo de entrada de datos (ej: RUTs, Períodos) basado en el contexto previo
-      const history = await ContextService.getConversationHistory(conversationId);
-      const lastBtn = ContextService.getLastButtonFromHistory(history);
+      const appHistory = await ContextService.getConversationHistory(conversationId);
+      const lastBtn = ContextService.getLastButtonFromHistory(appHistory);
       if (lastBtn) {
         const periodResult = await handlePeriodText(text, lastBtn, phoneNumber, conversationId, contact.id, activeCompanyId);
         if (periodResult.handled) return;

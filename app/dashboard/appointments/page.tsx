@@ -108,7 +108,7 @@ export default function AppointmentsPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
