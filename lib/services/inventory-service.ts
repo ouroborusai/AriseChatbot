@@ -140,6 +140,20 @@ export class InventoryService {
   }
 
   /**
+   * Genera un resumen textual rápido del stock para uso de la IA
+   */
+  static async getBriefStockSummary(companyId: string): Promise<string> {
+    const items = await this.getItems(companyId);
+    
+    if (items.length === 0) return 'Sin productos en inventario.';
+    
+    return items.map(i => {
+      const status = i.min_stock_alert && i.current_stock <= i.min_stock_alert ? '(CRÍTICO)' : '';
+      return `${i.name}: ${i.current_stock} ${i.unit || 'uds'} ${status}`;
+    }).join(', ');
+  }
+
+  /**
    * Crea un nuevo producto
    */
   static async createItem(companyId: string, name: string, unit: string = 'unidad'): Promise<InventoryItem | null> {

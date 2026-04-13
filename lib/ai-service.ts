@@ -21,6 +21,25 @@ const openai =
     : null;
 
 /**
+ * Obtiene el estado de salud de todo el cluster de IA
+ */
+export function getAiClusterStatus() {
+  const allKeys = (process.env.GEMINI_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
+  const now = Date.now();
+  return allKeys.map((key, index) => {
+    const cooldownUntil = keyCooldowns[index] || 0;
+    const isReady = now > cooldownUntil;
+    return {
+      index: index + 1,
+      name: `Core-IA #${index + 1}`,
+      status: isReady ? 'online' : 'cooldown',
+      cooldownRemaining: isReady ? 0 : Math.ceil((cooldownUntil - now) / 1000),
+      isCurrent: index === globalKeyPointer
+    };
+  });
+}
+
+/**
  * Registra el uso de la API en la base de datos para monitoreo
  */
 async function logAiUsage(data: {

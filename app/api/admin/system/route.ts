@@ -12,39 +12,26 @@ export async function GET() {
     const supabase = getSupabaseAdmin();
     const { data: usageData } = await supabase.from('ai_api_usage_today').select('*');
     
-    const health = await Promise.all(keys.map(async (key, i) => {
-      const displayName = names[i] || `Réplica de Soporte #${i + 1}`;
-      const stats = usageData?.find(u => u.key_index === i + 1) || { total_requests: 0, total_tokens: 0 };
+    // Obtener estado de rotación en tiempo real del servidor
+    const { getAiClusterStatus } = await import('@/lib/ai-service');
+    const clusterStatus = getAiClusterStatus();
+
+    const health = clusterStatus.map((node) => {
+      const displayName = names[node.index - 1] || `Réplica de Soporte #${node.index}`;
+      const stats = usageData?.find(u => u.key_index === node.index) || { total_requests: 0, total_tokens: 0 };
       
-      try {
-        const genAI = new GoogleGenerativeAI(key);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        // Intento mínimo de generación para validar
-        await model.generateContent({ contents: [{ role: 'user', parts: [{ text: 'hi' }] }] });
-        
-        return {
-          id: i + 1,
-          name: displayName,
-          status: 'active',
-          label: 'Operativa',
-          requestsToday: stats.total_requests,
-          tokensToday: stats.total_tokens,
-          lastMeasured: new Date().toISOString()
-        };
-      } catch (err: any) {
-        const isQuota = err.message?.includes('429') || err.message?.includes('quota');
-        return {
-          id: i + 1,
-          name: displayName,
-          status: isQuota ? 'exhausted' : 'error',
-          label: isQuota ? 'Agotada (429)' : 'Error de Conexión',
-          requestsToday: stats.total_requests,
-          tokensToday: stats.total_tokens,
-          error: err.message,
-          lastMeasured: new Date().toISOString()
-        };
-      }
-    }));
+      return {
+        id: node.index,
+        name: displayName,
+        status: node.status === 'online' ? 'active' : 'exhausted',
+        label: node.status === 'online' ? 'Operativa' : `Enfriando (${node.cooldownRemaining}s)`,
+        requestsToday: stats.total_requests,
+        tokensToday: stats.total_tokens,
+        isCurrent: node.isCurrent,
+        cooldownRemaining: node.cooldownRemaining,
+        lastMeasured: new Date().toISOString()
+      };
+    });
 
     return NextResponse.json({ success: true, keys: health });
   } catch (error: any) {
