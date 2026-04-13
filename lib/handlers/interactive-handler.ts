@@ -25,7 +25,7 @@ export class InteractiveHandler {
     const { contact, companies, activeCompanyId } = context;
 
     // 1. Clasificación / Etiquetas
-    const classification = await handleClassification(interactiveId, contact);
+    const classification = await handleClassification(interactiveId, contact as Contact);
     if (classification.handled) {
       if (classification.response) await sendWhatsAppMessage(phoneNumber, classification.response);
       return true;

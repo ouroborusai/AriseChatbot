@@ -134,6 +134,7 @@ export class InventoryHandler extends BaseHandler {
       await sendWhatsAppMessage(phoneNumber, res);
       
       // Registrar en historial (Refactorizado)
+      const { getSupabaseAdmin } = await import('../supabase-admin');
       const { data: conv } = await getSupabaseAdmin().from('conversations').select('id').eq('phone_number', phoneNumber).maybeSingle();
       if (conv) await this.saveAssistantResponse(res, conv.id);
 
@@ -181,6 +182,7 @@ export class InventoryHandler extends BaseHandler {
     await sendWhatsAppMessage(phoneNumber, res);
     
     // Registrar en historial (Refactorizado)
+    const { getSupabaseAdmin } = await import('../supabase-admin');
     const { data: conv } = await getSupabaseAdmin().from('conversations').select('id').eq('phone_number', phoneNumber).maybeSingle();
     if (conv) await this.saveAssistantResponse(res, conv.id);
 
