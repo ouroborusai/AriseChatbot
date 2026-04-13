@@ -11,6 +11,7 @@ import {
   ClientDocument as ClientDocumentRow,
   ServiceRequest,
   Message,
+  Appointment,
 } from './types';
 
 function normalizePhoneNumber(phone: string): string {
@@ -349,6 +350,39 @@ export async function createServiceRequest(
 
   console.log('[DB] Service request created:', data?.id);
   return data as ServiceRequest;
+}
+
+/**
+ * Crea una nueva cita en la agenda
+ */
+export async function createAppointment(
+  contactId: string,
+  appointmentDate: string,
+  appointmentTime: string,
+  notes: string,
+  companyId?: string | null
+): Promise<Appointment | null> {
+  console.log('[DB] Creating appointment:', { contactId, appointmentDate, appointmentTime, companyId });
+  
+  const { data, error } = await getSupabaseAdmin()
+    .from('appointments')
+    .insert({
+      contact_id: contactId,
+      company_id: companyId || null,
+      appointment_date: appointmentDate,
+      appointment_time: appointmentTime,
+      notes,
+      status: 'pending',
+    })
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('[DB] Error creating appointment:', error.message);
+    return null;
+  }
+
+  return data as Appointment;
 }
 
 export async function getServiceRequestsForContact(contactId: string): Promise<ServiceRequest[]> {

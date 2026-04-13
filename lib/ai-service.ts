@@ -286,4 +286,40 @@ export async function transcribeAudio(audioBuffer: Buffer, fileName: string): Pr
     return 'Mensaje de voz (error de procesamiento Google)';
   }
 }
+/**
+ * Extrae datos de inventario desde una imagen (Factura/Guía)
+ */
+export async function extractInventoryFromImage(imageUrl: string): Promise<{ items: any[], total: number }> {
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!geminiKey) return { items: [], total: 0 };
 
+  try {
+    const genAI = new GoogleGenerativeAI(geminiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-lite" });
+
+    const imageRes = await fetch(imageUrl);
+    const arrayBuffer = await imageRes.arrayBuffer();
+    
+    const response = await model.generateContent([
+      {
+        inlineData: {
+          data: Buffer.from(arrayBuffer).toString('base64'),
+          mimeType: "image/jpeg"
+        }
+      },
+      { 
+        text: `Extrae los productos de esta factura para inventario. 
+        Responde ESTRICTAMENTE en JSON con este formato:
+        { "items": [{ "n": "nombre corto", "q": cantidad, "u": "unidad", "p": precio_unitario }], "total": monto_total }
+        Si no hay productos claros, devuelve { "items": [], "total": 0 }.` 
+      }
+    ]);
+
+    const text = response.response.text();
+    const cleaned = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error('[AI] Error extractInventory:', error);
+    return { items: [], total: 0 };
+  }
+}

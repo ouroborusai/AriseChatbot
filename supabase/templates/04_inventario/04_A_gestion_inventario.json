@@ -1,0 +1,41 @@
+{
+  "id": "gestion_inventario",
+  "name": "📦 Gestión de Inventario",
+  "category": "cliente",
+  "trigger": "btn_inventario",
+  "is_active": true,
+  "content": "📦 *GESTIÓN DE INVENTARIO*\n\nSelecciona una operación o ingresa una carga rápida con el formato:\n_Producto, Cantidad, RUT, Neto, Factura, Proveedor_",
+  "actions": [
+    {
+      "type": "list",
+      "buttonText": "📦 Menú Inventario",
+      "sections": [
+        {
+          "title": "Operaciones de Stock",
+          "rows": [
+            {
+              "id": "inv_report",
+              "title": "📋 Ver Stock Actual",
+              "description": "Reporte de existencias"
+            },
+            {
+              "id": "inv_add",
+              "title": "➕ Registrar Entrada",
+              "description": "Sumar stock a un producto"
+            },
+            {
+              "id": "inv_withdraw",
+              "title": "➖ Registrar Salida",
+              "description": "Descontar stock (Venta/Merma)"
+            },
+            {
+              "id": "inv_new",
+              "title": "✨ Crear Nuevo Producto",
+              "description": "Agregar ítem al catálogo"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

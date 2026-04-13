@@ -63,9 +63,48 @@ export class AppointmentHandler extends BaseHandler {
   }
 
   /**
+   * Maneja botones directos de la nueva plantilla agendar_cita
+   */
+  async handleQuickAppointment(phoneNumber: string, actionId: string, conversationId: string): Promise<HandlerResponse> {
+    console.log(`[AppointmentHandler] Procesando cita rápida: ${actionId}`);
+    
+    let targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + 1); // Mañana por defecto
+    
+    let targetTime = "09:00";
+    let label = "Mañana (AM)";
+
+    if (actionId === 'reunion_tarde') {
+      targetTime = "15:00";
+      label = "Tarde (PM)";
+    }
+
+    const dateStr = targetDate.toISOString().split('T')[0];
+
+    const { error } = await getSupabaseAdmin()
+      .from('appointments')
+      .insert({
+        contact_id: this.context.contact.id,
+        company_id: this.context.activeCompanyId || null,
+        appointment_date: dateStr,
+        appointment_time: targetTime,
+        status: 'pending',
+        notes: `Solicitud rápida: ${label} (vía plantilla industrial)`
+      });
+
+    if (error) {
+      console.error('[AppointmentHandler] Error quick appt:', error);
+      return { handled: false };
+    }
+
+    return { handled: true };
+  }
+
+  /**
    * Guarda la cita final
    */
   async confirmAppointment(phoneNumber: string, timeId: string, conversationId: string): Promise<HandlerResponse> {
+
     // ID format: appt_time_YYYY-MM-DD_HH:MM
     const parts = timeId.split('_');
     const date = parts[2];

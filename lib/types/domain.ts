@@ -90,4 +90,40 @@ export interface ServiceRequest {
   created_at?: string;
   updated_at?: string;
 }
+export interface Appointment {
+  id: string;
+  contact_id: string;
+  company_id?: string | null;
+  appointment_date: string;
+  appointment_time: string;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  company_id: string;
+  name: string;
+  sku?: string | null;
+  unit?: string | null;
+  current_stock: number;
+  last_purchase_price?: number | null;
+  min_stock_alert?: number | null;
+  metadata?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface InventoryTransaction {
+  id: string;
+  item_id: string;
+  type: 'in' | 'out' | 'adjustment';
+  quantity: number;
+  source_type?: string | null;
+  source_id?: string | null;
+  notes?: string | null;
+  created_at?: string;
+}
 

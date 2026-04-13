@@ -71,6 +71,7 @@ export async function handleInboundUserMessage(messageData: {
       if (context.lastAction === 'buzon_recepcion') {
         const typeLabel = document ? 'documento' : 'foto';
         await saveMessage(conversationId, 'user', `[Archivo recibido: ${typeLabel} ID ${mediaId}]`);
+
         await sendWhatsAppMessage(phoneNumber, `✅ He recibido tu ${typeLabel} correctamente. Lo guardaré en tu expediente para que el contador lo revise. ¿Necesitas enviar algo más?`);
         return;
       }
@@ -189,7 +190,15 @@ export async function handleInboundUserMessage(messageData: {
       
       // Manejo de Citas (Nuevo)
       const apptHandler = new AppointmentHandler(context);
+      
+      // Soporte para botones rápidos de la plantilla industrial
+      if (interactive === 'reunion_manana' || interactive === 'reunion_tarde') {
+        await apptHandler.handleQuickAppointment(phoneNumber, interactive, conversationId);
+        // Dejamos que siga el flujo para mostrar la plantilla de confirmación
+      }
+
       if (interactive === 'agendar_cita' || interactive === 'appt_start') {
+
         await apptHandler.startBooking(phoneNumber);
         return;
       }
@@ -226,6 +235,45 @@ export async function handleInboundUserMessage(messageData: {
         return;
       }
       
+      const { InventoryHandler } = await import('./handlers/inventory-handler');
+      const invHandler = new InventoryHandler(context);
+
+      if (interactive === 'inv_report') {
+        await invHandler.showStockSummary(phoneNumber);
+        await sendWhatsAppInteractiveButtons(phoneNumber, "¿Deseas realizar otra gestión?", [
+          { id: 'gestion_inventario', title: '📦 Volver Inventario' },
+          { id: 'menu_principal_cliente', title: '🏠 Menú Inicio' }
+        ]);
+        return;
+      }
+
+      if (interactive === 'inv_add') {
+        await invHandler.showAddOptions(phoneNumber);
+        return;
+      }
+
+      if (interactive === 'inv_new') {
+        await sendWhatsAppMessage(phoneNumber, '✨ *CREAR PRODUCTO*\n\nPor favor, responde con el nombre y unidad de medida.\n\nEjemplo: *Harina Especial 25kg*');
+        return;
+      }
+      
+      if (interactive === 'inv_withdraw') {
+        await invHandler.showWithdrawOptions(phoneNumber);
+        return;
+      }
+
+      if (interactive.startsWith('inv_in_')) {
+        const itemId = interactive.replace('inv_in_', '');
+        await sendWhatsAppMessage(phoneNumber, `Has seleccionado el producto. Por favor, escribe la *cantidad a SUMAR* (ej: 10).`);
+        return;
+      }
+
+      if (interactive.startsWith('inv_out_')) {
+        const itemId = interactive.replace('inv_out_', '');
+        await sendWhatsAppMessage(phoneNumber, `Has seleccionado el producto. Por favor, escribe la *cantidad a DESCONTAR* (ej: 5).`);
+        return;
+      }
+
       const nextTemplate = await TemplateService.findTemplateByActionId(interactive, contact.segment || 'prospecto');
       if (nextTemplate) {
         await processTemplateResponse(phoneNumber, nextTemplate, context, navState, conversationId);
@@ -235,7 +283,14 @@ export async function handleInboundUserMessage(messageData: {
 
     // Manejo de Saludos y Triggers de Texto
     if (text) {
-      // CAPTURA INDUSTRIAL: Si el usuario está en flujo de trámites, guardamos el texto como una solicitud
+      // CAPTURA DE INVENTARIO ESTRUCTURADO
+      if (text.includes(',') && (context.lastAction === 'inv_add' || context.lastAction === 'gestion_inventario')) {
+        const { InventoryHandler } = await import('./handlers/inventory-handler');
+        const invHandler = new InventoryHandler(context);
+        await invHandler.handleStructuredInput(phoneNumber, text);
+        return;
+      }
+
       if (context.lastAction === 'solicitud_tramite' && text.length > 5 && !text.includes('Menu')) {
          console.log(`[Webhook] ⚙️ Capturando solicitud de trámite: "${text}"`);
          const { createServiceRequest } = await import('./database-service');
