@@ -61,13 +61,26 @@ export function useConversations() {
     const contactChannelName = `contact-${channelId}`;
 
     const msgChannel = supabase.channel(msgChannelName)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
         console.log('[Realtime] Nuevo mensaje detectado');
+        
+        // Alerta sonora industrial para mensajes del usuario
+        if (payload.new && payload.new.role === 'user') {
+          try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.warn('[Audio] El navegador bloqueó la reproducción automática:', e));
+          } catch (err) {
+            console.error('[Audio] Error inicializando objeto de sonido:', err);
+          }
+        }
+        
         fetchMessages();
       })
       .subscribe((status) => {
         setRealtimeStatus(status === 'SUBSCRIBED' ? '🟢 En vivo' : '🔴 Desconectado');
       });
+
 
     const contactChannel = supabase.channel(contactChannelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => fetchContacts())
