@@ -6,7 +6,7 @@ import { getSupabaseAdmin } from '../lib/supabase-admin';
  * Simula interacciones reales con el cluster de 8 llaves
  */
 async function runHumanTests() {
-  const testPhone = '56930155259';
+  const testPhone = '56990062213';
   const supabase = getSupabaseAdmin();
   
   console.log('🚀 PREPARANDO ESCENARIO REAL...');
@@ -14,13 +14,13 @@ async function runHumanTests() {
   // 1. Asegurar contacto y segmento
   const { data: contact } = await supabase.from('contacts').update({ segment: 'cliente' }).eq('phone_number', testPhone).select().single();
   
-  // 2. Buscar empresa específica (LA QUE USÓ LA IA EN EL LOG ANTERIOR)
+  // 2. Usar la empresa específica que el bot tiene vinculada para este test (MTZ Consultores)
   const targetId = '687278c6-88d1-4172-a8e2-a6775adbb073';
   const { data: company } = await supabase.from('companies').select('id, legal_name').eq('id', targetId).single();
   
   if (company && contact) {
     const companyId = company.id;
-    console.log(`🔍 Empresa objetivo FORZADA: ${company.legal_name} (${companyId})`);
+    console.log(`🔍 Empresa objetivo SINCRONIZADA: ${company.legal_name} (${companyId})`);
 
     // Vincular empresa y marcar PRIMARIA
     await supabase.from('contact_companies').upsert({ contact_id: contact.id, company_id: companyId, is_primary: true });
@@ -38,7 +38,7 @@ async function runHumanTests() {
     const { data: newItem } = await supabase.from('inventory_items').insert({
         company_id: companyId,
         name: 'Harina Flor',
-        unit: 'sacos',
+        unit: 'unidad',
         current_stock: 45,
         min_stock_alert: 10
     }).select().single();
@@ -80,7 +80,10 @@ async function runHumanTests() {
 
       await handleInboundUserMessage(payload);
       
-      // ESPERAR Y BUSCAR RESPUESTA EN DB PARA MOSTRARLA
+      // ESPERAR MÁS TIEMPO PARA QUE LA IA RESPONDA Y GUARDE EN DB
+      await new Promise(r => setTimeout(r, 4000));
+      
+      // BUSCAR RESPUESTA EN DB PARA MOSTRARLA
       const { data: conv } = await supabase.from('conversations').select('id').eq('phone_number', testPhone).single();
       if (conv) {
         const { data: msg } = await supabase.from('messages')
@@ -94,7 +97,7 @@ async function runHumanTests() {
         console.log(`\n🤖 BOT: "${msg?.content}"`);
       }
       
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 2000));
     } catch (err) {
       console.error(`❌ Error en ${scenario.name}:`, err);
     }

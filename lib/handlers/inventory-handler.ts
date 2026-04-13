@@ -133,6 +133,11 @@ export class InventoryHandler extends BaseHandler {
 
       await sendWhatsAppMessage(phoneNumber, res);
       
+      // Registrar respuesta en historial
+      const { saveMessage } = await import('../database-service');
+      const { data: conv } = await getSupabaseAdmin().from('conversations').select('id').eq('phone_number', phoneNumber).maybeSingle();
+      if (conv) await saveMessage(conv.id, 'assistant', res);
+
       const { sendWhatsAppInteractiveButtons } = await import('../whatsapp-service');
       await sendWhatsAppInteractiveButtons(phoneNumber, "¿Deseas realizar otra gestión?", [
         { id: 'gestion_inventario', title: '📦 Volver Inventario' },
@@ -176,6 +181,11 @@ export class InventoryHandler extends BaseHandler {
 
     await sendWhatsAppMessage(phoneNumber, res);
     
+    // Registrar respuesta en historial
+    const { saveMessage } = await import('../database-service');
+    const { data: conv } = await getSupabaseAdmin().from('conversations').select('id').eq('phone_number', phoneNumber).maybeSingle();
+    if (conv) await saveMessage(conv.id, 'assistant', res);
+
     const { sendWhatsAppInteractiveButtons } = await import('../whatsapp-service');
     await sendWhatsAppInteractiveButtons(phoneNumber, "¿Qué deseas hacer?", [
       { id: 'inv_report', title: '📋 Ver Todo el Stock' },

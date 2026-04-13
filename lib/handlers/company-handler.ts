@@ -141,8 +141,8 @@ export class CompanyHandler extends BaseHandler {
         return { handled: true };
       }
       
-      await sendWhatsAppMessage(phoneNumber, 'No encontré esa empresa en tu lista. ¿Podrías escribir el nombre más exacto?');
-      return { handled: true };
+      // Si no hay match claro, dejamos que siga el flujo (IA, etc.)
+      console.log(`[CompanyHandler] ℹ️ No hay match de empresa para: "${query}". Continuando flujo...`);
     }
 
     return { handled: false };

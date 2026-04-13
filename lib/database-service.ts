@@ -269,8 +269,12 @@ export async function listCompaniesForContact(contactId: string): Promise<Compan
     return [];
   }
 
+  // Mapeo robusto: manejar si companies viene como objeto o array
   return (data || [])
-    .map((r: any) => r.companies)
+    .map((r: any) => {
+      const c = Array.isArray(r.companies) ? r.companies[0] : r.companies;
+      return c;
+    })
     .filter(Boolean) as Company[];
 }
 

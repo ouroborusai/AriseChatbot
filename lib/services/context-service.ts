@@ -23,7 +23,8 @@ export class ContextService {
     conversationId: string
   ): Promise<TemplateContext> {
     try {
-      console.log(`[ContextService] 🏗️ Construyendo contexto para ${contact.name}...`);
+      const displayName = contact.name || contact.phone_number || 'cliente';
+      console.log(`[ContextService] 🏗️ Construyendo contexto para ${displayName}...`);
       
       // 1. Obtener documentos recientes (Blindado)
       let documents: ClientDocument[] = [];
