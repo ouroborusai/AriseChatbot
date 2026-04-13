@@ -237,4 +237,55 @@ export class InventoryHandler extends BaseHandler {
       }]
     });
   }
+
+  /**
+   * Procesa un ingreso de inventario detectado por IA desde lenguaje natural
+   */
+  async handleNaturalInventoryAdd(phoneNumber: string, data: any): Promise<boolean> {
+    try {
+      if (!data.producto || !data.cantidad) return false;
+      if (!this.context.activeCompanyId) return false;
+
+      const providerRut = data.proveedor_rut || '76.000.000-0';
+      const providerName = data.proveedor_nombre || 'Proveedor Indeterminado';
+      const montoNeto = Number(data.monto_neto) || 0;
+      const montoTotal = Math.round(montoNeto * 1.19);
+      const montoIva = montoTotal - montoNeto;
+
+      const result = await InventoryService.registerTransaction({
+        companyId: this.context.activeCompanyId,
+        itemName: data.producto,
+        quantity: Number(data.cantidad),
+        unit: data.unidad || 'unidades',
+        type: 'in',
+        providerName: providerName,
+        providerRut: providerRut,
+        netAmount: montoNeto,
+        docNumber: data.numero_documento ? String(data.numero_documento) : undefined,
+        notes: `IA Extract: ${data.proveedor_nombre || 'S/P'}`
+      });
+
+      if (result.success) {
+        const stockStatus = result.isLow ? '🚨 ¡Atención! Stock Crítico.' : '✅ Stock Óptimo.';
+        const responseText = `*📦 INGRESO DETECTADO (IA)*\n\n` +
+          `🔹 *Producto:* ${data.producto}\n` +
+          `🔹 *Cantidad:* ${data.cantidad} ${data.unidad || 'unidades'}\n` +
+          `🔹 *Proveedor:* ${providerName}\n` +
+          `🔹 *Documento:* ${data.numero_documento || 'No especificado'}\n` +
+          `💰 *Monto Neto:* $${montoNeto.toLocaleString('es-CL')}\n` +
+          `💵 *Monto Total:* $${montoTotal.toLocaleString('es-CL')}\n\n` +
+          `📉 *Stock Actual:* ${result.newStock} ${data.unidad || 'unidades'}\n` +
+          `${stockStatus}\n\n` +
+          `_He registrado este movimiento automáticamente._`;
+
+        await sendWhatsAppMessage(phoneNumber, responseText);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('[InventoryHandler] Error in natural add:', error);
+      return false;
+    }
+  }
 }

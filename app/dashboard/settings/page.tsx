@@ -13,8 +13,23 @@ type EnvConfig = {
 
 export default function SettingsPage() {
   const [config, setConfig] = useState<EnvConfig | null>(null);
+  const [aiKeys, setAiKeys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkingHealth, setCheckingHealth] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const fetchHealth = async () => {
+    setCheckingHealth(true);
+    try {
+      const res = await fetch('/api/admin/system');
+      const data = await res.json();
+      if (data.success) setAiKeys(data.keys);
+    } catch (e) {
+      console.error('Error fetching health');
+    } finally {
+      setCheckingHealth(false);
+    }
+  };
 
   const handleAction = async (action: string, confirmMsg: string) => {
     if (!confirm(confirmMsg)) return;
@@ -48,6 +63,7 @@ export default function SettingsPage() {
       whatsapp_verify_token: process.env.WHATSAPP_VERIFY_TOKEN || '',
       supabase_url: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     });
+    fetchHealth();
     setLoading(false);
   }, []);
 
@@ -83,6 +99,70 @@ export default function SettingsPage() {
         {/* Lado Izquierdo: Estado de Salud */}
         <div className="lg:col-span-2 space-y-6 md:space-y-8">
           
+          <div className="bg-white rounded-[2.5rem] border border-slate-200 p-6 md:p-10 shadow-sm relative overflow-hidden group">
+            <div className="flex items-center justify-between mb-8">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">IA REPLICA CLUSTER HEALTH</h3>
+                <button 
+                  onClick={fetchHealth}
+                  disabled={checkingHealth}
+                  className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline disabled:opacity-50"
+                >
+                  {checkingHealth ? 'Sincronizando...' : '🔄 Refrescar'}
+                </button>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+              {aiKeys.length > 0 ? (
+                aiKeys.map((key) => (
+                  <div key={key.id} className="p-5 bg-slate-50/80 rounded-[1.8rem] border border-slate-100 flex flex-col gap-3 relative">
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl">🔑</span>
+                            <span className="text-xs font-black text-slate-900 uppercase tracking-tight">{key.name}</span>
+                        </div>
+                        <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter shadow-sm ${
+                            key.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 
+                            key.status === 'exhausted' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
+                        }`}>
+                            {key.label}
+                        </div>
+                     </div>
+                     
+                     {/* Métricas de Uso Actual */}
+                     <div className="flex items-center justify-between px-1">
+                        <div className="flex flex-col">
+                            <span className="text-[8px] font-bold text-slate-400 uppercase leading-none mb-1">Cargas hoy</span>
+                            <div className="flex items-center gap-1">
+                                <span className="text-[10px] font-black text-slate-700">💬 {key.requestsToday || 0}</span>
+                            </div>
+                        </div>
+                        <div className="flex flex-col text-right">
+                            <span className="text-[8px] font-bold text-slate-400 uppercase leading-none mb-1">Tokens</span>
+                            <div className="flex items-center gap-1 justify-end">
+                                <span className="text-[10px] font-black text-slate-700">💎 {key.tokensToday?.toLocaleString() || 0}</span>
+                            </div>
+                        </div>
+                     </div>
+
+                     <div className="flex items-center gap-2 mt-1 pt-2 border-t border-slate-100/60">
+                        <div className={`h-1.5 w-1.5 rounded-full ${
+                            key.status === 'active' ? 'bg-emerald-500 animate-pulse' : 
+                            key.status === 'exhausted' ? 'bg-amber-500' : 'bg-rose-500'
+                        }`} />
+                        <span className="text-[9px] font-bold text-slate-400 tracking-widest uppercase italic">
+                            {key.status === 'active' ? 'Estado Nominal' : key.status === 'exhausted' ? 'Cooldown Requerido' : 'Fallo de Red'}
+                        </span>
+                     </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-2 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">
+                    Inicializando Telemetría...
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="bg-white rounded-[2.5rem] border border-slate-200 p-6 md:p-10 shadow-sm relative overflow-hidden group">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">Service Mesh Status</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">

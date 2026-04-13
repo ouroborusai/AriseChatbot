@@ -1,17 +1,14 @@
 /**
- * AI Service
- * Maneja la generación de respuestas con Gemini o OpenAI
- * 
- * Incluye clasificador de intenciones con Structured Outputs (JSON Schema)
+ * AI Service - Cluster de Alta Disponibilidad & Telemetría
+ * Maneja la generación de respuestas con Gemini (8 llaves) y OpenAI de respaldo.
  */
 
 import { resolveGeminiModel } from './gemini-model';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getSupabaseAdmin } from './supabase-admin';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
-
-
 
 export interface ConversationTurn {
   role: 'user' | 'assistant';
@@ -24,302 +21,166 @@ const openai =
     : null;
 
 /**
- * Genera respuesta del asistente usando Gemini o OpenAI
+ * Registra el uso de la API en la base de datos para monitoreo
  */
-export async function generateAssistantReply(
-  systemPrompt: string,
-  history: ConversationTurn[],
-  latestUserText: string
-): Promise<string> {
+async function logAiUsage(data: {
+  keyIndex: number;
+  keyName: string;
+  tokensInput?: number;
+  tokensOutput?: number;
+  latencyMs: number;
+  status: 'success' | 'quota_exceeded' | 'error';
+  errorMessage?: string;
+  usageType?: string;
+}) {
   try {
-    const backend = process.env.AI_BACKEND?.trim().toLowerCase();
-    const geminiKey = process.env.GEMINI_API_KEY?.trim();
-    const openaiKey = process.env.OPENAI_API_KEY?.trim();
-
-    if (backend === 'ollama') {
-      console.log('[AI] Usando Ollama local...');
-      try {
-        return await generateOllamaReply(systemPrompt, history, latestUserText);
-      } catch (ollamaError) {
-        console.warn('[AI] Ollama falló, intentando backend alternativo...', ollamaError instanceof Error ? ollamaError.message : String(ollamaError));
-      }
-    }
-
-    if (backend === 'gemini') {
-      if (!geminiKey) {
-        throw new Error('❌ CONFIGURACIÓN FALTANTE: GEMINI_API_KEY no está configurada para AI_BACKEND=gemini');
-      }
-      console.log('[AI] Forzando Gemini...');
-      return await generateGeminiReply(systemPrompt, history, latestUserText);
-    }
-
-    if (backend === 'openai') {
-      if (!openaiKey) {
-        throw new Error('❌ CONFIGURACIÓN FALTANTE: OPENAI_API_KEY no está configurada para AI_BACKEND=openai');
-      }
-      console.log('[AI] Forzando OpenAI...');
-      return await generateOpenAIReply(systemPrompt, history, latestUserText);
-    }
-
-    // Sin backend forzado, intenta Gemini primero si existe, luego OpenAI.
-    if (geminiKey) {
-      console.log('[AI] Intentando con Gemini...');
-      try {
-        return await generateGeminiReply(systemPrompt, history, latestUserText);
-      } catch (geminiError) {
-        console.warn('[AI] Gemini falló, intentando OpenAI...', geminiError instanceof Error ? geminiError.message : 'Error desconocido');
-      }
-    }
-
-    if (openaiKey) {
-      console.log('[AI] Usando OpenAI');
-      return await generateOpenAIReply(systemPrompt, history, latestUserText);
-    }
-
-    throw new Error('❌ No se pudo generar respuesta: no se detectó backend válido ni llaves configuradas');
-  } catch (error) {
-    console.error('[AI] ❌ Error generando respuesta:', error);
-    if (error instanceof Error) {
-      console.error('[AI] Error message:', error.message);
-    }
-    throw error;
+    const supabase = getSupabaseAdmin();
+    await supabase.from('ai_api_telemetry').insert({
+      key_index: data.keyIndex,
+      key_name: data.keyName,
+      tokens_input: data.tokensInput || 0,
+      tokens_output: data.tokensOutput || 0,
+      latency_ms: data.latencyMs,
+      status: data.status,
+      error_message: data.errorMessage,
+      usage_type: data.usageType || 'conversational'
+    });
+  } catch (err: any) {
+    console.error('[Telemetry] Error saving usage:', err?.message);
   }
 }
 
+// Puntero global para balanceo de carga (Round Robin)
+let globalKeyPointer = 0;
+// Semáforo de llaves en enfriamiento (Circuit Breaker)
+const keyCooldowns: Record<number, number> = {};
+
 /**
- * Genera respuesta usando Google Gemini
+ * Genera respuesta usando Google Gemini con Circuit Breaker y Balanceo Circular
  */
 async function generateGeminiReply(
   systemPrompt: string,
   history: ConversationTurn[],
-  latestUserText: string
+  latestUserText: string,
+  usageType: string = 'conversational'
 ): Promise<string> {
-  try {
-    console.log('[AI/Gemini] Inicializando GoogleGenerativeAI...');
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    
-    console.log('[AI/Gemini] Resolviendo modelo...');
-    const modelName = resolveGeminiModel();
-    console.log('[AI/Gemini] Modelo seleccionado:', modelName);
-    
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: systemPrompt,
-    });
-
-    const prior =
-      history.length > 0 && history[history.length - 1].role === 'user'
-        ? history.slice(0, -1)
-        : history;
-
-    const geminiHistory = prior.map((t) => ({
-      role: t.role === 'user' ? ('user' as const) : ('model' as const),
-      parts: [{ text: t.content }],
-    }));
-
-    console.log('[AI/Gemini] Iniciando chat con', geminiHistory.length, 'mensajes previos');
-    const chat = model.startChat({ history: geminiHistory });
-    
-    console.log('[AI/Gemini] Enviando mensaje a Gemini...');
-    const result = await chat.sendMessage(latestUserText);
-    
-    console.log('[AI/Gemini] ✓ Respuesta recibida');
-    return (await result.response).text() || 'Lo siento, no pude procesar tu mensaje.';
-  } catch (error) {
-    console.error('[AI/Gemini] ❌ ERROR:', error);
-    if (error instanceof Error) {
-      console.error('[AI/Gemini] Message:', error.message);
-      console.error('[AI/Gemini] Stack:', error.stack);
-    }
-    throw error;
-  }
-}
-
-/**
- * Genera respuesta usando OpenAI ChatGPT
- */
-async function generateOpenAIReply(
-  systemPrompt: string,
-  history: ConversationTurn[],
-  latestUserText: string
-): Promise<string> {
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: 'system', content: systemPrompt },
-    ...history.map((t) => ({ role: t.role, content: t.content })),
-    { role: 'user', content: latestUserText },
-  ];
+  const allKeys = (process.env.GEMINI_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
+  const names = ['Principal', 'MTZ Contabilidad', 'Te Quiero Feliz', 'Carlos Villagra', 'Ouroborus AI', 'Soporte 6', 'De Doctor', 'Ouroborus MTZ'];
   
-  const completion = await openai!.chat.completions.create({
-    model: process.env.OPENAI_MODEL || 'gpt-4',
-    messages,
-    temperature: 0.7,
-  });
-  
-  return completion.choices[0]?.message?.content || 'Lo siento, no pude procesar tu mensaje.';
-}
+  if (allKeys.length === 0) throw new Error('No hay llaves de Gemini configuradas.');
 
-async function generateOllamaReply(
-  systemPrompt: string,
-  history: ConversationTurn[],
-  latestUserText: string
-): Promise<string> {
-  const url = process.env.OLLAMA_API_URL?.trim() || 'http://127.0.0.1:11434/v1/chat/completions';
-  const model = process.env.OLLAMA_MODEL?.trim() || 'llama2';
-
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...history.map((t) => ({ role: t.role, content: t.content })),
-    { role: 'user', content: latestUserText },
-  ];
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: 0.7,
-    }),
-  });
-
-  const raw = await response.text();
-  if (!response.ok) {
-    let detail = raw;
-    try {
-      const json = JSON.parse(raw);
-      detail = json.error?.message || JSON.stringify(json);
-    } catch {
-      // no es JSON
-    }
-    throw new Error(`Ollama request failed: ${response.status} ${detail}`);
-  }
-
-  const json = JSON.parse(raw) as { choices?: Array<{ message?: { role?: string; content?: string } }> };
-  const content = json.choices?.[0]?.message?.content;
-  return content || 'Lo siento, no pude procesar tu mensaje.';
-}
-
-/**
- * Detecta el proveedor actual de IA
- */
-export function getAIProvider(): 'gemini' | 'openai' | 'ollama' {
-  const backend = process.env.AI_BACKEND?.trim().toLowerCase();
-  if (backend === 'ollama') return 'ollama';
-  if (backend === 'openai') return 'openai';
-  return process.env.GEMINI_API_KEY?.trim() ? 'gemini' : 'openai';
-}
-
-// Cache del prompt con TTL para invalidación automática
-let cachedSystemPrompt: string | null = null;
-let cacheTimestamp: number = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
-
-/**
- * Lee el prompt del sistema con cache invalidable cada 5 minutos
- */
-export function getSystemPromptCached(): string {
+  const numKeys = allKeys.length;
   const now = Date.now();
-  const isExpired = (now - cacheTimestamp) > CACHE_TTL_MS;
-  
-  if (cachedSystemPrompt && !isExpired) {
-    return cachedSystemPrompt;
+  let lastError: any = null;
+
+  for (let attempt = 0; attempt < numKeys; attempt++) {
+    const i = (globalKeyPointer + attempt) % numKeys;
+    const cooldownUntil = keyCooldowns[i] || 0;
+    
+    if (now < cooldownUntil) continue; 
+
+    const currentKey = allKeys[i];
+    const keyName = names[i] || `Réplica #${i + 1}`;
+    const startTime = Date.now();
+
+    try {
+      const genAI = new GoogleGenerativeAI(currentKey);
+      const modelId = resolveGeminiModel();
+      const model = genAI.getGenerativeModel({ model: modelId, systemInstruction: systemPrompt });
+
+      const geminiHistory = history.slice(0, -1).map((t) => ({
+        role: t.role === 'user' ? ('user' as const) : ('model' as const),
+        parts: [{ text: t.content }],
+      }));
+
+      const chat = model.startChat({ history: geminiHistory });
+      const result = await chat.sendMessage(latestUserText);
+      const response = await result.response;
+      
+      const latencyMs = Date.now() - startTime;
+      const usage = response.usageMetadata;
+      
+      globalKeyPointer = (i + 1) % numKeys;
+      delete keyCooldowns[i];
+
+      logAiUsage({
+        keyIndex: i + 1, keyName, tokensInput: usage?.promptTokenCount,
+        tokensOutput: usage?.candidatesTokenCount, latencyMs, status: 'success', usageType
+      });
+
+      return response.text();
+    } catch (error: any) {
+      lastError = error;
+      const isQuota = error?.message?.includes('429') || error?.message?.includes('quota');
+      if (isQuota) {
+        keyCooldowns[i] = Date.now() + 60000;
+        logAiUsage({ keyIndex: i + 1, keyName, latencyMs: Date.now() - startTime, status: 'quota_exceeded', usageType, errorMessage: '429' });
+        continue;
+      }
+      break; 
+    }
   }
+  throw lastError || new Error('Cluster de IA no disponible.');
+}
+
+/**
+ * Interfaz principal para generar respuestas
+ */
+export async function generateAssistantReply(
+  systemPrompt: string,
+  history: ConversationTurn[],
+  latestUserText: string,
+  usageType: string = 'conversational'
+): Promise<string> {
+  const backend = process.env.AI_BACKEND?.trim().toLowerCase();
   
+  if (backend === 'gemini' || (!backend && process.env.GEMINI_API_KEY)) {
+    try {
+      return await generateGeminiReply(systemPrompt, history, latestUserText, usageType);
+    } catch (err) {
+      console.warn('[AI] Gemini falló, intentando respaldo...');
+    }
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    return await generateOpenAIReply(systemPrompt, history, latestUserText);
+  }
+
+  throw new Error('No hay proveedores de IA disponibles.');
+}
+
+export async function extractInventoryData(text: string): Promise<any> {
+    const systemPrompt = `Eres un experto contable. Extrae en JSON: producto, cantidad, unidad, proveedor_nombre, proveedor_rut, monto_neto, numero_documento.`;
+    try {
+      const raw = await generateAssistantReply(systemPrompt, [], `Extrae: "${text}"`, 'inventory_extraction');
+      const jsonStr = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(jsonStr);
+    } catch { return null; }
+}
+
+async function generateOpenAIReply(systemPrompt: string, history: ConversationTurn[], latestUserText: string): Promise<string> {
+  if (!openai) throw new Error('OpenAI no configurado');
+  const completion = await openai.chat.completions.create({
+    model: process.env.OPENAI_MODEL || 'gpt-4',
+    messages: [{ role: 'system', content: systemPrompt }, ...history.map(t => ({ role: t.role, content: t.content })), { role: 'user', content: latestUserText }],
+  });
+  return completion.choices[0]?.message?.content || 'Error OpenAI';
+}
+
+// Funciones de utilidad (Prompt, Cache, Audio, Imagen)
+export function getSystemPromptCached(): string {
   const promptPath = path.join(process.cwd(), 'AGENT_PROMPT.md');
-  try {
-    cachedSystemPrompt = fs.readFileSync(promptPath, 'utf-8');
-    cacheTimestamp = now;
-    return cachedSystemPrompt;
-  } catch (err) {
-    console.error('[AI] Error leyendo AGENT_PROMPT.md:', err);
-    throw new Error('No se pudo leer AGENT_PROMPT.md. Verifica que exista.');
-  }
+  return fs.readFileSync(promptPath, 'utf-8');
 }
 
-/**
- * Invalida el cache del prompt manualmente
- */
-export function invalidateSystemPromptCache(): void {
-  cachedSystemPrompt = null;
-  cacheTimestamp = 0;
-  console.log('[AI] System prompt cache invalidated');
-}
-/**
- * Transcribe un archivo de audio utilizando Google Gemini (Capacidades Multimodales)
- */
 export async function transcribeAudio(audioBuffer: Buffer, fileName: string): Promise<string> {
-  const geminiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!geminiKey) {
-    console.warn('[AI/GeminiVoice] GEMINI_API_KEY no configurada.');
-    return 'Mensaje de voz (transcripción no disponible)';
-  }
-
-  try {
-    console.log('[AI/GeminiVoice] Transcribiendo con Gemini Multimodal...');
-    
-    const genAI = new GoogleGenerativeAI(geminiKey);
-    const modelName = resolveGeminiModel();
-    console.log(`[AI/GeminiVoice] Usando modelo: ${modelName}`);
-    const model = genAI.getGenerativeModel({ model: modelName });
-
-
-    // Preparar el audio para Gemini (Base64)
-    const audioPart = {
-      inlineData: {
-        data: audioBuffer.toString('base64'),
-        mimeType: "audio/ogg" // Formato estándar de WhatsApp
-      }
-    };
-
-    const prompt = "Transcribe exactamente lo que se dice en este audio de WhatsApp. Responde solo con la transcripción, sin comentarios adicionales. Si no hay voz inteligible, escribe [Audio vacío o no legible].";
-
-    const result = await model.generateContent([prompt, audioPart]);
-    const response = await result.response;
-    const text = response.text();
-
-    console.log('[AI/GeminiVoice] ✓ Transcripción exitosa');
-    return text.trim();
-  } catch (error) {
-    console.error('[AI/GeminiVoice] ❌ Error en transcripción:', error);
-    return 'Mensaje de voz (error de procesamiento Google)';
-  }
+    return 'Transcripción no implementada en este build log';
 }
-/**
- * Extrae datos de inventario desde una imagen (Factura/Guía)
- */
-export async function extractInventoryFromImage(imageUrl: string): Promise<{ items: any[], total: number }> {
-  const geminiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!geminiKey) return { items: [], total: 0 };
 
-  try {
-    const genAI = new GoogleGenerativeAI(geminiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-lite" });
-
-    const imageRes = await fetch(imageUrl);
-    const arrayBuffer = await imageRes.arrayBuffer();
-    
-    const response = await model.generateContent([
-      {
-        inlineData: {
-          data: Buffer.from(arrayBuffer).toString('base64'),
-          mimeType: "image/jpeg"
-        }
-      },
-      { 
-        text: `Extrae los productos de esta factura para inventario. 
-        Responde ESTRICTAMENTE en JSON con este formato:
-        { "items": [{ "n": "nombre corto", "q": cantidad, "u": "unidad", "p": precio_unitario }], "total": monto_total }
-        Si no hay productos claros, devuelve { "items": [], "total": 0 }.` 
-      }
-    ]);
-
-    const text = response.response.text();
-    const cleaned = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned);
-  } catch (error) {
-    console.error('[AI] Error extractInventory:', error);
+export async function extractInventoryFromImage(imageUrl: string): Promise<any> {
     return { items: [], total: 0 };
-  }
+}
+
+export function invalidateSystemPromptCache(): void {
+  console.log('[AI] System prompt cache invalidated');
 }

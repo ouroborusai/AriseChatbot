@@ -26,6 +26,7 @@ import { handleDocumentButton } from './handlers/documents-handler';
 import { handleClassification } from './handlers/classification-handler';
 import { MenuHandler } from './handlers/menu-handler';
 import { handleAI } from './handlers/ai-handler';
+import { extractInventoryData } from './ai-service';
 import { AppointmentHandler } from './handlers/appointment-handler';
 import { ServiceRequestHandler } from './handlers/service-request-handler';
 import { TemplateService } from './services/template-service';
@@ -48,6 +49,7 @@ export async function handleInboundUserMessage(messageData: {
     list_reply?: { id?: string } 
   };
 }): Promise<void> {
+  console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! WEBHOOK ENTRY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
   const phoneNumber = messageData.from;
   const profileName = messageData.profileName;
   let text = messageData.text?.body?.trim();
@@ -283,6 +285,7 @@ export async function handleInboundUserMessage(messageData: {
 
     // Manejo de Saludos y Triggers de Texto
     if (text) {
+      console.log(`[WebhookDebug] PID: ${process.pid} | File: ${__filename}`);
       console.log(`[Webhook] 🧠 Contexto de Acción: "${context.lastAction}" | Texto: "${text.substring(0, 20)}..."`);
       // CAPTURA DE INVENTARIO ESTRUCTURADO
       if (text.includes(',') && (context.lastAction === 'inv_add' || context.lastAction === 'gestion_inventario')) {
@@ -311,29 +314,52 @@ export async function handleInboundUserMessage(messageData: {
          }
       }
 
+      console.log(`[FlowDebug] 1. Saludando?`);
       const greetingHandler = new MenuHandler(context);
       if (greetingHandler.isGreeting(text)) {
+        console.log(`[FlowDebug] -> Saludo detectado`);
         await sendDefaultMenu(phoneNumber, contact.id, conversationId);
         return;
       }
 
+      console.log(`[FlowDebug] 2. Empresa?`);
       // Prioridad: Intentar identificar RUT o Empresa por texto
       const companySelection = await handleCompanyText(text, phoneNumber, conversationId, companies);
       if (companySelection.handled) {
+        console.log(`[FlowDebug] -> Empresa detectada`);
         // Si el usuario se acaba de identificar, enviamos el menú por defecto correspondiente a su nuevo segmento
         await sendDefaultMenu(phoneNumber, contact.id, conversationId);
         return;
       }
+      console.log(`[FlowDebug] 3. Alcanzando bloque Inventario`);
 
-      // INTEGRACIÓN: Búsqueda Semántica de Inventario (Nivel Premium)
+      // INTEGRACIÓN: Gestión Inteligente de Inventario (Nivel Premium)
+      const { InventoryHandler } = await import('./handlers/inventory-handler');
       const invHandler = new InventoryHandler(context);
-      const isInventoryQuery = text.toLowerCase().includes('cuanto queda') || 
-                               text.toLowerCase().includes('stock de') || 
-                               text.toLowerCase().includes('tienes de');
+      const lowerText = text.toLowerCase();
+      
+      // 1. Detección de Consultas Semánticas (¿Cuánto queda?)
+      const isInventoryQuery = lowerText.includes('cuanto queda') || 
+                               lowerText.includes('stock de') || 
+                               lowerText.includes('tienes de') ||
+                               lowerText.includes('hay de');
                                
-      if (isInventoryQuery && contact.segment === 'cliente') {
+      if (isInventoryQuery && context.contact.segment === 'cliente') {
         const handled = await invHandler.handleSemanticInquiry(phoneNumber, text);
         if (handled) return;
+      }
+
+      // 2. Detección de Movimientos Naturales (IA Extraction)
+      const inventoryTriggers = ['compramos', 'llegó', 'llegaron', 'anota', 'ingresaron', 'factura', 'guía', 'rut', 'compré'];
+      const looksLikeMovement = inventoryTriggers.some(t => lowerText.includes(t)) && text.length > 15;
+
+      if (looksLikeMovement && context.contact.segment === 'cliente') {
+        console.log(`[InventoryDebug] 🤖 IA Analizando entrada natural: ${text.substring(0, 30)}...`);
+        const meta = await extractInventoryData(text);
+        if (meta && meta.producto && meta.cantidad) {
+          const handled = await invHandler.handleNaturalInventoryAdd(phoneNumber, meta);
+          if (handled) return;
+        }
       }
 
       const matchedTemplate = await TemplateService.findTemplateByTrigger(text, contact.segment || 'prospecto');

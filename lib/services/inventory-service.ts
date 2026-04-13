@@ -21,8 +21,9 @@ export class InventoryService {
     }
     return data as InventoryItem[];
   }
+
   /**
-   * Busca un producto por nombre (uso para IA o texto estructurado)
+   * Busca un producto por nombre
    */
   static async findItemByName(companyId: string, name: string): Promise<InventoryItem | null> {
     const { data, error } = await getSupabaseAdmin()
@@ -34,6 +35,81 @@ export class InventoryService {
 
     if (error) return null;
     return data as InventoryItem;
+  }
+
+  /**
+   * Registra una transacción contable de inventario
+   * Soporta itemId directo o itemName para búsqueda automática
+   */
+  static async registerTransaction(params: {
+    companyId?: string;
+    itemId?: string;
+    itemName?: string;
+    type: 'in' | 'out' | 'adjustment';
+    quantity: number;
+    unit?: string;
+    docType?: 'factura' | 'nota_credito' | 'boleta' | 'guia';
+    docNumber?: string;
+    netAmount?: number;
+    providerId?: string;
+    providerName?: string;
+    providerRut?: string;
+    notes?: string;
+  }): Promise<any> {
+    const supabase = getSupabaseAdmin();
+    let finalItemId = params.itemId;
+
+    // 1. Si no hay itemId, buscar o crear item por nombre
+    if (!finalItemId && params.itemName && params.companyId) {
+      let item = await this.findItemByName(params.companyId, params.itemName);
+      if (!item) {
+        item = await this.createItem(params.companyId, params.itemName, params.unit || 'uds');
+      }
+      finalItemId = item?.id;
+    }
+
+    if (!finalItemId) return { success: false, error: 'Item no encontrado' };
+
+    // 2. Calcular IVA (19% CLP standard) y Total si hay Neto
+    const ivaAmount = params.netAmount ? Math.round(params.netAmount * 0.19) : 0;
+    const totalAmount = params.netAmount ? params.netAmount + ivaAmount : 0;
+
+    // 3. Obtener item actual para actualizar stock
+    const { data: item } = await supabase.from('inventory_items').select('*').eq('id', finalItemId).single();
+    if (!item) return { success: false };
+
+    const newStock = params.type === 'in' ? Number(item.current_stock) + params.quantity : Number(item.current_stock) - params.quantity;
+
+    // 4. Update stock
+    await supabase
+      .from('inventory_items')
+      .update({ current_stock: newStock, updated_at: new Date().toISOString() })
+      .eq('id', finalItemId);
+
+    // 5. Insertar transacción
+    const { error: logError } = await supabase
+      .from('inventory_transactions')
+      .insert({
+        item_id: finalItemId,
+        type: params.type,
+        quantity: params.quantity,
+        net_amount: params.netAmount || 0,
+        iva_amount: ivaAmount,
+        total_amount: totalAmount,
+        doc_type: params.docType || 'factura',
+        doc_number: params.docNumber,
+        notes: params.notes || 'Registro automático'
+      });
+
+    const isLow = item.min_stock_alert && newStock <= item.min_stock_alert;
+
+    return { 
+      success: !logError, 
+      newStock, 
+      isLow: !!isLow, 
+      itemName: item.name, 
+      unit: item.unit 
+    };
   }
 
   /**
@@ -49,75 +125,18 @@ export class InventoryService {
       .maybeSingle();
 
     if (existing) return existing.id;
-
+    
     const { data: created, error } = await supabase
       .from('inventory_providers')
       .insert({ company_id: companyId, rut, name })
       .select('id')
       .single();
 
-    if (error) return null;
+    if (error) {
+      console.error('[InventoryService] Error getOrCreateProvider:', error);
+      return null;
+    }
     return created.id;
-  }
-
-  /**
-   * Registra una transacción contable de inventario
-   */
-  static async registerTransaction(params: {
-    itemId: string;
-    type: 'in' | 'out' | 'adjustment';
-    quantity: number;
-    docType?: 'factura' | 'nota_credito' | 'boleta' | 'guia';
-    docNumber?: string;
-    netAmount?: number;
-    providerId?: string;
-    notes?: string;
-  }): Promise<boolean> {
-    const supabase = getSupabaseAdmin();
-
-    // 1. Calcular IVA (19% CLP standard) y Total si hay Neto
-    const ivaAmount = params.netAmount ? Math.round(params.netAmount * 0.19) : 0;
-    const totalAmount = params.netAmount ? params.netAmount + ivaAmount : 0;
-
-    // 2. Obtener item actual para actualizar stock
-    const { data: item } = await supabase.from('inventory_items').select('current_stock').eq('id', params.itemId).single();
-    if (!item) return false;
-
-    const newStock = params.type === 'in' ? Number(item.current_stock) + params.quantity : Number(item.current_stock) - params.quantity;
-
-    // 3. Update stock
-    const { error: updateError } = await supabase
-      .from('inventory_items')
-      .update({ current_stock: newStock, updated_at: new Date().toISOString() })
-      .eq('id', params.itemId);
-
-    if (updateError) return { success: false };
-
-    // 4. Insertar transacción detallada
-    const { error: logError } = await supabase
-      .from('inventory_transactions')
-      .insert({
-        item_id: params.itemId,
-        provider_id: params.providerId,
-        type: params.type,
-        quantity: params.quantity,
-        doc_type: params.docType || 'factura',
-        doc_number: params.docNumber,
-        net_amount: params.netAmount,
-        iva_amount: ivaAmount,
-        total_amount: totalAmount,
-        notes: params.notes
-      });
-
-    const isLow = item.min_stock_alert && newStock <= item.min_stock_alert;
-
-    return { 
-      success: !logError, 
-      newStock, 
-      isLow: !!isLow, 
-      itemName: item.name, 
-      unit: item.unit 
-    };
   }
 
   /**

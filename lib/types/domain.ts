@@ -121,9 +121,21 @@ export interface InventoryTransaction {
   item_id: string;
   type: 'in' | 'out' | 'adjustment';
   quantity: number;
+  net_amount?: number;
+  iva_amount?: number;
+  total_amount?: number;
+  doc_type?: string;
+  doc_number?: string;
   source_type?: string | null;
   source_id?: string | null;
   notes?: string | null;
   created_at?: string;
+}
+
+export interface InventoryProvider {
+  id: string;
+  company_id: string;
+  name: string;
+  rut: string;
 }
 
