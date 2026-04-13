@@ -25,60 +25,15 @@ export class AIHandler extends BaseHandler {
   }
 
   /**
-   * Construye prompt con datos de Inventario, Documentos y Perfil
+   * Procesa la entrada del usuario mediante IA (Gemini 2.5 Flash)
    */
-  async buildSystemPrompt(basePrompt: string): Promise<string> {
-    const lines = [basePrompt.trim(), '\n\n### CONTEXTO DINÁMICO DEL USUARIO:'];
-
-    if (this.context.contact.name) {
-      lines.push(`- Nombre: ${this.context.contact.name}`);
-    }
-
-    const activeCompany = this.getActiveCompany();
-    if (activeCompany) {
-      lines.push(`- Empresa: ${activeCompany.legal_name}`);
-      try {
-        const { InventoryService } = await import('../services/inventory-service');
-        const stockSummary = await InventoryService.getBriefStockSummary(activeCompany.id);
-        lines.push(`- STOCK ACTUAL EN BODEGA: ${stockSummary}`);
-        lines.push('- REGLA: Usa estos datos para responder. No inventes stock si no aparece aquí.');
-      } catch (e) {
-        console.error('[AIHandler/Debug] ❌ Error stock:', e);
-      }
-    }
-
-    if (this.context.documents.length > 0) {
-      const types = new Set(this.context.documents.map(d => d.document_type));
-      lines.push(`- Documentos: ${this.context.documents.length} archivos (${Array.from(types).join(', ')})`);
-    }
-
-    lines.push('\n### ATAJOS: Escribir "Archivo", "Negocio", "Cita" o "Menú".');
-    lines.push('\n### ESTILO: Tono Asesor Senior (3-5 frases). Sé empático y profesional.');
-
-    const finalPrompt = lines.join('\n');
-    return finalPrompt;
-  }
-
-  async getConversationHistory(conversationId: string): Promise<Array<{ role: 'user' | 'assistant'; content: string }>> {
-    const { data: messages } = await getSupabaseAdmin()
-      .from('messages')
-      .select('role, content')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-      .limit(10);
-
-    return (messages || []).map(m => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content || '',
-    }));
-  }
-
   async handleAI(
     phoneNumber: string,
     conversationId: string,
     userMessage: string
   ): Promise<HandlerResponse> {
     try {
+      // 1. Verificar si quiere humano
       if (this.wantsHumanAgent(userMessage)) {
         const { TemplateService } = await import('../services/template-service');
         const { processTemplateResponse } = await import('../webhook-handler');
@@ -89,16 +44,20 @@ export class AIHandler extends BaseHandler {
         }
       }
 
-      await this.enrichContext();
-      const basePrompt = getSystemPromptCached();
-      const systemPrompt = await this.buildSystemPrompt(basePrompt);
-      const history = await this.getConversationHistory(conversationId);
+      // 2. Generar respuesta técnica
+      const { generateAssistantReply } = await import('../ai-service');
+      const { PromptService } = await import('../services/prompt-service');
+      
+      const systemPrompt = await PromptService.buildSystemPrompt(this.context);
+      const history = this.context.conversationHistory || [];
 
       const aiResponse = await generateAssistantReply(systemPrompt, history, userMessage, 'customer_support');
 
-      await getSupabaseAdmin().from('messages').insert({ conversation_id: conversationId, role: 'assistant', content: aiResponse });
+      // 3. Persistir y responder
+      await this.saveAssistantResponse(aiResponse, conversationId);
       await sendWhatsAppMessage(phoneNumber, aiResponse);
 
+      // 4. Ofrecer menú si es respuesta larga
       if (aiResponse.length > 150 && !aiResponse.toLowerCase().includes('menú')) {
         const { sendWhatsAppInteractiveButtons } = await import('../whatsapp-service');
         await sendWhatsAppInteractiveButtons(phoneNumber, "¿Deseas realizar otra gestión?", [{ id: 'menu_principal_cliente', title: '🏠 Menú Principal' }]);
@@ -107,7 +66,7 @@ export class AIHandler extends BaseHandler {
       return { handled: true };
     } catch (error) {
       console.error('[AIHandler] ❌ Error:', error);
-      await sendWhatsAppMessage(phoneNumber, "Hubo un error. Escribe *Menú*.");
+      await sendWhatsAppMessage(phoneNumber, "Hubo un error con mi sistema de inteligencia. Escribe *Menú* para continuar manualmente.");
       return { handled: true };
     }
   }

@@ -133,10 +133,9 @@ export class InventoryHandler extends BaseHandler {
 
       await sendWhatsAppMessage(phoneNumber, res);
       
-      // Registrar respuesta en historial
-      const { saveMessage } = await import('../database-service');
+      // Registrar en historial (Refactorizado)
       const { data: conv } = await getSupabaseAdmin().from('conversations').select('id').eq('phone_number', phoneNumber).maybeSingle();
-      if (conv) await saveMessage(conv.id, 'assistant', res);
+      if (conv) await this.saveAssistantResponse(res, conv.id);
 
       const { sendWhatsAppInteractiveButtons } = await import('../whatsapp-service');
       await sendWhatsAppInteractiveButtons(phoneNumber, "¿Deseas realizar otra gestión?", [
@@ -181,10 +180,9 @@ export class InventoryHandler extends BaseHandler {
 
     await sendWhatsAppMessage(phoneNumber, res);
     
-    // Registrar respuesta en historial
-    const { saveMessage } = await import('../database-service');
+    // Registrar en historial (Refactorizado)
     const { data: conv } = await getSupabaseAdmin().from('conversations').select('id').eq('phone_number', phoneNumber).maybeSingle();
-    if (conv) await saveMessage(conv.id, 'assistant', res);
+    if (conv) await this.saveAssistantResponse(res, conv.id);
 
     const { sendWhatsAppInteractiveButtons } = await import('../whatsapp-service');
     await sendWhatsAppInteractiveButtons(phoneNumber, "¿Qué deseas hacer?", [

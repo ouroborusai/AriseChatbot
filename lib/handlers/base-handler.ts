@@ -61,6 +61,20 @@ export abstract class BaseHandler {
   }
 
   /**
+   * Registra una respuesta del asistente en el historial y base de datos
+   * @param text Texto de la respuesta
+   * @param conversationId ID de la conversación
+   */
+  async saveAssistantResponse(text: string, conversationId: string): Promise<void> {
+    try {
+      const { saveMessage } = await import('../database-service');
+      await saveMessage(conversationId, 'assistant', text);
+    } catch (error) {
+      console.error('[BaseHandler] Error al guardar respuesta del asistente:', error);
+    }
+  }
+
+  /**
    * Obtiene el contexto actual
    */
   getContext(): TemplateContext {
