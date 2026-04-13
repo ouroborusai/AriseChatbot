@@ -283,6 +283,7 @@ export async function handleInboundUserMessage(messageData: {
 
     // Manejo de Saludos y Triggers de Texto
     if (text) {
+      console.log(`[Webhook] 🧠 Contexto de Acción: "${context.lastAction}" | Texto: "${text.substring(0, 20)}..."`);
       // CAPTURA DE INVENTARIO ESTRUCTURADO
       if (text.includes(',') && (context.lastAction === 'inv_add' || context.lastAction === 'gestion_inventario')) {
         const { InventoryHandler } = await import('./handlers/inventory-handler');
@@ -322,6 +323,17 @@ export async function handleInboundUserMessage(messageData: {
         // Si el usuario se acaba de identificar, enviamos el menú por defecto correspondiente a su nuevo segmento
         await sendDefaultMenu(phoneNumber, contact.id, conversationId);
         return;
+      }
+
+      // INTEGRACIÓN: Búsqueda Semántica de Inventario (Nivel Premium)
+      const invHandler = new InventoryHandler(context);
+      const isInventoryQuery = text.toLowerCase().includes('cuanto queda') || 
+                               text.toLowerCase().includes('stock de') || 
+                               text.toLowerCase().includes('tienes de');
+                               
+      if (isInventoryQuery && contact.segment === 'cliente') {
+        const handled = await invHandler.handleSemanticInquiry(phoneNumber, text);
+        if (handled) return;
       }
 
       const matchedTemplate = await TemplateService.findTemplateByTrigger(text, contact.segment || 'prospecto');

@@ -25,17 +25,33 @@ export class InventoryHandler extends BaseHandler {
       return;
     }
 
-    let dashboard = `📦 *REPORTE DE INVENTARIO*\n`;
-    dashboard += `----------------------------------\n`;
+    let dashboard = `📦 *REPORTE DE INVENTARIO - MTZ*\n`;
+    dashboard += `━━━━━━━━━━━━━━━━━━━━\n\n`;
     
+    let criticalItems = '';
+    let healthyItems = '';
+
     items.forEach(item => {
-      const isLow = item.min_stock_alert && item.current_stock <= item.min_stock_alert;
-      const emoji = isLow ? '⚠️' : '✅';
-      dashboard += `${emoji} *${item.name}*: \`${item.current_stock}\` ${item.unit || 'uds'}${isLow ? ' *[BAJO]*' : ''}\n`;
+      const isLow = item.min_stock_alert && Number(item.current_stock) <= Number(item.min_stock_alert);
+      const line = `• *${item.name}*: \`${item.current_stock}\` ${item.unit || 'uds'}\n`;
+      
+      if (isLow) {
+        criticalItems += `🚨 ${line}`;
+      } else {
+        healthyItems += `✅ ${line}`;
+      }
     });
     
-    dashboard += `----------------------------------\n`;
-    dashboard += `_Actualizado ahora._`;
+    if (criticalItems) {
+      dashboard += `⚠️ *REPOSICIÓN REQUERIDA:*\n${criticalItems}\n`;
+    }
+    
+    if (healthyItems) {
+      dashboard += `✔️ *STOCK OPERATIVO:*\n${healthyItems}`;
+    }
+    
+    dashboard += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+    dashboard += `_Presiona una opción para ajustar._`;
 
     await sendWhatsAppMessage(phoneNumber, dashboard);
   }
@@ -82,7 +98,7 @@ export class InventoryHandler extends BaseHandler {
     }
 
     // 3. Registrar Transacción
-    const success = await InventoryService.registerTransaction({
+    const result = await InventoryService.registerTransaction({
       itemId: item.id,
       type: 'in',
       quantity: qty,
@@ -92,13 +108,15 @@ export class InventoryHandler extends BaseHandler {
       notes: 'Ingreso rápido vía WhatsApp'
     });
 
-    if (success) {
+    if (result.success) {
       const iva = Math.round(net * 0.19);
       const total = net + iva;
       
       let res = `✅ *INGRESO DE STOCK EXITOSO*\n\n`;
       res += `📦 Ítem: ${item.name}\n`;
       res += `🔢 Cantidad: +${qty} ${item.unit || 'uds'}\n`;
+      res += `📈 Stock Actual: *${result.newStock}*\n`;
+      
       if (net > 0) {
         res += `------------------\n`;
         res += `💰 Neto: $${net.toLocaleString('es-CL')}\n`;
@@ -108,7 +126,10 @@ export class InventoryHandler extends BaseHandler {
       res += `------------------\n`;
       if (providerName) res += `🏭 Proveedor: ${providerName}\n`;
       if (docNum) res += `📄 Doc: ${docNum}\n\n`;
-      res += `_Tu stock ha sido actualizado en tiempo real._`;
+
+      if (result.isLow) {
+        res += `⚠️ *ALERTA:* Este producto está por debajo de tu mínimo crítico (${result.newStock} ${item.unit}). ¡Recuerda reponer!\n\n`;
+      }
 
       await sendWhatsAppMessage(phoneNumber, res);
       
@@ -120,6 +141,49 @@ export class InventoryHandler extends BaseHandler {
     } else {
       await sendWhatsAppMessage(phoneNumber, '❌ Error al registrar en la base de datos. Verifica el SQL de inventario.');
     }
+  }
+
+  /**
+   * Responde a una consulta semántica de stock (Ej: "¿Cuanto tenemos de Harina?")
+   */
+  async handleSemanticInquiry(phoneNumber: string, query: string): Promise<boolean> {
+    if (!this.context.activeCompanyId) return false;
+    
+    // Limpiar query para búsqueda: quitar "¿", "?", "stock de", "cuanto queda de"
+    const cleanQuery = query.toLowerCase()
+      .replace(/[¿?]/g, '')
+      .replace(/cuanto queda de/g, '')
+      .replace(/stock de/g, '')
+      .replace(/que hay de/g, '')
+      .trim();
+
+    const item = await InventoryService.findItemByName(this.context.activeCompanyId, cleanQuery);
+
+    if (!item) return false;
+
+    const isLow = item.min_stock_alert && item.current_stock <= item.min_stock_alert;
+    const emoji = isLow ? '⚠️' : '✅';
+    
+    let res = `📦 *CONSULTA DE STOCK*\n\n`;
+    res += `${emoji} *${item.name}*\n`;
+    res += `🔢 Saldo actual: \`${item.current_stock}\` ${item.unit || 'uds'}\n`;
+    
+    if (isLow) {
+      res += `\n🚨 *Atención:* Este producto está en niveles críticos (mínimo: ${item.min_stock_alert}).`;
+    } else {
+      res += `\nEstado operativo óptimo. 👍`;
+    }
+
+    await sendWhatsAppMessage(phoneNumber, res);
+    
+    const { sendWhatsAppInteractiveButtons } = await import('../whatsapp-service');
+    await sendWhatsAppInteractiveButtons(phoneNumber, "¿Qué deseas hacer?", [
+      { id: 'inv_report', title: '📋 Ver Todo el Stock' },
+      { id: 'inv_add', title: '➕ Cargar Stock' },
+      { id: 'menu_principal_cliente', title: '🏠 Menú Inicio' }
+    ]);
+
+    return true;
   }
 
   /**

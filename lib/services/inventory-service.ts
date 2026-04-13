@@ -21,6 +21,20 @@ export class InventoryService {
     }
     return data as InventoryItem[];
   }
+  /**
+   * Busca un producto por nombre (uso para IA o texto estructurado)
+   */
+  static async findItemByName(companyId: string, name: string): Promise<InventoryItem | null> {
+    const { data, error } = await getSupabaseAdmin()
+      .from('inventory_items')
+      .select('*')
+      .eq('company_id', companyId)
+      .ilike('name', `%${name}%`)
+      .maybeSingle();
+
+    if (error) return null;
+    return data as InventoryItem;
+  }
 
   /**
    * Obtiene o crea un proveedor por RUT
@@ -77,7 +91,7 @@ export class InventoryService {
       .update({ current_stock: newStock, updated_at: new Date().toISOString() })
       .eq('id', params.itemId);
 
-    if (updateError) return false;
+    if (updateError) return { success: false };
 
     // 4. Insertar transacción detallada
     const { error: logError } = await supabase
@@ -95,7 +109,15 @@ export class InventoryService {
         notes: params.notes
       });
 
-    return !logError;
+    const isLow = item.min_stock_alert && newStock <= item.min_stock_alert;
+
+    return { 
+      success: !logError, 
+      newStock, 
+      isLow: !!isLow, 
+      itemName: item.name, 
+      unit: item.unit 
+    };
   }
 
   /**
