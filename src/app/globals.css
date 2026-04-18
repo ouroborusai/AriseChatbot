@@ -1,25 +1,96 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --primary: #135bec;
-  --background: #f8fafc;
-  --surface: #ffffff;
+@theme {
+  /* Stitch Official Palette: Ouroborus Industrial Elite v6.1 */
+  
+  /* Primary Neural Sparks */
+  --color-primary: #0045bd;
+  --color-primary-container: #135bec;
+  
+  /* Tonal Architecture (Stitch Layers) */
+  --color-base: #f7f9fb;           /* Surface (Base) */
+  --color-surface-work: #ffffff;   /* Surface Container Lowest (Work Area) */
+  --color-surface-nav: #e6e8ea;    /* Surface Container High (Sidebar) */
+  --color-surface-low: #f2f4f6;    /* Surface Container Low (Separation) */
+  
+  /* Typography: Editorial Authority */
+  --font-sans: "Inter", "system-ui", sans-serif;
+  
+  /* Elevation & Neural Shadows */
+  --radius-base: 8px; /* Round Eight Rule */
+  --shadow-soft-depth: 0px 4px 20px rgba(19, 91, 236, 0.04), 0px 10px 40px rgba(25, 28, 30, 0.06);
+  --shadow-micro-glow: 0 0 10px rgba(19, 91, 236, 0.15);
+  
+  --animate-float: float 4s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
 }
 
-body {
-  background-color: var(--background);
-  color: #0f172a;
+@layer base {
+  body {
+    background-color: var(--color-base);
+    color: #191c1e;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.02em; /* Precision Tracking */
+  }
+
+  h1, h2, h3 {
+    @apply tracking-tight font-bold;
+  }
 }
 
-/* Tonal Shifts Rule */
-.surface-card {
-  background: var(--surface);
-  border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+@layer components {
+  /* THE COGNITIVE CANVAS: No-Border Implementation */
+  .executive-card {
+    background-color: var(--color-surface-work);
+    box-shadow: var(--shadow-soft-depth);
+    border-radius: var(--radius-base);
+    border: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .executive-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 45px -10px rgba(19, 91, 236, 0.1);
+  }
+
+  /* BUTTONS: The Neural Spark */
+  .btn-primary {
+    @apply bg-linear-to-br from-[#0045bd] to-[#135bec] text-white px-6 py-2.5 rounded-base font-bold shadow-micro-glow hover:opacity-95 active:scale-95 transition-all text-xs uppercase tracking-widest;
+  }
+
+  /* SIDEBAR: Layer Visibility */
+  .sidebar-container {
+    background-color: var(--color-surface-nav);
+    @apply border-none;
+  }
+
+  /* STATUS: Glow Indicators */
+  .status-dot {
+    @apply w-1.5 h-1.5 rounded-full;
+    box-shadow: var(--shadow-micro-glow);
+  }
+
+  /* TECHNICAL READOUTS: Labels */
+  .readout-label {
+    @apply text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400;
+  }
+
+  /* GLASSMORPHISM: Commands & Modals */
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20;
+  }
 }
 
-.tonal-bg {
-  background-color: #f1f5f9;
+/* Custom Scrollbar for OS Feel */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #c3c5d8;
+  border-radius: 10px;
 }
