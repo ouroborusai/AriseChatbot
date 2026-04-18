@@ -1,9 +1,6 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js";
-import { SemanticCache } from "../../src/services/semantic-cache.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 Deno.serve(async (req) => {
-  const startTime = Date.now();
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -11,44 +8,60 @@ Deno.serve(async (req) => {
 
   try {
     const { contact_id, message_body, company_id } = await req.json();
-    const cache = new SemanticCache(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
 
-    // 1. INTENTAMOS CACHÉ SEMÁNTICO (Ahorro de Tokens)
-    let finalResponse = await cache.getResponse(message_body);
-    let cacheHit = !!finalResponse;
+    // 1. Contexto Profundo (Agente Personal)
+    const [contact, requests, compliance, reminders] = await Promise.all([
+      supabase.from('contacts').select('*, companies(*)').eq('id', contact_id).single(),
+      supabase.from('service_requests').select('*').eq('contact_id', contact_id).eq('status', 'pending').limit(1),
+      supabase.from('company_compliance').select('*').eq('company_id', company_id).eq('status', 'pending').limit(1),
+      supabase.from('reminders').select('*').eq('contact_id', contact_id).eq('status', 'pending').limit(1)
+    ]);
 
-    if (!finalResponse) {
-      // 2. LLAMADA AL MOTOR AI (Si no hay caché)
-      // Nota: Aquí iría la llamada a Gemini 1.5 Flash
-      finalResponse = `[Robot Ouroborus]: Entendido, estoy analizando tu solicitud sobre "${message_body}".`;
+    // 2. Prompt de Agente Personal (v6.3)
+    const systemPrompt = `
+      Eres Ouroborus AI ("The Synthetic Architect"). AGENTE PERSONAL PROACTIVO.
+      Cliente: ${contact.data?.name || 'Usuario'} | Empresa: ${contact.data?.companies?.legal_name}.
       
-      // Guardamos en caché para la próxima vez
-      await cache.saveResponse(message_body, finalResponse);
-    }
+      DATOS PARA RECORDAR:
+      - Trámites: ${JSON.stringify(requests.data)}
+      - Vencimientos Legales: ${JSON.stringify(compliance.data)}
+      - Notas Personales: ${JSON.stringify(reminders.data)}
 
-    // 3. ENVÍO Y REGISTRO
-    await supabase.from('messages').insert({
-      conversation_id: contact_id,
-      content: finalResponse,
+      REGLA: Responde y luego añade un recordatorio proactivo si hay algo pendiente.
+      BOTONES: Propón exactamente 3 botones así: Texto de respuesta --- Boton 1 | Boton 2 | Boton 3
+    `;
+
+    // 3. Síntesis Brain
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: `${systemPrompt}\n\nUsuario: ${message_body}` }] }] })
+    });
+
+    const geminiData = await geminiRes.json();
+    const rawOutput = geminiData.candidates[0].content.parts[0].text;
+    
+    // 4. Parsing de Texto y Botones
+    const [textPart, buttonsPart] = rawOutput.split('---');
+    const responseText = textPart.trim();
+    const buttons = buttonsPart ? buttonsPart.split('|').map(b => b.trim()) : ['Menú Principal', 'Mi Estado', 'Contacto'];
+
+    // 5. Registro y Respuesta
+    await supabase.from('messages').insert({ 
+      conversation_id: contact_id, 
+      content: responseText, 
       role: 'assistant',
-      metadata: { cache_hit: cacheHit }
+      metadata: { interactive_buttons: buttons } // Para que el notifier sepa que enviar
     });
 
-    // 4. TELEMETRÍA (KPI 1.2s)
-    const latency = Date.now() - startTime;
-    await supabase.from('ai_api_telemetry').insert({
-      company_id,
-      latency_ms: latency,
-      tokens_input: cacheHit ? 0 : 150, // Estimado
-      tokens_output: cacheHit ? 0 : 50,
-      status: 'success'
-    });
-
-    return new Response(JSON.stringify({ success: true, latency }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ 
+      success: true, 
+      response: responseText,
+      buttons: buttons 
+    }), { headers: { "Content-Type": "application/json" } });
 
   } catch (err) {
-    return new Response(err.message, { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 });

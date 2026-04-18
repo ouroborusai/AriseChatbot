@@ -1,96 +1,91 @@
 @import "tailwindcss";
 
 @theme {
-  /* Stitch Official Palette: Ouroborus Industrial Elite v6.1 */
+  /* Arise Diamond Elite Architecture v6.22 (Industrial Edition) */
+  --color-primary: #0045bd;         /* Neural Core */
+  --color-accent: #135bec;          /* Electric Blue Spark */
+  --color-bg-base: #f7f9fb;         /* Surface Canvas */
+  --color-neural-dark: #0b1326;     /* Deep Night */
+  --color-neural-low: #131b2e;      /* Structural Low */
   
-  /* Primary Neural Sparks */
-  --color-primary: #0045bd;
-  --color-primary-container: #135bec;
-  
-  /* Tonal Architecture (Stitch Layers) */
-  --color-base: #f7f9fb;           /* Surface (Base) */
-  --color-surface-work: #ffffff;   /* Surface Container Lowest (Work Area) */
-  --color-surface-nav: #e6e8ea;    /* Surface Container High (Sidebar) */
-  --color-surface-low: #f2f4f6;    /* Surface Container Low (Separation) */
-  
-  /* Typography: Editorial Authority */
   --font-sans: "Inter", "system-ui", sans-serif;
   
-  /* Elevation & Neural Shadows */
-  --radius-base: 8px; /* Round Eight Rule */
-  --shadow-soft-depth: 0px 4px 20px rgba(19, 91, 236, 0.04), 0px 10px 40px rgba(25, 28, 30, 0.06);
-  --shadow-micro-glow: 0 0 10px rgba(19, 91, 236, 0.15);
+  --radius-xl: 32px;
+  --radius-lg: 20px;
   
-  --animate-float: float 4s ease-in-out infinite;
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-3px); }
-  }
+  /* Shadows are now tonal-based, avoiding hard blacks */
+  --shadow-arise: 0 4px 20px -5px rgba(0, 69, 189, 0.08);
+  --shadow-arise-hover: 0 10px 40px -10px rgba(0, 69, 189, 0.15);
+  
+  /* Micro-Glow Effects Updated */
+  --glow-primary: 0 0 15px rgba(19, 91, 236, 0.25);
+  --glow-emerald: 0 0 15px rgba(78, 222, 163, 0.25);
 }
 
 @layer base {
   body {
-    background-color: var(--color-base);
-    color: #191c1e;
+    background-color: var(--color-bg-base);
+    color: #0f172a;
     font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    letter-spacing: -0.02em; /* Precision Tracking */
-  }
-
-  h1, h2, h3 {
-    @apply tracking-tight font-bold;
+    letter-spacing: -0.02em;
   }
 }
 
 @layer components {
-  /* THE COGNITIVE CANVAS: No-Border Implementation */
-  .executive-card {
-    background-color: var(--color-surface-work);
-    box-shadow: var(--shadow-soft-depth);
-    border-radius: var(--radius-base);
-    border: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* ARISE ELITE CONTAINERS (Zero Border Rule) */
+  .arise-card {
+    @apply bg-white rounded-[32px] shadow-arise transition-all duration-500 border-none;
   }
   
-  .executive-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 15px 45px -10px rgba(19, 91, 236, 0.1);
+  .arise-card:hover {
+    @apply shadow-arise-hover -translate-y-1;
   }
 
-  /* BUTTONS: The Neural Spark */
-  .btn-primary {
-    @apply bg-linear-to-br from-[#0045bd] to-[#135bec] text-white px-6 py-2.5 rounded-base font-bold shadow-micro-glow hover:opacity-95 active:scale-95 transition-all text-xs uppercase tracking-widest;
+  /* BUTTONS: THE NEURAL CORE LOOK */
+  .btn-arise {
+    @apply bg-primary text-white px-8 py-3.5 rounded-[18px] font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-accent hover:scale-[1.03] active:scale-95 shadow-lg shadow-primary/20;
   }
 
-  /* SIDEBAR: Layer Visibility */
-  .sidebar-container {
-    background-color: var(--color-surface-nav);
-    @apply border-none;
+  .btn-arise-outline {
+    @apply border-2 border-slate-100 text-primary px-8 py-3.5 rounded-[18px] font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-primary/5 hover:border-primary/20;
   }
 
-  /* STATUS: Glow Indicators */
-  .status-dot {
-    @apply w-1.5 h-1.5 rounded-full;
-    box-shadow: var(--shadow-micro-glow);
+  /* INPUTS */
+  .arise-input {
+    @apply bg-slate-50 border-none rounded-2xl px-6 py-4 text-xs font-bold text-slate-900 outline-none ring-primary/5 focus:ring-4 focus:bg-white transition-all placeholder:text-slate-300;
   }
 
-  /* TECHNICAL READOUTS: Labels */
-  .readout-label {
-    @apply text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400;
+  /* STATUS BADGES WITH ELITE GLOW */
+  .badge-arise-success {
+    @apply bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-[var(--glow-emerald)];
   }
 
-  /* GLASSMORPHISM: Commands & Modals */
-  .glass-panel {
-    @apply bg-white/70 backdrop-blur-xl border border-white/20;
+  .badge-arise-danger {
+    @apply bg-red-50 text-red-600 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-red-100/50;
+  }
+
+  /* SKELETON SCREENS (Neural Shimmer) */
+  .arise-skeleton {
+    @apply bg-slate-100 rounded-xl relative overflow-hidden;
+  }
+
+  .arise-skeleton::after {
+    content: "";
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite;
   }
 }
 
-/* Custom Scrollbar for OS Feel */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Custom Scrollbar for FinTech look */
 ::-webkit-scrollbar {
   width: 4px;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #c3c5d8;
-  border-radius: 10px;
+  @apply bg-primary/20 rounded-full hover:bg-primary/40 transition-all;
 }

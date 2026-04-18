@@ -22,98 +22,92 @@ export default function TeamPage() {
   }, []);
 
   return (
-    <main className="p-8">
-      <header className="mb-12">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900">Personnel & Security</h1>
-        <p className="text-slate-500 font-medium mt-1">Human Resources & System Compliance Monitoring</p>
+    <main className="p-10">
+      <header className="flex justify-between items-center mb-10">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Personnel & Security</h1>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">OS Ejecutivo Neural / v6.22 Industrial Edition</p>
+        </div>
+        <div className="flex gap-4">
+          <button className="btn-arise-outline">Export Directory</button>
+          <button className="btn-arise">+ Add Personnel</button>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-        <StatMini title="Headcount" value={loading ? '..' : employees.length} />
-        <StatMini title="Audit Logs (24h)" value="1.2k" />
-        <StatMini title="Security Score" value="A+" />
-        <StatMini title="Upcoming Rulings" value="2" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+        <MetricSmall title="Active Headcount" value={loading ? '..' : employees.length} icon="" />
+        <MetricSmall title="Audit Logs (24h)" value="1.2k" icon="" />
+        <MetricSmall title="Security Score" value="A+" icon="" />
+        <MetricSmall title="Compliance" value="99%" icon="" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <section className="lg:col-span-2 executive-card p-0 overflow-hidden">
-          <div className="p-8 border-b border-base flex justify-between items-center">
-            <h2 className="text-xl font-bold">Organization Members</h2>
-            <div className="flex gap-2">
-                <button className="px-3 py-1 bg-base text-slate-500 rounded-base text-[10px] font-bold uppercase hover:bg-slate-200 transition-colors">Export</button>
-                <button className="px-3 py-1 bg-primary text-white rounded-base text-[10px] font-bold uppercase hover:opacity-90 transition-opacity">Add Employee</button>
-            </div>
+        <div className="lg:col-span-2 arise-card">
+          <div className="p-6 border-b border-slate-50 flex justify-between items-center">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Organization Members</h2>
           </div>
-          <div className="divide-y divide-base">
+          <div className="divide-y divide-slate-50">
             {loading ? (
-              <div className="p-8 text-center animate-pulse text-slate-300">Syncing Team Data...</div>
+              <div className="p-10 text-center animate-pulse text-slate-300 font-bold uppercase tracking-widest text-[10px]">Syncing Personnel Data...</div>
             ) : employees.length > 0 ? (
               employees.map((emp) => (
-                <EmployeeRow 
-                  key={emp.id} 
-                  name={emp.full_name} 
-                  position={emp.position || 'Staff'} 
-                  dept={emp.contract_type || 'General'} 
-                  status="Active" 
-                />
+                <div key={emp.id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-primary text-xs">
+                      {emp.full_name.split(' ').map((n:any) => n[0]).join('')}
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-900">{emp.full_name}</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{emp.position || 'Staff'} • {emp.contract_type || 'General'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active</span>
+                  </div>
+                </div>
               ))
             ) : (
-              <p className="p-8 text-center text-sm text-slate-400">No personnel records found.</p>
+              <p className="p-20 text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest">No personnel records found.</p>
             )}
           </div>
-        </section>
+        </div>
 
-        <section className="executive-card p-8">
-          <h2 className="text-xl font-bold mb-6">Security Events</h2>
-          <div className="space-y-4">
-             <SecurityEvent type="Login" user="A. Silva" time="Just Now" />
-             <SecurityEvent type="Schema Edit" user="System" time="15m ago" />
-             <SecurityEvent type="Key Rotation" user="Admin" time="2h ago" />
+        <div className="arise-card">
+          <div className="p-6 border-b border-slate-50">
+             <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Security Events</h2>
           </div>
-        </section>
+          <div className="p-6 space-y-4">
+             <SecurityEvent type="Login" user="A. Silva" time="Just Now" color="text-primary" />
+             <SecurityEvent type="Schema Edit" user="System" time="15m ago" color="text-amber-500" />
+             <SecurityEvent type="Key Rotation" user="Admin" time="2h ago" color="text-emerald-500" />
+          </div>
+        </div>
       </div>
     </main>
   );
 }
 
-function StatMini({ title, value }: any) {
+function MetricSmall({ title, value, icon }: any) {
   return (
-    <div className="executive-card p-6">
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{title}</p>
-      <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+    <div className="arise-card p-6">
+      <div className="flex justify-between items-start mb-4">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
+        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">{icon}</div>
+      </div>
+      <h3 className="text-2xl font-black text-slate-900 leading-none tracking-tighter">{value}</h3>
     </div>
   );
 }
 
-function EmployeeRow({ name, position, dept, status }: any) {
+function SecurityEvent({ type, user, time, color }: any) {
   return (
-    <div className="flex items-center justify-between p-6 hover:bg-base/20 transition-all group">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-primary/10 rounded-base flex items-center justify-center font-bold text-primary">
-           {name.split(' ').map((n:any) => n[0]).join('')}
-        </div>
-        <div>
-           <p className="font-bold text-slate-900">{name}</p>
-           <p className="text-xs text-slate-500 font-medium">{position} • {dept}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-         <div className={`w-1.5 h-1.5 rounded-full ${status === 'Active' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-amber-500'}`} />
-         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{status}</span>
-      </div>
-    </div>
-  );
-}
-
-function SecurityEvent({ type, user, time }: any) {
-  return (
-    <div className="p-3 bg-base/40 rounded-base border-l-2 border-primary">
+    <div className="p-4 bg-slate-50 rounded-2xl border-l border-primary/20">
        <div className="flex justify-between items-center mb-1">
-          <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">{type}</span>
-          <span className="text-[10px] text-slate-400 font-medium">{time}</span>
+          <span className={`text-[9px] font-black uppercase tracking-tighter ${color}`}>{type}</span>
+          <span className="text-[9px] text-slate-400 font-bold uppercase">{time}</span>
        </div>
-       <p className="text-xs text-slate-600">Action performed by <span className="font-bold text-slate-900">{user}</span></p>
+       <p className="text-[10px] text-slate-500 font-medium">By <span className="text-slate-900 font-bold">{user}</span></p>
     </div>
   );
 }
-

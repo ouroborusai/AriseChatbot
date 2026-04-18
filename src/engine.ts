@@ -1,81 +1,146 @@
 import { createClient } from '@supabase/supabase-js';
+import { SemanticCache } from './services/semantic-cache';
 
 /**
  * OUROBORUS AI NEURAL ENGINE
- * Architecture: Diamond v6.0 | Persona: Synthetic Architect
+ * Architecture: Diamond v6.5 | Persona: Dynamic Personal Agent
+ * Managing the intelligence cycle via System Settings and Templates.
  */
-
 export class OuroborusEngine {
   private supabase;
+  private cache;
   private readonly companyId: string;
+  private readonly geminiApiKey: string;
 
-  constructor(supabaseUrl: string, supabaseAnonKey: string, companyId: string) {
-    this.supabase = createClient(supabaseUrl, supabaseAnonKey);
+  constructor(supabaseUrl: string, supabaseServiceKey: string, companyId: string, geminiApiKey: string) {
+    this.supabase = createClient(supabaseUrl, supabaseServiceKey);
+    this.cache = new SemanticCache(supabaseUrl, supabaseServiceKey);
     this.companyId = companyId;
+    this.geminiApiKey = geminiApiKey;
   }
 
-  /**
-   * Main Response Logic - Follows the Industrial 5-Step Protocol
-   */
   async generateResponse(contactId: string, userMessage: string) {
-    console.log('--- Phase 1: Input Validation ---');
-    if (!this.companyId || !contactId) throw new Error('Security Violation: Missing Tenant or Contact Identity.');
+    // 1. Semantic Cache Lookup (Performance First)
+    const cached = await this.cache.getResponse(userMessage);
+    if (cached) return { text: cached, buttons: ['Menú Principal', 'Consultar Saldo'] };
 
-    // Step 2: RAG & Cache Lookup
-    console.log('--- Phase 2: Context Retrieval (RAG & Cache) ---');
-    const cachedResponse = await this.checkSemanticCache(userMessage);
-    if (cachedResponse) return cachedResponse;
+    // 2. Identification Logic (RUT)
+    const rutMatch = userMessage.match(/(\d{1,2}\.?\d{3}\.?\d{3}-?[0-9kK])/);
+    if (rutMatch) await this.handleIdentification(contactId, rutMatch[0]);
 
-    // Step 3: Structural Routing (Real-time Data)
-    console.log('--- Phase 3: Live Data Integration ---');
-    const context = await this.getIntegratedContext(contactId);
+    // 3. Deep Context Retrieval
+    const context = await this.getDeepContext(contactId);
+    
+    // 4. Human Handoff Intent Detection
+    if (this.isRequestingHuman(userMessage)) {
+      return await this.triggerHumanHandoff(contactId, userMessage);
+    }
 
-    // Step 4: Architect Synthesis
-    console.log('--- Phase 4: Persona Implementation ---');
-    const response = await this.callLLM(userMessage, context);
+    // 5. Dynamic Prompt Synthesis
+    // Fetch prompt from System Settings (AI Studio)
+    const { data: settings } = await this.supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'system_prompt')
+      .single();
 
-    // Step 5: Finalization & Telemetry
-    console.log('--- Phase 5: Telemetry Audit ---');
-    await this.logTelemetry(userMessage, response);
+    const basePrompt = settings?.value || "Eres Ouroborus AI, un asistente técnico profesional.";
 
-    return response;
-  }
+    // 6. LLM Generation
+    const aiResponse = await this.callGeminiDynamic(userMessage, context, basePrompt);
 
-  private async checkSemanticCache(query: string) {
-    const { data } = await this.supabase
-      .from('ai_semantic_cache')
-      .select('response_text')
-      .eq('query_hash', this.hash(query))
-      .maybeSingle();
-    return data?.response_text;
-  }
-
-  private async getIntegratedContext(contactId: string) {
-    // Pull Data based on our new Structural Flow
-    const [contact, inventory, orders] = await Promise.all([
-      this.supabase.from('contacts').select('*').eq('id', contactId).eq('company_id', this.companyId).single(),
-      this.supabase.from('inventory_items').select('*').eq('company_id', this.companyId),
-      this.supabase.from('sales_orders').select('*').eq('contact_id', contactId).eq('company_id', this.companyId)
+    // 7. Telemetry & Cache
+    await Promise.all([
+      this.cache.saveResponse(userMessage, aiResponse.text),
+      this.logTelemetry(userMessage, aiResponse.text)
     ]);
 
-    return { contact: contact.data, inventory: inventory.data, orders: orders.data };
+    return aiResponse;
+  }
+
+  private async getDeepContext(contactId: string) {
+    const [contact, requests, compliance, reminders] = await Promise.all([
+      this.supabase.from('contacts').select('*, companies(*)').eq('id', contactId).single(),
+      this.supabase.from('service_requests').select('*').eq('contact_id', contactId).eq('status', 'pending').limit(2),
+      this.supabase.from('company_compliance').select('*').eq('status', 'pending').limit(1),
+      this.supabase.from('reminders').select('*').eq('contact_id', contactId).eq('status', 'pending').limit(2)
+    ]);
+
+    return { 
+      contact: contact.data, 
+      company: contact.data?.companies,
+      requests: requests.data,
+      compliance: compliance.data,
+      reminders: reminders.data
+    };
+  }
+
+  private async handleIdentification(contactId: string, rut: string) {
+    const cleanRut = rut.replace(/\./g, '');
+    await this.supabase.from('contacts').update({ rut: cleanRut }).eq('id', contactId);
+  }
+
+  private isRequestingHuman(msg: string): boolean {
+    const keywords = ['clave', 'ayuda', 'asesor', 'humano', 'persona', 'hablar con alguien'];
+    return keywords.some(k => msg.toLowerCase().includes(k));
+  }
+
+  private async triggerHumanHandoff(contactId: string, msg: string) {
+    await this.supabase.from('customer_requests').insert({
+      contact_id: contactId,
+      company_id: this.companyId,
+      request_type: 'human_handoff',
+      source: 'whatsapp_ai',
+      details: { original_message: msg }
+    });
+    return {
+      text: "🚀 He notificado a un asesor de **MTZ Consultores**. Te contactarán a la brevedad para ayudarte personalmente.",
+      buttons: ['Soporte VIP', 'Ver Estado']
+    };
+  }
+
+  private async callGeminiDynamic(prompt: string, context: any, systemPrompt: string) {
+    const fullPrompt = `
+      ${systemPrompt}
+      
+      CONTEXTO ACTUAL:
+      - Cliente: ${context.contact?.name || 'No identificado'}
+      - Empresa: ${context.company?.legal_name || 'N/A'}
+      - RUT: ${context.contact?.rut || 'N/A'}
+      - Trámites Pendientes: ${JSON.stringify(context.requests || [])}
+      - Vencimientos Próximos: ${JSON.stringify(context.compliance || [])}
+      - Recordatorios: ${JSON.stringify(context.reminders || [])}
+      
+      Usuario dice: ${prompt}
+    `;
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${this.geminiApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
+      });
+      const data = await response.json();
+      const rawText = data.candidates[0].content.parts[0].text;
+      
+      const parts = rawText.split('---');
+      const text = parts[0].trim();
+      const buttonsStr = parts[1];
+      const buttons = buttonsStr ? buttonsStr.split('|').map((b: string) => b.trim()) : ['Consultar Estado', 'Hablar con Asesor'];
+
+      return { text, buttons };
+    } catch (e) {
+      return { text: "⚠️ Sistema en mantenimiento. Un asesor tomará tu caso.", buttons: ['Soporte'] };
+    }
   }
 
   private async logTelemetry(input: string, output: string) {
     await this.supabase.from('ai_api_telemetry').insert({
       company_id: this.companyId,
-      tokens_input: input.length / 4, // Approx
-      tokens_output: output.length / 4,
-      model: 'gemini-2.5-flash-lite'
+      tokens_input: Math.ceil(input.length / 4),
+      tokens_output: Math.ceil(output.length / 4),
+      status: 'success',
+      usage_type: 'conversational'
     });
-  }
-
-  private async callLLM(msg: string, ctx: any) {
-    // This is a placeholder for the actual API call to Gemini
-    return `[Synthetic Architect]: Procesando flujo para ${ctx.contact?.name || 'Cliente'}...`;
-  }
-
-  private hash(s: string) {
-    return s.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0).toString();
   }
 }
