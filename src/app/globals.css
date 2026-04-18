@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #135bec;
+  --background: #f8fafc;
+  --surface: #ffffff;
+}
+
+body {
+  background-color: var(--background);
+  color: #0f172a;
+}
+
+/* Tonal Shifts Rule */
+.surface-card {
+  background: var(--surface);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.tonal-bg {
+  background-color: #f1f5f9;
+}
