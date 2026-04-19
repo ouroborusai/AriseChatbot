@@ -40,6 +40,10 @@ serve(async (req: Request) => {
       } else if (message.type === 'interactive') {
         interactiveData = message.interactive
         messageContent = interactiveData.list_reply?.title || interactiveData.button_reply?.title || ''
+      } else if (message.type === 'audio') {
+        const audioId = message.audio.id;
+        messageContent = `[AUDIO_MESSAGE_RECEIVED: ${audioId}]`; 
+        console.log(`AUDIO_RECEIVED: ${audioId}. Ready for Transcription Pipeline.`);
       }
 
       // 1. Identificación Multi-Tenant (Priorizar empresa con token activo si hay colisión)

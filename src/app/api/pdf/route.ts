@@ -10,62 +10,95 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Missing required parameters (targetPhone, whatsappToken, phoneNumberId)' }, { status: 400 });
     }
 
-    const design_html = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #1e293b; padding: 40px; }
-        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0045bd; padding-bottom: 20px; margin-bottom: 30px; }
-        .title { color: #0045bd; font-size: 24px; font-weight: bold; margin: 0; text-transform: uppercase; }
-        .details p { margin: 5px 0; color: #64748b; font-size: 14px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background: #f8fafc; color: #334155; padding: 12px; text-align: left; border-bottom: 2px solid #cbd5e1; font-size: 13px; text-transform: uppercase; }
-        td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-        .qty { text-align: center; font-weight: bold; }
-        .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #94a3b8; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div>
-            <h1 class="title">REPORTE DE ${reportType || 'SISTEMA'}</h1>
-            <div class="details">
-                <p>Generado autom\u00E1ticamente por Ouroborus AI</p>
+    const getTemplate = (type: string) => {
+      const baseStyles = `
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #0c0e12; color: #ffffff; padding: 40px; margin: 0; }
+        .bg-gradient { position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0,69,189,0.15) 0%, rgba(0,0,0,0) 70%); z-index: -1; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 24px; backdrop-filter: blur(10px); margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 30px; }
+        .title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; background: linear-gradient(90deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .meta { color: #94a3b8; font-size: 12px; font-variant-numeric: tabular-nums; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; color: #94a3b8; font-size: 11px; text-transform: uppercase; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        td { padding: 16px 12px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .badge-success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .badge-warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .badge-error { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .footer { margin-top: 60px; font-size: 11px; color: #475569; text-align: center; letter-spacing: 0.05em; }
+        .diamond-accent { color: #6366f1; font-weight: bold; }
+      `;
+
+      if (type.toLowerCase().includes('dashboard') || type.toLowerCase().includes('resumen')) {
+        return `
+          <!DOCTYPE html>
+          <html>
+          <head><style>${baseStyles}</style></head>
+          <body>
+            <div class="bg-gradient"></div>
+            <div class="header">
+              <div>
+                <h1 class="title">DIAMOND EXECUTIVE DASHBOARD</h1>
+                <div class="meta">Ouroborus Neural Architecture | Arise Business OS v7.1</div>
+              </div>
+              <div style="text-align: right">
+                <div class="meta">EMITIDO: {{date}}</div>
+                <div class="meta">CLIENTE: <span class="diamond-accent">{{company_name}}</span></div>
+              </div>
             </div>
-        </div>
-        <div class="details" style="text-align: right;">
-            <p><strong>Emitido:</strong> {{date}}</p>
-            <p><strong>Operaci\u00F3n:</strong> {{company_name}}</p>
-        </div>
-    </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>REF / ID</th>
-                <th>Descripci\u00F3n del \u00CDtem</th>
-                <th class="qty">Estado / Valor</th>
-            </tr>
-        </thead>
-        <tbody>
+            <div class="glass-card">
+              <h2 style="font-size: 16px; margin-top: 0">S\u00EDntesis de Operaciones</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>M\u00D3DULO / REF</th>
+                    <th>DEFINICI\u00D3N</th>
+                    <th style="text-align: right">KPI / ESTATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{#each items}}
+                  <tr>
+                    <td style="color: #6366f1; font-weight: bold">{{sku}}</td>
+                    <td>{{name}}</td>
+                    <td style="text-align: right">
+                      <span class="badge {{#if low_stock}}badge-error{{else}}badge-success{{/if}}">{{quantity}}</span>
+                    </td>
+                  </tr>
+                  {{/each}}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="footer">Este documento ha sido generado mediante inteligencia de negocios sint\u00E9tica. Prohibida su divulgaci\u00F3n no autorizada.</div>
+          </body>
+          </html>
+        `;
+      }
+
+      // Default Template
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head><style>${baseStyles}</style></head>
+        <body>
+          <div class="header">
+            <h1 class="title">REPORTE T\u00C9CNICO: {{reportType}}</h1>
+            <div class="meta">{{date}}</div>
+          </div>
+          <div class="glass-card">
             {{#each items}}
-            <tr>
-                <td style="color: #64748b; font-size: 12px;">{{sku}}</td>
-                <td><strong>{{name}}</strong></td>
-                <td class="qty" style="color: {{#if low_stock}}#ef4444{{else}}#10b981{{/if}};">{{quantity}}</td>
-            </tr>
+            <div style="margin-bottom: 8px; font-size: 13px;">\u2022 {{name}}: <span class="diamond-accent">{{quantity}}</span></div>
             {{/each}}
-        </tbody>
-    </table>
+          </div>
+        </body>
+        </html>
+      `;
+    };
 
-    <div class="footer">
-        <p>Documento inteligente generado confidencialmente mediante Arise Business OS v7.0.</p>
-    </div>
-</body>
-</html>
-    `;
+    const design_html = getTemplate(reportType || 'Resumen');
 
     // Dynamic mock response for immediate wow-factor
     const mockData = {
