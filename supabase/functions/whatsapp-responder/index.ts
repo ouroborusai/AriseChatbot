@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
     await supabase.from('messages').insert({ 
       conversation_id: contact_id, 
       content: responseText, 
-      role: 'assistant',
+      sender_type: 'bot',
       metadata: { 
         interactive_buttons: buttons.slice(0, 10),
         interactive_type: buttons.length > 3 ? 'list' : 'button'
