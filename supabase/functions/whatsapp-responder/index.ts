@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const [textPart, buttonsPart] = rawOutput.split('---');
     const responseText = textPart.trim();
     const buttons = buttonsPart 
-      ? buttonsPart.split('|').map(b => b.trim()).filter(b => b.length > 0) 
+      ? buttonsPart.split('|').map((b: string) => b.trim()).filter((b: string) => b.length > 0) 
       : ['Menú Principal', 'Anotar Recordatorio', 'Consultar Estado'];
 
     // 5. Registro y Respuesta con Metadatos Dinámicos
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
       type: buttons.length > 3 ? 'list' : 'button'
     }), { headers: { "Content-Type": "application/json" } });
 
-  } catch (err) {
+  } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 });
