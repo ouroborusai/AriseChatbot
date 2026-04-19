@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
-  ShieldLock, 
+  ShieldCheck, 
   Upload, 
   FileText, 
   Search, 
@@ -70,7 +70,7 @@ export default function ClientVaultPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <ShieldLock className="text-[#6366f1]" size={20} />
+              <ShieldCheck className="text-[#6366f1]" size={20} />
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Secure_Encryption_Active</span>
             </div>
             <h1 className="text-4xl font-black italic uppercase tracking-tighter">B\u00F3veda <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6366f1] to-[#a855f7]">Digital v7.1</span></h1>
