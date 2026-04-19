@@ -179,7 +179,11 @@ serve(async (req: Request) => {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                contents: [{ parts: [{ text: `${systemPrompt}\n\nCliente: ${messageContent}` }] }]
+                contents: [{ 
+                  parts: [{ 
+                    text: `${systemPrompt}${messageContent.length < 5 ? '\n(El usuario envió un mensaje corto/test. Sé breve y pregúntale cómo puedes ayudarle hoy de forma amigable.)' : ''}\n\nCliente: ${messageContent}` 
+                  }] 
+                }]
               })
             });
 
@@ -202,53 +206,55 @@ serve(async (req: Request) => {
         // Parsear botones: "Texto --- Boton1 | Boton2"
         let payload: any = { messaging_product: "whatsapp", to: senderPhoneRaw, type: "text", text: { body: aiText } };
 
-        if (aiText.includes('---')) {
-          const portions = aiText.split('---');
-          const textBody = portions[0].trim();
-          const optionsRaw = portions[1];
-          const options = optionsRaw.split('|').map(o => o.trim()).filter(o => o.length > 0);
-          interactiveButtons = options;
-          
-          if (options.length > 0 && options.length <= 3) {
-            payload = {
-              messaging_product: "whatsapp",
-              to: senderPhoneRaw,
-              type: "interactive",
-              interactive: {
-                type: "button",
-                body: { text: textBody.substring(0, 1024) },
-                action: {
-                  buttons: options.map((opt, i) => ({
-                    type: "reply",
-                    reply: { id: `action_${i}_${Date.now()}`, title: opt.substring(0, 20) }
+        if (!aiText.includes('---')) {
+          aiText += "\n\n--- 👥 Ayuda | 🏠 Menú Principal | 📊 Ver Status";
+        }
+
+        const portions = aiText.split('---');
+        const textBody = portions[0].trim();
+        const optionsRaw = portions[1];
+        const options = optionsRaw.split('|').map(o => o.trim()).filter(o => o.length > 0);
+        interactiveButtons = options;
+        
+        if (options.length > 0 && options.length <= 3) {
+          payload = {
+            messaging_product: "whatsapp",
+            to: senderPhoneRaw,
+            type: "interactive",
+            interactive: {
+              type: "button",
+              body: { text: textBody.substring(0, 1024) },
+              action: {
+                buttons: options.map((opt, i) => ({
+                  type: "reply",
+                  reply: { id: `action_${i}_${Date.now()}`, title: opt.substring(0, 20) }
+                }))
+              }
+            }
+          };
+        } else if (options.length > 3) {
+          payload = {
+            messaging_product: "whatsapp",
+            to: senderPhoneRaw,
+            type: "interactive",
+            interactive: {
+              type: "list",
+              header: { type: "text", text: "Menú Arise" },
+              body: { text: textBody.substring(0, 1024) },
+              footer: { text: "Selecciona una opción" },
+              action: {
+                button: "Ver Opciones",
+                sections: [{
+                  title: "Opciones disponibles",
+                  rows: options.slice(0, 10).map((opt, i) => ({
+                    id: `list_${i}_${Date.now()}`,
+                    title: opt.substring(0, 24),
+                    description: "Toca para elegir"
                   }))
-                }
+                }]
               }
-            };
-          } else if (options.length > 3) {
-            payload = {
-              messaging_product: "whatsapp",
-              to: senderPhoneRaw,
-              type: "interactive",
-              interactive: {
-                type: "list",
-                header: { type: "text", text: "Menú Arise" },
-                body: { text: textBody.substring(0, 1024) },
-                footer: { text: "Selecciona una opción" },
-                action: {
-                  button: "Ver Opciones",
-                  sections: [{
-                    title: "Opciones disponibles",
-                    rows: options.slice(0, 10).map((opt, i) => ({
-                      id: `list_${i}_${Date.now()}`,
-                      title: opt.substring(0, 24),
-                      description: "Toca para elegir"
-                    }))
-                  }]
-                }
-              }
-            };
-          }
+            }
+          };
         }
 
         // Guardar mensaje del bot
