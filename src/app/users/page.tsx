@@ -11,8 +11,8 @@ export default function UsersManagement() {
   useEffect(() => {
     async function fetchData() {
       const [uRes, cRes] = await Promise.all([
-        supabase.from('user_profiles').select('*'),
-        supabase.from('companies').select('id, legal_name')
+        supabase.from('profiles').select('*'),
+        supabase.from('companies').select('id, name')
       ]);
       setUsers(uRes.data || []);
       setCompanies(cRes.data || []);
@@ -26,7 +26,7 @@ export default function UsersManagement() {
       <header className="flex justify-between items-center mb-10">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Identity Center</h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">OS Ejecutivo Neural / v6.22 Industrial Edition</p>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">OS Ejecutivo Neural / v7.0 Diamond Edition</p>
         </div>
         <button className="btn-arise">+ Authorize User</button>
       </header>
@@ -84,7 +84,7 @@ export default function UsersManagement() {
               <div>
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Assign to Company</label>
                 <select className="w-full bg-slate-800 border-none rounded-xl p-3 text-xs font-bold text-white outline-none ring-primary focus:ring-1">
-                  {companies.map(c => <option key={c.id} value={c.id}>{c.legal_name}</option>)}
+                  {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
 
@@ -96,7 +96,7 @@ export default function UsersManagement() {
 
           <div className="arise-card p-6 bg-slate-50/50 border-dashed">
             <p className="text-[9px] font-bold text-slate-400 tracking-wide leading-relaxed italic">
-              * Access authorizations are audited by the Arise v6.22 Protocol. Revocation is immediate across all synchronized endpoints.
+              * Access authorizations are audited by the Arise v7.0 Protocol. Revocation is immediate across all synchronized endpoints.
             </p>
           </div>
         </div>

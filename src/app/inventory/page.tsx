@@ -22,6 +22,7 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   const fetchInventory = async (currentPage: number) => {
     setLoading(true);
@@ -29,25 +30,53 @@ export default function InventoryPage() {
     
     // Bloqueo estricto de nulos
     if (!activeCompanyId || activeCompanyId === 'null' || activeCompanyId === 'undefined') {
+      setLoading(false);
       return;
     }
 
-    const { count } = await supabase
-      .from('inventory_items')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', activeCompanyId);
+    const isGlobal = activeCompanyId === 'global';
+    
+    try {
+      // 1. Contador Maestro
+      let countQuery = supabase
+        .from('inventory_items')
+        .select('*', { count: 'exact', head: true });
+      
+      if (!isGlobal) countQuery = countQuery.eq('company_id', activeCompanyId);
+      const { count } = await countQuery;
+      setTotalCount(count || 0);
 
-    setTotalCount(count || 0);
+      // 2. Fetch de Datos
+      let dataQuery = supabase
+        .from('inventory_items')
+        .select('*');
+      
+      if (!isGlobal) dataQuery = dataQuery.eq('company_id', activeCompanyId);
+      
+      const { data, error } = await dataQuery
+        .order('current_stock', { ascending: true })
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
-    const { data } = await supabase
-      .from('inventory_items')
-      .select('*')
-      .eq('company_id', activeCompanyId)
-      .order('current_stock', { ascending: true })
-      .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+      if (error) throw error;
+      if (data) setItems(data);
 
-    if (data) setItems(data);
-    setLoading(false);
+      // 3. Fetch de Transacciones (Kardex)
+      let transQuery = supabase
+        .from('inventory_transactions')
+        .select('*, inventory_items(name)');
+      
+      if (!isGlobal) transQuery = transQuery.eq('company_id', activeCompanyId);
+      
+      const { data: transData } = await transQuery
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (transData) setTransactions(transData);
+    } catch (err) {
+      console.error('INVENTORY NODE ERROR:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -59,7 +88,7 @@ export default function InventoryPage() {
       <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 mb-12">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Centro de Operaciones</h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">OS Ejecutivo Neural / v6.22 Industrial Edition</p>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">OS Ejecutivo Neural / v7.0 Diamond Edition</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
           <div className="relative group flex-1 lg:flex-none">
@@ -170,7 +199,39 @@ export default function InventoryPage() {
           <button onClick={() => setPage(p => p + 1)} disabled={(page + 1) * PAGE_SIZE >= totalCount} className="w-12 h-12 arise-card flex items-center justify-center text-slate-400 hover:text-primary disabled:opacity-20 transition-all shadow-sm"><ArrowRight size={18}/></button>
         </div>
       </div>
-     </div>
+      </div>
+
+      <div className="mt-12">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6 px-2">Historial Neural de Movimientos (Kardex)</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {transactions.map(t => (
+            <div key={t.id} className="arise-card p-6 flex items-center justify-between group hover:bg-slate-50/50 transition-all border-dashed">
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${t.type === 'in' ? 'bg-emerald-50 text-emerald-500' : 'bg-red-50 text-red-500'}`}>
+                  {t.type === 'in' ? <ArrowLeft size={16} className="-rotate-45" /> : <ArrowRight size={16} className="-rotate-45" />}
+                </div>
+                <div>
+                  <p className="text-[11px] font-black text-slate-900 uppercase truncate max-w-[200px]">{t.inventory_items?.name}</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">
+                    {t.type === 'in' ? 'Entrada de Suministro' : t.type === 'out' ? 'Salida por Despacho' : 'Ajuste de Auditoría'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {t.type === 'in' ? '+' : '-'}{t.quantity}
+                </p>
+                <p className="text-[9px] font-bold text-slate-300 uppercase mt-1">{new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              </div>
+            </div>
+          ))}
+          {transactions.length === 0 && (
+            <div className="col-span-full p-12 text-center bg-slate-50/50 rounded-[32px] border border-dashed border-slate-100">
+               <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Sin movimientos registrados hoy</p>
+            </div>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

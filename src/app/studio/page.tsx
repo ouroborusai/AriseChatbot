@@ -33,26 +33,50 @@ export default function AIStudio() {
   const [saving, setSaving] = useState(false);
   const [templateSearch, setTemplateSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todas');
+  const [telemetry, setTelemetry] = useState<any>({ tokens: 0, cost: 0, latency: 0 });
 
   useEffect(() => {
     async function loadStudioData() {
-      const { data: settings } = await supabase
-        .from('system_settings')
-        .select('*')
-        .eq('key', 'system_prompt')
-        .single();
-      
-      const { data: templateData } = await supabase
-        .from('templates')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (settings) setSystemPrompt(settings.value);
-      if (templateData) {
-        setTemplates(templateData);
-        setFilteredTemplates(templateData);
+      const activeCompanyId = typeof window !== 'undefined' ? localStorage.getItem('arise_active_company') : null;
+      if (!activeCompanyId || activeCompanyId === 'null') {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      try {
+        const { data: prompts } = await supabase
+          .from('ai_prompts')
+          .select('*')
+          .eq('company_id', activeCompanyId)
+          .order('created_at', { ascending: true });
+
+        const { data: telemetryData } = await supabase
+          .from('ai_api_telemetry')
+          .select('tokens_input, tokens_output, cost_estimated, latency_ms')
+          .eq('company_id', activeCompanyId);
+        
+        if (prompts) {
+          const mainPrompt = prompts.find(p => p.category === 'General') || prompts[0];
+          if (mainPrompt) setSystemPrompt(mainPrompt.system_prompt || '');
+          setTemplates(prompts);
+          setFilteredTemplates(prompts);
+        }
+
+        if (telemetryData) {
+          const stats = telemetryData.reduce((acc: any, curr: any) => ({
+            tokens: acc.tokens + ((curr.tokens_input || 0) + (curr.tokens_output || 0)),
+            cost: acc.cost + (Number(curr.cost_estimated) || 0),
+            latency: acc.latency + (curr.latency_ms || 0)
+          }), { tokens: 0, cost: 0, latency: 0 });
+          
+          if (telemetryData.length > 0) stats.latency = Math.round(stats.latency / telemetryData.length);
+          setTelemetry(stats);
+        }
+      } catch (e) {
+        console.error("Studio Sync Error:", e);
+      } finally {
+        setLoading(false);
+      }
     }
     loadStudioData();
   }, []);
@@ -73,11 +97,22 @@ export default function AIStudio() {
 
   const savePrompt = async () => {
     setSaving(true);
-    await supabase
-      .from('system_settings')
-      .update({ value: systemPrompt })
-      .eq('key', 'system_prompt');
-    setSaving(false);
+    const activeCompanyId = localStorage.getItem('arise_active_company');
+    
+    // Upsert del prompt general de la empresa
+    const { error } = await supabase
+      .from('ai_prompts')
+      .upsert({ 
+        company_id: activeCompanyId,
+        name: 'ADN Neural Maestro',
+        category: 'General',
+        system_prompt: systemPrompt,
+        is_active: true
+      }, { onConflict: 'company_id, name' });
+
+    if (error) console.error('Error saving DNA:', error);
+    setSaving(true);
+    setTimeout(() => setSaving(false), 1000);
   };
 
   if (loading) return (
@@ -96,7 +131,7 @@ export default function AIStudio() {
           <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Arise Studio</h1>
           <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
             <Sparkles size={12} className="text-primary" />
-            AI Behavior & Response Control Center / v6.22 Industrial Edition
+            AI Behavior & Response Control Center / v7.0 Diamond Edition
           </p>
         </div>
         <div className="flex items-center bg-slate-100/50 p-1.5 rounded-2xl border border-slate-100 shadow-inner">
@@ -140,7 +175,7 @@ export default function AIStudio() {
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
                   className="w-full h-[550px] pl-16 pr-8 py-8 text-slate-800 text-xs font-mono leading-relaxed outline-none resize-none"
-                  placeholder="Identidad: Arise Intelligence v6.22..."
+                  placeholder="Identidad: Arise Intelligence v7.0..."
                 />
               </div>
               <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end">
@@ -182,7 +217,7 @@ export default function AIStudio() {
                 <div className="flex justify-between items-end">
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase">Input Token Load</p>
-                      <p className="text-xl font-bold text-slate-900">12,4k</p>
+                      <p className="text-xl font-bold text-slate-900">{(telemetry.tokens / 1000).toFixed(1)}k</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[9px] font-black text-emerald-500 uppercase">Óptimo</p>
@@ -196,8 +231,8 @@ export default function AIStudio() {
                       <Cpu size={16} />
                     </div>
                     <div>
-                      <p className="text-[9px] font-black text-slate-900 uppercase tracking-tighter">Nervio Central</p>
-                      <p className="text-[9px] font-bold text-slate-400">Gemini 2.5 Flash Lite</p>
+                      <p className="text-[9px] font-black text-slate-900 uppercase tracking-tighter">Latencia Media</p>
+                      <p className="text-[9px] font-bold text-slate-400">{telemetry.latency}ms (Óptimo)</p>
                     </div>
                 </div>
               </div>
@@ -264,7 +299,9 @@ export default function AIStudio() {
                       </span>
                     </div>
                     <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-tight mb-3 pr-8">{t.name}</p>
-                    <p className="text-[10px] text-slate-500 line-clamp-2 font-medium leading-relaxed group-hover:text-slate-700 transition-colors">{t.content}</p>
+                    <p className="text-[10px] text-slate-500 line-clamp-2 font-medium leading-relaxed group-hover:text-slate-700 transition-colors">
+                      {t.description || t.system_prompt.substring(0, 100) + '...'}
+                    </p>
                   </div>
                   <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-50">
                       <span className="text-[10px] font-black text-primary opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all uppercase tracking-widest">Configurar Skill</span>

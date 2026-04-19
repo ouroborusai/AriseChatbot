@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { 
   LayoutDashboard, 
+  MessageSquare,
   Users, 
   Package, 
   BarChart3, 
@@ -23,6 +24,7 @@ import {
 
 const menuItems = [
   { name: 'Vista General', icon: LayoutDashboard, path: '/' },
+  { name: 'Mensajes', icon: MessageSquare, path: '/messages' },
   { name: 'CRM (Pagos)', icon: Users, path: '/crm' },
   { name: 'Inventario', icon: Package, path: '/inventory' },
   { name: 'Analítica', icon: BarChart3, path: '/billing' },
@@ -52,27 +54,41 @@ export default function Sidebar() {
 
       const { data: accessData } = await supabase
         .from('user_company_access')
-        .select('company_id, role, companies(legal_name)')
+        .select('company_id, role, companies(name)')
         .eq('user_id', user.id);
 
       if (accessData) {
         const companyList = accessData
           .map((item: any) => ({
             id: item.company_id,
-            name: item.companies?.legal_name || 'Empresa sin Nombre (RLS?)',
+            name: item.companies?.name || 'Empresa sin Nombre',
             role: item.role
           }))
           .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         
-        setCompanies(companyList);
-        setFilteredCompanies(companyList);
+        // Obtener el rol más alto disponible para el menú
+        const highestRole = companyList.some(c => c.role === 'admin') ? 'admin' : 'staff';
+        setUserRole(highestRole);
+
+        // Añadir opción Global al principio para Admins
+        const finalCompanies = highestRole === 'admin' 
+          ? [{ id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin' }, ...companyList]
+          : companyList;
+
+        setCompanies(finalCompanies);
+        setFilteredCompanies(finalCompanies);
         
         const savedId = localStorage.getItem('arise_active_company');
-        const active = companyList.find(c => c.id === savedId) || companyList[0];
-        setActiveCompany(active);
+        let active = finalCompanies.find(c => c.id === savedId) || finalCompanies[0];
+        
+        // Si no hay empresas en absoluto, el login ya debería haber fallado, pero manejamos la salida
         if (active) {
-           setUserRole(active.role);
-           if (!savedId) localStorage.setItem('arise_active_company', active.id);
+          setActiveCompany(active);
+          setUserRole(active.role);
+          if (!savedId) localStorage.setItem('arise_active_company', active.id);
+        } else {
+          // Caso extremo: Logueado pero sin accesos (limpiar)
+          localStorage.removeItem('arise_active_company');
         }
       }
     }
@@ -108,7 +124,7 @@ export default function Sidebar() {
     window.location.href = '/auth/login';
   };
 
-  const shouldShowSelector = !(userRole === 'admin' && pathname === '/');
+  const shouldShowSelector = true; // Selector siempre visible en v6.23
 
   return (
     <>

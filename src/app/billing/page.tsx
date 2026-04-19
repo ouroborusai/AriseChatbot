@@ -17,6 +17,7 @@ import {
 export default function BillingPage() {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total: 0, tax: 0, count: 0, efficiency: 0 });
 
   const fetchBilling = async () => {
     setLoading(true);
@@ -27,15 +28,37 @@ export default function BillingPage() {
       return;
     }
 
-    const { data } = await supabase
-      .from('client_documents')
-      .select('*')
-      .eq('company_id', activeCompanyId)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    
-    if (data) setDocs(data);
-    setLoading(false);
+    const isGlobal = activeCompanyId === 'global';
+
+    try {
+      let query = supabase
+        .from('client_documents')
+        .select('id, folio, amount_total, created_at, document_type, company_id, status');
+      
+      if (!isGlobal) query = query.eq('company_id', activeCompanyId);
+      
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      
+      if (data) {
+        setDocs(data);
+        const total = data.reduce((acc, d) => acc + Number(d.amount_total), 0);
+        const paidCount = data.filter(d => d.status === 'paid').length;
+        setStats({
+          total: total,
+          tax: total * 0.19, // IVA Estimado
+          count: data.length,
+          efficiency: data.length > 0 ? (paidCount / data.length) * 100 : 0
+        });
+      }
+    } catch (err) {
+      console.error('FINANCIAL NODE ERROR:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -47,7 +70,7 @@ export default function BillingPage() {
       <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 mb-12">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Análisis Financiero & DTE</h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">OS Ejecutivo Neural / v6.22 Industrial Edition</p>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">OS Ejecutivo Neural / v7.0 Diamond Edition</p>
         </div>
         <div className="flex gap-4">
           <button className="btn-arise-outline flex items-center gap-2">
@@ -59,10 +82,10 @@ export default function BillingPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <MetricSmall title="Utilidad Neta Est." value="$152,800" drift="+12.2%" icon={DollarSign} loading={loading} />
-        <MetricSmall title="Pasivos Tributarios" value="$28,400" drift="Cerrado" icon={ShieldCheck} loading={loading} />
-        <MetricSmall title="Documentos Procesados" value={docs.length} drift="Live" icon={FileText} loading={loading} />
-        <MetricSmall title="Eficiencia de Flujo" value="94.8%" drift="Óptimo" icon={Activity} loading={loading} />
+        <MetricSmall title="Venta Bruta Est." value={`$${stats.total.toLocaleString()}`} drift="+12.2%" icon={DollarSign} loading={loading} />
+        <MetricSmall title="Pasivos Tributarios" value={`$${Math.round(stats.tax).toLocaleString()}`} drift="Sync SII" icon={ShieldCheck} loading={loading} />
+        <MetricSmall title="Documentos Procesados" value={stats.count} drift="Live" icon={FileText} loading={loading} />
+        <MetricSmall title="Eficiencia de Flujo" value={`${stats.efficiency.toFixed(1)}%`} drift={stats.efficiency > 90 ? 'Óptimo' : 'Revisar'} icon={Activity} loading={loading} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -85,16 +108,16 @@ export default function BillingPage() {
                       <FileText size={20} />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-slate-900">{doc.title || `Folio #${doc.id.slice(0,6)}`}</p>
+                      <p className="text-sm font-black text-slate-900">Documento Folio #{doc.folio}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">{doc.file_type || 'FACTURA'}</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">{doc.document_type || 'FACTURA'}</p>
                         <span className="w-1 h-1 bg-slate-200 rounded-full" />
                         <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter">SII SYNC</p>
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-black text-slate-900">${(doc.total_amount || 0).toLocaleString()}</p>
+                    <p className="text-sm font-black text-slate-900">${(doc.amount_total || 0).toLocaleString()}</p>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{new Date(doc.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}</p>
                   </div>
                 </div>

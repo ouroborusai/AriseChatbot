@@ -18,19 +18,35 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // 1. Auth Neural
+      const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
+      if (!user) throw new Error('No se pudo recuperar el perfil de usuario');
+
+      // 2. Validación de Acceso Multi-Empresa (SSOT v6.22)
+      const { data: accessData, error: accessError } = await supabase
+        .from('user_company_access')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (accessError) throw new Error('Error al validar permisos industriales');
       
-      // Reiniciar contexto de empresa para forzar recarga limpia
-      localStorage.removeItem('arise_active_company');
+      if (!accessData || accessData.length === 0) {
+        // El usuario existe en Auth pero no tiene empresas asignadas (Usuario Huérfano)
+        await supabase.auth.signOut();
+        throw new Error('ACCESO DENEGADO: Su cuenta no tiene empresas vinculadas en el nodo central.');
+      }
+
+      // 3. Sincronización Exitosa
       router.push('/');
       router.refresh();
     } catch (err: any) {
-      setError(err.message || 'Error al autenticar con el nodo central');
+      setError(err.message || 'Error crítico en el protocolo de acceso');
     } finally {
       setLoading(false);
     }
