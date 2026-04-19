@@ -132,87 +132,90 @@ export default function MessagesPage() {
   }, []);
 
   return (
-    <main className="h-[calc(100vh-40px)] flex flex-col p-4 md:p-8 overflow-hidden">
-      <header className="mb-8 flex justify-between items-center shrink-0">
+    <div className="h-screen flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-hidden">
+      <header className="mb-10 flex flex-col sm:flex-row justify-between items-center shrink-0 gap-6">
         <div>
-           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Centro de Mensajes Neurales</h1>
-           <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1">Intercepción de Datos en Tiempo Real</p>
+           <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Neural_Comm</h1>
+           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
+            <Activity size={10} className="text-primary" />
+            Real-Time Data Interception / v7.0
+           </p>
         </div>
-        <div className="flex items-center gap-4 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
-           <Activity size={14} className="text-emerald-500 animate-pulse" />
-           <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Servidor Activo (v7.0)</span>
+        <div className="flex items-center gap-4 bg-emerald-500/10 px-6 py-3 rounded-2xl">
+           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+           <span className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.2em]">Flux_Status: Active</span>
         </div>
       </header>
 
-      <div className="flex-1 flex gap-6 min-h-0">
-        {/* LISTA DE CONVERSACIONES */}
-        <div className="w-96 flex flex-col arise-card overflow-hidden">
-          <div className="p-4 border-b border-slate-50">
-            <div className="relative">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+      <div className="flex-1 flex gap-8 min-h-0">
+        {/* THREAD MATRIX */}
+        <div className="w-96 flex flex-col bg-white rounded-[32px] shadow-arise overflow-hidden border-none shrink-0 hidden lg:flex">
+          <div className="p-8 bg-[#f7f9fb]">
+            <div className="relative group">
+              <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors" />
               <input 
                 type="text" 
-                placeholder="Filtrar transmisiones..." 
+                placeholder="SCAN_THREADS_..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="arise-input w-full pl-12 h-12"
+                className="w-full bg-white text-[9px] font-black uppercase tracking-widest pl-12 pr-4 py-4 rounded-xl outline-none focus:shadow-arise transition-all"
               />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="flex-1 overflow-y-auto custom-scrollbar divide-y-0">
             {conversations.length === 0 ? (
-               <div className="flex flex-col items-center justify-center p-20 opacity-20 italic text-[11px]">Buscando conversaciones...</div>
+               <div className="flex flex-col items-center justify-center p-20 opacity-20 italic text-[11px] font-black uppercase tracking-widest">Scanning_Transmissions...</div>
             ) : (
               conversations.map((conv) => (
                 <button 
                   key={conv.id}
                   onClick={() => selectConversation(conv)}
-                  className={`w-full p-6 flex flex-col gap-2 border-b border-slate-50 transition-all hover:bg-slate-50/50 ${selectedConv?.id === conv.id ? 'bg-slate-50 border-l-4 border-l-primary' : ''}`}
+                  className={`w-full p-8 flex flex-col gap-3 transition-all hover:bg-[#f7f9fb] border-none ${selectedConv?.id === conv.id ? 'bg-[#f0f4f8]' : ''}`}
                 >
                   <div className="flex justify-between items-start">
-                    <p className="text-xs font-black text-slate-800 tracking-tight">{conv.contacts?.full_name || 'Desconocido'}</p>
-                    <span className={`text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter ${conv.status === 'waiting_human' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                      {conv.status === 'waiting_human' ? 'Humano' : 'IA'}
+                    <p className="text-[11px] font-black text-slate-900 tracking-tight uppercase italic">{conv.contacts?.full_name || 'UNKNOWN_NODE'}</p>
+                    <span className={`text-[7px] px-2 py-1 rounded-md font-black uppercase tracking-widest ${conv.status === 'waiting_human' ? 'bg-primary text-white' : 'bg-slate-200 text-slate-500'}`}>
+                      {conv.status === 'waiting_human' ? 'OPERATIONAL' : 'NEURAL'}
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400 font-bold truncate">+{conv.contacts?.phone}</p>
+                  <p className="text-[9px] text-slate-400 font-black tracking-widest">ID_CH: +{conv.contacts?.phone}</p>
                 </button>
               ))
             )}
           </div>
         </div>
 
-        {/* ÁREA DE CHAT */}
-        <div className="flex-1 arise-card flex flex-col overflow-hidden bg-white/50 backdrop-blur-sm">
+        {/* CHAT TERMINAL */}
+        <div className="flex-1 bg-white flex flex-col overflow-hidden rounded-[32px] shadow-arise border-none">
           {selectedConv ? (
             <>
-              <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-white/80 shrink-0">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg">
+              <div className="p-8 flex justify-between items-center bg-[#f7f9fb] shrink-0 border-none">
+                <div className="flex items-center gap-6">
+                  <div className="w-14 h-14 bg-slate-900 text-white rounded-[20px] flex items-center justify-center font-black text-sm shadow-xl italic">
                     {selectedConv.contacts?.full_name?.[0]}
                   </div>
                   <div>
-                    <h2 className="text-sm font-black text-slate-900">{selectedConv.contacts?.full_name}</h2>
-                    <p className="text-[10px] font-bold text-slate-400">Canal de WhatsApp Directo</p>
+                    <h2 className="text-base font-black text-slate-900 uppercase italic tracking-tight">{selectedConv.contacts?.full_name}</h2>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 underline decoration-primary/30 underline-offset-4">Direct_WhatsApp_Channel</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                    <button 
                     onClick={() => toggleHandoff(selectedConv)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                    className={`flex items-center gap-3 px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all ${
                       selectedConv.status === 'waiting_human' 
-                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100 hover:bg-emerald-600' 
-                        : 'bg-slate-100 text-slate-400 hover:bg-primary hover:text-white'
+                        ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-105' 
+                        : 'bg-white text-slate-400 shadow-sm hover:text-primary hover:shadow-md'
                     }`}
                    >
                      {selectedConv.status === 'waiting_human' ? <ShieldCheck size={14} /> : <Power size={14} />}
-                     {selectedConv.status === 'waiting_human' ? 'Control Humano Activo' : 'Tomar Control Manual'}
+                     {selectedConv.status === 'waiting_human' ? 'Control_Active' : 'Override_Control'}
                    </button>
-                   <button className="p-2 text-slate-300 hover:text-slate-900"><MoreVertical size={20} /></button>
+                   <button className="w-12 h-12 flex items-center justify-center bg-white text-slate-300 hover:text-slate-900 rounded-2xl shadow-sm transition-all"><MoreVertical size={20} /></button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar bg-slate-50/20">
+              <div className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar bg-white">
                 {messages.map((m, idx) => {
                   const isAgent = m.sender_type === 'agent';
                   const isBot = m.sender_type === 'bot';
@@ -220,18 +223,18 @@ export default function MessagesPage() {
                   
                   return (
                     <div key={idx} className={`flex ${isClient ? 'justify-start' : 'justify-end'}`}>
-                      <div className={`max-w-[80%] p-5 rounded-3xl text-sm font-medium leading-relaxed shadow-sm ring-1 ring-slate-100 ${
-                        isClient ? 'bg-white text-slate-700 rounded-tl-none' : isBot ? 'bg-slate-900 text-slate-100 rounded-tr-none' : 'bg-primary text-white rounded-tr-none'
+                      <div className={`max-w-[75%] p-8 rounded-[32px] text-sm font-bold leading-relaxed shadow-sm transition-all ${
+                        isClient ? 'bg-[#f7f9fb] text-slate-700 rounded-tl-none' : isBot ? 'bg-[#0a0c10] text-slate-100 rounded-tr-none' : 'bg-primary text-white rounded-tr-none shadow-xl shadow-primary/10'
                       }`}>
                         {(isBot || isAgent) && (
-                          <div className="flex items-center gap-2 mb-2 text-[8px] font-black uppercase tracking-widest opacity-40">
+                          <div className="flex items-center gap-3 mb-3 text-[8px] font-black uppercase tracking-[0.3em] opacity-40">
                              {isBot ? <Bot size={12}/> : <ShieldCheck size={12}/>}
-                             {isBot ? 'Arise IA' : 'Agente Humano'}
+                             {isBot ? 'Arise_Neural_Node' : 'Human_Operational_Node'}
                           </div>
                         )}
-                        <p>{m.content}</p>
-                        <span className="text-[8px] mt-2 block opacity-30 font-bold">
-                          {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        <p className="tracking-tight">{m.content}</p>
+                        <span className="text-[7px] mt-4 block opacity-30 font-black uppercase tracking-widest">
+                          {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} // TX_ID_{idx}
                         </span>
                       </div>
                     </div>
@@ -239,8 +242,8 @@ export default function MessagesPage() {
                 })}
               </div>
 
-              <div className="p-6 border-t border-slate-50 bg-white sticky bottom-0">
-                <div className="relative">
+              <div className="p-8 bg-white border-none shrink-0">
+                <div className="relative group">
                   <textarea 
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
@@ -250,16 +253,16 @@ export default function MessagesPage() {
                         sendMessage();
                       }
                     }}
-                    placeholder={selectedConv.status === 'waiting_human' ? "Escribe un mensaje..." : "IA respondiendo. Activa Control Humano para escribir."}
+                    placeholder={selectedConv.status === 'waiting_human' ? "ENTRY_MESSAGE_DATA_..." : "ENGINE_LOCK_ACTIVE: ACTIVATE OVERRIDE TO SEND"}
                     disabled={selectedConv.status !== 'waiting_human'}
-                    className="w-full bg-slate-50/80 border border-slate-100 rounded-3xl p-5 pr-20 text-sm font-bold text-slate-800 outline-none focus:ring-4 focus:ring-primary/5 min-h-[60px] max-h-[200px] resize-none disabled:opacity-50"
+                    className="w-full bg-[#f2f4f6] text-slate-900 rounded-[28px] p-8 pr-24 text-[11px] font-black uppercase tracking-widest outline-none focus:bg-white focus:shadow-arise transition-all min-h-[80px] max-h-[200px] resize-none disabled:opacity-30"
                   />
                   <button 
                     onClick={sendMessage}
                     disabled={!newMessage.trim() || selectedConv.status !== 'waiting_human'}
-                    className="absolute right-3 bottom-3 w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:scale-105 transition-all shadow-lg shadow-primary/30 disabled:grayscale disabled:opacity-20"
+                    className="absolute right-5 bottom-5 w-14 h-14 bg-primary text-white rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:grayscale disabled:opacity-20"
                   >
-                    <Send size={18} />
+                    <Send size={20} />
                   </button>
                 </div>
               </div>
@@ -272,6 +275,6 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

@@ -13,9 +13,14 @@
   --radius-xl: 32px;
   --radius-lg: 20px;
   
-  /* Shadows are now tonal-based, avoiding hard blacks */
-  --shadow-arise: 0 4px 20px -5px rgba(0, 69, 189, 0.08);
-  --shadow-arise-hover: 0 10px 40px -10px rgba(0, 69, 189, 0.15);
+  /* Shadows are now ultra-diffuse for a floating effect */
+  --shadow-arise: 0 10px 40px -10px rgba(0, 69, 189, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  --shadow-arise-hover: 0 20px 60px -15px rgba(0, 69, 189, 0.12);
+  
+  /* Glassmorphism Tokens */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-blur: blur(12px);
   
   /* Micro-Glow Effects Updated */
   --glow-primary: 0 0 15px rgba(19, 91, 236, 0.25);
@@ -24,21 +29,23 @@
 
 @layer base {
   body {
-    background-color: var(--color-bg-base);
+    background: radial-gradient(circle at top right, #ffffff, #f0f4f8);
     color: #0f172a;
     font-family: var(--font-sans);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
+    min-height: 100vh;
   }
 }
 
 @layer components {
   /* ARISE ELITE CONTAINERS (Zero Border Rule) */
   .arise-card {
-    @apply bg-white rounded-[32px] shadow-arise transition-all duration-500 border-none;
+    @apply bg-white/70 rounded-[24px] md:rounded-[40px] shadow-arise transition-all duration-300 border border-white/40;
+    backdrop-filter: var(--glass-blur);
   }
   
   .arise-card:hover {
-    @apply shadow-arise-hover -translate-y-1;
+    @apply shadow-arise-hover -translate-y-1.5 bg-white/80;
   }
 
   /* BUTTONS: THE NEURAL CORE LOOK */

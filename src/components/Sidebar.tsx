@@ -38,7 +38,6 @@ export default function Sidebar() {
   const [activeCompany, setActiveCompany] = useState<any>(null);
   const [userData, setUserData] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('viewer');
-  const [isOpen, setIsOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -127,23 +126,8 @@ export default function Sidebar() {
   const shouldShowSelector = true; // Selector siempre visible en v6.23
 
   return (
-    <>
-      <div className="lg:hidden fixed top-6 right-6 z-[60]">
-        <button onClick={() => setIsOpen(!isOpen)} className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center shadow-xl shadow-primary/30">
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
-      {isOpen && (
-        <div className="lg:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40" onClick={() => setIsOpen(false)}/>
-      )}
-
-      <aside className={`
-        fixed left-0 top-0 h-full w-76 bg-white border-r border-slate-50 flex flex-col p-8 z-50
-        transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]
-        ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        <div className="flex items-center gap-4 mb-12 px-2">
+    <aside className="fixed left-0 top-0 h-full w-72 bg-white border-r border-slate-50 flex flex-col p-6 md:p-8 z-50 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
+      <div className="flex items-center gap-4 mb-10 md:mb-12 px-2">
           <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/30 rotate-3 transform hover:rotate-0 transition-all duration-500">
             <Zap size={20} className="text-white fill-white" />
           </div>
@@ -155,7 +139,7 @@ export default function Sidebar() {
 
         {/* CUSTOM MASTER SELECTOR v6.22 */}
         {shouldShowSelector && (
-          <div className="mb-10 relative" ref={dropdownRef}>
+          <div className="mb-8 md:mb-10 relative" ref={dropdownRef}>
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4 px-2 tracking-[0.2em]">Contexto Operativo</label>
             <button 
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -209,7 +193,7 @@ export default function Sidebar() {
             const isActive = pathname === item.path;
             const Icon = item.icon;
             return (
-              <Link key={item.path} href={item.path} onClick={() => setIsOpen(false)}
+              <Link key={item.path} href={item.path}
                 className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black transition-all group ${
                   isActive ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'
                 }`}
@@ -243,6 +227,5 @@ export default function Sidebar() {
           </button>
         </div>
       </aside>
-    </>
   );
 }

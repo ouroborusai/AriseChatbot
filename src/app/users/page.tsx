@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { 
+  Activity, 
+  User, 
+  ShieldCheck, 
+  Zap, 
+  Settings2 
+} from 'lucide-react';
 
 export default function UsersManagement() {
   const [users, setUsers] = useState<any[]>([]);
@@ -22,97 +29,113 @@ export default function UsersManagement() {
   }, []);
 
   return (
-    <main className="p-10">
-      <header className="flex justify-between items-center mb-10">
+    <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-x-hidden">
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Identity Center</h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">OS Ejecutivo Neural / v7.0 Diamond Edition</p>
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Identity_Bunker</h1>
+          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
+            <Activity size={10} className="text-primary" />
+            Security & Identity Protocol / v7.0
+          </p>
         </div>
-        <button className="btn-arise">+ Authorize User</button>
+        <button className="flex items-center justify-center gap-4 bg-primary text-white px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+          <span>Authorize_New_Operator</span>
+        </button>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-        <MetricSmall title="Active Operators" value={loading ? '..' : users.length} icon="" />
-        <MetricSmall title="Connected Units" value={loading ? '..' : companies.length} icon="" />
-        <MetricSmall title="Security LeveL" value="Industrial" icon="" />
-        <MetricSmall title="Sync Integrity" value="100%" icon="" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <MetricSmall title="Active_Operators" value={loading ? '..' : users.length} icon={User} />
+        <MetricSmall title="Connected_Units" value={loading ? '..' : companies.length} icon={ShieldCheck} />
+        <MetricSmall title="Security_Level" value="Industrial" icon={Activity} />
+        <MetricSmall title="Sync_Integrity" value="100%" icon={Zap} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 arise-card">
-          <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-            <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Linked Operators</h2>
-            <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase">Total Registry: {users.length}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="lg:col-span-2 bg-white rounded-[32px] shadow-arise border-none overflow-hidden">
+          <div className="p-10 bg-[#f7f9fb] flex justify-between items-center">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Identity_Vault_Registry</h2>
+            <span className="text-[8px] font-black bg-white text-slate-400 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm">Nodes: {users.length}</span>
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y-0">
             {loading ? (
-              <div className="p-10 text-center animate-pulse text-slate-300 font-bold uppercase tracking-widest text-[10px]">Accessing Identity Vault...</div>
+              <div className="p-20 text-center animate-pulse text-slate-300 font-black uppercase tracking-widest text-[10px]">Accessing_Identity_Vault...</div>
             ) : users.map(user => (
-              <div key={user.id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-all group">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-xs">
+              <div key={user.id} className="p-10 flex items-center justify-between hover:bg-[#f7f9fb] transition-all group cursor-pointer border-none">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 bg-slate-900 text-white rounded-[24px] flex items-center justify-center font-black text-sm shadow-xl italic">
                     {user.email?.[0].toUpperCase() || '?'}
                   </div>
                   <div>
-                    <p className="text-xs font-black text-slate-900">{user.email || 'N/A'}</p>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ID: {user.id.substring(0, 8)}</p>
+                    <p className="text-sm font-black text-slate-900 uppercase italic tracking-tight">{user.email || 'N/A'}</p>
+                    <p className="text-[9px] font-mono text-slate-400 mt-2 uppercase tracking-widest opacity-60">OP_ID: {user.id.substring(0, 12)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-10">
                   <div className="text-right">
-                    <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Global Permissions</p>
-                    <p className="text-[10px] font-black text-primary uppercase tracking-wider">{user.role}</p>
+                    <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Access_Role</p>
+                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">{user.role}</p>
                   </div>
-                  <button className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-white border border-transparent hover:border-slate-100 transition-all flex items-center justify-center text-slate-400"></button>
+                  <button className="w-12 h-12 flex items-center justify-center bg-[#f2f4f6] text-slate-300 hover:text-slate-900 rounded-2xl shadow-sm transition-all"><Settings2 size={18} /></button>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="space-y-6 text-white">
-          <div className="arise-card bg-neural-dark border-none p-8">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-primary mb-8">Fast Authorization</h3>
-            <div className="space-y-6">
-              <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Select Operator</label>
-                <select className="w-full bg-slate-800 border-none rounded-xl p-3 text-xs font-bold text-white outline-none ring-primary focus:ring-1">
-                  {users.map(u => <option key={u.id} value={u.id}>{u.email || u.id}</option>)}
-                </select>
-              </div>
+        <div className="flex flex-col gap-8">
+          <div className="bg-[#0a0c10] rounded-[40px] shadow-2xl p-10 flex flex-col overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[120px] rounded-full -mr-32 -mt-32" />
+            
+            <div className="relative z-10">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-12 flex items-center gap-3">
+                <Zap size={14} />
+                Fast_Auth_Terminal
+              </h3>
+              
+              <div className="space-y-10">
+                <div className="space-y-4">
+                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] block">Operator_ID_Link</label>
+                  <select className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-[10px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 transition-all">
+                    {users.map(u => <option key={u.id} value={u.id} className="bg-slate-900">{u.email || u.id.substring(0, 8)}</option>)}
+                  </select>
+                </div>
 
-              <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Assign to Company</label>
-                <select className="w-full bg-slate-800 border-none rounded-xl p-3 text-xs font-bold text-white outline-none ring-primary focus:ring-1">
-                  {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
+                <div className="space-y-4">
+                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] block">Operational_Node_Unit</label>
+                  <select className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-[10px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 transition-all">
+                    {companies.map(c => <option key={c.id} value={c.id} className="bg-slate-900">{c.name}</option>)}
+                  </select>
+                </div>
 
-              <button className="btn-arise w-full py-4 text-[10px]">
-                Grant Industrial Access
-              </button>
+                <button className="w-full bg-primary text-white py-5 rounded-[20px] text-[10px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                  Grant_Industrial_Access
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="arise-card p-6 bg-slate-50/50 border-dashed">
-            <p className="text-[9px] font-bold text-slate-400 tracking-wide leading-relaxed italic">
-              * Access authorizations are audited by the Arise v7.0 Protocol. Revocation is immediate across all synchronized endpoints.
+          <div className="bg-[#f7f9fb] p-8 rounded-[32px] border-none shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-20" />
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-loose italic">
+              * Access authorizations are audited by the Arise v7.0 Neural Shield. All terminal operations are logged via operative telemetry.
             </p>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 
-function MetricSmall({ title, value, icon }: any) {
+function MetricSmall({ title, value, icon: Icon }: any) {
   return (
-    <div className="arise-card p-6">
-      <div className="flex justify-between items-start mb-4">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
-        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">{icon}</div>
+    <div className="bg-white p-10 rounded-[32px] shadow-arise border-none group transition-all">
+      <div className="flex justify-between items-start mb-10">
+        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em]">{title}</p>
+        <div className="w-14 h-14 rounded-[22px] bg-[#f7f9fb] flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
+          <Icon size={20} />
+        </div>
       </div>
-      <h3 className="text-2xl font-black text-slate-900 leading-none tracking-tighter">{value}</h3>
+      <h3 className="text-3xl md:text-4xl font-black text-slate-900 leading-none tracking-tighter italic uppercase">{value}</h3>
     </div>
   );
 }

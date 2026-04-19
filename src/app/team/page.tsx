@@ -2,6 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { 
+  Activity, 
+  User, 
+  ShieldCheck, 
+  FileText 
+} from 'lucide-react';
 
 export default function TeamPage() {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -22,92 +28,114 @@ export default function TeamPage() {
   }, []);
 
   return (
-    <main className="p-10">
-      <header className="flex justify-between items-center mb-10">
+    <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-x-hidden">
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Personnel & Security</h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">OS Ejecutivo Neural / v6.22 Industrial Edition</p>
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Operational_Units</h1>
+          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
+            <Activity size={10} className="text-primary" />
+            Human Capital Intelligence / v7.0
+          </p>
         </div>
-        <div className="flex gap-4">
-          <button className="btn-arise-outline">Export Directory</button>
-          <button className="btn-arise">+ Add Personnel</button>
+        <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto">
+          <button className="flex items-center justify-center gap-4 bg-[#f2f4f6] text-slate-600 px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] hover:bg-slate-200 transition-all border-none">
+            <span>Audit_Log_Export</span>
+          </button>
+          <button className="flex items-center justify-center gap-4 bg-primary text-white px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+            <span>Deploy_Personnel</span>
+          </button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-        <MetricSmall title="Active Headcount" value={loading ? '..' : employees.length} icon="" />
-        <MetricSmall title="Audit Logs (24h)" value="1.2k" icon="" />
-        <MetricSmall title="Security Score" value="A+" icon="" />
-        <MetricSmall title="Compliance" value="99%" icon="" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <MetricSmall title="Active_Headcount" value={loading ? '..' : employees.length} icon={User} />
+        <MetricSmall title="Audit_Logs_24h" value="1.2k" icon={Activity} />
+        <MetricSmall title="Security_Score" value="A+" icon={ShieldCheck} />
+        <MetricSmall title="Compliance_Rate" value="99%" icon={FileText} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 arise-card">
-          <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-            <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Organization Members</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="lg:col-span-2 bg-white rounded-[32px] shadow-arise border-none overflow-hidden">
+          <div className="p-10 bg-[#f7f9fb] flex justify-between items-center">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Organization_Member_Matrix</h2>
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y-0">
             {loading ? (
-              <div className="p-10 text-center animate-pulse text-slate-300 font-bold uppercase tracking-widest text-[10px]">Syncing Personnel Data...</div>
+              <div className="p-20 text-center animate-pulse text-slate-300 font-black uppercase tracking-widest text-[10px]">Syncing_Personnel_Nodes...</div>
             ) : employees.length > 0 ? (
               employees.map((emp) => (
-                <div key={emp.id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-all group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-primary text-xs">
-                      {emp.full_name.split(' ').map((n:any) => n[0]).join('')}
+                <div key={emp.id} className="p-10 flex items-center justify-between hover:bg-[#f7f9fb] transition-all group cursor-pointer">
+                  <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-[#f2f4f6] rounded-[24px] flex items-center justify-center font-black text-primary text-xs shadow-sm group-hover:bg-primary group-hover:text-white transition-all">
+                      {emp.full_name.split(' ').map((n:any) => n[0]).join('').toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-xs font-black text-slate-900">{emp.full_name}</p>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{emp.position || 'Staff'} • {emp.contract_type || 'General'}</p>
+                      <p className="text-sm font-black text-slate-900 uppercase italic tracking-tight">{emp.full_name}</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">{emp.position || 'OPERATIVE'} // {emp.contract_type || 'STANDARD'}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active</span>
+                  <div className="flex items-center gap-3 bg-emerald-500/10 px-4 py-2 rounded-xl">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-pulse" />
+                    <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Active</span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="p-20 text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest">No personnel records found.</p>
+              <div className="p-32 text-center flex flex-col items-center">
+                 <div className="w-24 h-24 bg-[#f2f4f6] rounded-[40px] flex items-center justify-center mb-10 text-slate-200">
+                    <User size={48} strokeWidth={1} />
+                 </div>
+                 <p className="max-w-xs text-slate-400 text-[9px] font-black uppercase tracking-[0.3em] leading-loose">No personnel records detected. Initiate organizational nodes to track capital evolution.</p>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="arise-card">
-          <div className="p-6 border-b border-slate-50">
-             <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Security Events</h2>
+        <div className="bg-[#0a0c10] rounded-[40px] shadow-2xl p-10 flex flex-col overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[120px] rounded-full -mr-32 -mt-32" />
+          <div className="relative z-10">
+             <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-primary mb-10 flex items-center gap-3">
+               <ShieldCheck size={14} />
+               Security_Event_Log
+             </h2>
+             <div className="space-y-6">
+                <SecurityEvent type="LOGIN_SUCCESS" user="A. Silva" time="Just Now" color="text-primary" />
+                <SecurityEvent type="SCHEMA_MOD" user="Arise_Engine" time="15m ago" color="text-amber-500" />
+                <SecurityEvent type="AUTH_KEY_ROT" user="Root_Admin" time="2h ago" color="text-emerald-500" />
+             </div>
           </div>
-          <div className="p-6 space-y-4">
-             <SecurityEvent type="Login" user="A. Silva" time="Just Now" color="text-primary" />
-             <SecurityEvent type="Schema Edit" user="System" time="15m ago" color="text-amber-500" />
-             <SecurityEvent type="Key Rotation" user="Admin" time="2h ago" color="text-emerald-500" />
+          
+          <div className="mt-auto pt-10 border-t border-white/5 relative z-10">
+            <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em]">Neural_Shield: Active</p>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 
-function MetricSmall({ title, value, icon }: any) {
+function MetricSmall({ title, value, icon: Icon }: any) {
   return (
-    <div className="arise-card p-6">
-      <div className="flex justify-between items-start mb-4">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
-        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">{icon}</div>
+    <div className="bg-white p-10 rounded-[32px] shadow-arise border-none group transition-all">
+      <div className="flex justify-between items-start mb-10">
+        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em]">{title}</p>
+        <div className="w-14 h-14 rounded-[22px] bg-[#f7f9fb] flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
+          <Icon size={20} />
+        </div>
       </div>
-      <h3 className="text-2xl font-black text-slate-900 leading-none tracking-tighter">{value}</h3>
+      <h3 className="text-3xl md:text-4xl font-black text-slate-900 leading-none tracking-tighter italic uppercase">{value}</h3>
     </div>
   );
 }
 
 function SecurityEvent({ type, user, time, color }: any) {
   return (
-    <div className="p-4 bg-slate-50 rounded-2xl border-l border-primary/20">
-       <div className="flex justify-between items-center mb-1">
-          <span className={`text-[9px] font-black uppercase tracking-tighter ${color}`}>{type}</span>
-          <span className="text-[9px] text-slate-400 font-bold uppercase">{time}</span>
+    <div className="p-6 bg-white/5 rounded-[24px] border border-white/5 backdrop-blur-md transition-all hover:bg-white/10 group cursor-pointer">
+       <div className="flex justify-between items-center mb-3">
+          <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-md bg-white/5 ${color}`}>{type}</span>
+          <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest">{time}</span>
        </div>
-       <p className="text-[10px] text-slate-500 font-medium">By <span className="text-slate-900 font-bold">{user}</span></p>
+       <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Operator: <span className="text-white">{user}</span></p>
     </div>
   );
 }

@@ -159,36 +159,36 @@ export default function AIStudio() {
   );
 
   return (
-    <main className="p-4 md:p-10 max-w-7xl mx-auto min-h-screen bg-slate-50/30">
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 mb-10">
+    <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-x-hidden">
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-8 mb-12">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Arise Studio</h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
-            <Sparkles size={12} className="text-primary" />
-            AI Behavior & Response Control Center / v7.0 Diamond Edition
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">Studio</h1>
+          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
+            <Sparkles size={10} className="text-primary fill-primary/20" />
+            Neural Engineering Interface / OS_VERSION_7.0
           </p>
         </div>
-        <div className="flex items-center bg-slate-100/50 p-1.5 rounded-2xl border border-slate-100 shadow-inner">
+        <div className="flex items-center bg-slate-200/40 p-1 rounded-2xl backdrop-blur-md">
           <button 
             onClick={() => setActiveTab('brain')}
-            className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'brain' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex items-center gap-3 px-4 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'brain' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <BrainCircuit size={14} />
             Cerebro
           </button>
           <button 
             onClick={() => setActiveTab('skills')}
-            className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'skills' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex items-center gap-3 px-4 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'skills' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <Layers size={14} />
             Skills
           </button>
           <button 
             onClick={() => setActiveTab('cluster')}
-            className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'cluster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex items-center gap-3 px-4 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'cluster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <Network size={14} />
-            Infraestructura
+            Infra
           </button>
         </div>
       </header>
@@ -196,30 +196,30 @@ export default function AIStudio() {
       {activeTab === 'cluster' ? (
         <section className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
            {/* GLOBAL PULSE BOARD */}
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="arise-card p-8 bg-white border-l-4 border-l-emerald-500">
-                 <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">IA Neural (Gemini)</p>
-                    <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-glow shadow-emerald-500/50" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              <div className="arise-card p-6 md:p-8 bg-white border-none shadow-arise">
+                 <div className="flex items-center justify-between mb-4 md:mb-6">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">IA Vitality</p>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
                  </div>
-                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">8/8 Nodos OK</h2>
-                 <p className="text-[10px] font-bold text-slate-400 mt-2">Clúster Ouroborus Activo</p>
+                 <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter leading-none">8/8</h2>
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Active Neural Nodes</p>
               </div>
-              <div className="arise-card p-8 bg-white border-l-4 border-l-primary">
-                 <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">WhatsApp Business</p>
-                    <div className="w-3 h-3 bg-primary rounded-full animate-pulse shadow-glow shadow-primary/50" />
+              <div className="arise-card p-6 md:p-8 bg-[#f2f4f6] border-none shadow-none">
+                 <div className="flex items-center justify-between mb-4 md:mb-6">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">WhatsApp Bridge</p>
+                    <Zap size={14} className="text-primary fill-primary/20" />
                  </div>
-                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">WABA Conectado</h2>
-                 <p className="text-[10px] font-bold text-slate-400 mt-2">ID: 1927442801464899</p>
+                 <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tighter">CONNECTED</h2>
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Infrastructure Live</p>
               </div>
-              <div className="arise-card p-8 bg-white border-l-4 border-l-slate-200">
-                 <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Latencia Media</p>
-                    <Clock size={16} className="text-slate-300" />
+              <div className="arise-card p-6 md:p-8 bg-white border-none shadow-arise">
+                 <div className="flex items-center justify-between mb-4 md:mb-6">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Latency_MS</p>
+                    <Activity size={14} className="text-slate-300" />
                  </div>
-                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">{telemetry.latency}ms</h2>
-                 <p className="text-[10px] font-bold text-slate-400 mt-2">Rendimiento Industrial</p>
+                 <h2 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">{telemetry.latency}</h2>
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Current Response Pace</p>
               </div>
            </div>
 
@@ -233,27 +233,27 @@ export default function AIStudio() {
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Balanceo Round-Robin Activo</span>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-3">
                   {apiKeys.map((k, index) => {
                     const result = keyResults[k.id];
                     return (
-                      <div key={k.id} className="arise-card p-4 bg-white border border-slate-100 flex items-center justify-between group hover:border-primary/20 transition-all">
+                      <div key={k.id} className="arise-card p-5 bg-white border-none shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
                         <div className="flex items-center gap-6">
-                          <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
-                            <Cpu size={16} />
+                          <div className="w-10 h-10 bg-[#f7f9fb] rounded-xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
+                            <Cpu size={14} />
                           </div>
                           <div>
-                            <div className="flex items-center gap-3">
-                              <p className="text-[10px] font-black text-slate-900 uppercase">Nodo Neural #{index + 1}</p>
+                            <div className="flex items-center gap-4">
+                              <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest">NODE_{index + 1}</p>
                               {result?.status === 'ok' ? (
-                                <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md text-[8px] font-black">DISPONIBLE</span>
+                                <span className="bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded text-[7px] font-black uppercase">Active</span>
                               ) : result?.status === 'error' ? (
-                                <span className="bg-rose-50 text-rose-600 px-2 py-0.5 rounded-md text-[8px] font-black">AGOTADA / ERROR</span>
+                                <span className="bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded text-[7px] font-black uppercase">Exhausted</span>
                               ) : (
-                                <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded-md text-[8px] font-black">{k.is_active ? 'STANDBY' : 'INACTIVA'}</span>
+                                <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded text-[7px] font-black uppercase">Standby</span>
                               )}
                             </div>
-                            <p className="text-[10px] font-mono text-slate-400 mt-1">{k.api_key.substring(0, 30)}...</p>
+                            <p className="text-[9px] font-mono text-slate-400 mt-1 tracking-tight">{k.api_key.substring(0, 40)}...</p>
                           </div>
                         </div>
                         
@@ -279,9 +279,9 @@ export default function AIStudio() {
               </div>
 
               <div className="lg:col-span-4 gap-6 flex flex-col">
-                <div className="arise-card p-8 bg-neural-dark text-white border-none shrink-0 overflow-hidden relative">
+                <div className="arise-card p-6 md:p-8 bg-neural-dark text-white border-none shrink-0 overflow-hidden relative">
                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2" />
-                   <h3 className="text-[11px] font-black uppercase tracking-widest text-primary mb-6 flex items-center gap-3">
+                   <h3 className="text-[11px] font-black uppercase tracking-widest text-primary mb-4 md:mb-6 flex items-center gap-3">
                       <Activity size={14} />
                       Meta Health
                    </h3>
@@ -309,60 +309,60 @@ export default function AIStudio() {
       ) : activeTab === 'brain' ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 items-start animate-in fade-in slide-in-from-bottom-2 duration-500">
           <div className="lg:col-span-3 space-y-10">
-            <section className="arise-card p-0 overflow-hidden group border-primary/10">
-              <div className="bg-slate-50 px-8 py-5 flex justify-between items-center border-b border-slate-100">
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                    <Terminal size={14} className="text-primary" />
-                    Instrucción Maestra (ADN Sistémico)
+            <section className="arise-card p-0 overflow-hidden bg-white border-none shadow-arise">
+              <div className="bg-[#f2f4f6] px-6 md:px-8 py-4 md:py-6 flex justify-between items-center">
+                <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
+                    <Terminal size={12} className="text-primary fill-primary/20" />
+                    Master Instruction (Cognitive DNA)
                 </div>
               </div>
-              <div className="relative bg-white">
+              <div className="relative">
                 <textarea 
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
-                  className="w-full h-[550px] pl-8 pr-8 py-8 text-slate-800 text-xs font-mono leading-relaxed outline-none resize-none"
-                  placeholder="Identidad: Arise Intelligence v7.0..."
+                  className="w-full h-[350px] md:h-[600px] px-6 md:px-10 py-6 md:py-10 text-slate-800 text-[13px] font-mono leading-loose outline-none resize-none bg-white"
+                  placeholder="IDENTITY_PROTOCOL_V7.0..."
                 />
               </div>
-              <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <div className="px-6 md:px-10 py-6 md:py-8 bg-[#f2f4f6] flex justify-end">
                 <button 
                   onClick={savePrompt}
                   disabled={saving}
-                  className="btn-arise px-10 flex items-center gap-3 shadow-xl shadow-primary/30"
+                  className="bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white px-6 md:px-10 py-3 md:py-4 rounded-xl text-[9px] font-black uppercase tracking-[0.3em] flex items-center gap-4 shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50"
                 >
-                  {saving ? <RefreshCw size={18} className="animate-spin" /> : <Send size={18} />}
-                  <span className="uppercase tracking-widest text-[10px]">Actualizar ADN Neural</span>
+                  {saving ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  Synchronize Neural DNA
                 </button>
               </div>
             </section>
           </div>
           <aside className="space-y-6 sticky top-10">
-            <div className="arise-card p-8 bg-neural-dark text-white border-none shadow-2xl shadow-slate-900/20">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-3 text-primary">
-                <Zap size={14} className="fill-primary" />
-                Guía de Ingeniería
+            <div className="arise-card p-8 bg-black/90 text-white border-none shadow-2xl backdrop-blur-xl">
+              <h3 className="text-[9px] font-black uppercase tracking-[0.3em] mb-8 flex items-center gap-3 text-primary">
+                <Zap size={12} className="fill-primary" />
+                Engineering Vault
               </h3>
               <div className="space-y-6">
-                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                  <p className="text-[9px] font-black text-primary uppercase mb-2">Variables Arise</p>
-                  <code className="text-[10px] font-mono text-slate-300 break-all">{`{nombre_cliente}, {stock_actual}`}</code>
+                <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
+                  <p className="text-[8px] font-black text-primary uppercase mb-2 tracking-widest">Global Variables</p>
+                  <code className="text-[10px] font-mono text-slate-400 break-all leading-relaxed">{`{client_context}, {operational_params}`}</code>
                 </div>
               </div>
             </div>
-            <div className="arise-card p-8">
-              <h3 className="text-[11px] font-black uppercase text-slate-900 mb-6 flex items-center gap-3">
-                <Activity size={14} className="text-primary" />
-                Estado del Motor
+            <div className="arise-card p-8 bg-white border-none shadow-arise">
+              <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-900 mb-8 flex items-center gap-3">
+                <Activity size={12} className="text-primary" />
+                Neural Pulse
               </h3>
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex justify-between items-end">
                     <div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase">Token Load</p>
-                      <p className="text-xl font-bold text-slate-900">{(telemetry.tokens / 1000).toFixed(1)}k</p>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Load Factor</p>
+                      <p className="text-3xl font-black text-slate-900 tracking-tighter">{(telemetry.tokens / 1000).toFixed(1)}K</p>
                     </div>
                 </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="w-[85%] h-full bg-primary rounded-full animate-pulse shadow-glow shadow-primary/50" />
+                <div className="w-full h-1.5 bg-[#f2f4f6] rounded-full overflow-hidden">
+                    <div className="w-[85%] h-full bg-gradient-to-r from-primary to-accent animate-pulse shadow-[0_0_10px_rgba(0,69,189,0.3)]" />
                 </div>
               </div>
             </div>
@@ -370,23 +370,26 @@ export default function AIStudio() {
         </div>
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredTemplates.map(t => (
-                <div key={t.id} className="arise-card p-6 min-h-[160px] relative overflow-hidden group hover:border-primary/20 transition-all cursor-pointer">
-                   <div className="flex items-center justify-between mb-6">
-                      <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all border border-slate-100">
+                <div key={t.id} className="arise-card p-8 bg-white border-none shadow-arise relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer">
+                   <div className="flex items-center justify-between mb-8">
+                      <div className="w-12 h-12 bg-[#f7f9fb] rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
                         <FileCode size={20} />
                       </div>
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-full">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] bg-[#f2f4f6] px-3 py-1.5 rounded-lg">
                         {t.category}
                       </span>
                     </div>
-                    <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-tight mb-3 pr-8">{t.name}</p>
+                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.1em] leading-tight mb-3 group-hover:text-primary transition-colors">{t.name}</p>
+                    <div className="w-full h-1 bg-[#f2f4f6] mt-4 rounded-full overflow-hidden">
+                      <div className="w-1/3 h-full bg-primary/20" />
+                    </div>
                 </div>
             ))}
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }

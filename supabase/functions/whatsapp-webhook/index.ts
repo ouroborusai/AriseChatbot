@@ -10,7 +10,6 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 serve(async (req: Request) => {
   const url = new URL(req.url)
 
-  // 1. VERIFICACIÓN DE WEBHOOK (GET)
   if (req.method === 'GET') {
     const mode = url.searchParams.get('hub.mode')
     const token = url.searchParams.get('hub.verify_token')
@@ -21,7 +20,6 @@ serve(async (req: Request) => {
     return new Response('Forbidden', { status: 403 })
   }
 
-  // 2. PROCESAMIENTO DE MENSAJES (POST)
   if (req.method === 'POST') {
     try {
       const body = await req.json()
@@ -31,151 +29,182 @@ serve(async (req: Request) => {
 
       const phoneNumberId = changes.metadata?.phone_number_id
       const message = changes.messages[0]
-      const senderPhone = message.from
+      const senderPhoneRaw = message.from // Usually digit-only string
+      const senderPhoneFormatted = senderPhoneRaw.startsWith('+') ? senderPhoneRaw : `+${senderPhoneRaw}`
       
-      // --- ROUTER DE ENTRADA INDUSTRIAL ---
       let messageContent = ''
-      let mediaId = null
-      let mediaType = message.type
       let interactiveData = null
 
       if (message.type === 'text') {
         messageContent = message.text.body
       } else if (message.type === 'interactive') {
         interactiveData = message.interactive
-        // Si el usuario tocó un botón o lista, tomamos el TÍTULO como contenido para la IA
         messageContent = interactiveData.list_reply?.title || interactiveData.button_reply?.title || ''
-        console.log(`INTERACTIVE_SELECTION: ID=${interactiveData.list_reply?.id || interactiveData.button_reply?.id}`);
-      } else if (['image', 'document', 'audio', 'video'].includes(message.type)) {
-        mediaId = message[message.type].id
-        messageContent = `[Archivo ${message.type} recibido]`
       }
 
-      // 3. IDENTIFICAR EMPRESA (TENANT)
-      const { data: company } = await supabase
+      // 1. Identificación Multi-Tenant (Priorizar empresa con token activo si hay colisión)
+      const { data: companies, error: idError } = await supabase
         .from('companies')
         .select('id, settings')
-        .contains('settings', { whatsapp: { phone_number_id: phoneNumberId } })
-        .single();
+        .contains('settings', { whatsapp: { phone_number_id: phoneNumberId } });
 
-      if (!company) return new Response('Unauthorized (Company not found)', { status: 200 });
+      if (idError) throw idError;
+      
+      // Priorizar la que tiene access_token si hay múltiples
+      const company = companies?.find(c => c.settings?.whatsapp?.access_token) || companies?.[0];
+
+      if (!company) {
+        console.warn(`IDENTIFICATION_FAILED: No company found for PhoneID ${phoneNumberId}`);
+        return new Response('Unauthorized', { status: 200 });
+      }
       const whatsappToken = company.settings?.whatsapp?.access_token;
 
-      // 4. GESTIÓN DE CONTACTOS Y CONVERSACIONES (Diamond logic)
-      const { data: contact } = await supabase.from('contacts').select('id').eq('phone', senderPhone).eq('company_id', company.id).single();
+      // 2. Identificación de Rol (Interno vs Cliente)
+      const { data: internalMember } = await supabase
+        .from('internal_directory')
+        .select('name, role')
+        .eq('phone', senderPhoneRaw)
+        .eq('company_id', company.id)
+        .maybeSingle();
+
+      const senderType = internalMember ? 'agent' : 'user';
+
+      // 3. Gestión de Contacto y Conversación
+      const { data: contact } = await supabase.from('contacts').select('id').eq('phone', senderPhoneRaw).eq('company_id', company.id).maybeSingle();
       let contactId = contact?.id;
       if (!contactId) {
-        const { data: nc } = await supabase.from('contacts').insert({ full_name: senderPhone, phone: senderPhone, company_id: company.id }).select('id').single();
+        const { data: nc } = await supabase.from('contacts').insert({ 
+          full_name: internalMember ? internalMember.name : senderPhoneFormatted, 
+          phone: senderPhoneRaw, 
+          company_id: company.id,
+          category: internalMember ? (internalMember.role === 'admin' ? 'admin' : 'employee') : 'client'
+        }).select('id').single();
         contactId = nc?.id;
       }
 
-      let { data: conv } = await supabase.from('conversations').select('id, status').eq('contact_id', contactId).eq('status', 'open').single();
-      if (!conv) {
-        const { data: nconv } = await supabase.from('conversations').insert({ contact_id: contactId, company_id: company.id, status: 'open' }).select('id').single();
+      let { data: conv } = await supabase.from('conversations').select('id, status').eq('contact_id', contactId).eq('company_id', company.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      
+      if (!conv || conv.status === 'closed') {
+        const { data: nconv } = await supabase.from('conversations').insert({ contact_id: contactId, company_id: company.id, status: 'open' }).select('id, status').single();
         conv = nconv;
       }
 
-      // 5. PROCESAMIENTO DE MEDIA (Si existe)
-      let mediaPublicUrl = null
-      if (mediaId && whatsappToken) {
-        try {
-          const mediaMetaResponse = await fetch(`https://graph.facebook.com/v19.0/${mediaId}`, {
-            headers: { 'Authorization': `Bearer ${whatsappToken}` }
-          });
-          const mediaMetaData = await mediaMetaResponse.json();
-          if (mediaMetaData.url) {
-            const mediaFile = await fetch(mediaMetaData.url, { headers: { 'Authorization': `Bearer ${whatsappToken}` } });
-            const blob = await mediaFile.blob();
-            const fileName = `${company.id}/${Date.now()}_${mediaId}`;
-            const { data: uploadData } = await supabase.storage.from('whatsapp_media').upload(fileName, blob, { contentType: blob.type });
-            if (uploadData) {
-              const { data: publicUrlData } = supabase.storage.from('whatsapp_media').getPublicUrl(fileName);
-              mediaPublicUrl = publicUrlData.publicUrl;
-            }
-          }
-        } catch (e) {
-          console.error("MEDIA_PROCESSING_FAILED:", e);
-        }
+      // 3. Handoff Automático
+      const handoffKeywords = ['agente', 'hablar', 'humano', 'ayuda', 'asistente', 'soporte'];
+      const isHandoffRequest = handoffKeywords.some(kw => messageContent.toLowerCase().includes(kw)) || 
+                              interactiveData?.button_reply?.id?.includes('talk') || 
+                              interactiveData?.list_reply?.id?.includes('talk');
+
+      if (isHandoffRequest && conv.status !== 'waiting_human') {
+        await supabase.from('conversations').update({ status: 'waiting_human' }).eq('id', conv.id);
+        conv.status = 'waiting_human';
       }
 
-      // 6. GUARDAR MENSAJE EN DB (Incluyendo Metadata de IDs y Media)
-      const interactiveId = interactiveData?.list_reply?.id || interactiveData?.button_reply?.id;
-      
+      // Guardar mensaje del usuario con metadata interactiva
       await supabase.from('messages').insert({ 
         conversation_id: conv.id, 
-        sender_type: 'user', 
+        sender_type: senderType, 
         content: messageContent,
-        metadata: {
-          interactive_id: interactiveId,
-          media_url: mediaPublicUrl,
-          media_type: mediaType
+        metadata: { 
+          interactive_id: interactiveData?.list_reply?.id || interactiveData?.button_reply?.id,
+          raw_whatsapp_type: message.type
         }
       });
 
-      // --- LÓGICA DE HANDOFF AUTOMÁTICO POR BOTÓN ---
-      if (interactiveId && (interactiveId.includes('talk') || interactiveId.includes('agent') || interactiveId.includes('humano'))) {
-        await supabase.from('conversations').update({ status: 'waiting_human' }).eq('id', conv.id);
-        
-        if (whatsappToken) {
-          await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              messaging_product: "whatsapp",
-              to: senderPhone,
-              type: "text",
-              text: { body: "Entendido. He pausado mi respuesta automática y te he contactado con un contador humano. Estará contigo en breve. 👤" }
-            })
-          });
-        }
-        return new Response('Handoff Processed', { status: 200 });
-      }
-
-      // 7. RESPUESTA NEURAL GEMINI (Si la conversación está abierta)
+      // 4. Procesamiento AI (Solo si la conversación está abierta y el remitente es un CLIENTE)
+      // Nota: Los admins pueden hablar pero quizás el bot debería atenderlos como "Socio AI"
       if (conv.status === 'open') {
-        const { data: promptData } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', company.id).eq('category', 'General').single();
+        const isInternal = senderType === 'agent';
+        const { data: promptData } = await supabase
+          .from('ai_prompts')
+          .select('system_prompt')
+          .eq('company_id', company.id)
+          .eq('category', isInternal ? 'Internal' : 'General')
+          .maybeSingle();
         
-        // Rotación de llaves para industrialización
-        const { data: keyRows } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
-        const activeKeys = keyRows?.map((r: any) => r.api_key) || [];
-        const selectedKey = activeKeys.length > 0 ? activeKeys[Math.floor(Math.random() * activeKeys.length)] : (Deno as any).env.get('GEMINI_API_KEY');
+        const systemPrompt = promptData?.system_prompt || (isInternal 
+          ? 'Eres el Copiloto de Arise. Estás hablando con un Admin/Empleado. Sé técnico y directo.' 
+          : 'Eres el Asistente de Arise. Estás hablando con un Cliente.');
 
-        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${selectedKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `${promptData?.system_prompt || 'Eres el Agente Personal Contable de Arise.'}\n\nCliente dice: ${messageContent}` }] }]
-          })
-        });
+        const { data: keyRows } = await supabase.from('gemini_api_keys').select('id, api_key').eq('is_active', true);
+        const activeKeys = keyRows || [];
+        
+        let aiText = "Lo siento, estoy experimentando dificultades técnicas. Por favor, intenta de nuevo en unos momentos.";
+        let interactiveButtons: string[] = [];
 
-        const aiResult = await geminiResponse.json();
-        let aiText = aiResult.candidates?.[0]?.content?.parts?.[0]?.text || "Estoy procesando tu solicitud contable...";
+        if (activeKeys.length > 0) {
+          const selectedKeyObj = activeKeys[Math.floor(Math.random() * activeKeys.length)];
+          const selectedKey = selectedKeyObj.api_key;
 
-        // 8. PARSER DE LISTAS INTERACTIVAS (Específicas de 10 opciones)
-        let payload: any = { messaging_product: "whatsapp", to: senderPhone, type: "text", text: { body: aiText } };
+          try {
+            const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${selectedKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: `${systemPrompt}\n\nCliente: ${messageContent}` }] }]
+              })
+            });
+
+            if (geminiResponse.ok) {
+              const aiResult = await geminiResponse.json();
+              aiText = aiResult.candidates?.[0]?.content?.parts?.[0]?.text || "Estoy procesando tu solicitud...";
+            } else {
+              const errorData = await geminiResponse.json();
+              console.error("GEMINI_API_ERROR:", selectedKeyObj.id, errorData);
+              // Desactivar llave si es error de cuota o auth
+              if (geminiResponse.status === 429 || geminiResponse.status === 401 || geminiResponse.status === 400) {
+                await supabase.from('gemini_api_keys').update({ is_active: false, error_count: 5 }).eq('id', selectedKeyObj.id);
+              }
+            }
+          } catch (e) {
+            console.error("GEMINI_FETCH_CRITICAL:", e);
+          }
+        }
+
+        // Parsear botones: "Texto --- Boton1 | Boton2"
+        let payload: any = { messaging_product: "whatsapp", to: senderPhoneRaw, type: "text", text: { body: aiText } };
 
         if (aiText.includes('---')) {
-          const [textBody, optionsRaw] = aiText.split('---');
-          const options = optionsRaw.split('|').map((o: string) => o.trim()).filter((o: string) => o.length > 0).slice(0, 10);
+          const portions = aiText.split('---');
+          const textBody = portions[0].trim();
+          const optionsRaw = portions[1];
+          const options = optionsRaw.split('|').map(o => o.trim()).filter(o => o.length > 0);
+          interactiveButtons = options;
           
-          if (options.length > 0) {
+          if (options.length > 0 && options.length <= 3) {
             payload = {
               messaging_product: "whatsapp",
-              to: senderPhone,
+              to: senderPhoneRaw,
+              type: "interactive",
+              interactive: {
+                type: "button",
+                body: { text: textBody.substring(0, 1024) },
+                action: {
+                  buttons: options.map((opt, i) => ({
+                    type: "reply",
+                    reply: { id: `action_${i}_${Date.now()}`, title: opt.substring(0, 20) }
+                  }))
+                }
+              }
+            };
+          } else if (options.length > 3) {
+            payload = {
+              messaging_product: "whatsapp",
+              to: senderPhoneRaw,
               type: "interactive",
               interactive: {
                 type: "list",
-                header: { type: "text", text: "Menú Asistente Personal" },
-                body: { text: textBody.trim() },
-                footer: { text: "Presiona abajo para ver opciones" },
+                header: { type: "text", text: "Menú Arise" },
+                body: { text: textBody.substring(0, 1024) },
+                footer: { text: "Selecciona una opción" },
                 action: {
-                  button: "Ver Menú",
+                  button: "Ver Opciones",
                   sections: [{
-                    title: "Acciones rápidas",
-                    rows: options.map((opt: string, i: number) => ({
-                      id: `action_${i + 1}`,
-                      title: opt.substring(0, 24), // Control estricto de Meta
-                      description: "Disponible ahora"
+                    title: "Opciones disponibles",
+                    rows: options.slice(0, 10).map((opt, i) => ({
+                      id: `list_${i}_${Date.now()}`,
+                      title: opt.substring(0, 24),
+                      description: "Toca para elegir"
                     }))
                   }]
                 }
@@ -184,22 +213,48 @@ serve(async (req: Request) => {
           }
         }
 
-        // GUARDAR Y ENVIAR RESPUESTA
-        await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'bot', content: aiText });
+        // Guardar mensaje del bot
+        await supabase.from('messages').insert({ 
+          conversation_id: conv.id, 
+          sender_type: 'bot', 
+          content: aiText,
+          metadata: { interactive_buttons: interactiveButtons }
+        });
         
+        // Enviar a WhatsApp (Usando senderPhoneRaw SIN +)
         if (whatsappToken) {
-          await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+          const metaResp = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
+          
+          if (!metaResp.ok) {
+            const metaData = await metaResp.json();
+            console.error("META_API_ERROR_DETAIL:", JSON.stringify(metaData));
+            // Protocolo Fallback: Reintento en texto plano si falló el interactivo
+            if (payload.type === 'interactive') {
+              await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  messaging_product: "whatsapp", 
+                  to: senderPhoneRaw, 
+                  type: "text", 
+                  text: { body: aiText.split('---')[0].trim() } 
+                })
+              });
+            }
+          } else {
+            console.log("META_DELIVERY_SUCCESS for conversation", conv.id);
+          }
         }
       }
 
       return new Response('Processed', { status: 200 })
     } catch (err) {
-      console.error('WEBHOOK_CRITICAL_ERROR:', err);
-      return new Response('Error', { status: 200 });
+      console.error('CRITICAL_WEBHOOK_FAILURE:', err);
+      return new Response('Internal Error', { status: 200 }); // Retornar 200 para evitar loops de reintento de Meta
     }
   }
 
