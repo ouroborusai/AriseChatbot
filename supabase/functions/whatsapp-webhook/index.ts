@@ -51,7 +51,7 @@ serve(async (req: Request) => {
       if (idError) throw idError;
       
       // Priorizar la que tiene access_token si hay múltiples
-      const company = companies?.find(c => c.settings?.whatsapp?.access_token) || companies?.[0];
+      const company = (companies as any[])?.find((c: any) => c.settings?.whatsapp?.access_token) || companies?.[0];
 
       if (!company) {
         console.warn(`IDENTIFICATION_FAILED: No company found for PhoneID ${phoneNumberId}`);
@@ -69,15 +69,20 @@ serve(async (req: Request) => {
 
       const senderType = internalMember ? 'agent' : 'user';
 
-      // 3. Gestión de Contacto y Conversación
-      const { data: contact } = await supabase.from('contacts').select('id').eq('phone', senderPhoneRaw).eq('company_id', company.id).maybeSingle();
+      // 3. Gestión de Contacto y Conversación (Auto-Onboarding Lead Flow)
+      const { data: contact } = await supabase.from('contacts').select('id, category').eq('phone', senderPhoneRaw).eq('company_id', company.id).maybeSingle();
       let contactId = contact?.id;
+      let contactCategory = contact?.category;
+
       if (!contactId) {
+        // Todo número nuevo NO registrado internamente entra como Lead (Prospecto)
+        contactCategory = internalMember ? (internalMember.role === 'admin' ? 'admin' : 'employee') : 'lead';
+        
         const { data: nc } = await supabase.from('contacts').insert({ 
           full_name: internalMember ? internalMember.name : senderPhoneFormatted, 
           phone: senderPhoneRaw, 
           company_id: company.id,
-          category: internalMember ? (internalMember.role === 'admin' ? 'admin' : 'employee') : 'client'
+          category: contactCategory
         }).select('id').single();
         contactId = nc?.id;
       }
@@ -89,7 +94,40 @@ serve(async (req: Request) => {
         conv = nconv;
       }
 
-      // 3. Handoff Automático
+      // 3.5. PDF / Document Intercept Auto-Generador
+      const pdfKeywords = ['reporte', 'pdf', 'documento', 'inventario', 'cotización', 'factura', 'balance'];
+      const isPdfRequest = pdfKeywords.some(kw => messageContent.toLowerCase().includes(kw)) || 
+                           interactiveData?.button_reply?.id?.includes('pdf') || 
+                           interactiveData?.list_reply?.id?.includes('pdf') ||
+                           interactiveData?.button_reply?.title?.toLowerCase().includes('pdf') ||
+                           interactiveData?.list_reply?.title?.toLowerCase().includes('pdf');
+
+      if (isPdfRequest) {
+        if (whatsappToken) {
+           await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ messaging_product: "whatsapp", to: senderPhoneRaw, type: "text", text: { body: "⏳ Procesando síntesis documental. Esto tomará unos segundos..." } })
+           });
+        }
+        
+        // Disparar PDF API. Fire & Forget background.
+        const appUrl = Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'https://ouroborusai.vercel.app';
+        fetch(`${appUrl}/api/pdf`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               targetPhone: senderPhoneRaw,
+               whatsappToken,
+               phoneNumberId,
+               reportType: 'Documento'
+            })
+        }).catch(err => console.error("PDF_TRIG_ERR", err));
+        
+        return new Response('Processed', { status: 200 }); 
+      }
+
+      // 4. Handoff Automático
       const handoffKeywords = ['agente', 'hablar', 'humano', 'ayuda', 'asistente', 'soporte'];
       const isHandoffRequest = handoffKeywords.some(kw => messageContent.toLowerCase().includes(kw)) || 
                               interactiveData?.button_reply?.id?.includes('talk') || 

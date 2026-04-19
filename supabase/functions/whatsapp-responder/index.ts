@@ -18,19 +18,29 @@ Deno.serve(async (req) => {
       supabase.from('reminders').select('*').eq('contact_id', contact_id).eq('status', 'pending').limit(1)
     ]);
 
-    // 2. Prompt de Agente Personal (v6.3)
-    const systemPrompt = `
-      Eres Ouroborus AI ("The Synthetic Architect"). AGENTE PERSONAL PROACTIVO.
-      Cliente: ${contact.data?.name || 'Usuario'} | Empresa: ${contact.data?.companies?.legal_name}.
+    // 2. Prompt Dinámico basado en Categoría (Lead vs Client)
+    let activeCategory = contact.data?.category === 'lead' ? 'Onboarding' : 'General';
+    const promptQuery = await supabase
+      .from('ai_prompts')
+      .select('system_prompt')
+      .eq('company_id', company_id)
+      .eq('category', activeCategory)
+      .eq('is_active', true)
+      .limit(1)
+      .single();
+
+    let systemPrompt = promptQuery.data?.system_prompt || 'Eres Ouroborus AI, contesta cordial y brevemente. INTERACTIVIDAD: Separa botones con "---" (ej. "--- Opcion1 | Opcion2").';
+
+    // Añadir Contexto de negocio solo a clientes establecidos
+    if (activeCategory === 'General') {
+      systemPrompt += `
       
-      DATOS PARA RECORDAR:
+      DATOS PARA RECORDAR (Contexto):
       - Trámites: ${JSON.stringify(requests.data)}
       - Vencimientos Legales: ${JSON.stringify(compliance.data)}
       - Notas Personales: ${JSON.stringify(reminders.data)}
-
-      REGLA: Responde y luego añade un recordatorio proactivo si hay algo pendiente.
-      BOTONES: Propón exactamente 3 botones así: Texto de respuesta --- Boton 1 | Boton 2 | Boton 3
-    `;
+      `;
+    }
 
     // 3. Síntesis Brain
     const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiApiKey}`, {
@@ -40,25 +50,31 @@ Deno.serve(async (req) => {
     });
 
     const geminiData = await geminiRes.json();
-    const rawOutput = geminiData.candidates[0].content.parts[0].text;
+    const rawOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo procesar el flujo neural.";
     
     // 4. Parsing de Texto y Botones
     const [textPart, buttonsPart] = rawOutput.split('---');
     const responseText = textPart.trim();
-    const buttons = buttonsPart ? buttonsPart.split('|').map(b => b.trim()) : ['Menú Principal', 'Mi Estado', 'Contacto'];
+    const buttons = buttonsPart 
+      ? buttonsPart.split('|').map(b => b.trim()).filter(b => b.length > 0) 
+      : ['Menú Principal', 'Anotar Recordatorio', 'Consultar Estado'];
 
-    // 5. Registro y Respuesta
+    // 5. Registro y Respuesta con Metadatos Dinámicos
     await supabase.from('messages').insert({ 
       conversation_id: contact_id, 
       content: responseText, 
       role: 'assistant',
-      metadata: { interactive_buttons: buttons } // Para que el notifier sepa que enviar
+      metadata: { 
+        interactive_buttons: buttons.slice(0, 10),
+        interactive_type: buttons.length > 3 ? 'list' : 'button'
+      }
     });
 
     return new Response(JSON.stringify({ 
       success: true, 
       response: responseText,
-      buttons: buttons 
+      buttons: buttons,
+      type: buttons.length > 3 ? 'list' : 'button'
     }), { headers: { "Content-Type": "application/json" } });
 
   } catch (err) {
