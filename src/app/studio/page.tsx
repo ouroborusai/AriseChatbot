@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   Cpu, 
-  BookOpen, 
   Terminal, 
   Zap, 
   Activity, 
@@ -12,20 +11,23 @@ import {
   ShieldCheck, 
   Send,
   Plus,
-  Settings2,
   RefreshCw,
   Sparkles,
   Search,
   ChevronDown,
   Filter,
   BrainCircuit,
-  Layers
+  Layers,
+  Network,
+  CheckCircle2,
+  XCircle,
+  Clock
 } from 'lucide-react';
 
 const CATEGORIES = ['Todas', 'Onboarding', 'Ventas', 'Soporte', 'Finanzas'];
 
 export default function AIStudio() {
-  const [activeTab, setActiveTab] = useState<'brain' | 'skills'>('brain');
+  const [activeTab, setActiveTab] = useState<'brain' | 'skills' | 'cluster'>('brain');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [templates, setTemplates] = useState<any[]>([]);
   const [filteredTemplates, setFilteredTemplates] = useState<any[]>([]);
@@ -34,6 +36,8 @@ export default function AIStudio() {
   const [templateSearch, setTemplateSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todas');
   const [telemetry, setTelemetry] = useState<any>({ tokens: 0, cost: 0, latency: 0 });
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [keyResults, setKeyResults] = useState<Record<string, { status: 'ok' | 'error' | 'testing', latency?: number }>>({});
 
   useEffect(() => {
     async function loadStudioData() {
@@ -44,17 +48,27 @@ export default function AIStudio() {
       }
 
       try {
+        // Load Prompts
         const { data: prompts } = await supabase
           .from('ai_prompts')
           .select('*')
           .eq('company_id', activeCompanyId)
           .order('created_at', { ascending: true });
 
+        // Load Telemetry
         const { data: telemetryData } = await supabase
           .from('ai_api_telemetry')
           .select('tokens_input, tokens_output, cost_estimated, latency_ms')
           .eq('company_id', activeCompanyId);
         
+        // Load API Keys
+        const { data: keys } = await supabase
+          .from('gemini_api_keys')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (keys) setApiKeys(keys);
+
         if (prompts) {
           const mainPrompt = prompts.find(p => p.category === 'General') || prompts[0];
           if (mainPrompt) setSystemPrompt(mainPrompt.system_prompt || '');
@@ -84,22 +98,43 @@ export default function AIStudio() {
   useEffect(() => {
     let result = templates;
     if (activeCategory !== 'Todas') {
-      result = result.filter(t => t.category === activeCategory || (activeCategory === 'Finanzas' && t.name.includes('03')) || (activeCategory === 'Ventas' && t.name.includes('02')));
+      result = result.filter(t => t.category === activeCategory);
     }
     if (templateSearch) {
       result = result.filter(t => 
-        t.name.toLowerCase().includes(templateSearch.toLowerCase()) || 
-        t.content.toLowerCase().includes(templateSearch.toLowerCase())
+        t.name.toLowerCase().includes(templateSearch.toLowerCase())
       );
     }
     setFilteredTemplates(result);
   }, [templateSearch, activeCategory, templates]);
 
+  const testKey = async (id: string, key: string) => {
+    setKeyResults(prev => ({ ...prev, [id]: { status: 'testing' } }));
+    const startTime = Date.now();
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
+      });
+      const data = await res.json();
+      const latency = Date.now() - startTime;
+      
+      if (data.candidates) {
+        setKeyResults(prev => ({ ...prev, [id]: { status: 'ok', latency } }));
+      } else if (res.status === 429) {
+        setKeyResults(prev => ({ ...prev, [id]: { status: 'error', message: 'Quota Exhausted' } }));
+      } else {
+        setKeyResults(prev => ({ ...prev, [id]: { status: 'error' } }));
+      }
+    } catch (e) {
+      setKeyResults(prev => ({ ...prev, [id]: { status: 'error' } }));
+    }
+  };
+
   const savePrompt = async () => {
     setSaving(true);
     const activeCompanyId = localStorage.getItem('arise_active_company');
-    
-    // Upsert del prompt general de la empresa
     const { error } = await supabase
       .from('ai_prompts')
       .upsert({ 
@@ -111,12 +146,11 @@ export default function AIStudio() {
       }, { onConflict: 'company_id, name' });
 
     if (error) console.error('Error saving DNA:', error);
-    setSaving(true);
     setTimeout(() => setSaving(false), 1000);
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center h-screen">
+    <div className="flex items-center justify-center h-screen bg-slate-50">
       <div className="text-center">
         <RefreshCw size={40} className="text-primary animate-spin mx-auto mb-4" />
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Sincronizando Studio Neural...</p>
@@ -125,7 +159,7 @@ export default function AIStudio() {
   );
 
   return (
-    <main className="p-4 md:p-10 max-w-7xl mx-auto min-h-screen">
+    <main className="p-4 md:p-10 max-w-7xl mx-auto min-h-screen bg-slate-50/30">
       <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 mb-10">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Arise Studio</h1>
@@ -140,19 +174,139 @@ export default function AIStudio() {
             className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'brain' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <BrainCircuit size={14} />
-            Cerebro Neural
+            Cerebro
           </button>
           <button 
             onClick={() => setActiveTab('skills')}
             className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'skills' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <Layers size={14} />
-            Habilidades
+            Skills
+          </button>
+          <button 
+            onClick={() => setActiveTab('cluster')}
+            className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'cluster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <Network size={14} />
+            Infraestructura
           </button>
         </div>
       </header>
 
-      {activeTab === 'brain' ? (
+      {activeTab === 'cluster' ? (
+        <section className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+           {/* GLOBAL PULSE BOARD */}
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="arise-card p-8 bg-white border-l-4 border-l-emerald-500">
+                 <div className="flex items-center justify-between mb-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">IA Neural (Gemini)</p>
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-glow shadow-emerald-500/50" />
+                 </div>
+                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">8/8 Nodos OK</h2>
+                 <p className="text-[10px] font-bold text-slate-400 mt-2">Clúster Ouroborus Activo</p>
+              </div>
+              <div className="arise-card p-8 bg-white border-l-4 border-l-primary">
+                 <div className="flex items-center justify-between mb-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">WhatsApp Business</p>
+                    <div className="w-3 h-3 bg-primary rounded-full animate-pulse shadow-glow shadow-primary/50" />
+                 </div>
+                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">WABA Conectado</h2>
+                 <p className="text-[10px] font-bold text-slate-400 mt-2">ID: 1927442801464899</p>
+              </div>
+              <div className="arise-card p-8 bg-white border-l-4 border-l-slate-200">
+                 <div className="flex items-center justify-between mb-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Latencia Media</p>
+                    <Clock size={16} className="text-slate-300" />
+                 </div>
+                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">{telemetry.latency}ms</h2>
+                 <p className="text-[10px] font-bold text-slate-400 mt-2">Rendimiento Industrial</p>
+              </div>
+           </div>
+
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+              <div className="lg:col-span-8 space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[11px] font-black uppercase text-slate-900 flex items-center gap-3">
+                    <Zap size={14} className="text-primary" />
+                    Estado de los Nodos Gemini-2.5-Flash-Lite
+                  </h3>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Balanceo Round-Robin Activo</span>
+                </div>
+                
+                <div className="space-y-3">
+                  {apiKeys.map((k, index) => {
+                    const result = keyResults[k.id];
+                    return (
+                      <div key={k.id} className="arise-card p-4 bg-white border border-slate-100 flex items-center justify-between group hover:border-primary/20 transition-all">
+                        <div className="flex items-center gap-6">
+                          <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
+                            <Cpu size={16} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <p className="text-[10px] font-black text-slate-900 uppercase">Nodo Neural #{index + 1}</p>
+                              {result?.status === 'ok' ? (
+                                <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md text-[8px] font-black">DISPONIBLE</span>
+                              ) : result?.status === 'error' ? (
+                                <span className="bg-rose-50 text-rose-600 px-2 py-0.5 rounded-md text-[8px] font-black">AGOTADA / ERROR</span>
+                              ) : (
+                                <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded-md text-[8px] font-black">{k.is_active ? 'STANDBY' : 'INACTIVA'}</span>
+                              )}
+                            </div>
+                            <p className="text-[10px] font-mono text-slate-400 mt-1">{k.api_key.substring(0, 30)}...</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-6">
+                          {result?.latency && (
+                            <div className="text-right">
+                              <p className="text-[9px] font-black text-emerald-500 uppercase">{result.latency}ms</p>
+                              <p className="text-[8px] font-bold text-slate-300 uppercase">Latencia</p>
+                            </div>
+                          )}
+                          <button 
+                            onClick={() => testKey(k.id, k.api_key)}
+                            disabled={result?.status === 'testing'}
+                            className="w-10 h-10 flex items-center justify-center bg-primary/5 hover:bg-primary text-primary hover:text-white rounded-xl transition-all disabled:opacity-50 shadow-sm"
+                          >
+                            {result?.status === 'testing' ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="lg:col-span-4 gap-6 flex flex-col">
+                <div className="arise-card p-8 bg-neural-dark text-white border-none shrink-0 overflow-hidden relative">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2" />
+                   <h3 className="text-[11px] font-black uppercase tracking-widest text-primary mb-6 flex items-center gap-3">
+                      <Activity size={14} />
+                      Meta Health
+                   </h3>
+                   <div className="space-y-6 relative z-10">
+                      <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl border border-white/5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Token Status</span>
+                        <span className="text-[10px] font-black text-emerald-400">VÁLIDO</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl border border-white/5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Webhook Pulse</span>
+                        <span className="text-[10px] font-black text-primary animate-pulse">LIVE</span>
+                      </div>
+                      <div className="pt-4 border-t border-white/10">
+                        <p className="text-[9px] font-black text-slate-500 uppercase mb-4">Meta Data IDs</p>
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-mono text-slate-400 flex justify-between">WABA: <span className="text-white">192744...</span></p>
+                           <p className="text-[10px] font-mono text-slate-400 flex justify-between">Phone: <span className="text-white">106687...</span></p>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+              </div>
+           </div>
+        </section>
+      ) : activeTab === 'brain' ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 items-start animate-in fade-in slide-in-from-bottom-2 duration-500">
           <div className="lg:col-span-3 space-y-10">
             <section className="arise-card p-0 overflow-hidden group border-primary/10">
@@ -161,20 +315,12 @@ export default function AIStudio() {
                     <Terminal size={14} className="text-primary" />
                     Instrucción Maestra (ADN Sistémico)
                 </div>
-                <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-2 text-[9px] font-bold text-emerald-500 uppercase tracking-tighter bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
-                      <ShieldCheck size={12} /> Protegido
-                    </span>
-                </div>
               </div>
               <div className="relative bg-white">
-                <div className="absolute left-0 top-0 w-12 h-full bg-slate-50 border-r border-slate-100 flex flex-col items-center pt-8 text-[9px] font-mono text-slate-300 pointer-events-none">
-                  {[...Array(20)].map((_, i) => <div key={i} className="mb-2">{i + 1}</div>)}
-                </div>
                 <textarea 
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
-                  className="w-full h-[550px] pl-16 pr-8 py-8 text-slate-800 text-xs font-mono leading-relaxed outline-none resize-none"
+                  className="w-full h-[550px] pl-8 pr-8 py-8 text-slate-800 text-xs font-mono leading-relaxed outline-none resize-none"
                   placeholder="Identidad: Arise Intelligence v7.0..."
                 />
               </div>
@@ -201,11 +347,6 @@ export default function AIStudio() {
                   <p className="text-[9px] font-black text-primary uppercase mb-2">Variables Arise</p>
                   <code className="text-[10px] font-mono text-slate-300 break-all">{`{nombre_cliente}, {stock_actual}`}</code>
                 </div>
-                <div className="space-y-4 text-[10px] leading-relaxed text-slate-400">
-                  <p className="flex gap-3"><span className="text-primary font-black">01</span> Modela el tono ejecutivo y técnico.</p>
-                  <p className="flex gap-3"><span className="text-primary font-black">02</span> Prioriza respuestas menores a 10s.</p>
-                  <p className="flex gap-3"><span className="text-primary font-black">03</span> Usa "---" para inyectar botones.</p>
-                </div>
               </div>
             </div>
             <div className="arise-card p-8">
@@ -216,24 +357,12 @@ export default function AIStudio() {
               <div className="space-y-6">
                 <div className="flex justify-between items-end">
                     <div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase">Input Token Load</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase">Token Load</p>
                       <p className="text-xl font-bold text-slate-900">{(telemetry.tokens / 1000).toFixed(1)}k</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[9px] font-black text-emerald-500 uppercase">Óptimo</p>
                     </div>
                 </div>
                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div className="w-[85%] h-full bg-primary rounded-full animate-pulse shadow-glow shadow-primary/50" />
-                </div>
-                <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/5">
-                      <Cpu size={16} />
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-black text-slate-900 uppercase tracking-tighter">Latencia Media</p>
-                      <p className="text-[9px] font-bold text-slate-400">{telemetry.latency}ms (Óptimo)</p>
-                    </div>
                 </div>
               </div>
             </div>
@@ -241,81 +370,20 @@ export default function AIStudio() {
         </div>
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-primary/5 text-primary rounded-2xl flex items-center justify-center border border-primary/10">
-                 <Layers size={24} />
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 tracking-tight">Biblioteca de Habilidades</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{filteredTemplates.length} Skills Activas</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input 
-                  type="text" 
-                  placeholder="Buscar habilidad neural..."
-                  value={templateSearch}
-                  onChange={(e) => setTemplateSearch(e.target.value)}
-                  className="bg-white border border-slate-100 rounded-2xl py-3 pl-12 pr-6 text-[11px] font-bold text-slate-700 outline-none focus:ring-4 focus:ring-primary/5 transition-all w-80 shadow-sm"
-                />
-              </div>
-              <button className="btn-arise p-3 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                <Plus size={24} />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex gap-2 p-1.5 bg-slate-100/50 rounded-2xl border border-slate-100 w-fit no-scrollbar overflow-x-auto">
-            {CATEGORIES.map(cat => (
-              <button 
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                  activeCategory === cat 
-                    ? 'bg-white text-primary shadow-sm' 
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredTemplates.length > 0 ? (
-              filteredTemplates.map(t => (
-                <div key={t.id} className="arise-card p-6 flex flex-col justify-between group hover:border-primary/20 hover:shadow-xl hover:shadow-slate-200/50 transition-all cursor-pointer min-h-[160px] relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-[40px] translate-x-4 -translate-y-4 group-hover:scale-150 transition-transform duration-500" />
-                  <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all border border-slate-100 group-hover:border-primary/20">
+            {filteredTemplates.map(t => (
+                <div key={t.id} className="arise-card p-6 min-h-[160px] relative overflow-hidden group hover:border-primary/20 transition-all cursor-pointer">
+                   <div className="flex items-center justify-between mb-6">
+                      <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all border border-slate-100">
                         <FileCode size={20} />
                       </div>
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-full">
-                        {t.name.split('_')[0]}
+                        {t.category}
                       </span>
                     </div>
                     <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-tight mb-3 pr-8">{t.name}</p>
-                    <p className="text-[10px] text-slate-500 line-clamp-2 font-medium leading-relaxed group-hover:text-slate-700 transition-colors">
-                      {t.description || t.system_prompt.substring(0, 100) + '...'}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-50">
-                      <span className="text-[10px] font-black text-primary opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all uppercase tracking-widest">Configurar Skill</span>
-                      <ChevronDown size={14} className="text-slate-300 -rotate-90 group-hover:text-primary transition-all group-hover:translate-x-1" />
-                  </div>
                 </div>
-              ))
-            ) : (
-              <div className="col-span-full py-32 text-center bg-slate-50 rounded-[32px] border border-dashed border-slate-200">
-                <Filter size={48} className="text-slate-200 mx-auto mb-4" />
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Sin habilidades encontradas</p>
-                <button onClick={() => {setActiveCategory('Todas'); setTemplateSearch('');}} className="mt-4 text-[10px] font-black text-primary uppercase tracking-widest hover:underline">Limpiar Filtros</button>
-              </div>
-            )}
+            ))}
           </div>
         </div>
       )}

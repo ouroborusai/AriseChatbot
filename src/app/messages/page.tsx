@@ -43,15 +43,11 @@ export default function MessagesPage() {
   };
 
   const fetchMessages = async (convId: string) => {
-    // 1. Limpiar canal previo si existe
     if (activeChannelRef.current) {
       supabase.removeChannel(activeChannelRef.current);
     }
 
-    // 2. Crear y configurar nuevo canal
-    const channel = supabase.channel(`central_chat_${convId}`);
-    
-    channel
+    const channel = supabase.channel(`chat_${convId}`)
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
@@ -59,16 +55,16 @@ export default function MessagesPage() {
         filter: `conversation_id=eq.${convId}`
       }, (payload) => {
         setMessages(prev => {
-          // Evitar duplicados si Realtime y Fetch inicial coinciden
           if (prev.some(m => m.id === payload.new.id)) return prev;
           return [...prev, payload.new];
         });
+        // También refrescar la lista de conversaciones para actualizar el orden/visto
+        fetchConversations();
       })
       .subscribe();
 
     activeChannelRef.current = channel;
 
-    // 3. Cargar historial
     const { data } = await supabase
       .from('messages')
       .select('*')
@@ -118,6 +114,21 @@ export default function MessagesPage() {
 
   useEffect(() => {
     fetchConversations();
+
+    // Listener global para NUEVAS conversaciones
+    const globalChannel = supabase.channel('global_conv_updates')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'conversations' 
+      }, () => {
+        fetchConversations();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(globalChannel);
+    };
   }, []);
 
   return (
