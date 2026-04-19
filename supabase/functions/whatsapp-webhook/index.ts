@@ -226,9 +226,15 @@ serve(async (req: Request) => {
         }
 
         const portions = aiText.split('---');
-        const textBody = portions[0].trim();
-        const optionsRaw = portions[1];
-        const options = optionsRaw.split('|').map(o => o.trim()).filter(o => o.length > 0);
+        let textBody = portions[0].trim();
+        
+        // Hard Truncate para evitar globos de texto masivos en WhatsApp
+        if (textBody.length > 600) {
+          textBody = textBody.substring(0, 597) + "...";
+        }
+
+        const optionsRaw = portions[1] || "👥 Ayuda | 🏠 Menú | 📊 Status";
+        const options = optionsRaw.replace(/Lista:.*\|/i, '').split('|').map(o => o.trim()).filter(o => o.length > 0);
         interactiveButtons = options;
         
         if (options.length > 0 && options.length <= 3) {
