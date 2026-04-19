@@ -131,11 +131,20 @@ serve(async (req: Request) => {
         return new Response('Processed', { status: 200 }); 
       }
 
-      // 4. Handoff Automático
+      // 4. Handoff y Onboarding de Bóveda
       const handoffKeywords = ['agente', 'hablar', 'humano', 'ayuda', 'asistente', 'soporte'];
+      const vaultKeywords = ['registro', 'boveda', 'bóveda', 'mis archivos', 'registrarme', 'acceso', 'rut'];
+      
       const isHandoffRequest = handoffKeywords.some(kw => messageContent.toLowerCase().includes(kw)) || 
                               interactiveData?.button_reply?.id?.includes('talk') || 
                               interactiveData?.list_reply?.id?.includes('talk');
+
+      const isVaultRequest = vaultKeywords.some(kw => messageContent.toLowerCase().includes(kw));
+
+      if (isVaultRequest) {
+        // Guardar intención de Onboarding en metadata
+        await supabase.from('conversations').update({ metadata: { ...conv.metadata, pending_onboarding: 'vault' } }).eq('id', conv.id);
+      }
 
       if (isHandoffRequest && conv.status !== 'waiting_human') {
         await supabase.from('conversations').update({ status: 'waiting_human' }).eq('id', conv.id);
@@ -157,11 +166,13 @@ serve(async (req: Request) => {
       // Nota: Los admins pueden hablar pero quizás el bot debería atenderlos como "Socio AI"
       if (conv.status === 'open') {
         const isInternal = senderType === 'agent';
+        const pendingOnboarding = (conv.metadata as any)?.pending_onboarding;
+
         const { data: promptData } = await supabase
           .from('ai_prompts')
           .select('system_prompt')
           .eq('company_id', company.id)
-          .eq('category', isInternal ? 'Internal' : 'General')
+          .eq('category', pendingOnboarding === 'vault' ? 'Onboarding' : (isInternal ? 'Internal' : 'General'))
           .maybeSingle();
         
         const systemPrompt = promptData?.system_prompt || (isInternal 
