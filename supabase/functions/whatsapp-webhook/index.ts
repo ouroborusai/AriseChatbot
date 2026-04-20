@@ -29,53 +29,31 @@ serve(async (req: Request) => {
     const sender = message.from;
     const phoneNumberId = changes.metadata?.phone_number_id;
 
-    // --- 1. IDEMPOTENCY (Blindaje v7.5) ---
+    // --- 1. IDEMPOTENCY ---
     const { data: existingMsg } = await supabase.from('messages').select('id').contains('metadata', { whatsapp_message_id: waId }).maybeSingle();
     if (existingMsg) return new Response('OK');
 
     // --- 2. CONFIG & IDENTITY ---
-    console.log(`[WHATS_WEBHOOK] Incoming from ${sender} to ${phoneNumberId}`);
     const { data: companies } = await supabase.from('companies').select('*').contains('settings', { whatsapp: { phone_number_id: phoneNumberId } });
     const company = companies?.find(c => c.settings?.whatsapp?.access_token) || companies?.[0];
     
-    if (!company) {
-      console.error(`[WHATS_WEBHOOK] No company found for phone_number_id: ${phoneNumberId}`);
-      return new Response('OK');
-    }
-    console.log(`[WHATS_WEBHOOK] Resolved Company: ${company.name} (${company.id})`);
+    if (!company) return new Response('OK');
+    const whatsappToken = company.settings?.whatsapp?.access_token;
+    if (!whatsappToken) return new Response('OK');
 
-    const [internalUser, contact, keys] = await Promise.all([
+    const [internalUser, contact] = await Promise.all([
       supabase.from('internal_directory').select('name, role').eq('phone', sender).eq('company_id', company.id).maybeSingle(),
-      supabase.from('contacts').select('id').eq('phone', sender).eq('company_id', company.id).maybeSingle(),
-      supabase.from('gemini_api_keys').select('api_key').eq('is_active', true)
+      supabase.from('contacts').select('id').eq('phone', sender).eq('company_id', company.id).maybeSingle()
     ]);
 
     const isInternal = !!internalUser.data;
     const userName = internalUser.data?.name || 'Usuario';
     const userRole = internalUser.data?.role || 'client';
-    const activeKey = keys.data?.[0]?.api_key;
-
-    if (!activeKey) return new Response('OK');
 
     let content = message.text?.body || '';
     if (message.type === 'interactive') content = message.interactive.button_reply?.title || message.interactive.list_reply?.title || '';
 
-    // --- 3. RAG MODULE (Intelligence v7.9 - Snapshot First) ---
-    let financialContext = '';
-    try {
-      const { data: snapshots } = await supabase
-        .from('client_knowledge')
-        .select('content_summary')
-        .eq('company_id', company.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (snapshots && snapshots.length > 0) {
-        financialContext = `\n[FINANCIAL_SNAPSHOT_CONTEXT]:\n${snapshots.map(s => s.content_summary).join('\n')}`;
-      }
-    } catch (e) { console.error('RAG_FAIL:', e); }
-
-    // --- 4. DATA PERSISTENCE ---
+    // --- 3. DATA PERSISTENCE ---
     let cid = contact.data?.id;
     if (!cid) {
       const { data: nc } = await supabase.from('contacts').insert({ full_name: userName, phone: sender, company_id: company.id, category: isInternal ? 'client' : 'lead' }).select('id').single();
@@ -93,129 +71,83 @@ serve(async (req: Request) => {
       metadata: { whatsapp_message_id: waId, type: message.type } 
     });
 
-    await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'user', content: messageContent });
-
     if (conv.status === 'open') {
       const startTime = Date.now();
-      const [compliance, reminders] = await Promise.all([
-        supabase.from('company_compliance').select('*').eq('company_id', company.id).eq('status', 'pending').limit(1).maybeSingle(),
-        supabase.from('reminders').select('*').eq('contact_id', contactId).eq('status', 'pending').limit(1).maybeSingle()
-      ]);
-
-      let flashContext = '';
-      if (compliance.data) flashContext += `\nVENCIMIENTO_LEGAL_PRÓXIMO: ${compliance.data.task_name} (Fecha: ${compliance.data.due_date})`;
-      if (reminders.data) flashContext += `\nRECORDATORIO_PENDIENTE: ${reminders.data.content}`;
+      const { data: keys } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
+      const activeKey = keys?.[0]?.api_key;
+      if (!activeKey) return new Response('OK');
 
       const promptCategory = isInternal ? 'Internal' : 'General';
       const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', company.id).eq('category', promptCategory).maybeSingle();
       
-      const elitePrompt = `${p?.system_prompt || ''}\n\n[IDENTIDAD ELITE: Estás hablando con ${userName} (${userRole.toUpperCase()}). Eres el Socio Contable de ${company.name}.]\n${flashContext}\n\nUsuario: ${messageContent}`;
+      const elitePrompt = `${p?.system_prompt || ''}\n\n[IDENTIDAD: Hablas con ${userName} (${userRole}). Empresa: ${company.name}]\n\nMensaje: ${content}`;
 
-      const { data: keys } = await supabase.from('gemini_api_keys').select('id, api_key').eq('is_active', true);
-      if (keys && keys.length > 0) {
-        const keyObj = keys[Math.floor(Math.random() * keys.length)];
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${keyObj.api_key}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: elitePrompt }] }] })
-        });
-
-        if (geminiRes.ok) {
-          const res = await geminiRes.json();
-          const aiRawText = res.candidates?.[0]?.content?.parts?.[0]?.text || '...';
-          const usage = res.usageMetadata;
-
-          await supabase.from('ai_api_telemetry').insert({
-            company_id: company.id, model_name: 'gemini-2.5-flash-lite',
-            tokens_input: usage?.promptTokenCount || 0, tokens_output: usage?.candidatesTokenCount || 0,
-            latency_ms: Date.now() - startTime, cost_estimated: (usage?.totalTokenCount || 0) * 0.0000002
-          });
-
-          let payload: any = { messaging_product: 'whatsapp', to: senderPhoneRaw, type: 'text', text: { body: aiRawText.substring(0, 4000) } };
-          
-          if (aiRawText.includes('---') || aiRawText.includes('|')) {
-            let bodyPart = aiRawText;
-            let options: string[] = [];
-
-            if (aiRawText.includes('---')) {
-              const parts = aiRawText.split('---').map(s => s.trim());
-              if (parts[1] && parts[1].includes('|')) {
-                bodyPart = parts[0];
-                options = parts[1].split('|').map(o => o.trim()).filter(o => o.length > 0);
-              } else if (parts[1] === '' && parts[0].includes('|')) {
-                // Trailing --- like in the screenshot
-                const subParts = parts[0].split('|').map(o => o.trim());
-                bodyPart = subParts[0];
-                options = subParts.slice(1);
-              }
-            } else if (aiRawText.includes('|')) {
-              const parts = aiRawText.split('|').map(s => s.trim());
-              bodyPart = parts[0];
-              options = parts.slice(1);
-            }
-
-            const cleanOptions = options.map(o => o.trim()).filter(o => o.length > 0).slice(0, 3);
-
-            if (cleanOptions.length > 0) {
-               payload = {
-                messaging_product: 'whatsapp', to: senderPhoneRaw, type: 'interactive',
-                interactive: {
-                  type: 'button', body: { text: bodyPart.substring(0, 1024) },
-                  action: { buttons: cleanOptions.map((o, i) => ({ type: 'reply', reply: { id: `act_${i}_${Date.now()}`, title: o.substring(0, 20) } })) }
-                }
-              };
-            }
-          }
-
-          await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'bot', content: aiRawText });
-          
-          const metaRes = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          if (!metaRes.ok) {
-            const errData = await metaRes.json();
-            console.error('META_API_ERROR', errData);
-            await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ messaging_product: 'whatsapp', to: senderPhoneRaw, type: 'text', text: { body: aiRawText.split('---')[0].trim() } })
-            });
-          }
-        }
-      }
-      }
-
-      await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'bot', content: aiResponseText });
-      
-      const response = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${activeKey}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${company.settings.whatsapp.access_token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: elitePrompt }] }] })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('META_API_ERROR:', JSON.stringify(errorData));
-        // Fallback to text message
-        await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+      if (geminiRes.ok) {
+        const res = await geminiRes.json();
+        const aiRawText = res.candidates?.[0]?.content?.parts?.[0]?.text || '...';
+        
+        let payload: any = { messaging_product: 'whatsapp', to: sender, type: 'text', text: { body: aiRawText.substring(0, 4000) } };
+        
+        // --- RESILIENT PARSER v7.5 ---
+        if (aiRawText.includes('---') || aiRawText.includes('|')) {
+          let bodyPart = aiRawText;
+          let options: string[] = [];
+          if (aiRawText.includes('---')) {
+            const parts = aiRawText.split('---').map(s => s.trim());
+            if (parts[1] && parts[1].includes('|')) {
+              bodyPart = parts[0];
+              options = parts[1].split('|');
+            } else if (parts[0].includes('|')) {
+              const sub = parts[0].split('|');
+              bodyPart = sub[0];
+              options = sub.slice(1);
+            }
+          } else {
+            const parts = aiRawText.split('|');
+            bodyPart = parts[0];
+            options = parts.slice(1);
+          }
+
+          const cleanOptions = options.map(o => o.trim()).filter(o => o.length > 0 && o.length <= 20).slice(0, 3);
+          if (cleanOptions.length > 0) {
+            payload = {
+              messaging_product: 'whatsapp', to: sender, type: 'interactive',
+              interactive: {
+                type: 'button', body: { text: bodyPart.substring(0, 1024) },
+                action: { buttons: cleanOptions.map((o, i) => ({ type: 'reply', reply: { id: `act_${i}`, title: o } })) }
+              }
+            };
+          }
+        }
+
+        await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'bot', content: aiRawText });
+        
+        const metaRes = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${company.settings.whatsapp.access_token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: sender,
-            type: 'text',
-            text: { body: aiResponseText.substring(0, 4000) }
-          })
+          headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
+
+        if (!metaRes.ok) {
+          // Fallback to text
+          await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messaging_product: 'whatsapp', to: sender, type: 'text', text: { body: aiRawText.split('---')[0].trim() } })
+          });
+        }
       }
     }
 
     return new Response('OK');
   } catch (err) {
-    console.error('CORE_ERROR:', err);
+    console.error('SERVER_ERROR:', err);
     return new Response('OK');
   }
 });
