@@ -9,6 +9,7 @@ export interface Company {
   role?: string;
   tax_id?: string;
   status?: string;
+  plan_tier?: string;
   settings?: any;
 }
 
@@ -43,9 +44,11 @@ export const ActiveCompanyProvider = ({ children }: { children: ReactNode }) => 
     localStorage.setItem("arise_active_company", company.id);
     localStorage.setItem("arise_active_company_name", company.name);
     localStorage.setItem("arise_active_role", company.role || 'viewer');
+    localStorage.setItem("arise_active_plan", company.plan_tier || 'free');
     
     // Cookie para SSR/Middleware
     document.cookie = `arise_company_id=${company.id}; path=/; max-age=31536000; SameSite=Lax`;
+    document.cookie = `arise_plan_tier=${company.plan_tier || 'free'}; path=/; max-age=31536000; SameSite=Lax`;
   };
 
   return (

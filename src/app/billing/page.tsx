@@ -66,102 +66,104 @@ export default function BillingPage() {
   }, []);
 
   return (
-    <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-x-hidden">
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16">
-        <div>
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Billing_Terminal</h1>
-          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
-            <Activity size={10} className="text-primary" />
-            Financial Node Compliance / v7.0
+    <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-700 overflow-x-hidden">
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-12 mb-20 relative">
+        <div className="absolute -top-10 -right-20 w-80 h-80 bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="relative z-10">
+          <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Billing_Terminal</h1>
+          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.5em] mt-4 flex items-center gap-2">
+            <Activity size={10} className="text-primary animate-pulse" />
+            Financial Node Compliance / Diamond v7.9
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto">
-          <button className="flex items-center justify-center gap-4 bg-[#f2f4f6] text-slate-600 px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] hover:bg-slate-200 transition-all border-none">
-            <Download size={14} />
-            <span>Audit_Export</span>
+        <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto relative z-10">
+          <button className="btn-arise-outline px-10 flex items-center justify-center gap-4 bg-white/50 backdrop-blur-md">
+            <Download size={16} />
+            <span>Audit_Archive</span>
           </button>
-          <button className="flex items-center justify-center gap-4 bg-primary text-white px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-            <span>Generate_Master_Report</span>
+          <button className="btn-arise px-10 flex items-center justify-center gap-4">
+            <span>Neural_Report_v7</span>
           </button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-        <MetricSmall title="Gross_Est_Sales" value={`$${stats.total.toLocaleString()}`} drift="+12.2%" icon={DollarSign} loading={loading} />
-        <MetricSmall title="Tax_Liability" value={`$${Math.round(stats.tax).toLocaleString()}`} drift="Sync_SII" icon={ShieldCheck} loading={loading} />
-        <MetricSmall title="Processed_Vault" value={stats.count} drift="Live" icon={FileText} loading={loading} />
-        <MetricSmall title="Flux_Efficiency" value={`${stats.efficiency.toFixed(1)}%`} drift={stats.efficiency > 90 ? 'OPTIMAL' : 'REVIEW'} icon={Activity} loading={loading} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+        <MetricSmall title="Gross_Vault_Volume" value={`$${stats.total.toLocaleString()}`} drift="+8.4%" icon={DollarSign} loading={loading} />
+        <MetricSmall title="Est_Tax_Liability" value={`$${Math.round(stats.tax).toLocaleString()}`} drift="Sync_SII" icon={ShieldCheck} loading={loading} />
+        <MetricSmall title="Security_Vault_Ops" value={stats.count} drift="Live" icon={FileText} loading={loading} />
+        <MetricSmall title="Execution_Flux" value={`${stats.efficiency.toFixed(1)}%`} drift={stats.efficiency > 90 ? 'OPTIMAL' : 'REVIEW'} icon={Activity} loading={loading} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
-        <div className="lg:col-span-2 arise-card bg-white border-none shadow-arise overflow-hidden rounded-[24px] md:rounded-[32px]">
-          <div className="p-6 md:p-10 flex flex-col sm:flex-row justify-between items-center bg-[#f7f9fb] gap-6">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Master_Vault_Registry</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-16">
+        <div className="lg:col-span-2 arise-card bg-white/80 backdrop-blur-2xl border-white/50 shadow-arise overflow-hidden rounded-[48px]">
+          <div className="p-8 md:p-12 flex flex-col sm:flex-row justify-between items-center bg-[#f8fafc]/50 border-b border-slate-50 gap-8">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400">Master_Archive_Registry</h2>
             <div className="relative w-full sm:w-auto">
-              <input type="text" placeholder="FILTER_FOLIO_..." className="w-full sm:w-64 bg-white text-[9px] font-black uppercase tracking-widest py-3 px-10 rounded-xl outline-none focus:shadow-arise transition-all" />
-              <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+              <input type="text" placeholder="QUERY_FOLIO_..." className="w-full sm:w-80 bg-white text-[9px] font-black uppercase tracking-widest py-4 px-12 rounded-2xl outline-none border border-slate-100 focus:shadow-arise transition-all" />
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
             </div>
           </div>
-          <div className="divide-y-0">
+          <div className="divide-y divide-slate-50">
             {loading ? (
               Array(6).fill(0).map((_, i) => <SkeletonRow key={i} />)
             ) : docs.length > 0 ? (
               docs.map((doc) => (
-                <div key={doc.id} className="p-6 md:p-10 flex items-center justify-between hover:bg-[#f7f9fb] transition-all group cursor-pointer border-none">
-                  <div className="flex items-center gap-4 md:gap-6">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-[#f2f4f6] rounded-[20px] md:rounded-[24px] flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-                      <FileText className="w-6 h-6 md:w-7 md:h-7" />
+                <div key={doc.id} className="p-8 md:p-10 flex items-center justify-between hover:bg-[#f8fafc]/80 transition-all group cursor-pointer">
+                  <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-[#f8fafc] rounded-[28px] flex items-center justify-center text-slate-300 group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-sm">
+                      <FileText className="w-7 h-7" />
                     </div>
                     <div>
-                      <p className="text-xs md:text-sm font-black text-slate-900 uppercase italic tracking-tight">Folio_#{doc.folio}</p>
-                      <div className="flex items-center gap-2 md:gap-3 mt-1 md:mt-2">
-                        <span className={`text-[7px] md:text-[8px] font-black px-2 md:px-3 py-1 rounded-md uppercase tracking-widest ${doc.status === 'paid' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}`}>
+                      <p className="text-sm font-black text-slate-900 uppercase italic tracking-tight">Folio_#{doc.folio}</p>
+                      <div className="flex items-center gap-4 mt-3">
+                        <span className={`text-[8px] font-black px-4 py-1.5 rounded-lg uppercase tracking-widest ${doc.status === 'paid' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}`}>
                           {doc.document_type || 'INVOICE'}
                         </span>
-                        <span className="text-[7px] md:text-[8px] font-bold text-slate-300 uppercase tracking-widest">SII_SYNC_OK</span>
+                        <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">ENCRYPTED_ID</span>
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm md:text-lg font-black text-slate-900 italic tracking-tighter">${(doc.amount_total || 0).toLocaleString()}</p>
-                    <p className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 md:mt-2">{new Date(doc.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}</p>
+                    <p className="text-xl font-black text-slate-900 italic tracking-tighter italic">${(doc.amount_total || 0).toLocaleString()}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3">{new Date(doc.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })} // {new Date(doc.created_at).getFullYear()}</p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-32 text-center flex flex-col items-center">
-                 <div className="w-24 h-24 bg-[#f2f4f6] rounded-[32px] flex items-center justify-center mb-10 text-slate-200">
-                    <FileText size={48} strokeWidth={1} />
+              <div className="p-40 text-center flex flex-col items-center">
+                 <div className="w-32 h-32 bg-[#f8fafc] rounded-[48px] flex items-center justify-center mb-12 text-slate-200 shadow-inner">
+                    <FileText size={56} strokeWidth={1} />
                  </div>
-                 <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em] mb-4">Financial_Vault_Void</h3>
-                 <p className="max-w-xs text-center text-slate-400 text-[9px] font-bold uppercase tracking-widest leading-loose">No financial records detected in this operational node. Deploy documentation to initiate tracking.</p>
+                 <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.6em] mb-6">Financial_Pool_Empty</h3>
+                 <p className="max-w-xs text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest leading-loose mb-12">No high-integrity documents detected in the current node. Pulse the generator to initiate flux.</p>
+                 <button className="btn-arise">Initialize_Vault</button>
               </div>
             )}
           </div>
         </div>
 
-        <div className="arise-card bg-[#0a0c10] border-none p-10 flex flex-col justify-between overflow-hidden relative rounded-[40px] shadow-2xl">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-primary/30 blur-[150px] rounded-full -mr-32 -mt-32" />
-          <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-500/10 blur-[100px] rounded-full -ml-20 -mb-20" />
+        <div className="arise-card bg-[#0b1326] border-none p-12 flex flex-col justify-between overflow-hidden relative rounded-[48px] shadow-2xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[180px] rounded-full -mr-48 -mt-48 transition-opacity duration-1000 group-hover:opacity-100" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/10 blur-[130px] rounded-full -ml-32 -mb-32" />
           
           <div className="relative z-10">
-            <div className="w-16 h-16 bg-white/5 backdrop-blur-xl rounded-[24px] flex items-center justify-center text-primary mb-10 shadow-2xl border border-white/5">
-               <ShieldCheck size={32} />
+            <div className="w-20 h-20 bg-white/5 backdrop-blur-2xl rounded-[32px] flex items-center justify-center text-primary mb-12 shadow-2xl border border-white/5">
+               <ShieldCheck size={40} />
             </div>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-primary mb-6">Neural_Compliance</h2>
-            <p className="text-slate-400 text-[11px] leading-relaxed font-bold uppercase tracking-wider">
-              The Arise engine has successfully categorized 100% of financial nodes. 
-              Predictive tax algorithms are active under optimal security parameters.
+            <h2 className="text-[11px] font-black uppercase tracking-[0.6em] text-primary mb-8">Neural_Compliance_v7</h2>
+            <p className="text-slate-400 text-xs leading-relaxed font-bold uppercase tracking-widest">
+              The Ouroborus engine has successfully validated 100% of fiscal parameters. 
+              Real-time synchronization with the SII Protocol is active. No anomalies detected.
             </p>
           </div>
           
-          <div className="relative z-10 mt-12 bg-white/5 p-8 rounded-[32px] border border-white/5 backdrop-blur-md">
-            <div className="flex justify-between items-end mb-6">
-              <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.3em]">Compliance_Sync</span>
-              <span className="text-xl font-black text-white tracking-[0.2em] italic">OPTIMAL</span>
+          <div className="relative z-10 mt-16 bg-white/5 p-10 rounded-[40px] border border-white/5 backdrop-blur-xl">
+            <div className="flex justify-between items-end mb-8">
+              <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.4em]">Audit_Health</span>
+              <span className="text-2xl font-black text-white tracking-[0.2em] italic">OPTIMAL</span>
             </div>
-            <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-               <div className="h-full w-full bg-gradient-to-r from-primary to-blue-400 shadow-[0_0_20px_#135bec] animate-pulse" />
+            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+               <div className="h-full w-full bg-gradient-to-r from-primary via-blue-400 to-emerald-400 shadow-[0_0_25px_rgba(19,91,236,0.5)] animate-pulse" />
             </div>
           </div>
         </div>

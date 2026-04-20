@@ -87,8 +87,22 @@ export default function MessagesPage() {
         schema: 'public', 
         table: 'messages',
         filter: `conversation_id=eq.${convId}` 
-      }, (payload: any) => {
+      }, async (payload: any) => {
         console.log('[Realtime] Nuevo mensaje recibido:', payload.new);
+        
+        // --- TRIGGER NEURAL PROCESSOR v7.9 ---
+        if (payload.new.sender_type === 'bot') {
+          console.log('[Neural] Triggering processor for action detection...');
+          fetch('/api/neural-processor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              messageId: payload.new.id, 
+              companyId: selectedConv.company_id 
+            })
+          }).catch(e => console.error('[Neural] Processor Trigger Failed:', e));
+        }
+
         setMessages(prev => {
           if (prev.some(m => m.id === payload.new.id)) return prev;
           const newList = [...prev, payload.new];

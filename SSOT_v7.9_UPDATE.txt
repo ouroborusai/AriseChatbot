@@ -1,0 +1,23 @@
+# 📜 ARISE SSOT UPDATE v7.9 (Diamond Industrial)
+Fecha: 2026-04-20
+
+## 1. RESUMEN DE ARQUITECTURA
+- **Seguridad:** RLS activado en tabla `companies`. Acceso restringido por `user_company_access`.
+- **Master User:** `ouroborusai@gmail.com` tiene acceso global.
+- **Motor Ejecutivo:** /api/neural-processor operativo para transiciones automáticas de inventario.
+- **Protocolo de Acción:** Bloques `[[ { "action": "...", ... } ]]` en respuestas de la IA.
+
+## 2. CAMBIOS CLAVE EN CÓDIGO
+- `src/app/api/neural-processor/route.ts`: Nuevo procesador de intents ejecutivos.
+- `src/app/messages/page.tsx`: Trigger Realtime añadido para disparar el procesador ante nuevos 'bot' messages.
+- `src/app/inventory/page.tsx`: Badges de estatus (STOCK_CRITICAL, etc) y Neural Scanner UI integrados.
+- `src/components/Sidebar.tsx`: Selector de empresas unificado y bug de visibilidad corregido.
+
+## 3. INFRAESTRUCTURA (SUPABASE)
+- Índices B-Tree en `company_id` para todas las tablas núcleo.
+- Replica Identity FULL en mensajería para fidelidad de Realtime.
+- Trigger `trigger_update_inventory_stock` validado para integridad de Kardex.
+
+## 4. PENDIENTES (LOG DE BLOQUEO)
+- Webhook WhatsApp: Despliegue de v26 fallido por error interno. El sistema actualmente usa la arquitectura híbrida (Next.js Processor) para bypass.
+- OCR Live: Requiere conexión final del DocumentService con el Neural Processor act=inventory_scan.

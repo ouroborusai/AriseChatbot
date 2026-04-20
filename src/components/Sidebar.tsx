@@ -19,18 +19,21 @@ import {
   LogOut,
   User,
   Search,
-  Check
+  Check,
+  Lock
 } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import CompanySelector from './CompanySelector';
 
 const menuItems = [
-  { name: 'Vista General', icon: LayoutDashboard, path: '/dashboard' },
-  { name: 'Mensajes', icon: MessageSquare, path: '/messages' },
-  { name: 'CRM (Pagos)', icon: Users, path: '/crm' },
-  { name: 'Inventario', icon: Package, path: '/inventory' },
-  { name: 'Analítica', icon: BarChart3, path: '/billing' },
-  { name: 'Arise Studio', icon: Code2, path: '/studio' },
-  { name: 'Configuración', icon: Settings, path: '/users' },
+  { name: 'Vista General', icon: LayoutDashboard, path: '/dashboard', premium: true },
+  { name: 'Mensajes', icon: MessageSquare, path: '/messages', premium: true },
+  { name: 'Bóveda (Vault)', icon: User, path: '/vault', premium: false },
+  { name: 'CRM (Pagos)', icon: Users, path: '/crm', premium: true },
+  { name: 'Inventario', icon: Package, path: '/inventory', premium: true },
+  { name: 'Analítica', icon: BarChart3, path: '/billing', premium: true },
+  { name: 'Arise Studio', icon: Code2, path: '/studio', premium: true },
+  { name: 'Configuración', icon: Settings, path: '/users', premium: false },
 ];
 
 export default function Sidebar() {
@@ -51,91 +54,34 @@ export default function Sidebar() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserData(user);
-
-      const email = user.email?.toLowerCase() || '';
-      const isMaster = email === 'ouroborusai@gmail.com' || email.includes('ouroborus.ai');
-
-      if (isMaster) {
-        const { data: all } = await supabase
-          .from('companies')
-          .select('id, name')
-          .order('name', { ascending: true });
-        
-        if (all) {
-          const companyList = all.map(c => ({ id: c.id, name: c.name, role: 'admin' }));
-          setUserRole('admin');
-          const finalCompanies = [{ id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin' }, ...companyList];
-          setCompanies(finalCompanies);
-          setFilteredCompanies(finalCompanies);
-          const savedId = localStorage.getItem('arise_active_company');
-          setActiveCompany(finalCompanies.find((c: any) => c.id === savedId) || finalCompanies[0]);
-          return;
-        }
-      }
-
-      // Lógica estándar si no es Master
-      const { data: accessData } = await supabase
-        .from('user_company_access')
-        .select('company_id, role, companies(name)')
-        .eq('user_id', user.id);
-
-      if (accessData) {
-        const companyList = accessData
-          .map((item: any) => ({
-            id: item.company_id,
-            name: item.companies?.name || 'Empresa sin Nombre',
-            role: item.role
-          }))
-          .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-        
-        const highestRole = companyList.some(c => c.role === 'admin') ? 'admin' : 'staff';
-        setUserRole(highestRole);
-
-        const finalCompanies = highestRole === 'admin' 
-          ? [{ id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin' }, ...companyList]
-          : companyList;
-
-        setCompanies(finalCompanies);
-        setFilteredCompanies(finalCompanies);
-        
-        const savedId = localStorage.getItem('arise_active_company');
-        let active = finalCompanies.find((c: any) => c.id === savedId) || finalCompanies[0];
-        
-        if (active && !activeCompany) {
-          setActiveCompany(active);
-          setUserRole(active.role);
-        }
-      }
     }
     fetchUserContext();
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    const filtered = companies.filter(c => 
-      c.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredCompanies(filtered);
-  }, [searchQuery, companies]);
-
-  const handleCompanyChange = (company: any) => {
-    setActiveCompany(company);
-    setIsDropdownOpen(false);
-    // Eliminada la recarga forzada para permitir transición fluida en Dashboard y Mensajes
-    // El contexto reactivo se encargará de actualizar el contenido necesario
-  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.refresh();
     window.location.href = '/auth/login';
+  };
+
+  const handleUpgrade = async () => {
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: activeCompany?.id,
+          companyName: activeCompany?.name,
+          userEmail: userData?.email
+        })
+      });
+      const data = await res.json();
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      }
+    } catch (error) {
+      console.error('Error al iniciar pago:', error);
+    }
   };
 
   const shouldShowSelector = true; // Selector siempre visible en v6.23
@@ -153,60 +99,31 @@ export default function Sidebar() {
         </div>
 
         {/* CUSTOM MASTER SELECTOR v6.22 */}
-        {shouldShowSelector && (
-          <div className="mb-8 md:mb-10 relative" ref={dropdownRef}>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4 px-2 tracking-[0.2em]">Contexto Operativo</label>
-            <button 
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full flex items-center justify-between gap-3 bg-slate-50 hover:bg-slate-100 transition-all rounded-2xl p-4 text-[11px] font-black text-slate-700 outline-none"
-            >
-              <span className="truncate pr-2">{activeCompany?.name || 'Seleccionar Empresa'}</span>
-              <ChevronDown size={14} className={`text-slate-300 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180 text-primary' : ''}`} />
-            </button>
-
-            {isDropdownOpen && (
-              <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-white border border-slate-50 rounded-2xl shadow-2xl shadow-slate-200/50 z-[100] p-3 animate-in fade-in zoom-in-95 duration-200">
-                <div className="relative mb-3">
-                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
-                   <input 
-                    autoFocus
-                    type="text" 
-                    placeholder="Filtrar por nombre..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-9 pr-4 text-[11px] font-bold text-slate-700 placeholder:text-slate-300 outline-none focus:ring-4 focus:ring-primary/5 transition-all"
-                   />
-                </div>
-                <div className="max-h-60 overflow-y-auto space-y-1 custom-scrollbar">
-                  {filteredCompanies.length > 0 ? (
-                    filteredCompanies.map((c) => (
-                      <button 
-                        key={c.id} 
-                        onClick={() => handleCompanyChange(c)}
-                        className={`w-full text-left p-3 rounded-xl text-[10.5px] font-bold transition-all flex items-center justify-between group ${
-                          activeCompany?.id === c.id 
-                            ? 'bg-primary/5 text-primary' 
-                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-                        }`}
-                      >
-                        <span className="truncate pr-4">{c.name}</span>
-                        {activeCompany?.id === c.id && <Check size={12} className="shrink-0" />}
-                      </button>
-                    ))
-                  ) : (
-                    <div className="p-4 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest">Sin resultados</div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        <CompanySelector className="mb-10" />
 
         <nav className="flex-1 space-y-1">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 px-2 tracking-[0.2em]">Núcleo del Sistema</p>
           {menuItems.map((item) => {
             const isActive = pathname === item.path;
             const Icon = item.icon;
+            
+            // Lógica de Bloqueo Pro
+            const isMaster = userData?.email === 'ouroborusai@gmail.com';
+            const isLocked = item.premium && activeCompany?.plan_tier === 'free' && !isMaster;
+
+            if (isLocked) {
+              return (
+                <div key={item.path} 
+                  className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black text-slate-300 cursor-not-allowed group relative"
+                  title="Módulo PRO - Requiere Suscripción"
+                >
+                  <Icon size={18} className="opacity-40" />
+                  <span className="tracking-tight">{item.name}</span>
+                  <Lock size={12} className="ml-auto text-slate-300 animate-pulse" />
+                </div>
+              );
+            }
+
             return (
               <Link key={item.path} href={item.path}
                 className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[11px] font-black transition-all group ${
@@ -219,6 +136,23 @@ export default function Sidebar() {
               </Link>
             );
           })}
+          
+          {/* BANNER UPGRADE PRO */}
+          {activeCompany?.plan_tier === 'free' && (
+            <div className="mt-8 p-6 bg-gradient-to-br from-primary to-[#003da1] rounded-3xl shadow-xl shadow-primary/20 relative overflow-hidden group">
+               <div className="relative z-10">
+                 <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Plan Pro Arise</p>
+                 <p className="text-white text-xs font-black leading-tight mb-4">Desbloquea Dashboard, Mensajes y más.</p>
+                 <button 
+                   onClick={handleUpgrade}
+                   className="w-full py-2.5 bg-white text-primary text-[10px] font-black uppercase tracking-wider rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                 >
+                    Actualizar Ahora
+                 </button>
+               </div>
+               <Zap className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 -rotate-12 group-hover:rotate-0 transition-transform duration-700" />
+            </div>
+          )}
         </nav>
 
         <div className="mt-auto pt-8 border-t border-slate-50">

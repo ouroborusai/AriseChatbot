@@ -26,18 +26,18 @@ export default function MobileNav() {
 
   return (
     <>
-      {/* MOBILE HEADER (Logo Only) */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-slate-50">
+      {/* MOBILE HEADER (Neural Context) */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/40 backdrop-blur-xl px-4 py-3 flex justify-between items-center border-b border-white/5 shadow-sm">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
-            <span className="font-black text-xs italic">A</span>
+          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white shadow-xl shadow-primary/30 rotate-3 transform hover:rotate-0 transition-transform">
+            <span className="font-black text-xs">A</span>
           </div>
-          <span className="font-black text-slate-900 tracking-tighter text-lg uppercase">Arise</span>
+          <span className="font-black text-slate-900 tracking-tighter text-base uppercase">Arise</span>
         </div>
-        <div className="flex items-center gap-3">
-           <CompanySelector variant="header" />
-           <Link href="/users" className="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100">
-             <Settings size={16} />
+        <div className="flex items-center gap-2">
+           <CompanySelector variant="header" className="scale-90 origin-right" />
+           <Link href="/users" className="w-9 h-9 bg-white/50 rounded-xl flex items-center justify-center text-slate-400 border border-white/20 shadow-sm">
+             <Settings size={18} />
            </Link>
         </div>
       </div>

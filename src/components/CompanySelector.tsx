@@ -46,6 +46,7 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
           if (fetchError) console.error('Error cargando empresas:', fetchError);
 
           if (all) {
+            console.log(`Total empresas detectadas: ${all.length}`);
             const list = [
               { id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin' },
               ...all.map(c => ({ id: c.id, name: c.name, role: 'admin' }))
@@ -133,7 +134,11 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
                 className="w-full bg-slate-50 border-none rounded-xl py-2 pl-9 pr-4 text-[11px] font-bold text-slate-700 outline-none focus:ring-4 focus:ring-primary/5 transition-all"
                />
             </div>
-            <div className="max-h-60 overflow-y-auto space-y-1 custom-scrollbar">
+            <div className="max-h-[70vh] overflow-y-auto space-y-1 pr-1 custom-scrollbar scrollbar-thin scrollbar-thumb-slate-200">
+              <div className="px-3 py-2 border-b border-slate-50 mb-2 flex justify-between items-center">
+                 <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Registros Detectados:</span>
+                 <span className="text-[8px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{filteredCompanies.length}</span>
+              </div>
               {filteredCompanies.map((c) => (
                 <button 
                   key={c.id} 
@@ -177,7 +182,11 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
               className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-9 pr-4 text-[11px] font-bold text-slate-700 outline-none focus:ring-4 focus:ring-primary/5 transition-all"
              />
           </div>
-          <div className="max-h-60 overflow-y-auto space-y-1 custom-scrollbar">
+          <div className="max-h-[60vh] overflow-y-auto space-y-1 pr-1 custom-scrollbar scrollbar-thin">
+            <div className="px-3 py-2 border-b border-slate-50 mb-2 flex justify-between items-center">
+                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Nodos Disponibles:</span>
+                 <span className="text-[8px] font-black bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{filteredCompanies.length}</span>
+            </div>
             {filteredCompanies.length > 0 ? (
               filteredCompanies.map((c) => (
                 <button 
