@@ -34,9 +34,15 @@ serve(async (req: Request) => {
     if (existingMsg) return new Response('OK');
 
     // --- 2. CONFIG & IDENTITY ---
+    console.log(`[WHATS_WEBHOOK] Incoming from ${sender} to ${phoneNumberId}`);
     const { data: companies } = await supabase.from('companies').select('*').contains('settings', { whatsapp: { phone_number_id: phoneNumberId } });
-    const company = companies?.[0];
-    if (!company) return new Response('OK');
+    const company = companies?.find(c => c.settings?.whatsapp?.access_token) || companies?.[0];
+    
+    if (!company) {
+      console.error(`[WHATS_WEBHOOK] No company found for phone_number_id: ${phoneNumberId}`);
+      return new Response('OK');
+    }
+    console.log(`[WHATS_WEBHOOK] Resolved Company: ${company.name} (${company.id})`);
 
     const [internalUser, contact, keys] = await Promise.all([
       supabase.from('internal_directory').select('name, role').eq('phone', sender).eq('company_id', company.id).maybeSingle(),
@@ -57,7 +63,6 @@ serve(async (req: Request) => {
     // --- 3. RAG MODULE (Intelligence v7.9 - Snapshot First) ---
     let financialContext = '';
     try {
-      // Priorizar Snapshots para evitar cálculos en la IA
       const { data: snapshots } = await supabase
         .from('client_knowledge')
         .select('content_summary')
@@ -88,91 +93,117 @@ serve(async (req: Request) => {
       metadata: { whatsapp_message_id: waId, type: message.type } 
     });
 
-    // --- 5. NEURAL CORE (LM Choice: Gemini 2.5 Flash Lite) ---
-    const promptCat = isInternal ? 'Internal' : 'General';
-    const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('category', promptCat).eq('company_id', company.id).maybeSingle();
-    
-    const finalPrompt = `${p?.system_prompt || ''}\n\n[IDENTIDAD: ${userName} (${userRole.toUpperCase()})]\n${financialContext}\n\nUsuario: ${content}`;
+    await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'user', content: messageContent });
 
-    const chatRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${activeKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: finalPrompt }] }] })
-    });
+    if (conv.status === 'open') {
+      const startTime = Date.now();
+      const [compliance, reminders] = await Promise.all([
+        supabase.from('company_compliance').select('*').eq('company_id', company.id).eq('status', 'pending').limit(1).maybeSingle(),
+        supabase.from('reminders').select('*').eq('contact_id', contactId).eq('status', 'pending').limit(1).maybeSingle()
+      ]);
 
-    if (chatRes.ok) {
-      const chatData = await chatRes.json();
-      const aiResponseText = chatData.candidates?.[0]?.content?.parts?.[0]?.text || '...';
+      let flashContext = '';
+      if (compliance.data) flashContext += `\nVENCIMIENTO_LEGAL_PRÓXIMO: ${compliance.data.task_name} (Fecha: ${compliance.data.due_date})`;
+      if (reminders.data) flashContext += `\nRECORDATORIO_PENDIENTE: ${reminders.data.content}`;
 
-      let payload: any = { messaging_product: 'whatsapp', to: sender, type: 'text', text: { body: aiResponseText } };
+      const promptCategory = isInternal ? 'Internal' : 'General';
+      const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', company.id).eq('category', promptCategory).maybeSingle();
       
-      // 6. DIAMOND V7.9 UI SCALING (Improved Parser)
-      if (aiResponseText.includes('---')) {
-        const parts = aiResponseText.split('---');
-        // El cuerpo es todo menos la última sección de botones
-        const rawBody = parts.slice(0, -1).join('---').trim();
-        const rawOptions = parts[parts.length - 1].trim();
-        const options = rawOptions.split('|').map(o => o.replace(/\n/g, ' ').trim()).filter(o => o.length > 0);
+      const elitePrompt = `${p?.system_prompt || ''}\n\n[IDENTIDAD ELITE: Estás hablando con ${userName} (${userRole.toUpperCase()}). Eres el Socio Contable de ${company.name}.]\n${flashContext}\n\nUsuario: ${messageContent}`;
 
-        if (options.length > 0) {
-          const bodyText = rawBody || 'Elige una acción operativa:';
+      const { data: keys } = await supabase.from('gemini_api_keys').select('id, api_key').eq('is_active', true);
+      if (keys && keys.length > 0) {
+        const keyObj = keys[Math.floor(Math.random() * keys.length)];
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${keyObj.api_key}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: elitePrompt }] }] })
+        });
+
+        if (geminiRes.ok) {
+          const res = await geminiRes.json();
+          const aiRawText = res.candidates?.[0]?.content?.parts?.[0]?.text || '...';
+          const usage = res.usageMetadata;
+
+          await supabase.from('ai_api_telemetry').insert({
+            company_id: company.id, model_name: 'gemini-2.5-flash-lite',
+            tokens_input: usage?.promptTokenCount || 0, tokens_output: usage?.candidatesTokenCount || 0,
+            latency_ms: Date.now() - startTime, cost_estimated: (usage?.totalTokenCount || 0) * 0.0000002
+          });
+
+          let payload: any = { messaging_product: 'whatsapp', to: senderPhoneRaw, type: 'text', text: { body: aiRawText.substring(0, 4000) } };
           
-          if (options.length <= 3) {
-            // Usar botones simples si son pocos
-            payload = {
-              messaging_product: 'whatsapp', to: sender, type: 'interactive',
-              interactive: {
-                type: 'button',
-                body: { text: bodyText.substring(0, 1024) },
-                action: {
-                  buttons: options.slice(0, 3).map((o, i) => ({
-                    type: 'reply',
-                    reply: { id: `btn_${i}`, title: o.substring(0, 20) }
-                  }))
+          if (aiRawText.includes('---')) {
+            const [bodyPart, optionsPart] = aiRawText.split('---').map(s => s.trim());
+            const options = optionsPart.split('|').map(o => o.trim()).filter(o => o.length > 0);
+
+            if (options.length > 0 && options.length <= 3) {
+                payload = {
+                messaging_product: 'whatsapp', to: senderPhoneRaw, type: 'interactive',
+                interactive: {
+                  type: 'button', body: { text: bodyPart.substring(0, 1024) },
+                  action: { buttons: options.slice(0, 3).map((o, i) => ({ type: 'reply', reply: { id: `act_${i}_${Date.now()}`, title: o.substring(0, 20) } })) }
                 }
-              }
-            };
-          } else {
-            // Usar Lista si son muchos
-            payload = {
-              messaging_product: 'whatsapp', to: sender, type: 'interactive',
-              interactive: {
-                type: 'list',
-                header: { type: 'text', text: 'Arise Operations' },
-                body: { text: bodyText.substring(0, 1024) },
-                footer: { text: 'Arise Business OS v7.1' },
-                action: {
-                  button: 'Ver Opciones',
-                  sections: [{
-                    title: 'Comandos Disponibles',
-                    rows: options.slice(0, 10).map((o, i) => ({
-                      id: `act_${i}_${Date.now()}`,
-                      title: o.substring(0, 24).trim(),
-                      description: 'Ejecutar comando'
-                    }))
-                  }]
+              };
+            } else if (options.length > 3) {
+              payload = {
+                messaging_product: 'whatsapp', to: senderPhoneRaw, type: 'interactive',
+                interactive: {
+                  type: 'list', header: { type: 'text', text: 'Arise Operations' }, body: { text: bodyPart.substring(0, 1024) },
+                  footer: { text: 'Selecciona una opcion' },
+                  action: {
+                    button: 'Ver Opciones',
+                    sections: [{ title: 'Menú Ejecutivo', rows: options.slice(0, 10).map((o, i) => ({ id: `list_${i}_${Date.now()}`, title: o.substring(0, 24), description: 'Accion rapida' })) }]
+                  }
                 }
-              }
-            };
+              };
+            }
+          }
+
+          await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'bot', content: aiRawText });
+          
+          const metaRes = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!metaRes.ok) {
+            const errData = await metaRes.json();
+            console.error('META_API_ERROR', errData);
+            await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ messaging_product: 'whatsapp', to: senderPhoneRaw, type: 'text', text: { body: aiRawText.split('---')[0].trim() } })
+            });
           }
         }
       }
-
-      // ASYNC PDF INTERCEPT (LM Rule)
-      if (aiResponseText.includes('GENERATE_PDF')) {
-         fetch('https://zosravrfpfechanatucx.supabase.co/functions/v1/document-processor', { 
-           method: 'POST', 
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({ contact_id: cid, type: 'report', metadata: { company_id: company.id } })
-         }).catch(e => console.error('PDF_DELEGATION_FAIL:', e));
       }
 
       await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'bot', content: aiResponseText });
-      await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+      
+      const response = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${company.settings.whatsapp.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('META_API_ERROR:', JSON.stringify(errorData));
+        // Fallback to text message
+        await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${company.settings.whatsapp.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: sender,
+            type: 'text',
+            text: { body: aiResponseText.substring(0, 4000) }
+          })
+        });
+      }
     }
 
     return new Response('OK');

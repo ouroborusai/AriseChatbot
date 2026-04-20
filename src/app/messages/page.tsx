@@ -264,7 +264,22 @@ export default function MessagesPage() {
                              {isBot ? 'Arise_Neural_Engine' : 'Human_Supervisor'}
                           </div>
                         )}
-                        <p className="tracking-tight whitespace-pre-wrap">{m.content}</p>
+                        <div className="tracking-tight whitespace-pre-wrap">
+                          {m.content.includes('---') && m.content.includes('|') ? (
+                            <div className="flex flex-col gap-4">
+                              <p>{m.content.split('---').filter((p: string) => !p.includes('|')).join('\n').trim()}</p>
+                              <div className="flex flex-wrap gap-2 pt-2 border-t border-current/10">
+                                {m.content.split('---').find((p: string) => p.includes('|'))?.split('|').map((opt: string, i: number) => (
+                                  <div key={i} className="px-3 py-1.5 bg-current/10 rounded-full text-[9px] uppercase tracking-wider font-black">
+                                    {opt.trim()}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            m.content
+                          )}
+                        </div>
                         <div className="mt-4 flex items-center gap-3 opacity-30 text-[8px] font-black uppercase tracking-widest">
                           {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </div>
