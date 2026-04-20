@@ -27,17 +27,48 @@ serve(async (req: Request) => {
     const message = changes.messages[0];
     const waId = message.id;
     const sender = message.from;
+    const profileName = changes.contacts?.[0]?.profile?.name || 'Usuario';
     const phoneNumberId = changes.metadata?.phone_number_id;
 
     // --- 1. IDEMPOTENCY ---
     const { data: existingMsg } = await supabase.from('messages').select('id').contains('metadata', { whatsapp_message_id: waId }).maybeSingle();
     if (existingMsg) return new Response('OK');
 
-    // --- 2. CONFIG & IDENTITY ---
-    const { data: companies } = await supabase.from('companies').select('*').contains('settings', { whatsapp: { phone_number_id: phoneNumberId } });
-    const company = companies?.find(c => c.settings?.whatsapp?.access_token) || companies?.[0];
-    
-    if (!company) return new Response('OK');
+    // --- 2. CONFIG & IDENTITY (NEURAL ROUTING v8.0) ---
+    const { data: allCompanies } = await supabase.from('companies').select('*').contains('settings', { whatsapp: { phone_number_id: phoneNumberId } });
+    if (!allCompanies || allCompanies.length === 0) return new Response('OK');
+
+    let company = allCompanies[0];
+
+    // Si hay múltiples empresas con el mismo número, buscamos la más relevante para el usuario
+    if (allCompanies.length > 1) {
+      // 1. Priorizar empresa con conversación ACTIVA (open o waiting_human)
+      const { data: activeConvs } = await supabase
+        .from('conversations')
+        .select('company_id')
+        .eq('contact_id', (await supabase.from('contacts').select('id').eq('phone', sender).in('company_id', allCompanies.map(c => c.id))).data?.[0]?.id || '')
+        .in('status', ['open', 'new', 'waiting_human'])
+        .in('company_id', allCompanies.map(c => c.id))
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (activeConvs && activeConvs.length > 0) {
+        company = allCompanies.find(c => c.id === activeConvs[0].company_id) || company;
+      } else {
+        // 2. Priorizar si el usuario es empleado (internal_directory)
+        const { data: internal } = await supabase
+          .from('internal_directory')
+          .select('company_id')
+          .eq('phone', sender)
+          .in('company_id', allCompanies.map(c => c.id))
+          .limit(1);
+        
+        if (internal && internal.length > 0) {
+          company = allCompanies.find(c => c.id === internal[0].company_id) || company;
+        }
+      }
+    }
+
     const whatsappToken = company.settings?.whatsapp?.access_token;
     if (!whatsappToken) return new Response('OK');
 
@@ -47,7 +78,7 @@ serve(async (req: Request) => {
     ]);
 
     const isInternal = !!internalUser.data;
-    const userName = internalUser.data?.name || 'Usuario';
+    const userName = internalUser.data?.name || profileName;
     const userRole = internalUser.data?.role || 'client';
 
     let content = message.text?.body || '';

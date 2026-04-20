@@ -46,8 +46,8 @@ export async function POST(req: Request) {
       
       if (buttonLineIndex !== -1) {
         const rawOptions = lines[buttonLineIndex].replace(/---/g, '').trim();
-        const options = rawOptions.split('|').map((o: string) => o.trim()).filter(o => o.length > 0);
-        const bodyText = lines.filter((_: any, i: number) => i !== buttonLineIndex).join('\n').trim() || 'Elige una opción:';
+        const options = rawOptions.split('|').map((o: string) => o.trim()).filter((o: string) => o.length > 0);
+        const bodyText = lines.filter((_: string, i: number) => i !== buttonLineIndex).join('\n').trim() || 'Elige una opción:';
 
         if (options.length > 0) {
           if (options.length <= 3) {
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
                 type: 'button',
                 body: { text: bodyText.substring(0, 1024) },
                 action: {
-                  buttons: options.slice(0, 3).map((o, i) => ({
+                  buttons: options.slice(0, 3).map((o: string, i: number) => ({
                     type: 'reply',
                     reply: { id: `agent_btn_${i}_${Date.now()}`, title: o.substring(0, 20).trim() }
                   }))
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
                   button: 'Ver Opciones',
                   sections: [{
                     title: 'Comandos Disponibles',
-                    rows: options.slice(0, 10).map((o, i) => ({
+                    rows: options.slice(0, 10).map((o: string, i: number) => ({
                       id: `agent_act_${i}_${Date.now()}`,
                       title: o.substring(0, 20).trim(),
                       description: 'Acción de Agente'

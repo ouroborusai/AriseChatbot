@@ -52,6 +52,28 @@ export default function Sidebar() {
       if (!user) return;
       setUserData(user);
 
+      const email = user.email?.toLowerCase() || '';
+      const isMaster = email === 'ouroborusai@gmail.com' || email.includes('ouroborus.ai');
+
+      if (isMaster) {
+        const { data: all } = await supabase
+          .from('companies')
+          .select('id, name')
+          .order('name', { ascending: true });
+        
+        if (all) {
+          const companyList = all.map(c => ({ id: c.id, name: c.name, role: 'admin' }));
+          setUserRole('admin');
+          const finalCompanies = [{ id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin' }, ...companyList];
+          setCompanies(finalCompanies);
+          setFilteredCompanies(finalCompanies);
+          const savedId = localStorage.getItem('arise_active_company');
+          setActiveCompany(finalCompanies.find((c: any) => c.id === savedId) || finalCompanies[0]);
+          return;
+        }
+      }
+
+      // Lógica estándar si no es Master
       const { data: accessData } = await supabase
         .from('user_company_access')
         .select('company_id, role, companies(name)')
@@ -66,11 +88,9 @@ export default function Sidebar() {
           }))
           .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         
-        // Obtener el rol más alto disponible para el menú
         const highestRole = companyList.some(c => c.role === 'admin') ? 'admin' : 'staff';
         setUserRole(highestRole);
 
-        // Añadir opción Global al principio para Admins
         const finalCompanies = highestRole === 'admin' 
           ? [{ id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin' }, ...companyList]
           : companyList;
@@ -108,9 +128,8 @@ export default function Sidebar() {
   const handleCompanyChange = (company: any) => {
     setActiveCompany(company);
     setIsDropdownOpen(false);
-    // Ya no es necesario recargar toda la página si usamos contextos reactivos bien implementados,
-    // pero lo mantenemos por ahora para asegurar que los hooks de todas las páginas se disparen si usan storage
-    window.location.reload();
+    // Eliminada la recarga forzada para permitir transición fluida en Dashboard y Mensajes
+    // El contexto reactivo se encargará de actualizar el contenido necesario
   };
 
   const handleSignOut = async () => {

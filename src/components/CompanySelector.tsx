@@ -24,38 +24,61 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
 
   useEffect(() => {
     async function fetchUserContext() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: accessData } = await supabase
-        .from('user_company_access')
-        .select('company_id, role, companies(name)')
-        .eq('user_id', user.id);
-
-      if (accessData) {
-        const companyList = accessData
-          .map((item: any) => ({
-            id: item.company_id,
-            name: item.companies?.name || 'Empresa sin Nombre',
-            role: item.role
-          }))
-          .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-        
-        const highestRole = companyList.some(c => c.role === 'admin') ? 'admin' : 'staff';
-        const finalCompanies = highestRole === 'admin' 
-          ? [{ id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin' }, ...companyList]
-          : companyList;
-
-        setCompanies(finalCompanies);
-        setFilteredCompanies(finalCompanies);
-        
-        const savedId = localStorage.getItem('arise_active_company');
-        let active = finalCompanies.find(c => c.id === savedId) || finalCompanies[0];
-        
-        if (active) {
-          setActiveCompany(active);
-          if (!savedId) localStorage.setItem('arise_active_company', active.id);
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+          console.error('Error de Auth:', userError);
+          return;
         }
+
+        // Identificación robusta (Case insensitive + prefijo)
+        const email = user.email?.toLowerCase() || '';
+        const isMaster = email === 'ouroborusai@gmail.com' || email.includes('ouroborus.ai');
+        
+        console.log('Nivel de Acceso:', isMaster ? 'MASTER' : 'STANDARD');
+
+        if (isMaster) {
+          const { data: all, error: fetchError } = await supabase
+            .from('companies')
+            .select('id, name')
+            .order('name', { ascending: true });
+
+          if (fetchError) console.error('Error cargando empresas:', fetchError);
+
+          if (all) {
+            const list = [
+              { id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin' },
+              ...all.map(c => ({ id: c.id, name: c.name, role: 'admin' }))
+            ];
+            setCompanies(list);
+            setFilteredCompanies(list);
+            
+            const savedId = localStorage.getItem('arise_active_company');
+            setActiveCompany(list.find(l => l.id === savedId) || list[0]);
+            return;
+          }
+        }
+
+        // Si no es master, procedemos con lógica normal
+        const { data: access } = await supabase
+          .from('user_company_access')
+          .select('company_id, role, companies(name)')
+          .eq('user_id', user.id);
+
+        if (access) {
+          const list = access.map((a: any) => ({
+            id: a.company_id,
+            name: a.companies?.name || 'Empresa',
+            role: a.role
+          })).sort((a, b) => a.name.localeCompare(b.name));
+
+          setCompanies(list);
+          setFilteredCompanies(list);
+          const savedId = localStorage.getItem('arise_active_company');
+          setActiveCompany(list.find(l => l.id === savedId) || list[0]);
+        }
+      } catch (err) {
+        console.error('Error crítico en CompanySelector:', err);
       }
     }
     fetchUserContext();
