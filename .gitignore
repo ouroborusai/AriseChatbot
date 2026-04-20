@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Arise Data Isolation
+/raw_data
+/scratch
+/supabase/.temp

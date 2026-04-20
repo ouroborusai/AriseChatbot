@@ -11,11 +11,12 @@ Deno.serve(async (req: Request) => {
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
 
     // 1. Contexto Profundo (Agente Personal)
-    const [contact, requests, compliance, reminders] = await Promise.all([
+    const [contact, requests, compliance, reminders, knowledge] = await Promise.all([
       supabase.from('contacts').select('*, companies(*)').eq('id', contact_id).single(),
       supabase.from('service_requests').select('*').eq('contact_id', contact_id).eq('status', 'pending').limit(1),
       supabase.from('company_compliance').select('*').eq('company_id', company_id).eq('status', 'pending').limit(1),
-      supabase.from('reminders').select('*').eq('contact_id', contact_id).eq('status', 'pending').limit(1)
+      supabase.from('reminders').select('*').eq('contact_id', contact_id).eq('status', 'pending').limit(1),
+      supabase.from('client_knowledge').select('content_summary').eq('company_id', company_id).order('created_at', { ascending: false }).limit(3)
     ]);
 
     // 2. Prompt Dinámico basado en Categoría (Lead vs Client)
@@ -29,16 +30,20 @@ Deno.serve(async (req: Request) => {
       .limit(1)
       .single();
 
-    let systemPrompt = promptQuery.data?.system_prompt || 'Eres Ouroborus AI, contesta cordial y brevemente. INTERACTIVIDAD: Separa botones con "---" (ej. "--- Opcion1 | Opcion2").';
+    let systemPrompt = promptQuery.data?.system_prompt || 'Eres Ouroborus AI, el asistente financiero inteligente de Arise. Contesta cordial y brevemente. INTERACTIVIDAD: Separa botones con "---" (ej. "--- Opcion1 | Opcion2").';
 
     // Añadir Contexto de negocio solo a clientes establecidos
     if (activeCategory === 'General') {
+      const financialSnapshots = knowledge.data?.map(k => k.content_summary).join('\n') || 'No hay resúmenes financieros disponibles aún.';
+      
       systemPrompt += `
       
       DATOS PARA RECORDAR (Contexto):
       - Trámites: ${JSON.stringify(requests.data)}
       - Vencimientos Legales: ${JSON.stringify(compliance.data)}
       - Notas Personales: ${JSON.stringify(reminders.data)}
+      - RESÚMENES FINANCIEROS (Usa estos datos para responder montos): 
+      ${financialSnapshots}
       `;
     }
 

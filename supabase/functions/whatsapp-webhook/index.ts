@@ -54,27 +54,19 @@ serve(async (req: Request) => {
     let content = message.text?.body || '';
     if (message.type === 'interactive') content = message.interactive.button_reply?.title || message.interactive.list_reply?.title || '';
 
-    // --- 3. RAG MODULE (Intelligence v7.5) ---
-    let ragContext = '';
+    // --- 3. RAG MODULE (Intelligence v7.9 - Snapshot First) ---
+    let financialContext = '';
     try {
-      const embedRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${activeKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: { parts: [{ text: content }] } })
-      });
-      
-      if (embedRes.ok) {
-        const { embedding } = await embedRes.json();
-        const { data: matches } = await supabase.rpc('match_client_knowledge', {
-          query_embedding: embedding.values,
-          match_threshold: 0.65,
-          match_count: 5,
-          p_company_id: company.id
-        });
+      // Priorizar Snapshots para evitar cálculos en la IA
+      const { data: snapshots } = await supabase
+        .from('client_knowledge')
+        .select('content_summary')
+        .eq('company_id', company.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
 
-        if (matches && matches.length > 0) {
-          ragContext = '\\n[CONTEXTO_DOCUMENTAL_ARRISE]:\\n' + matches.map((m: any) => `- ${m.content_summary}`).join('\\n');
-        }
+      if (snapshots && snapshots.length > 0) {
+        financialContext = `\n[FINANCIAL_SNAPSHOT_CONTEXT]:\n${snapshots.map(s => s.content_summary).join('\n')}`;
       }
     } catch (e) { console.error('RAG_FAIL:', e); }
 
@@ -96,11 +88,11 @@ serve(async (req: Request) => {
       metadata: { whatsapp_message_id: waId, type: message.type } 
     });
 
-    // --- 5. NEURAL CORE (Gemini 2.5 Flash Lite) ---
+    // --- 5. NEURAL CORE (LM Choice: Gemini 2.5 Flash Lite) ---
     const promptCat = isInternal ? 'Internal' : 'General';
     const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('category', promptCat).eq('company_id', company.id).maybeSingle();
     
-    const finalPrompt = `${p?.system_prompt || ''}\\n\\n[IDENTIDAD: ${userName} (${userRole.toUpperCase()})]\\n${ragContext}\\n\\nUsuario: ${content}`;
+    const finalPrompt = `${p?.system_prompt || ''}\n\n[IDENTIDAD: ${userName} (${userRole.toUpperCase()})]\n${financialContext}\n\nUsuario: ${content}`;
 
     const chatRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${activeKey}`, {
       method: 'POST',
@@ -110,13 +102,13 @@ serve(async (req: Request) => {
 
     if (chatRes.ok) {
       const chatData = await chatRes.json();
-      const aiText = chatData.candidates?.[0]?.content?.parts?.[0]?.text || '...';
+      const aiResponseText = chatData.candidates?.[0]?.content?.parts?.[0]?.text || '...';
 
-      let payload: any = { messaging_product: 'whatsapp', to: sender, type: 'text', text: { body: aiText } };
+      let payload: any = { messaging_product: 'whatsapp', to: sender, type: 'text', text: { body: aiResponseText } };
       
-      // Dynamic Button/List Logic
-      if (aiText.includes('---')) {
-        const parts = aiText.split('---');
+      // 6. DIAMOND V7.9 UI SCALING (Buttons vs Lists)
+      if (aiResponseText.includes('---')) {
+        const parts = aiResponseText.split('---');
         const bodyText = parts[0].trim();
         const options = parts[1].split('|').map(o => o.trim()).filter(o => o.length > 0);
 
@@ -132,18 +124,27 @@ serve(async (req: Request) => {
           payload = {
             messaging_product: 'whatsapp', to: sender, type: 'interactive',
             interactive: {
-              type: 'list', header: { type: 'text', text: 'Menú Arise' }, body: { text: bodyText },
+              type: 'list', header: { type: 'text', text: 'Menú Ejecutivo Arise' }, body: { text: bodyText },
               footer: { text: 'Diamond Business OS' },
               action: {
                 button: 'Ver Opciones',
-                sections: [{ title: 'Acciones', rows: options.slice(0, 10).map((o, i) => ({ id: `list_${i}_${Date.now()}`, title: o.substring(0, 24) })) }]
+                sections: [{ title: 'Acciones Disponibles', rows: options.slice(0, 10).map((o, i) => ({ id: `list_${i}_${Date.now()}`, title: o.substring(0, 24) })) }]
               }
             }
           };
         }
       }
 
-      await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'bot', content: aiText });
+      // ASYNC PDF INTERCEPT (LM Rule)
+      if (aiResponseText.includes('GENERATE_PDF')) {
+         fetch('https://zosravrfpfechanatucx.supabase.co/functions/v1/document-processor', { 
+           method: 'POST', 
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ contact_id: cid, type: 'report', metadata: { company_id: company.id } })
+         }).catch(e => console.error('PDF_DELEGATION_FAIL:', e));
+      }
+
+      await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'bot', content: aiResponseText });
       await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${company.settings.whatsapp.access_token}`, 'Content-Type': 'application/json' },
