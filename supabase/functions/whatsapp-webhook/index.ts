@@ -133,28 +133,35 @@ serve(async (req: Request) => {
 
           let payload: any = { messaging_product: 'whatsapp', to: senderPhoneRaw, type: 'text', text: { body: aiRawText.substring(0, 4000) } };
           
-          if (aiRawText.includes('---')) {
-            const [bodyPart, optionsPart] = aiRawText.split('---').map(s => s.trim());
-            const options = optionsPart.split('|').map(o => o.trim()).filter(o => o.length > 0);
+          if (aiRawText.includes('---') || aiRawText.includes('|')) {
+            let bodyPart = aiRawText;
+            let options: string[] = [];
 
-            if (options.length > 0 && options.length <= 3) {
-                payload = {
+            if (aiRawText.includes('---')) {
+              const parts = aiRawText.split('---').map(s => s.trim());
+              if (parts[1] && parts[1].includes('|')) {
+                bodyPart = parts[0];
+                options = parts[1].split('|').map(o => o.trim()).filter(o => o.length > 0);
+              } else if (parts[1] === '' && parts[0].includes('|')) {
+                // Trailing --- like in the screenshot
+                const subParts = parts[0].split('|').map(o => o.trim());
+                bodyPart = subParts[0];
+                options = subParts.slice(1);
+              }
+            } else if (aiRawText.includes('|')) {
+              const parts = aiRawText.split('|').map(s => s.trim());
+              bodyPart = parts[0];
+              options = parts.slice(1);
+            }
+
+            const cleanOptions = options.map(o => o.trim()).filter(o => o.length > 0).slice(0, 3);
+
+            if (cleanOptions.length > 0) {
+               payload = {
                 messaging_product: 'whatsapp', to: senderPhoneRaw, type: 'interactive',
                 interactive: {
                   type: 'button', body: { text: bodyPart.substring(0, 1024) },
-                  action: { buttons: options.slice(0, 3).map((o, i) => ({ type: 'reply', reply: { id: `act_${i}_${Date.now()}`, title: o.substring(0, 20) } })) }
-                }
-              };
-            } else if (options.length > 3) {
-              payload = {
-                messaging_product: 'whatsapp', to: senderPhoneRaw, type: 'interactive',
-                interactive: {
-                  type: 'list', header: { type: 'text', text: 'Arise Operations' }, body: { text: bodyPart.substring(0, 1024) },
-                  footer: { text: 'Selecciona una opcion' },
-                  action: {
-                    button: 'Ver Opciones',
-                    sections: [{ title: 'Menú Ejecutivo', rows: options.slice(0, 10).map((o, i) => ({ id: `list_${i}_${Date.now()}`, title: o.substring(0, 24), description: 'Accion rapida' })) }]
-                  }
+                  action: { buttons: cleanOptions.map((o, i) => ({ type: 'reply', reply: { id: `act_${i}_${Date.now()}`, title: o.substring(0, 20) } })) }
                 }
               };
             }
