@@ -106,32 +106,55 @@ serve(async (req: Request) => {
 
       let payload: any = { messaging_product: 'whatsapp', to: sender, type: 'text', text: { body: aiResponseText } };
       
-      // 6. DIAMOND V7.9 UI SCALING (Buttons vs Lists)
+      // 6. DIAMOND V7.9 UI SCALING (Improved Parser)
       if (aiResponseText.includes('---')) {
         const parts = aiResponseText.split('---');
-        const bodyText = parts[0].trim();
-        const options = parts[1].split('|').map(o => o.trim()).filter(o => o.length > 0);
+        // El cuerpo es todo menos la última sección de botones
+        const rawBody = parts.slice(0, -1).join('---').trim();
+        const rawOptions = parts[parts.length - 1].trim();
+        const options = rawOptions.split('|').map(o => o.replace(/\n/g, ' ').trim()).filter(o => o.length > 0);
 
-        if (options.length >= 1 && options.length <= 3) {
-           payload = {
-            messaging_product: 'whatsapp', to: sender, type: 'interactive',
-            interactive: {
-              type: 'button', body: { text: bodyText },
-              action: { buttons: options.map((o, i) => ({ type: 'reply', reply: { id: `act_${i}_${Date.now()}`, title: o.substring(0, 20) } })) }
-            }
-          };
-        } else if (options.length > 3) {
-          payload = {
-            messaging_product: 'whatsapp', to: sender, type: 'interactive',
-            interactive: {
-              type: 'list', header: { type: 'text', text: 'Menú Ejecutivo Arise' }, body: { text: bodyText },
-              footer: { text: 'Diamond Business OS' },
-              action: {
-                button: 'Ver Opciones',
-                sections: [{ title: 'Acciones Disponibles', rows: options.slice(0, 10).map((o, i) => ({ id: `list_${i}_${Date.now()}`, title: o.substring(0, 24) })) }]
+        if (options.length > 0) {
+          const bodyText = rawBody || 'Elige una acción operativa:';
+          
+          if (options.length <= 3) {
+            // Usar botones simples si son pocos
+            payload = {
+              messaging_product: 'whatsapp', to: sender, type: 'interactive',
+              interactive: {
+                type: 'button',
+                body: { text: bodyText.substring(0, 1024) },
+                action: {
+                  buttons: options.slice(0, 3).map((o, i) => ({
+                    type: 'reply',
+                    reply: { id: `btn_${i}`, title: o.substring(0, 20) }
+                  }))
+                }
               }
-            }
-          };
+            };
+          } else {
+            // Usar Lista si son muchos
+            payload = {
+              messaging_product: 'whatsapp', to: sender, type: 'interactive',
+              interactive: {
+                type: 'list',
+                header: { type: 'text', text: 'Arise Operations' },
+                body: { text: bodyText.substring(0, 1024) },
+                footer: { text: 'Arise Business OS v7.1' },
+                action: {
+                  button: 'Ver Opciones',
+                  sections: [{
+                    title: 'Comandos Disponibles',
+                    rows: options.slice(0, 10).map((o, i) => ({
+                      id: `act_${i}_${Date.now()}`,
+                      title: o.substring(0, 24).trim(),
+                      description: 'Ejecutar comando'
+                    }))
+                  }]
+                }
+              }
+            };
+          }
         }
       }
 

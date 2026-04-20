@@ -26,15 +26,14 @@ export async function POST(req: Request) {
       .from('conversations')
       .select('id')
       .eq('contact_id', contactId)
-      .eq('status', 'waiting_human')
-      .single();
+      .maybeSingle();
 
     if (!conv) {
-       return NextResponse.json({ error: 'La conversación no está en modo Handoff Manual' }, { status: 403 });
+       return NextResponse.json({ error: 'Conversación no encontrada' }, { status: 404 });
     }
 
     // 3. Enviar a WhatsApp API
-    const response = await fetch(`https://graph.facebook.com/v17.0/${phone_number_id}/messages`, {
+    const response = await fetch(`https://graph.facebook.com/v19.0/${phone_number_id}/messages`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${access_token}`,
@@ -58,7 +57,7 @@ export async function POST(req: Request) {
       content: content
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, result });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

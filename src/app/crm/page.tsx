@@ -181,10 +181,10 @@ export default function CRMPage() {
     <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-x-hidden">
       <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-8 mb-12">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">CRM_CORE</h1>
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-none">CRM (Pagos)</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
             <Users size={10} className="text-primary" />
-            Neural Relationship Mapping / v7.0
+            Neural Relationship Mapping / v7.1
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto">
@@ -194,9 +194,9 @@ export default function CRMPage() {
               placeholder="QUER_CONTACTS_..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full lg:w-96 pl-12 pr-6 py-4 bg-[#f2f4f6] text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-2xl outline-none focus:bg-white focus:shadow-arise transition-all"
+              className="w-full lg:w-96 pl-12 pr-6 py-4 bg-white/60 text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-2xl outline-none focus:bg-white focus:shadow-arise transition-all backdrop-blur-md"
             />
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-primary transition-colors" />
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
           </div>
           <button className="flex items-center justify-center gap-4 bg-primary text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
             <UserPlus size={16} />
@@ -212,61 +212,61 @@ export default function CRMPage() {
         <MetricSmall title="Integridad de Datos" value="99.9%" icon={ShieldCheck} loading={loading} />
       </div>
 
-      <div className="arise-card bg-white border-none shadow-arise overflow-hidden rounded-[24px] md:rounded-[32px]">
+      <div className="arise-card bg-white border-none shadow-arise overflow-hidden rounded-[24px] md:rounded-[32px] p-6 md:p-10">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[700px] md:min-w-[800px]">
           <thead>
             <tr>
-              <th className="p-6 md:p-10 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Master_Identity</th>
-              <th className="hidden md:table-cell p-6 md:p-10 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Metadata_Stack</th>
-              <th className="hidden lg:table-cell p-6 md:p-10 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">Protocol_Segment</th>
-              <th className="hidden md:table-cell p-6 md:p-10 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Registry_Date</th>
-              <th className="p-6 md:p-10 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] text-right">Actions</th>
+              <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Master_Identity</th>
+              <th className="hidden md:table-cell pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Metadata_Stack</th>
+              <th className="hidden lg:table-cell pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Protocol_Segment</th>
+              <th className="hidden md:table-cell pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Registry_Date</th>
+              <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               Array(6).fill(0).map((_, i) => (
                 <tr key={i}>
-                  <td className="p-10"><div className="w-48 h-10 arise-skeleton rounded-xl" /></td>
-                  <td className="p-10"><div className="w-32 h-6 arise-skeleton rounded-lg" /></td>
-                  <td className="p-10 text-center"><div className="w-24 h-6 arise-skeleton mx-auto rounded-full" /></td>
-                  <td className="p-10"><div className="w-28 h-6 arise-skeleton rounded-lg" /></td>
-                  <td className="p-10 text-right"><div className="w-10 h-10 arise-skeleton ml-auto rounded-lg" /></td>
+                  <td className="py-6"><div className="w-48 h-10 arise-skeleton rounded-xl" /></td>
+                  <td className="hidden md:table-cell py-6"><div className="w-32 h-6 arise-skeleton rounded-lg" /></td>
+                  <td className="hidden lg:table-cell py-6 text-center"><div className="w-24 h-6 arise-skeleton mx-auto rounded-full" /></td>
+                  <td className="hidden md:table-cell py-6"><div className="w-28 h-6 arise-skeleton rounded-lg" /></td>
+                  <td className="py-6 text-right"><div className="w-10 h-10 arise-skeleton ml-auto rounded-lg" /></td>
                 </tr>
               ))
             ) : filteredContacts.map((contact) => (
               <tr key={contact.id} className="group hover:bg-[#f7f9fb] transition-all cursor-pointer">
-                <td className="p-6 md:p-10" onClick={() => openChat(contact)}>
+                <td className="py-6 md:py-8" onClick={() => openChat(contact)}>
                   <div className="flex items-center gap-4 md:gap-6">
-                    <div className="w-10 h-10 md:w-14 md:h-14 bg-slate-900 text-white rounded-xl md:rounded-2xl flex items-center justify-center font-black text-xs md:text-sm uppercase shadow-xl shadow-slate-200 group-hover:bg-primary transition-all">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-900 text-white rounded-[16px] flex items-center justify-center font-black text-xs shadow-md shadow-slate-200 group-hover:bg-primary group-hover:shadow-lg transition-all">
                       {contact.full_name?.[0] || '?'}
                     </div>
                     <div>
-                      <span className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-tight group-hover:text-primary transition-all">{contact.full_name || 'Anonymous_Node'}</span>
+                      <span className="text-[13px] md:text-[14px] font-black text-slate-900 uppercase tracking-tight group-hover:text-primary transition-colors">{contact.full_name || 'Anonymous_Node'}</span>
                       <p className="md:hidden text-[9px] font-mono text-slate-400 mt-1">{contact.phone}</p>
                     </div>
                   </div>
                 </td>
-                <td className="hidden md:table-cell p-10">
-                  <p className="text-[11px] font-mono text-slate-900">{contact.phone}</p>
+                <td className="hidden md:table-cell py-6 md:py-8">
+                  <p className="text-[11px] font-mono text-slate-900 font-medium">{contact.phone}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{contact.email || 'NO_COMMS'}</p>
                     {contact.companies?.name && (
-                      <span className="text-[7px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-md uppercase tracking-[0.2em]">
+                      <span className="text-[7px] font-black bg-primary/5 text-primary border border-primary/10 px-2 py-0.5 rounded-md uppercase tracking-[0.2em]">
                         {contact.companies.name}
                       </span>
                     )}
                   </div>
                 </td>
-                <td className="hidden lg:table-cell p-10 text-center">
+                <td className="hidden lg:table-cell py-6 md:py-8 text-center">
                   <select 
                     value={contact.category || 'lead'}
                     onChange={(e) => handleUpdateSegment(contact.id, e.target.value)}
-                    className={`text-[8px] font-black px-6 py-2 rounded-xl border-none appearance-none cursor-pointer outline-none transition-all shadow-sm ${
-                      contact.category === 'client' ? 'bg-emerald-500/10 text-emerald-600' : 
-                      contact.category === 'family' ? 'bg-indigo-500/10 text-indigo-600' : 
-                      'bg-[#f2f4f6] text-slate-600'
+                    className={`text-[8px] font-black px-4 py-2 rounded-lg border border-slate-100 appearance-none cursor-pointer outline-none transition-all shadow-sm ${
+                      contact.category === 'client' ? 'bg-emerald-50/50 text-emerald-600 border-emerald-100/50' : 
+                      contact.category === 'family' ? 'bg-indigo-50/50 text-indigo-600 border-indigo-100/50' : 
+                      'bg-white text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     <option value="lead">LEAD</option>
@@ -274,12 +274,12 @@ export default function CRMPage() {
                     <option value="family">FAMILY_LINK</option>
                   </select>
                 </td>
-                <td className="hidden md:table-cell p-10 text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase">
+                <td className="hidden md:table-cell py-6 md:py-8 text-[10px] font-mono text-slate-400 font-medium">
                   {new Date(contact.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </td>
-                <td className="p-6 md:p-10 text-right">
-                  <button className="w-14 h-14 flex items-center justify-center bg-[#f2f4f6] text-slate-400 rounded-2xl hover:bg-primary hover:text-white transition-all shadow-sm">
-                    <MoreHorizontal size={18} />
+                <td className="py-6 md:py-8 text-right">
+                  <button className="w-10 h-10 flex ml-auto items-center justify-center bg-white border border-slate-100 text-slate-400 rounded-[12px] hover:border-primary hover:text-primary transition-all shadow-sm">
+                    <MoreHorizontal size={16} />
                   </button>
                 </td>
               </tr>
@@ -307,15 +307,15 @@ export default function CRMPage() {
               <header className="p-6 md:p-10 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 border-none">
                 <div className="flex items-center gap-4 md:gap-6">
                   <div className="relative">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-slate-900 text-white rounded-[18px] md:rounded-[24px] flex items-center justify-center font-black text-base md:text-lg shadow-2xl shadow-slate-200 uppercase italic">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-slate-900 text-white rounded-[18px] md:rounded-[20px] flex items-center justify-center font-black text-base md:text-lg shadow-md uppercase">
                       {selectedContact?.full_name?.[0]}
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-6 md:h-6 bg-emerald-500 border-2 md:border-[6px] border-white rounded-full" />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-emerald-500 border-2 border-white rounded-full" />
                   </div>
                   <div>
-                    <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tighter leading-none mb-1 md:mb-3 italic uppercase">{selectedContact?.full_name}</h3>
+                    <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight leading-none mb-1 md:mb-2 uppercase">{selectedContact?.full_name}</h3>
                     <div className="flex items-center gap-2 md:gap-4">
-                       <span className="flex items-center gap-2 px-2 py-0.5 md:px-3 md:py-1 rounded-lg bg-emerald-500/10 text-[7px] md:text-[8px] font-black text-emerald-600 uppercase tracking-widest">
+                       <span className="flex items-center gap-2 px-2 py-0.5 rounded-md bg-emerald-50 text-[7px] md:text-[8px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100/50">
                          <Activity size={10} />
                          Live_Comm
                        </span>
@@ -410,14 +410,14 @@ function MetricSmall({ title, value, icon: Icon, active, loading }: any) {
   if (loading) return <div className="arise-card p-6 md:p-10 bg-white border-none shadow-arise animate-pulse h-32 md:h-40" />;
   
   return (
-    <div className={`arise-card p-5 md:p-10 border-none shadow-arise group ${active ? 'bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white' : 'bg-white text-slate-900'}`}>
-      <div className="flex justify-between items-start mb-6 md:mb-10">
-        <p className={`text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] ${active ? 'text-white/70' : 'text-slate-400'}`}>{title}</p>
-        <div className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center transition-all ${active ? 'bg-white/20' : 'bg-[#f7f9fb] text-slate-300 group-hover:text-primary group-hover:bg-primary/5'}`}>
-          <Icon className="w-5 h-5 md:w-6 md:h-6" />
+    <div className={`arise-card p-6 md:p-8 border-none shadow-arise group ${active ? 'bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white shadow-[0_20px_40px_-5px_rgba(19,91,236,0.3)]' : 'bg-white text-slate-900 hover:bg-white/90'}`}>
+      <div className="flex justify-between items-start mb-6 md:mb-8">
+        <p className={`text-[8px] md:text-[9px] font-black uppercase tracking-[0.3em] ${active ? 'text-white/70' : 'text-slate-400'}`}>{title}</p>
+        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-all ${active ? 'bg-white/20' : 'bg-[#f7f9fb] text-slate-300 group-hover:text-primary group-hover:bg-primary/5'}`}>
+          <Icon className="w-5 h-5" />
         </div>
       </div>
-      <h3 className="text-2xl md:text-4xl font-black tracking-tighter leading-none italic uppercase">{value}</h3>
+      <h3 className="text-2xl md:text-4xl font-black tracking-tighter leading-none">{value}</h3>
     </div>
   );
 }

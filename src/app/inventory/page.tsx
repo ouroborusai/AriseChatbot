@@ -117,68 +117,67 @@ export default function InventoryPage() {
         <MetricSmall title="Warehouse_Load" value="68%" icon={Warehouse} loading={loading} />
       </div>
 
-      <div className="arise-card bg-white border-none shadow-arise overflow-hidden rounded-[24px] md:rounded-[32px]">
+      <div className="arise-card bg-white border-none shadow-arise overflow-hidden rounded-[24px] md:rounded-[32px] p-6 md:p-10">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[700px] md:min-w-[800px]">
           <thead>
             <tr>
-              <th className="p-6 md:p-10 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Identity / SKU</th>
-              <th className="hidden lg:table-cell p-6 md:p-10 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Protocol_Category</th>
-              <th className="p-6 md:p-10 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">Current_Vol</th>
-              <th className="hidden md:table-cell p-6 md:p-10 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Stock_Health</th>
-              <th className="p-6 md:p-10 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] text-right">Actions</th>
+              <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Identity / SKU</th>
+              <th className="hidden lg:table-cell pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Protocol_Category</th>
+              <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] text-center">Current_Vol</th>
+              <th className="hidden md:table-cell pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Stock_Health</th>
+              <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               Array(6).fill(0).map((_, i) => (
                 <tr key={i}>
-                  <td className="p-10"><div className="w-48 h-10 arise-skeleton rounded-xl" /></td>
-                  <td className="p-10"><div className="w-32 h-6 arise-skeleton rounded-lg" /></td>
-                  <td className="p-10 text-center"><div className="w-20 h-8 arise-skeleton mx-auto rounded-lg" /></td>
-                  <td className="p-10"><div className="w-28 h-6 arise-skeleton rounded-full" /></td>
-                  <td className="p-10 text-right"><div className="w-10 h-10 arise-skeleton ml-auto rounded-lg" /></td>
+                  <td className="py-6"><div className="w-48 h-10 arise-skeleton rounded-xl" /></td>
+                  <td className="hidden lg:table-cell py-6"><div className="w-32 h-6 arise-skeleton rounded-lg" /></td>
+                  <td className="py-6 text-center"><div className="w-20 h-8 arise-skeleton mx-auto rounded-lg" /></td>
+                  <td className="hidden md:table-cell py-6"><div className="w-28 h-6 arise-skeleton rounded-full" /></td>
+                  <td className="py-6 text-right"><div className="w-10 h-10 arise-skeleton ml-auto rounded-lg" /></td>
                 </tr>
               ))
             ) : items.length > 0 ? (
               items.map((item) => (
                 <tr key={item.id} className="group hover:bg-[#f7f9fb] transition-all cursor-pointer">
-                  <td className="p-10">
+                  <td className="py-6">
                     <div className="flex items-center gap-6">
-                      <div className="hidden sm:flex w-14 h-14 bg-[#f2f4f6] rounded-[22px] items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-                        <Boxes size={22} />
+                      <div className="hidden sm:flex w-12 h-12 bg-slate-900 text-white rounded-[18px] items-center justify-center group-hover:bg-primary transition-all shadow-md">
+                        <Boxes size={20} />
                       </div>
                       <div>
-                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight italic">{item.name}</p>
-                        <p className="text-[9px] font-mono text-slate-400 mt-2 uppercase tracking-widest">{item.sku || 'SKU_VOID'}</p>
+                        <p className="text-[13px] md:text-[14px] font-black text-slate-900 uppercase tracking-tight">{item.name}</p>
+                        <p className="text-[9px] font-mono text-slate-400 mt-1 uppercase tracking-widest">{item.sku || 'SKU_VOID'}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="hidden lg:table-cell p-10 text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{item.category || 'GEN_LOAD'}</td>
-                  <td className="p-10 text-sm font-black text-slate-900 text-center">{item.current_stock} <span className="text-[8px] text-slate-300 font-black ml-1 uppercase">{item.unit || 'uds'}</span></td>
-                  <td className="hidden md:table-cell p-10">
+                  <td className="hidden lg:table-cell py-6 text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{item.category || 'GEN_LOAD'}</td>
+                  <td className="py-6 text-sm font-black text-slate-900 text-center">{item.current_stock} <span className="text-[8px] text-slate-300 font-black ml-1 uppercase">{item.unit || 'uds'}</span></td>
+                  <td className="hidden md:table-cell py-6">
                     <span className={`text-[8px] font-black px-4 py-2 rounded-lg uppercase tracking-widest ${item.current_stock <= item.min_stock_alert ? 'bg-rose-500/10 text-rose-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
                       {item.current_stock <= item.min_stock_alert ? 'REPLENISH' : 'OPTIMAL_FLUX'}
                     </span>
                   </td>
-                  <td className="p-10 text-right">
-                    <button className="w-12 h-12 flex items-center justify-center bg-[#f2f4f6] text-slate-400 rounded-2xl hover:bg-primary hover:text-white transition-all shadow-sm">
-                      <Settings2 size={18} />
+                  <td className="py-6 text-right">
+                    <button className="w-10 h-10 flex ml-auto items-center justify-center bg-white border border-slate-100 text-slate-400 rounded-[12px] hover:border-primary hover:text-primary transition-all shadow-sm">
+                      <Settings2 size={16} />
                     </button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="p-24 text-center">
+                <td colSpan={5} className="py-24 text-center">
                   <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
-                    <div className="w-24 h-24 bg-[#f2f4f6] flex items-center justify-center rounded-[32px] text-slate-300 mb-8 shadow-inner">
-                      <Boxes size={48} strokeWidth={1} />
+                    <div className="w-20 h-20 bg-[#f7f9fb] flex items-center justify-center rounded-[28px] text-slate-300 mb-6 shadow-inner">
+                      <Boxes size={40} strokeWidth={1} />
                     </div>
                     <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em] mb-4">Inventory_Node_Empty</h3>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-10">
-                      No assets detected in this company's logistics chain. 
-                      Initiate supply flow by deploying your first entry.
+                      No assets detected in this company's logistics chain.
                     </p>
                     <button 
                       className="text-[9px] font-black uppercase tracking-[0.3em] px-10 py-4 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all"

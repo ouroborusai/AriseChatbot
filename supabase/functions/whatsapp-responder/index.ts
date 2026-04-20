@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
       sender_type: 'bot',
       metadata: { 
         interactive_buttons: buttons.slice(0, 10),
-        interactive_type: buttons.length > 3 ? 'list' : 'button'
+        interactive_type: 'list'
       }
     });
 
@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) => {
       success: true, 
       response: responseText,
       buttons: buttons,
-      type: buttons.length > 3 ? 'list' : 'button'
+      type: 'list'
     }), { headers: { "Content-Type": "application/json" } });
 
   } catch (err: any) {

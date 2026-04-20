@@ -1,287 +1,86 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  Zap, 
-  Wallet, 
-  Search, 
-  Bell, 
-  ChevronRight,
-  MoreVertical,
-  Activity,
-  AlertCircle,
-  MessageCircle,
-  RefreshCw,
-  Box,
-  Users,
-  ShieldCheck
-} from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
-} from 'recharts';
+import React from 'react';
+import Link from 'next/link';
+import { ArrowRight, Zap, Shield, Activity, Globe } from 'lucide-react';
 
-export default function Dashboard() {
-  const [stats, setStats] = useState({
-    contacts: 0,
-    activeChats: 0,
-    lowStock: 0,
-    revenue: '$68,490'
-  });
-  
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [recentSignals, setRecentSignals] = useState<any[]>([]);
-  const [neuralLogs, setNeuralLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const pathname = usePathname();
-
-  useEffect(() => {
-    async function fetchStats() {
-      setLoading(true);
-      const activeCompanyId = typeof window !== 'undefined' ? localStorage.getItem('arise_active_company') : null;
-      
-      if (!activeCompanyId || activeCompanyId === 'null' || activeCompanyId === 'undefined') {
-        setStats({ contacts: 0, activeChats: 0, lowStock: 0, revenue: '$0' });
-        setChartData([
-          { name: '00:00', value: 0 }, { name: '04:00', value: 0 }, { name: '08:00', value: 0 },
-          { name: '12:00', value: 0 }, { name: '16:00', value: 0 }, { name: '20:00', value: 0 },
-          { name: '23:59', value: 0 }
-        ]);
-        setRecentSignals([
-          { title: 'SISTEMA INICIALIZADO', desc: 'Esperando selección de empresa', time: 'AHORA', icon: Activity, color: 'text-primary' },
-          { title: 'RLS BLOQUEADO', desc: 'Seleccione una empresa para abrir el nodo', time: '1m', icon: ShieldCheck, color: 'text-amber-500' }
-        ]);
-        setNeuralLogs([
-          { id: 'SYS-ACCESS', task: 'Pendiente de Contexto', type: 'Sistema', status: 'WAIT', val: 'N/A' }
-        ]);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const isGlobal = activeCompanyId === 'global';
-        
-        let contactsQuery = supabase.from('contacts').select('*', { count: 'exact', head: true });
-        if (!isGlobal) contactsQuery = contactsQuery.eq('company_id', activeCompanyId);
-        const { count: contactsCount } = await contactsQuery;
-
-        let chatCount = 0;
-        try {
-          let chatsQuery = supabase.from('conversations').select('*', { count: 'exact', head: true });
-          if (!isGlobal) chatsQuery = chatsQuery.eq('company_id', activeCompanyId);
-          const { count } = await chatsQuery;
-          chatCount = count || 0;
-        } catch (e) { console.warn('Conversations cache skip'); }
-
-        let invQuery = supabase.from('inventory_items').select('name, current_stock, min_stock_alert');
-        if (!isGlobal) invQuery = invQuery.eq('company_id', activeCompanyId);
-        const { data: inventory } = await invQuery;
-        
-        const lowStockItems = inventory?.filter((i: any) => i.current_stock <= (i.min_stock_alert || 0)) || [];
-        
-        setStats(prev => ({
-          ...prev,
-          contacts: contactsCount || 0,
-          activeChats: chatCount,
-          lowStock: lowStockItems.length,
-          revenue: contactsCount ? (isGlobal ? '$1.2M' : '$68,490') : '$0'
-        }));
-
-        setRecentSignals([
-          ...lowStockItems.slice(0, 2).map((i: any) => ({
-            title: `Alerta: Stock Crítico`,
-            desc: `${i.name}`,
-            time: 'Ahora',
-            icon: AlertCircle,
-            color: 'text-red-500'
-          })),
-          { title: 'Nodo Industrial Activo', desc: `Sincronizado con RLS`, time: '1m ago', icon: ShieldCheck, color: 'text-emerald-500' },
-          { title: 'Caché Semántica', desc: 'Optimizada para Gemini 2.5', time: '12m ago', icon: MessageCircle, color: 'text-primary' }
-        ]);
-
-        setNeuralLogs([
-          { id: 'AX-V622', task: 'Validación Multi-Tenant', type: 'Seguridad', status: 'OK', val: 'Verified' },
-          { id: 'AX-LOG', task: 'Sincronización de Contexto', type: 'Sistema', status: 'OK', val: 'Synced' }
-        ]);
-
-        setChartData([
-          { name: '08:00', value: 10 }, { name: '10:00', value: 25 }, { name: '12:00', value: 45 },
-          { name: '14:00', value: 30 }, { name: '16:00', value: 65 }, { name: '18:00', value: 80 }
-        ]);
-
-      } catch (err) {
-        console.error('DASHBOARD ERROR:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchStats();
-  }, [pathname]);
-
+export default function LandingPage() {
   return (
-    <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-x-hidden">
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-8 mb-12">
-        <div>
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic">Dashboard</h1>
-          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
-            <TrendingUp size={10} className="text-primary" />
-            Operational Intelligence / REVENUE_PULSE_7.0
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6">
-          <div className="relative flex-1 group">
-            <input 
-              type="text" 
-              placeholder="QUER_DATABASE_..." 
-              className="w-full lg:w-96 pl-12 pr-6 py-4 bg-[#f2f4f6] text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-2xl outline-none focus:bg-white focus:shadow-arise transition-all"
-            />
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+    <div className="min-h-screen bg-[#f7f9fb] flex flex-col font-sans selection:bg-primary selection:text-white relative overflow-hidden">
+      {/* Structural Minimal Grid */}
+      <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:32px_32px]" />
+      </div>
+
+      {/* Atmospheric Glows */}
+      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-primary/10 rounded-full animate-pulse" style={{ filter: 'blur(160px)' }} />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-primary/5 rounded-full animate-pulse" style={{ filter: 'blur(160px)', animationDelay: '3s' }} />
+
+      <header className="relative z-10 w-full p-8 flex justify-between items-center max-w-7xl mx-auto">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-[0_10px_30px_rgba(var(--primary-rgb),0.2)]">
+            <Zap size={20} className="text-white fill-white" />
           </div>
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white shadow-arise rounded-2xl flex items-center justify-center text-slate-400 relative shrink-0">
-              <Bell size={20} />
-              <div className="absolute top-4 right-4 w-2 h-2 bg-rose-500 rounded-full" />
-            </div>
-          </div>
+          <span className="text-xl font-black text-slate-900 italic uppercase tracking-widest leading-none">Arise</span>
         </div>
+        <Link 
+          href="/auth/login"
+          className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-black text-slate-700 uppercase tracking-widest transition-all shadow-sm hover:shadow-md"
+        >
+          Acceso Node
+          <ArrowRight size={14} className="text-slate-400" />
+        </Link>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <MetricCard title="System_Nodes" value={stats.contacts} drift="+15.2%" icon={Users} primary loading={loading} />
-        <MetricCard title="Active_Neurons" value={stats.activeChats} drift="Live" icon={Activity} loading={loading} />
-        <MetricCard title="Critical_SKU" value={stats.lowStock} drift="Alert" icon={Zap} negative={stats.lowStock > 0} loading={loading} />
-        <MetricCard title="Vault_Balance" value={stats.revenue} drift="+2.4%" icon={Wallet} loading={loading} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
-        <section className="arise-card p-0 overflow-hidden lg:col-span-2 bg-white border-none shadow-arise">
-          <div className="p-10">
-            <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Neural Signal Velocity</h2>
-            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">24H Real-time activity pulse</p>
-          </div>
-          <div className="w-full h-[320px] bg-gradient-to-b from-white to-[#f7f9fb]">
-            <ResponsiveContainer width="100%" height={320}>
-              <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorSignals" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#135bec" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#135bec" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} horizontal={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#191c1e', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '9px', fontWeight: '900' }}
-                />
-                <Area type="monotone" dataKey="value" stroke="#135bec" strokeWidth={3} fillOpacity={1} fill="url(#colorSignals)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        <div className="arise-card p-10 bg-[#f2f4f6] border-none shadow-none">
-          <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-900 mb-10">System Status</h3>
-          <div className="space-y-8">
-            {loading ? (
-              Array(4).fill(0).map((_, i) => <SkeletonRow key={i} />)
-            ) : recentSignals.map((signal, i) => {
-              const Icon = signal.icon;
-              return (
-                <div key={i} className="flex items-center justify-between group cursor-pointer">
-                  <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
-                      <Icon size={18} className={signal.color} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight mb-1">{signal.title}</p>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{signal.desc}</p>
-                    </div>
-                  </div>
-                  <span className="text-[9px] font-black text-slate-300 uppercase italic tracking-tighter">{signal.time}</span>
-                </div>
-              );
-            })}
-          </div>
+      <main className="flex-1 relative z-10 flex flex-col items-center justify-center text-center px-4 max-w-5xl mx-auto w-full mt-10 lg:mt-0">
+        <div className="flex items-center gap-3 mb-8 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100">
+           <Activity size={12} className="text-primary animate-pulse" />
+           <p className="text-primary text-[9px] font-black uppercase tracking-[0.4em]">Business Engine v7.0</p>
         </div>
-      </div>
+        
+        <h1 className="text-5xl md:text-8xl font-black text-slate-900 tracking-tighter leading-[0.9] mb-8 uppercase italic filter drop-shadow-sm">
+          El Sistema Operativo<br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-[#70a1fc] filter drop-shadow-[0_10px_20px_rgba(19,91,236,0.15)]">
+            Neural
+          </span>
+        </h1>
+        
+        <p className="text-lg md:text-xl text-slate-500 font-medium max-w-2xl mb-14 tracking-tight leading-relaxed">
+          Diseñado para MTZ Consultores. Automatización contable, consolidación RAG y agente cognitivo en tiempo real conectado a WhatsApp.
+        </p>
 
-      <div className="arise-card p-10 overflow-hidden bg-white border-none shadow-arise">
-        <div className="mb-10">
-          <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Operational Governance Ledger</h2>
-          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time interaction matrix</p>
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+          <Link 
+            href="/auth/login"
+            className="w-full sm:w-auto h-16 px-10 bg-primary text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.4em] shadow-[0_20px_50px_rgba(var(--primary-rgb),0.2)] hover:scale-[1.05] active:scale-95 transition-all flex items-center justify-center gap-4 hover:shadow-[0_20px_50px_rgba(var(--primary-rgb),0.3)]"
+          >
+            Iniciar Uplink
+            <ArrowRight size={18} />
+          </Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[700px]">
-            <thead>
-              <tr>
-                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Reference_ID</th>
-                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Neural_Task</th>
-                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Protocol_Status</th>
-                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Impact_Metric</th>
-              </tr>
-            </thead>
-            <tbody>
-              {neuralLogs.map((log, i) => (
-                <tr key={i} className="group hover:bg-[#f7f9fb] transition-all cursor-pointer">
-                  <td className="py-8 text-[11px] font-mono text-slate-400">{log.id}</td>
-                  <td className="py-8">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-[#f2f4f6] rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all"><Box size={14}/></div>
-                      <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{log.task}</span>
-                    </div>
-                  </td>
-                  <td className="py-8 text-center">
-                    <span className="bg-emerald-500/10 text-emerald-600 px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest">
-                      {log.status}
-                    </span>
-                  </td>
-                  <td className="py-8 text-[11px] font-black text-slate-900 text-right uppercase">{log.val}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-32 w-full">
+          <FeatureCard icon={Shield} title="Multi-Tenant RLS" desc="Aislamiento profundo y seguro por cluster y nodos de compañía." />
+          <FeatureCard icon={Globe} title="Sincronía SII" desc="Centralización masiva de documentos tributarios sin interrupción." />
+          <FeatureCard icon={Zap} title="Motor Gemini" desc="Procesamiento ultrarrápido y análisis predictivo en milisegundos." />
         </div>
-      </div>
+      </main>
+
+      <footer className="relative z-10 p-8 text-center mt-auto border-t border-slate-200">
+         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">© 2026 Arise_Intelligence. Todos los derechos reservados.</p>
+      </footer>
     </div>
   );
 }
 
-function MetricCard({ title, value, drift, icon: Icon, primary, negative, loading }: any) {
-  if (loading) return <div className="arise-card p-10 min-h-[200px] arise-skeleton border-none" />;
-
+function FeatureCard({ icon: Icon, title, desc }: any) {
   return (
-    <div className={`arise-card p-8 border-none shadow-arise ${primary ? 'bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white' : 'bg-white text-slate-900'}`}>
-      <div className="flex justify-between items-start mb-10">
-        <p className={`text-[9px] font-black uppercase tracking-[0.3em] ${primary ? 'text-white/70' : 'text-slate-400'}`}>{title}</p>
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${primary ? 'bg-white/20' : 'bg-[#f7f9fb] text-slate-300'}`}>
-          <Icon size={24} />
-        </div>
+    <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-left flex flex-col items-start group">
+      <div className="w-14 h-14 bg-[#f7f9fb] group-hover:bg-primary/5 rounded-2xl flex items-center justify-center mb-6 transition-colors shadow-inner">
+        <Icon size={24} className="text-primary opacity-80 group-hover:opacity-100 transition-opacity" />
       </div>
-      <h2 className="text-4xl font-black mb-3 tracking-tighter leading-none">{value}</h2>
-      <div className={`inline-flex px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest ${primary ? 'bg-white/20 text-white' : (negative ? 'bg-rose-500/10 text-rose-600' : 'bg-emerald-500/10 text-emerald-600')}`}>
-        {drift}
-      </div>
-    </div>
-  );
-}
-
-function SkeletonRow() {
-  return (
-    <div className="flex items-center gap-4">
-      <div className="w-12 h-12 arise-skeleton rounded-2xl" />
-      <div className="space-y-2">
-        <div className="w-32 h-3 arise-skeleton" />
-        <div className="w-20 h-2 arise-skeleton" />
-      </div>
+      <h3 className="text-slate-900 text-[13px] font-black uppercase tracking-widest mb-3">{title}</h3>
+      <p className="text-slate-500 text-sm leading-relaxed font-medium">{desc}</p>
     </div>
   );
 }

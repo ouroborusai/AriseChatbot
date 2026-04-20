@@ -21,9 +21,10 @@ import {
   Search,
   Check
 } from 'lucide-react';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 
 const menuItems = [
-  { name: 'Vista General', icon: LayoutDashboard, path: '/' },
+  { name: 'Vista General', icon: LayoutDashboard, path: '/dashboard' },
   { name: 'Mensajes', icon: MessageSquare, path: '/messages' },
   { name: 'CRM (Pagos)', icon: Users, path: '/crm' },
   { name: 'Inventario', icon: Package, path: '/inventory' },
@@ -33,9 +34,9 @@ const menuItems = [
 ];
 
 export default function Sidebar() {
+  const { activeCompany, setActiveCompany } = useActiveCompany();
   const [companies, setCompanies] = useState<any[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<any[]>([]);
-  const [activeCompany, setActiveCompany] = useState<any>(null);
   const [userData, setUserData] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('viewer');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -78,16 +79,11 @@ export default function Sidebar() {
         setFilteredCompanies(finalCompanies);
         
         const savedId = localStorage.getItem('arise_active_company');
-        let active = finalCompanies.find(c => c.id === savedId) || finalCompanies[0];
+        let active = finalCompanies.find((c: any) => c.id === savedId) || finalCompanies[0];
         
-        // Si no hay empresas en absoluto, el login ya debería haber fallado, pero manejamos la salida
-        if (active) {
+        if (active && !activeCompany) {
           setActiveCompany(active);
           setUserRole(active.role);
-          if (!savedId) localStorage.setItem('arise_active_company', active.id);
-        } else {
-          // Caso extremo: Logueado pero sin accesos (limpiar)
-          localStorage.removeItem('arise_active_company');
         }
       }
     }
@@ -111,9 +107,9 @@ export default function Sidebar() {
 
   const handleCompanyChange = (company: any) => {
     setActiveCompany(company);
-    localStorage.setItem('arise_active_company', company.id);
-    setUserRole(company.role);
     setIsDropdownOpen(false);
+    // Ya no es necesario recargar toda la página si usamos contextos reactivos bien implementados,
+    // pero lo mantenemos por ahora para asegurar que los hooks de todas las páginas se disparen si usan storage
     window.location.reload();
   };
 

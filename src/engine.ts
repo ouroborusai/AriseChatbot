@@ -146,7 +146,7 @@ export class OuroborusEngine {
       return { 
         text, 
         buttons: buttons.slice(0, 10), // Máximo 10 para listas de WhatsApp
-        interactive_type: buttons.length > 3 ? 'list' : 'button'
+        interactive_type: 'list'
       };
     } catch (e) {
       return { text: "⚠️ Interrupción en el puente neural. Un supervisor humano ha sido alertado.", buttons: ['Reintentar', 'Hablar con Humano'] };

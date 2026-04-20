@@ -497,7 +497,7 @@ export async function POST(req: Request) {
 
     const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
-    await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
+    await page.setContent(finalHtml, { waitUntil: 'domcontentloaded' });
     
     // Generar el Buffer del PDF
     const pdfBuffer = await page.pdf({ 
