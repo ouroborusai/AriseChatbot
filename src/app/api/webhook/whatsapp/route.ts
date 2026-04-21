@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const supabaseKey = (process.env.ARISE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)?.trim();
+
+const supabase = createClient(supabaseUrl!, supabaseKey!);
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
@@ -38,6 +38,9 @@ export async function POST(req: Request) {
     const profileName = changes.contacts?.[0]?.profile?.name || 'Usuario';
     const phoneNumberId = changes.metadata?.phone_number_id;
 
+    console.log("==========================================");
+    console.log(`[ID_RES_START] Processing message from: ${sender} (${profileName})`);
+    console.log(`[ID_RES_AUTH] Using Key: ${supabaseKey?.substring(0, 10)}...`);
     console.log(`[WH_INPUT] New message from ${sender} (${profileName})`);
 
     // --- 1. IDEMPOTENCIA ---
@@ -51,12 +54,20 @@ export async function POST(req: Request) {
 
     // --- 2. RESOLUCIÓN DE IDENTIDAD Y EMPRESA (Lógica Consolidada) ---
     // Intentar resolver contact_id y company_id de una sola vez
-    let { data: contact } = await supabase
+    let { data: contact, error: contactError } = await supabase
       .from('contacts')
       .select('id, company_id')
       .eq('phone', sender)
       .limit(1)
       .maybeSingle();
+
+    if (contactError) {
+      console.error(`[ID_RES_ERROR] Database error during contact lookup:`, contactError);
+      if (contactError.message?.includes('Invalid API key')) {
+        console.error(`[AUTH_CRITICAL] THE SERVICE_ROLE_KEY IS BEING REJECTED BY SUPABASE.`);
+      }
+    }
+    console.log(`[ID_RES] Contact lookup for ${sender}:`, contact);
 
     let companyId = contact?.company_id;
     let contactId = contact?.id;
@@ -64,21 +75,29 @@ export async function POST(req: Request) {
     // Si no hay contacto, resolver por el directorio interno o el Phone ID de la empresa
     if (!companyId) {
       const { data: staff } = await supabase.from('internal_directory').select('company_id').eq('phone', sender).maybeSingle();
+      console.log(`[ID_RES] Staff lookup:`, staff);
       if (staff) {
         companyId = staff.company_id;
       } else {
         const { data: comp } = await supabase.from('companies').select('id').contains('settings', { whatsapp: { phone_number_id: phoneNumberId } }).limit(1).maybeSingle();
+        console.log(`[ID_RES] Company by PhoneID lookup (${phoneNumberId}):`, comp);
         companyId = comp?.id;
       }
 
-      if (!companyId) return NextResponse.json({ status: 'unauthorized_sender' }, { status: 401 });
+      if (!companyId) {
+        console.warn(`[ID_RES] FAILED to resolve company for ${sender}`);
+        return NextResponse.json({ status: 'unauthorized_sender' }, { status: 401 });
+      }
 
       // Crear contacto si no existe
       const { data: newContact } = await supabase.from('contacts').insert({ full_name: profileName, phone: sender, company_id: companyId }).select('id').single();
       contactId = newContact?.id;
     }
 
-    if (!contactId || !companyId) return NextResponse.json({ status: 'identity_resolution_failed' });
+    if (!contactId || !companyId) {
+      console.warn(`[ID_RES] Final validation failed. contactId: ${contactId}, companyId: ${companyId}`);
+      return NextResponse.json({ status: 'identity_resolution_failed' });
+    }
 
     // --- 3. GESTIÓN DE CONVERSACIÓN ---
     let { data: conv } = await supabase
@@ -157,12 +176,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'action_triggered' });
     }
 
-    // --- 7. GENERACIÓN DE RESPUESTA NEURAL ---
-    // Re-verificar estado justo antes de enviar (Atomic Check)
+    // --- 7. GENERACIÓN DE RESPUESTA NEURAL (DELEGADO AL MOTOR CENTRAL) ---
+    // Según la Constitución Arise, la respuesta se gestiona vía Trigger DB -> arise-neural-engine.
+    // Esto garantiza una sola respuesta y reduce el consumo de tokens.
+    /*
     const { data: latestConv } = await supabase.from('conversations').select('status').eq('id', conv.id).single();
     if (latestConv?.status === 'open') {
       await generateAndSendAIResponse(conv.id, companyId, sender, content, profileName, phoneNumberId);
     }
+    */
 
     return NextResponse.json({ status: 'success' });
 
@@ -295,28 +317,8 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
       .map((o: string) => o.trim())
       .filter((o: string) => o.length > 0);
 
-    if (allOptions.length > 0 && allOptions.length <= 3) {
-      // ── MODO BOTONES (≤3 opciones) ──
-      const buttons = allOptions.map((o: string) => {
-        const title = enrichText(o).substring(0, 20);
-        return {
-          type: 'reply',
-          reply: { 
-            id: `btn_${title.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)}`, 
-            title 
-          }
-        };
-      });
-      payload = {
-        messaging_product: 'whatsapp', to, type: 'interactive',
-        interactive: {
-          type: 'button',
-          body: { text: textPart.substring(0, 1024) },
-          action: { buttons }
-        }
-      };
-    } else if (allOptions.length > 3) {
-      // ── MODO LISTA (4-10 opciones) ──
+    if (allOptions.length > 0) {
+      // ── MODO LISTA UNIFICADO (Forzado para Diamond v9.6) ──
       const rows = allOptions.slice(0, 10).map((o: string) => {
         const title = enrichText(o).substring(0, 24);
         return {
@@ -329,7 +331,7 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
         interactive: {
           type: 'list',
           body: { text: textPart.substring(0, 1024) },
-          footer: { text: 'Arise Director AI' },
+          footer: { text: 'Arise Business OS v9.6' },
           action: {
             button: 'Ver Opciones',
             sections: [{ title: 'Acciones Disponibles', rows }]
