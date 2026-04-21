@@ -98,19 +98,12 @@ export async function POST(req: Request) {
     if (!conv) return NextResponse.json({ status: 'conversation_failure' });
 
     // --- 4. PROCESAMIENTO DE CONTENIDO ---
+    // Soporte solo para Mensajes de Texto e Interactivos (Diamond v9.5)
     let content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
     
-    // Obtener llaves disponibles (Rotación Industrial)
-    let keys = (process.env.GEMINI_API_KEY || "").split(',').map((k: string) => k.trim()).filter((k: string) => k.length > 0);
-    if (keys.length === 0) {
-      const { data: vaultKeys } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
-      if (vaultKeys) keys = vaultKeys.map((k: any) => k.api_key);
-    }
-    const activeKey = (keys[Math.floor(Math.random() * keys.length)] || process.env.GEMINI_API_KEY || "") as string;
-
-    // Soporte para Audio Neural (Gemini Voice Perception)
-    if (message.type === 'audio' || message.type === 'voice') {
-      content = await processAudioMessage(message, companyId, activeKey);
+    if (!content && message.type !== 'text') {
+      console.log('--- Ignorando mensaje no soportado (Multimedia/Audio) ---');
+      continue;
     }
 
     // Persistir mensaje del usuario independientemente del estado (para el log)
@@ -145,32 +138,7 @@ export async function POST(req: Request) {
 /**
  * Función interna para procesamiento de audio mediante Gemini 2.5
  */
-async function processAudioMessage(message: any, companyId: string, apiKey: string) {
-  const { data: company } = await supabase.from('companies').select('settings').eq('id', companyId).single();
-  const token = company?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
-  const mediaId = message.audio?.id || message.voice?.id;
-
-  try {
-    const mediaRes = await fetch(`https://graph.facebook.com/v19.0/${mediaId}`, { headers: { 'Authorization': `Bearer ${token}` } });
-    const { url } = await mediaRes.json();
-    if (!url) return '[Audio fallido]';
-
-    const audioBuffer = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.arrayBuffer());
-    const base64Audio = Buffer.from(audioBuffer).toString('base64');
-
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: "Transcribe y responde a la solicitud." }, { inline_data: { mime_type: "audio/ogg", data: base64Audio } }] }]
-      })
-    });
-    const gData = await geminiRes.json();
-    return gData.candidates?.[0]?.content?.parts?.[0]?.text || '[Audio no procesable]';
-  } catch (e) {
-    return '[Error procesando audio]';
-  }
-}
+// Módulo de audio removido.
 
 /**
  * Genera y envía la respuesta de IA con Contexto Histórico (Diamond v9.2)
