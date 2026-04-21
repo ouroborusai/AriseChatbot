@@ -145,6 +145,7 @@ export interface PDFGeneratorRequest {
   whatsappToken: string;
   phoneNumberId: string;
   reportType: string;
+  companyId: string;
 }
 
 export interface PDFGeneratorResponse {

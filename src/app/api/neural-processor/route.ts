@@ -365,6 +365,7 @@ export async function POST(req: Request) {
                   whatsappToken: process.env.WHATSAPP_ACCESS_TOKEN,
                   phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
                   reportType: actionData.type || 'balance',
+                  companyId: companyId,
                 }),
               }).catch(err =>
                 console.error('[NEURAL_PROCESSOR] PDF API Call Failed:', err)

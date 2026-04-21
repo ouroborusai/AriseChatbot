@@ -3,6 +3,12 @@ import puppeteer from 'puppeteer';
 import Handlebars from 'handlebars';
 import { templates } from '@/lib/pdf/templates';
 import { requireAuth } from '@/lib/api-auth';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 /**
  * ARISE PDF PIPELINE v9.0
@@ -14,7 +20,7 @@ export async function POST(req: Request) {
     const authResult = await requireAuth();
     if (authResult.error) return authResult.error;
 
-    const { targetPhone, whatsappToken, phoneNumberId, reportType } = await req.json();
+    const { targetPhone, whatsappToken, phoneNumberId, reportType, companyId } = await req.json();
 
     // Validación de parámetros requeridos
     if (!targetPhone || !whatsappToken || !phoneNumberId) {
@@ -46,91 +52,71 @@ export async function POST(req: Request) {
     else if (type.includes('liquidacion') || type.includes('sueldo')) templateSource = templates.payroll;
     else if (type.includes('dashboard') || type.includes('resumen')) templateSource = templates.dashboard;
 
-    // 2. Mock Data Generation (Operational Context)
-    let mockData: any = {
+    // 2. Data Acquisition
+    const { data: companyData } = await supabase.from('companies').select('name').eq('id', companyId).single();
+    
+    let finalData: any = {
         date: new Date().toLocaleDateString('es-CL'),
-        company_name: 'MTZ Consultores & Arise',
+        company_name: companyData?.name || 'Arise Business OS',
         folio: Math.floor(Math.random() * 9000) + 1000,
         items: []
     };
 
-    // Populate mockData based on type
-    if (type.includes('8-columnas')) {
-        mockData.company_rut = '76.462.417-3';
-        mockData.company_name = 'INVERSIONES ROJAS Y COMPANIA LIMITADA';
-        mockData.company_address = 'AVENIDA PLAYA BRAVA #2109-A IQUIQUE';
-        mockData.rep_legal = 'MARCO ANTONIO ROJAS REJAS';
-        mockData.period = 'ENERO A DICIEMBRE 2023';
-        mockData.accounts = [
+    // --- CASE 1: REAL INVENTORY DATA ---
+    if (type.includes('inventory') || type.includes('stock')) {
+        const { data: realItems } = await supabase
+            .from('inventory_items')
+            .select('sku, name, current_stock')
+            .eq('company_id', companyId)
+            .order('name');
+        
+        if (realItems && realItems.length > 0) {
+            finalData.items = realItems.map(i => ({
+                sku: i.sku,
+                name: i.name,
+                quantity: `${i.current_stock} uds.`,
+                low_stock: i.current_stock < 5 
+            }));
+        }
+    } 
+    // --- CASE 2: 8 COLUMNAS (Accounting Mock) ---
+    else if (type.includes('8-columnas')) {
+        finalData.company_rut = '76.462.417-3';
+        finalData.company_address = 'AVENIDA PLAYA BRAVA #2109-A IQUIQUE';
+        finalData.rep_legal = 'MARCO ANTONIO ROJAS REJAS';
+        finalData.period = 'ENERO A DICIEMBRE 2023';
+        finalData.accounts = [
             { name: '1101-01 CUENTA CAJA', sum_debit: '1.182.433.333', sum_credit: '973.893.183', balance_deudor: '208.540.150', balance_acreedor: '', inventory_asset: '208.540.150', inventory_liability: '', result_loss: '', result_gain: '' },
             { name: '1104-01 DEUDORES CLIENTES', sum_debit: '252.983', sum_credit: '', balance_deudor: '252.983', balance_acreedor: '', inventory_asset: '252.983', inventory_liability: '', result_loss: '', result_gain: '' },
             { name: '2105-01 FACTURAS POR PAGAR', sum_debit: '940.621.653', sum_credit: '2.008.133.798', balance_deudor: '', balance_acreedor: '1.067.512.145', inventory_asset: '', inventory_liability: '1.067.512.145', result_loss: '', result_gain: '' },
             { name: '5101-01 VENTAS', sum_debit: '', sum_credit: '306.762.825', balance_deudor: '', balance_acreedor: '306.762.825', inventory_asset: '', inventory_liability: '', result_loss: '', result_gain: '306.762.825' }
         ];
-        mockData.totals = {
-            sum_debit: '4.277.116.904',
-            sum_credit: '4.277.116.904',
-            balance_deudor: '1.849.234.584',
-            balance_acreedor: '1.849.234.584',
-            inventory_asset: '1.353.157.804',
-            inventory_liability: '1.353.157.804',
-            result_loss: '508.604.586',
-            result_gain: '508.604.586'
+        finalData.totals = {
+            sum_debit: '4.277.116.904', sum_credit: '4.277.116.904',
+            balance_deudor: '1.849.234.584', balance_acreedor: '1.849.234.584',
+            inventory_asset: '1.353.157.804', inventory_liability: '1.353.157.804',
+            result_loss: '508.604.586', result_gain: '508.604.586'
         };
-    } else if (type.includes('balance')) {
-        mockData.items = [
-            { sku: '1-01-001', name: 'Banco Santander (Pesos)', quantity: '$42,500,000', low_stock: false },
-            { sku: '1-01-002', name: 'Cuentas por Cobrar Clientes', quantity: '$12,380,000', low_stock: false },
-            { sku: '2-01-001', name: 'IVA por Pagar (F29)', quantity: '$-2,150,000', low_stock: true },
-            { sku: '3-01-001', name: 'Patrimonio Neto', quantity: '$52,730,000', low_stock: false }
-        ];
-    } else if (type.includes('factura')) {
-        mockData.items = [
-            { name: 'Consuloría Tributaria Mensual', quantity: '$1,200,000' },
-            { name: 'Gestión de Auditoría Remota', quantity: '$450,000' },
-            { name: 'Suscripción Arise Business OS', quantity: '$95,000' }
-        ];
-        mockData.total = '1,745,000';
-    } else if (type.includes('liquidacion') || type.includes('sueldo')) {
-        mockData.company_rut = '76.462.417-3';
-        mockData.company_name = 'INVERSIONES ROJAS Y COMPANIA LIMITADA';
-        mockData.period = 'ABRIL 2026';
-        mockData.employee_name = 'MARCO ANTONIO ROJAS REJAS';
-        mockData.employee_rut = '15.432.123-K';
-        mockData.job_title = 'Director de Finanzas';
-        mockData.days_worked = '30';
-        mockData.join_date = '01/01/2020';
-        mockData.earnings = [
-            { name: 'Sueldo Base', amount: '$2,500,000', imponible: true },
-            { name: 'Gratificación Legal (Art. 50)', amount: '$150,000', imponible: true },
-            { name: 'Bono de Responsabilidad', amount: '$450,000', imponible: true },
-            { name: 'Asignación de Colación', amount: '$85,000', imponible: false },
-            { name: 'Asignación de Movilización', amount: '$70,000', imponible: false }
-        ];
-        mockData.total_earnings = '$3,255,000';
-        mockData.deductions = [
-            { name: 'AFP Provida (11.45%)', amount: '$354,950' },
-            { name: 'Fonasa (7%)', amount: '$217,000' },
-            { name: 'Seguro de Cesantía (0.6%)', amount: '$18,600' },
-            { name: 'Impuesto Único 2da Cat.', amount: '$145,230' },
-            { name: 'Anticipo de Sueldo', amount: '$500,000' }
-        ];
-        mockData.total_deductions = '$1,235,780';
-        mockData.net_salary = '$2,019,220';
-        mockData.net_uf = '54.23 UF';
-        mockData.net_usd = '$2,145.50';
-        mockData.signature_hash = '8fe4-99b2-ac11-2e55';
-    } else {
-        mockData.items = [
+    } 
+    // --- CASE 3: PAYROLL (Mock) ---
+    else if (type.includes('liquidacion') || type.includes('sueldo')) {
+        finalData.period = 'ABRIL 2026';
+        finalData.employee_name = 'PERSONAL ARISE';
+        finalData.net_salary = '$2,019,220';
+        finalData.earnings = [{ name: 'Sueldo Base', amount: '$2,500,000', imponible: true }];
+        finalData.deductions = [{ name: 'Previsión', amount: '$354,950' }];
+    } 
+    // --- CASE 4: OTHER/GENERIC ---
+    else {
+        finalData.items = [
             { sku: 'SYS-SRV-01', name: 'Sincronización de Directorio Arise', quantity: 'OK', low_stock: false },
-            { sku: 'DOC-REP-02', name: 'Emisión de Comprobantes Automatizados', quantity: 'PENDIENTE', low_stock: true },
-            { sku: 'AI-ENG-03', name: 'Gemini 2.5 Flash-Lite Neural Engine', quantity: 'ACTIVO', low_stock: false }
+            { sku: 'DOC-REP-02', name: 'Emisión de Reportes Dynamicos', quantity: 'ACTIVO', low_stock: false }
         ];
     }
 
     // 3. Document Generation
     const template = Handlebars.compile(templateSource);
-    const finalHtml = template(mockData);
+    const finalHtml = template(finalData);
 
     const isLandscape = type.includes('8-columnas');
     const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
