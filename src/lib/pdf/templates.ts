@@ -5,32 +5,29 @@
  */
 
 export const baseStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-  body { font-family: 'Inter', sans-serif; background: #ffffff; color: #0b1326; margin: 0; padding: 40px; }
-  .bg-gradient { display: none; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 2px solid #0045bd; padding-bottom: 20px; }
-  .title { font-size: 24px; font-weight: 800; color: #0045bd; margin: 0; text-transform: uppercase; letter-spacing: -0.01em; }
-  .meta { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-  .glass-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; margin: 0; padding: 20px; }
+  .container { width: 100%; max-width: 800px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  .header { text-align: center; border-bottom: 2px solid #005a9c; padding-bottom: 20px; margin-bottom: 20px; }
+  .header h1 { margin: 0; color: #003366; font-size: 22px; text-transform: uppercase; }
+  .header p { margin: 5px 0 0; font-size: 14px; font-weight: bold; color: #333; }
+  .report-meta { margin-bottom: 25px; font-size: 13px; }
+  .report-meta p { margin: 4px 0; }
+  .report-meta strong { display: inline-block; width: 140px; }
+  h2 { color: #003366; border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 16px; margin-top: 25px; text-transform: uppercase; }
   table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-  th { text-align: left; padding: 12px; font-size: 10px; text-transform: uppercase; color: #0045bd; border-bottom: 2px solid #e2e8f0; font-weight: 800; }
-  td { padding: 12px; font-size: 13px; border-bottom: 1px solid #f1f5f9; color: #334155; }
-  .badge { padding: 6px 12px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
-  .badge-success { background: #dcfce7; color: #166534; }
-  .badge-warning { background: #fef9c3; color: #854d0e; }
-  .nowrap { white-space: nowrap; }
-  .footer { margin-top: 60px; font-size: 8px; color: #94a3b8; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px; font-style: italic; }
-  .diamond-accent { color: #135bec; font-weight: 700; }
-  .amount { text-align: right; }
-  tr:hover { background-color: #f8fafc; }
-  th, td { padding: 5px 8px; line-height: 1.2; font-size: 8.5px; font-weight: 500; border: 1px solid #e2e8f0; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 12px; }
+  th { background-color: #e9ecef; font-weight: bold; color: #003366; }
+  .conclusion-box { margin-top: 25px; padding: 15px; border: 2px solid #d9534f; background-color: #fdf7f7; font-size: 13px; text-align: justify; }
+  .conclusion-box h2 { margin-top: 0; color: #d9534f; border: none; }
+  .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #777; border-top: 1px solid #eee; padding-top: 15px; }
+  .signature { margin-top: 40px; border-top: 1px solid #000; width: 200px; text-align: center; padding-top: 5px; font-size: 11px; margin-left: auto; margin-right: auto; }
 `;
 
 export const templates: Record<string, string> = {
   columnas8: `
     <!DOCTYPE html>
     <html>
-    <head><style>\${baseStyles}</style></head>
+    <head><style>${baseStyles}</style></head>
     <body style="padding: 20px;">
       <div class="header">
         <div>
@@ -111,7 +108,7 @@ export const templates: Record<string, string> = {
   balance: `
     <!DOCTYPE html>
     <html>
-    <head><style>\${baseStyles}</style></head>
+    <head><style>${baseStyles}</style></head>
     <body>
       <div class="bg-gradient"></div>
       <div class="header">
@@ -148,7 +145,7 @@ export const templates: Record<string, string> = {
   invoice: `
     <!DOCTYPE html>
     <html>
-    <head><style>\${baseStyles}</style></head>
+    <head><style>${baseStyles}</style></head>
     <body>
       <div class="header">
         <h1 class="title">DETALLE DE FACTURACIÓN</h1>
@@ -182,7 +179,7 @@ export const templates: Record<string, string> = {
   compliance: `
     <!DOCTYPE html>
     <html>
-    <head><style>\${baseStyles}</style></head>
+    <head><style>${baseStyles}</style></head>
     <body>
       <div class="header">
         <h1 class="title">CUMPLIMIENTO TRIBUTARIO (F29)</h1>
@@ -206,7 +203,7 @@ export const templates: Record<string, string> = {
   payroll: `
     <!DOCTYPE html>
     <html>
-    <head><style>\${baseStyles}</style></head>
+    <head><style>${baseStyles}</style></head>
     <body style="padding: 30px;">
       <div class="header">
         <div>
@@ -340,7 +337,7 @@ export const templates: Record<string, string> = {
               <td style="font-weight: 600;">{{name}}</td>
               <td style="text-align: right;">
                 <span class="badge {{#if low_stock}}badge-warning{{else}}badge-success{{/if}}">
-                  {{quantity}}
+                   {{quantity}}
                 </span>
               </td>
             </tr>
@@ -361,10 +358,94 @@ export const templates: Record<string, string> = {
     </body>
     </html>
   `,
+  maintenance: `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head><style>${baseStyles}</style></head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Taller de Sillas de Ruedas MMC SpA</h1>
+                <p>INFORME TÉCNICO DE MANTENIMIENTO Y REPARACIÓN</p>
+            </div>
+            <div class="report-meta">
+                <p><strong>N° de Informe:</strong> MMC-REP-{{report_id}}</p>
+                <p><strong>Fecha:</strong> {{date}}</p>
+                <p><strong>Cliente:</strong> {{client_name}}</p>
+                <p><strong>Equipo:</strong> {{chair_id}}</p>
+            </div>
+            <h2>1. RESUMEN TÉCNICO</h2>
+            <table>
+                <thead>
+                    <tr><th>Componente</th><th>Acción Realizada</th><th>Estado Final</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Sistema de Control</strong></td>
+                        <td>Diagnóstico y calibración de joystick</td>
+                        <td>OPERATIVO</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="conclusion-box">
+                <h2>DIAGNÓSTICO Y CONCLUSIÓN</h2>
+                <p>{{damage_description}}</p>
+            </div>
+            <div class="signature">
+                Manuel Cerda M.<br>Taller de Sillas de Ruedas MMC SpA
+            </div>
+            <div class="footer">
+                <p>Taller de Sillas de Ruedas MMC SpA - Tel: +56990062213</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `,
+  retrieval: `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head><style>${baseStyles}</style></head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Taller de Sillas de Ruedas MMC SpA</h1>
+                <p>ACTA DE RETIRO Y RECEPCIÓN DE EQUIPO</p>
+            </div>
+            <div class="report-meta">
+                <p><strong>Folio Retiro:</strong> MMC-RET-{{retiro_id}}</p>
+                <p><strong>Fecha:</strong> {{date}}</p>
+                <p><strong>Cliente:</strong> {{client_name}}</p>
+                <p><strong>Equipo:</strong> {{chair_id}}</p>
+            </div>
+            <h2>1. ESTADO DE RECEPCIÓN</h2>
+            <p>Se retira equipo para evaluación técnica. El cliente declara que el equipo se entrega con los siguientes accesorios:</p>
+            <table>
+                <thead>
+                    <tr><th>Ítem</th><th>Estado al Retiro</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Estructura Chasis</td><td>Inspeccionado</td></tr>
+                    <tr><td>Baterías / Cargador</td><td>Recibido</td></tr>
+                </tbody>
+            </table>
+            <div class="conclusion-box">
+                <h2>OBSERVACIONES INICIALES</h2>
+                <p>El equipo se recibe para diagnóstico en taller central. Plazo estimado de evaluación: 48 horas.</p>
+            </div>
+            <div class="signature">
+                Firma Cliente / Técnico Responsable<br>Taller de Sillas de Ruedas MMC SpA
+            </div>
+            <div class="footer">
+                <p>Juan Martínez #616, Iquique, Chile. - Tel: +56990062213</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `,
   dashboard: `
     <!DOCTYPE html>
     <html>
-    <head><style>\${baseStyles}</style></head>
+    <head><style>${baseStyles}</style></head>
     <body>
       <div class="bg-gradient"></div>
       <div class="header">
@@ -409,7 +490,7 @@ export const templates: Record<string, string> = {
   default: `
     <!DOCTYPE html>
     <html>
-    <head><style>\${baseStyles}</style></head>
+    <head><style>${baseStyles}</style></head>
     <body>
       <div class="header">
         <h1 class="title">REPORTE TÉCNICO: {{reportType}}</h1>

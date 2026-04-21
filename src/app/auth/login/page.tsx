@@ -61,13 +61,17 @@ export default function LoginPage() {
 
       <div className="w-full max-w-[480px] z-10 animate-in fade-in zoom-in-95 duration-700">
         <div className="flex flex-col items-center mb-16">
-          <div className="w-20 h-20 bg-primary rounded-[28px] flex items-center justify-center shadow-[0_10px_30px_rgba(var(--primary-rgb),0.2)] mb-10 group cursor-pointer transition-all hover:scale-110">
-            <Zap size={40} className="text-white fill-white group-hover:animate-bolt" />
+          <div className="w-24 h-24 relative mb-10 group cursor-pointer transition-all hover:scale-110">
+             <img 
+               src="/ourobot-logo.png" 
+               alt="OUROBOT Logo" 
+               className="w-full h-full object-contain filter drop-shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
+             />
           </div>
-          <h1 className="text-5xl font-black text-slate-900 tracking-widest leading-none italic uppercase mb-4">Arise</h1>
+          <h1 className="text-5xl font-black text-slate-900 tracking-widest leading-none italic uppercase mb-4">OUROBOT</h1>
           <div className="flex items-center gap-3">
              <Activity size={10} className="text-primary" />
-             <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.6em]">Neural_Business_OS / v9.0</p>
+             <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.6em]">Neural_Business_OS / v9.9</p>
           </div>
         </div>
 
@@ -143,7 +147,7 @@ export default function LoginPage() {
              <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Quantum_Encryption: 256B</p>
           </div>
           <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">
-            © 2026 Arise_Intelligence
+            © 2026 OUROBOT_Intelligence
           </p>
         </div>
       </div>

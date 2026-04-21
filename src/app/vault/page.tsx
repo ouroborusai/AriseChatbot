@@ -24,13 +24,13 @@ export default function ClientVaultPage() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Arise Design Tokens v9.0
+  // Arise Design Tokens v9.0 (Diamond Edition)
   const colors = {
-    bg: '#07090d',
-    card: 'rgba(255, 255, 255, 0.03)',
-    border: 'rgba(255, 255, 255, 0.08)',
-    primary: '#6366f1',
-    accent: '#a855f7'
+    bg: '#030507',
+    card: 'rgba(255, 255, 255, 0.02)',
+    border: 'rgba(255, 255, 255, 0.05)',
+    primary: '#135bec', // Azul Diamond
+    accent: '#10b981'  // Esmeralda Neural
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -63,85 +63,93 @@ export default function ClientVaultPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07090d] text-white p-6 font-sans">
-      <div className="max-w-4xl mx-auto py-12">
+    <div className="min-h-screen bg-[#030507] text-white p-6 font-sans relative overflow-hidden">
+      {/* Background Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#135bec]/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#10b981]/5 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+
+      <div className="max-w-4xl mx-auto py-12 relative z-10">
         
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-6">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <ShieldCheck className="text-[#6366f1]" size={20} />
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Secure_Encryption_Active</span>
+            <div className="flex items-center gap-3 mb-3">
+              <Sparkles className="text-primary animate-pulse" size={18} />
+              <span className="text-[9px] font-black uppercase tracking-[0.5em] text-slate-500 italic">Neural_Vault_Protocol</span>
             </div>
-            <h1 className="text-4xl font-black italic uppercase tracking-tighter">B\u00F3veda <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6366f1] to-[#a855f7]">Digital v9.0</span></h1>
+            <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter leading-none">Bóveda <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Diamond v9.0</span></h1>
           </div>
           {!isRegistered && (
-            <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-xl">
-              <div className="p-2 bg-yellow-500/20 rounded-lg">
-                <AlertCircle className="text-yellow-500" size={16} />
+            <div className="flex items-center gap-4 bg-white/[0.03] p-5 rounded-[24px] border border-white/5 backdrop-blur-2xl">
+              <div className="p-2.5 bg-rose-500/20 rounded-xl">
+                <AlertCircle className="text-rose-500" size={18} />
               </div>
-              <p className="text-xs font-bold text-slate-400">Acceso restringido. Identificaci\u00F3n requerida.</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Acceso Bloqueado<br/>Identificación_Requerida</p>
             </div>
           )}
         </div>
 
         {!isRegistered ? (
           /* REGISTRATION FORM */
-          <div className="animate-in fade-in zoom-in duration-500">
-            <div className="bg-white/5 backdrop-blur-2xl rounded-[40px] p-10 border border-white/10 relative overflow-hidden">
-               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#6366f1] to-transparent" />
+          <div className="animate-in fade-in zoom-in duration-700">
+            <div className="bg-white/[0.02] backdrop-blur-3xl rounded-[48px] p-12 border border-white/5 relative overflow-hidden shadow-2xl">
+               <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary to-transparent" />
                
-               <div className="mb-10 text-center">
-                  <Fingerprint size={48} className="mx-auto text-[#6366f1] mb-6 animate-pulse" />
-                  <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Validaci\u00F3n de Identidad</h2>
-                  <p className="text-slate-500 text-sm">Ingresa tu RUT para vincular tu asistente personal.</p>
+               <div className="mb-12 text-center">
+                  <div className="w-24 h-24 bg-white/5 rounded-[40px] flex items-center justify-center mx-auto mb-8 shadow-xl border border-white/5">
+                    <Fingerprint size={48} className="text-primary animate-pulse" />
+                  </div>
+                  <h2 className="text-3xl font-black uppercase tracking-tighter mb-3 italic">Verificación Neural</h2>
+                  <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em]">Sincroniza tu identidad_RUT</p>
                </div>
 
-               <form onSubmit={handleRegister} className="space-y-6">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-4">RUT del Cliente</label>
+               <form onSubmit={handleRegister} className="space-y-8">
+                  <div className="space-y-4">
+                    <label className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] ml-6">RUT_DE_ACCESO</label>
                     <input 
                       required
                       placeholder="12.345.678-9"
                       value={rut}
                       onChange={(e) => setRut(e.target.value)}
-                      className="w-full h-20 bg-white/5 border border-white/5 rounded-[24px] px-8 text-xl font-black focus:border-[#6366f1]/50 outline-none transition-all placeholder:text-slate-800"
+                      className="w-full h-24 bg-white/[0.03] border border-white/5 rounded-[32px] px-10 text-2xl font-black focus:border-primary/50 focus:bg-white/[0.05] outline-none transition-all placeholder:text-slate-800 text-center tracking-tighter"
                     />
                   </div>
                   
                   <button 
                     disabled={loading}
-                    className="w-full h-20 bg-[#6366f1] rounded-[28px] font-black uppercase tracking-widest text-sm shadow-[0_20px_40px_rgba(99,102,241,0.2)] hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-4"
+                    className="w-full h-24 bg-primary text-white rounded-[32px] font-black uppercase tracking-[0.3em] text-xs shadow-[0_25px_50px_-12px_rgba(19,91,236,0.5)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-6"
                   >
-                    {loading ? "Sincronizando..." : "Activar B\u00F3veda"}
-                    <ChevronRight size={20} />
+                    {loading ? "VINCULANDO_NEURONAS..." : "ACTIVAR_BÓVEDA_DIGITAL"}
+                    <ChevronRight size={24} />
                   </button>
                </form>
             </div>
           </div>
         ) : (
           /* VAULT DASHBOARD */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in slide-in-from-bottom-8 duration-700">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 animate-in slide-in-from-bottom-12 duration-1000">
             
             {/* Left Column: Stats & Actions */}
-            <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white/5 backdrop-blur-xl rounded-[32px] p-8 border border-white/10">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Capacidad Neural</h3>
-                <div className="flex items-end gap-2 mb-2">
-                  <span className="text-4xl font-black italic">85%</span>
-                  <span className="text-xs text-slate-500 mb-1">Indexado</span>
+            <div className="lg:col-span-1 space-y-8">
+              <div className="bg-white/[0.02] backdrop-blur-2xl rounded-[32px] p-10 border border-white/5 shadow-xl">
+                <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8">Capacidad_Neural</h3>
+                <div className="flex items-end gap-3 mb-4">
+                  <span className="text-5xl font-black italic tracking-tighter">85%</span>
+                  <span className="text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Sincronizado</span>
                 </div>
-                <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-[#6366f1] to-[#a855f7] h-full w-[85%]" />
+                <div className="w-full bg-white/5 h-2.5 rounded-full overflow-hidden p-[2px]">
+                  <div className="bg-gradient-to-r from-primary to-accent h-full rounded-full w-[85%] shadow-[0_0_15px_rgba(19,91,236,0.5)]" />
                 </div>
               </div>
 
-              <div className="bg-[#6366f1]/10 rounded-[32px] p-8 border border-[#6366f1]/20">
-                <CreditCard className="text-[#6366f1] mb-4" />
-                <h4 className="font-black uppercase text-sm mb-2">Status Premium</h4>
-                <p className="text-xs text-slate-400 leading-relaxed mb-6">Acceso liberado v\u00EDa Mercado Pago hasta Mayo 2026.</p>
-                <button className="text-[10px] font-black uppercase text-[#6366f1] tracking-widest flex items-center gap-2">
-                  Gestionar Plan <ChevronRight size={14} />
+              <div className="bg-primary/5 backdrop-blur-2xl rounded-[32px] p-10 border border-primary/10 shadow-xl group hover:bg-primary/10 transition-all cursor-pointer">
+                <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <CreditCard className="text-primary" />
+                </div>
+                <h4 className="font-black uppercase text-xs tracking-widest mb-3">Status_Premium</h4>
+                <p className="text-[10px] text-slate-500 leading-relaxed font-black uppercase tracking-widest mb-8">Acceso total_actuante hasta Mayo_2026.</p>
+                <button className="text-[9px] font-black uppercase text-primary tracking-[0.3em] flex items-center gap-3 group-hover:gap-5 transition-all">
+                  Gestionar_Membresía <ChevronRight size={16} />
                 </button>
               </div>
             </div>

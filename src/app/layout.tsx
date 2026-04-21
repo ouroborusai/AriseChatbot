@@ -10,18 +10,22 @@ import LayoutWrapper from "@/components/LayoutWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Arise Business OS",
-  description: "Next-Generation AI Personal Agent for MTZ Consultores",
+  title: "OUROBOT | Tu Empresa en un Mensaje",
+  description: "Automatización Neural Inteligente para tu Negocio vía WhatsApp",
   manifest: "/manifest.json",
+  icons: {
+    icon: '/ourobot-logo.png',
+    apple: '/ourobot-logo.png',
+  },
   appleWebApp: {
     capable: true,
-    title: "Arise OS",
-    statusBarStyle: "default",
+    title: "OUROBOT OS",
+    statusBarStyle: "black-translucent",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f7f9fb",
+  themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -35,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-[#f7f9fb] antialiased`}>
+      <body className={`${inter.className} min-h-screen bg-[#000000] antialiased`}>
         <ToastProvider>
           <AuthProvider>
             <ActiveCompanyProvider>

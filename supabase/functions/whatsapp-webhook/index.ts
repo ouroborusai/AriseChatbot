@@ -250,87 +250,18 @@ serve(async (req: Request) => {
     }
 
     // A. Persistir mensaje de usuario inmediatamente
-    const { data: userMsg, error: ume } = await supabase.from('messages').insert({
+    await supabase.from('messages').insert({
       conversation_id: conv.id,
       sender_type: 'user',
       content: content || '[Mensaje]',
       metadata: { whatsapp_message_id: waId, type: message.type }
-    }).select('id').single();
-    if (ume) console.error('[Webhook] User Message Persistence Error:', ume);
+    });
 
-    // --- 6. NEURAL RESPONSE BRAIN ---
-    if (conv.status === 'open' && userMsg) {
-       // Buscar Prompt
-       const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', companyId).eq('is_active', true).in('category', ['General', 'Internal']).limit(1).maybeSingle();
-       const baseSystemPrompt = p?.system_prompt || "Eres Arise Diamond v9.0 (Director AI). Responde de forma ejecutiva.";
-       
-       const promptWithContext = `${baseSystemPrompt}\n\n[USUARIO: ${profileName}]\n[CONTEXTO: El mensaje de arriba ya fue guardado en el chat. Responde ahora.]\n[MENSAJE: ${content}]`;
-
-        let keys = (GEMINI_API_KEY || "").split(',').map(k => k.trim()).filter(k => k.length > 0);
-        
-        if (keys.length === 0) {
-           console.log('[Neural_Brain] GEMINI_API_KEY env empty. Fetching from Vault table...');
-           const { data: vaultKeys } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
-           if (vaultKeys && vaultKeys.length > 0) {
-              keys = vaultKeys.map(k => k.api_key);
-           }
-        }
-
-        if (keys.length === 0) {
-           console.error('[Neural_Brain] No API Keys found in GEMINI_API_KEY env or Vault table.');
-           return new Response('OK');
-        }
-        const activeKey = keys[Math.floor(Math.random() * keys.length)];
-
-        console.log(`[Neural_Brain] Thinking via Gemini with key: ${activeKey.substring(0, 8)}...`);
-
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${activeKey}`, {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({ contents: [{ parts: [{ text: promptWithContext }]}] })
-        });
-
-        const gData = await geminiRes.json();
-        if (!geminiRes.ok) {
-           console.error('[Neural_Brain] Gemini Error:', JSON.stringify(gData));
-           return new Response('OK');
-        }
-
-        const aiText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "Arise Neural Engine: Fallo de percepción.";
-        console.log(`[Neural_Brain] Gemini Response: ${aiText.substring(0, 100)}...`);
-
-        // B. Persistir respuesta de IA
-        const { data: botMsg, error: bme } = await supabase.from('messages').insert({
-          conversation_id: conv.id,
-          sender_type: 'bot',
-          content: aiText
-        }).select('id').single();
-        if (bme) console.error('[Webhook] Bot Message Persistence Error:', bme);
-
-       // --- 7. NEURAL PROCESSOR BRIDGE ---
-       if (botMsg && aiText.includes('[[')) {
-         const appUrl = Deno.env.get('APP_URL') || 'http://localhost:3000';
-         fetch(`${appUrl}/api/neural-processor`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messageId: botMsg.id, companyId: companyId })
-         }).catch(e => console.error('[Neural_Bridge] Failed:', e));
-       }
-
-       // --- 8. WHATSAPP DELIVERY (Diamond v9.0 Smart Parser) ---
-       // Parser inteligente: detecta --- y | para crear interactivos
-       const waPayload = buildInteractivePayload(sender, aiText);
-
-       await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
-         method: 'POST',
-         headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
-         body: JSON.stringify(waPayload)
-       });
-    }
-
+    console.log(`[Webhook_Perception] Msg persisted for trigger. Execution finished.`);
     return new Response('OK');
   } catch (err) {
     console.error('[CRITICAL] Webhook Error:', err);
     return new Response('OK');
   }
 });
+

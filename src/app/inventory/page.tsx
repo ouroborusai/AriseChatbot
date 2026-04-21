@@ -90,28 +90,28 @@ export default function InventoryPage() {
         <div className="absolute -top-20 -left-20 w-64 h-64 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
         <div className="relative z-10">
           <div className="flex items-center gap-4 mb-4">
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Inventory_Node</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Logística MMC</h1>
             {typeof window !== 'undefined' && localStorage.getItem('arise_active_company') === 'global' && (
-              <span className="bg-primary/10 text-primary text-[8px] font-black px-3 py-1 rounded-full tracking-[0.2em] uppercase border border-primary/20">Consolidated</span>
+              <span className="bg-primary/10 text-primary text-[8px] font-black px-3 py-1 rounded-full tracking-[0.2em] uppercase border border-primary/20">Consolidado</span>
             )}
           </div>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.5em] flex items-center gap-2">
-            <Activity size={10} className="text-primary animate-pulse" />
-            Asset Management Protocol / Diamond v9.0
+            <Sparkles size={10} className="text-primary animate-pulse" />
+            Gestión de Repuestos / Arise Business OS
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto relative z-10">
           <div className="relative group flex-1 lg:flex-none">
             <input 
               type="text" 
-              placeholder="QUER_ASSETS_..." 
-              className="w-full lg:w-96 pl-12 pr-6 py-5 bg-white/50 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-2xl outline-none border border-white/50 focus:bg-white focus:shadow-arise transition-all"
+              placeholder="BUSCAR_REPUESTOS_..." 
+              className="w-full lg:w-96 pl-12 pr-6 py-5 bg-white/40 backdrop-blur-xl text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-[24px] outline-none border border-white/20 focus:bg-white focus:shadow-xl transition-all"
             />
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-primary transition-colors" />
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-primary transition-colors" />
           </div>
-          <button className="flex items-center justify-center gap-4 bg-primary text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:scale-105 active:scale-95 transition-all">
+          <button className="flex items-center justify-center gap-4 bg-primary text-white px-10 py-5 rounded-[24px] text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(var(--primary-rgb),0.3)] hover:scale-105 active:scale-95 transition-all">
             <Plus size={16} />
-            <span>Deploy_Asset</span>
+            <span>Ingresar Repuesto</span>
           </button>
         </div>
       </header>

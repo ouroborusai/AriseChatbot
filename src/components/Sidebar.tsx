@@ -35,7 +35,7 @@ const menuItems = [
   { name: 'Inventario', icon: Package, path: '/inventory', premium: true },
   { name: 'Analítica', icon: BarChart3, path: '/billing', premium: true },
   { name: 'Empresa', icon: Settings, path: '/company', premium: true },
-  { name: 'Arise Studio', icon: Code2, path: '/studio', premium: true },
+  { name: 'OUROBOT Studio', icon: Code2, path: '/studio', premium: true },
   { name: 'Configuración', icon: Settings, path: '/users', premium: false },
 ];
 
@@ -85,11 +85,15 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 h-full w-72 bg-white border-r border-slate-50 flex flex-col p-6 md:p-8 z-50 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
       <div className="flex items-center gap-4 mb-10 md:mb-12 px-2">
-          <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/30 rotate-3 transform hover:rotate-0 transition-all duration-500">
-            <Zap size={20} className="text-white fill-white" />
+          <div className="w-12 h-12 relative rotate-3 transform hover:rotate-0 transition-all duration-500">
+             <img 
+               src="/ourobot-logo.png" 
+               alt="OUROBOT Logo" 
+               className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)] scale-125"
+             />
           </div>
           <div>
-            <span className="font-black text-slate-800 tracking-tighter text-2xl leading-none block">Arise</span>
+            <span className="font-black text-slate-800 tracking-tighter text-2xl leading-none block">OUROBOT</span>
             <span className="text-primary text-[10px] font-black uppercase tracking-[0.3em] block mt-1">Intelligence</span>
           </div>
         </div>
@@ -137,7 +141,7 @@ export default function Sidebar() {
           {activeCompany?.plan_tier === 'free' && (
             <div className="mt-8 p-6 bg-gradient-to-br from-primary to-[#003da1] rounded-3xl shadow-xl shadow-primary/20 relative overflow-hidden group">
                <div className="relative z-10">
-                 <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Plan Pro Arise</p>
+                 <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Plan Pro OUROBOT</p>
                  <p className="text-white text-xs font-black leading-tight mb-4">Desbloquea Dashboard, Mensajes y más.</p>
                  <button 
                    onClick={handleUpgrade}
@@ -158,7 +162,7 @@ export default function Sidebar() {
                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-4 border-white" />
             </div>
             <div className="overflow-hidden">
-              <p className="text-[11px] font-black text-slate-800 leading-none truncate">{userData?.email?.split('@')[0] || 'Usuario Arise'}</p>
+              <p className="text-[11px] font-black text-slate-800 leading-none truncate">{userData?.email?.split('@')[0] || 'Operador OUROBOT'}</p>
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate mt-1">
                 {userRole === 'admin' ? 'Administrador Global' : userRole.toUpperCase()}
               </p>

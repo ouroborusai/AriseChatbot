@@ -7,7 +7,7 @@ import {
   TrendingUp, 
   TrendingDown, 
   DollarSign, 
-  Zap, 
+  Sparkles, 
   Wallet, 
   Search, 
   Bell, 
@@ -19,7 +19,8 @@ import {
   RefreshCw,
   Box,
   Users,
-  ShieldCheck
+  ShieldCheck,
+  LineChart
 } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useRouter } from 'next/navigation';
@@ -155,25 +156,25 @@ export default function Dashboard() {
           <div className="relative flex-1 group">
             <input 
               type="text" 
-              placeholder="QUER_DATABASE_..." 
-              className="w-full lg:w-96 pl-12 pr-6 py-4 bg-white/60 text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-2xl outline-none focus:bg-white focus:shadow-arise transition-all backdrop-blur-md"
+              placeholder="SISTEMA_DE_INTELIGENCIA_..." 
+              className="w-full lg:w-96 pl-12 pr-6 py-4 bg-white/40 text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-[24px] outline-none focus:bg-white focus:shadow-xl transition-all backdrop-blur-xl border border-white/20"
             />
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
           </div>
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white shadow-arise hover:shadow-arise-hover hover:-translate-y-1 transition-all rounded-2xl flex items-center justify-center text-slate-400 relative shrink-0">
+            <div className="w-14 h-14 bg-white/60 backdrop-blur-md border border-white/20 shadow-lg hover:-translate-y-1 transition-all rounded-2xl flex items-center justify-center text-slate-500 relative shrink-0">
               <Bell size={20} />
-              <div className="absolute top-4 right-4 w-2 h-2 bg-rose-500 rounded-full" />
+              <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-accent rounded-full animate-pulse" />
             </div>
           </div>
         </div>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <MetricCard title="System_Nodes" value={stats.contacts} drift="+15.2%" icon={Users} primary loading={loading} />
-        <MetricCard title="Active_Neurons" value={stats.activeChats} drift="Live" icon={Activity} loading={loading} />
-        <MetricCard title="Critical_SKU" value={stats.lowStock} drift="Alert" icon={Zap} negative={stats.lowStock > 0} loading={loading} />
-        <MetricCard title="Vault_Balance" value={stats.revenue} drift="+2.4%" icon={Wallet} loading={loading} />
+        <MetricCard title="Nodos_Activos" value={stats.contacts} drift="+15.2%" icon={Users} primary loading={loading} />
+        <MetricCard title="Conversaciones_IA" value={stats.activeChats} drift="Live" icon={MessageCircle} loading={loading} />
+        <MetricCard title="Alertas_Sistema" value={stats.lowStock} drift="Critical" icon={Sparkles} negative={stats.lowStock > 0} loading={loading} />
+        <MetricCard title="Balance_Global" value={stats.revenue} drift="+2.4%" icon={Wallet} loading={loading} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">

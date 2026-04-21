@@ -29,10 +29,14 @@ export default function MobileNav() {
       {/* MOBILE HEADER (Neural Context) */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/40 backdrop-blur-xl px-4 py-3 flex justify-between items-center border-b border-white/5 shadow-sm">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white shadow-xl shadow-primary/30 rotate-3 transform hover:rotate-0 transition-transform">
-            <span className="font-black text-xs">A</span>
+          <div className="w-10 h-10 relative rotate-3 transform hover:rotate-0 transition-transform">
+             <img 
+               src="/ourobot-logo.png" 
+               alt="OUROBOT Logo" 
+               className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.2)]"
+             />
           </div>
-          <span className="font-black text-slate-900 tracking-tighter text-base uppercase">Arise</span>
+          <span className="font-black text-slate-900 tracking-tighter text-base uppercase">OUROBOT</span>
         </div>
         <div className="flex items-center gap-2">
            <CompanySelector variant="header" className="scale-90 origin-right" />

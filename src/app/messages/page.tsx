@@ -253,19 +253,19 @@ export default function MessagesPage() {
   return (
     <div className="flex h-screen bg-[#FDFCFB] text-[#1A1A1A] font-sans selection:bg-[#EAE1DF]">
       {/* Sidebar de Conversaciones */}
-      <div className="flex flex-col w-1/3 border-r border-[#F5F2F0] bg-white/80 backdrop-blur-md">
+      <div className="flex flex-col w-1/3 border-r border-slate-100 bg-white/60 backdrop-blur-xl">
         <div className="p-8 space-y-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-4xl font-bold tracking-tight text-[#0D0D0D]">Mensajes</h1>
-            <Activity className="w-5 h-5 text-[#4CAF50] animate-pulse" />
+            <h1 className="text-4xl font-black tracking-tighter text-slate-900 italic uppercase">Mensajes</h1>
+            <Sparkles className="w-5 h-5 text-primary animate-pulse" />
           </div>
           
           <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999] transition-colors group-focus-within:text-[#1A1A1A]" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors group-focus-within:text-primary" />
             <input 
               type="text" 
-              placeholder="QUER_CONTACTS_..."
-              className="w-full pl-12 pr-4 py-4 bg-[#F9F7F6] border-none rounded-2xl text-sm focus:ring-2 focus:ring-[#EAE1DF] transition-all outline-none placeholder:text-[#BBB]"
+              placeholder="BUSCAR_CHAT_..."
+              className="w-full pl-12 pr-4 py-4 bg-white/50 border border-slate-100 rounded-[20px] text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 transition-all outline-none placeholder:text-slate-300"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -280,43 +280,40 @@ export default function MessagesPage() {
             <button
               key={conv.id}
               onClick={() => selectConversation(conv)}
-              className={`w-full p-6 text-left rounded-3xl transition-all duration-300 group relative overflow-hidden ${
+              className={`w-full p-6 text-left rounded-[28px] transition-all duration-500 group relative overflow-hidden ${
                 selectedConv?.id === conv.id 
-                  ? 'bg-[#0047BB] text-white shadow-2xl shadow-[#0047BB]/20 scale-[1.02]' 
-                  : 'hover:bg-[#F9F7F6] text-[#444]'
+                  ? 'bg-primary text-white shadow-[0_20px_40px_rgba(var(--primary-rgb),0.3)] scale-[1.02]' 
+                  : 'hover:bg-white text-slate-600 border border-transparent hover:border-slate-100 shadow-sm'
               }`}
             >
               <div className="relative z-10 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold tracking-wide uppercase truncate max-w-[180px]">
-                    {conv.contacts?.full_name || 'CONTACT_UNKNOWN'}
+                  <span className="text-[11px] font-black tracking-widest uppercase truncate max-w-[180px]">
+                    {conv.contacts?.full_name || 'CONTACTO_DESCONOCIDO'}
                   </span>
                   <div className="flex items-center gap-2">
                     {conv.status === 'waiting_human' && (
-                      <div className="w-2 h-2 bg-red-400 rounded-full animate-ping" />
+                      <div className="w-2 h-2 bg-rose-400 rounded-full animate-ping" />
                     )}
-                    <span className={`text-[10px] px-2 py-1 rounded-full font-black ${
-                      selectedConv?.id === conv.id ? 'bg-white/20 text-white' : 'bg-[#1A1A1A] text-white'
+                    <span className={`text-[8px] px-2 py-1 rounded-full font-black uppercase tracking-widest ${
+                      selectedConv?.id === conv.id ? 'bg-white/20 text-white' : 'bg-slate-900 text-white'
                     }`}>
-                      {conv.status === 'waiting_human' ? 'MASTER' : 'AI'}
+                      {conv.status === 'waiting_human' ? 'Master' : 'AI'}
                     </span>
                   </div>
                 </div>
                 {activeCompany?.id === 'global' && (
-                   <span className={`text-[9px] font-black uppercase tracking-widest opacity-50 block mb-1 ${selectedConv?.id === conv.id ? 'text-white' : 'text-primary'}`}>
-                      {conv.company_id === 'ca69f43b-7b11-4dd3-abe8-8338580b2d84' ? '🏢 Sede Central' : '🏢 Nodo Secundario'}
+                   <span className={`text-[9px] font-black uppercase tracking-widest opacity-60 block mb-1 ${selectedConv?.id === conv.id ? 'text-white' : 'text-primary'}`}>
+                      {conv.company_id === 'ca69f43b-7b11-4dd3-abe8-8338580b2d84' ? 'Sede Central' : 'Nodo Externo'}
                    </span>
                 )}
-                <span className={`text-xs opacity-60 font-mono ${selectedConv?.id === conv.id ? 'text-white' : 'text-[#666]'}`}>
-                  {conv.contacts?.phone ? `+${conv.contacts.phone}` : 'ID_UNLINKED'}
+                <span className={`text-[10px] font-mono opacity-60 ${selectedConv?.id === conv.id ? 'text-white' : 'text-slate-400'}`}>
+                  {conv.contacts?.phone ? `+${conv.contacts.phone}` : 'SIN_VINCULO'}
                 </span>
               </div>
-              {selectedConv?.id === conv.id && (
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
-              )}
             </button>
           ))}
-          {loading && <div className="flex justify-center p-8"><Activity className="animate-spin text-[#999]" /></div>}
+          {loading && <div className="flex justify-center p-8"><Sparkles className="animate-spin text-primary" /></div>}
         </div>
       </div>
 
@@ -325,18 +322,18 @@ export default function MessagesPage() {
         {selectedConv ? (
           <>
             {/* Cabecera del Chat */}
-            <div className="p-8 flex items-center justify-between border-b border-[#F5F2F0] bg-white/50 backdrop-blur-xl z-20">
+            <div className="p-8 flex items-center justify-between border-b border-slate-100 bg-white/60 backdrop-blur-xl z-20">
               <div className="flex items-center gap-5">
-                <div className="w-14 h-14 bg-[#1A1A1A] rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                <div className="w-14 h-14 bg-slate-900 rounded-[20px] flex items-center justify-center text-white text-xl font-black shadow-xl">
                   {selectedConv.contacts?.full_name?.[0] || 'D'}
                 </div>
                 <div>
-                  <h2 className="text-xl font-extrabold tracking-tight text-[#0D0D0D]">
-                    {selectedConv.contacts?.full_name || 'DIRECTOR_ARise'}
+                  <h2 className="text-xl font-black tracking-tighter text-slate-900 uppercase italic">
+                    {selectedConv.contacts?.full_name || 'CONTACTO_DESCONOCIDO'}
                   </h2>
                   <div className="flex items-center gap-2 mt-1">
-                    <div className="w-2 h-2 bg-[#4CAF50] rounded-full animate-pulse" />
-                    <span className="text-[10px] font-bold text-[#4CAF50] uppercase tracking-widest">ACTIVE_LINK</span>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em]">Enlace_Activo</span>
                   </div>
                 </div>
               </div>
@@ -344,26 +341,26 @@ export default function MessagesPage() {
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => toggleHandoff(selectedConv)}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold transition-all ${
+                  className={`flex items-center gap-3 px-6 py-3 rounded-[20px] font-black transition-all shadow-lg ${
                     selectedConv.status === 'waiting_human' 
-                      ? 'bg-[#E53935] text-white shadow-lg shadow-red-500/20' 
-                      : 'bg-[#4CAF50] text-white shadow-lg shadow-green-500/20'
+                      ? 'bg-rose-500 text-white shadow-rose-500/20' 
+                      : 'bg-emerald-500 text-white shadow-emerald-500/20'
                   }`}
                 >
                   <Power className="w-4 h-4" />
-                  <span className="text-xs uppercase tracking-tighter">
-                    {selectedConv.status === 'waiting_human' ? 'MANUAL_CONTROL' : 'AI_NEURAL_LINK'}
+                  <span className="text-[10px] uppercase tracking-widest">
+                    {selectedConv.status === 'waiting_human' ? 'Control_Manual' : 'Neural_Link'}
                   </span>
                 </button>
-                <button className="p-3 hover:bg-[#F9F7F6] rounded-2xl transition-colors">
-                  <MoreVertical className="w-5 h-5 text-[#999]" />
+                <button className="p-3 hover:bg-slate-50 rounded-[15px] transition-colors text-slate-300 hover:text-slate-900">
+                  <MoreVertical className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
             {/* Mensajes */}
-            <div className="flex-1 overflow-y-auto p-12 space-y-8 bg-[#FDFCFB] custom-scrollbar relative">
-              <div className="absolute inset-0 bg-[radial-gradient(#EAE1DF_1px,transparent_1px)] [background-size:20px_20px] opacity-20 pointer-events-none" />
+            <div className="flex-1 overflow-y-auto p-12 space-y-8 bg-[#F7F9FB] custom-scrollbar relative">
+              <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
               
               <div className="relative space-y-8 max-w-4xl mx-auto">
                 {messages.map((m, i) => {
@@ -371,14 +368,14 @@ export default function MessagesPage() {
                   return (
                     <div key={m.id || i} className={`flex ${isAI ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
                       <div className={`max-w-[75%] space-y-2`}>
-                        <div className={`p-6 rounded-3xl shadow-sm relative overflow-hidden ${
+                        <div className={`p-6 rounded-[28px] shadow-sm relative overflow-hidden \${
                           isAI 
-                            ? 'bg-[#1A1A1A] text-white rounded-tl-none' 
-                            : 'bg-[#F1EFEE] text-[#1A1A1A] rounded-tr-none'
+                            ? 'bg-slate-900 text-white rounded-tl-none' 
+                            : 'bg-white text-slate-900 rounded-tr-none border border-slate-100 shadow-xl shadow-slate-200/20'
                         }`}>
                           {isAI && (
-                            <div className="flex items-center gap-2 mb-3 text-[10px] font-black text-[#666] tracking-[0.2em] uppercase">
-                              <Bot className="w-3 h-3" />
+                            <div className="flex items-center gap-2 mb-3 text-[9px] font-black text-slate-500 tracking-[0.2em] uppercase">
+                              <Sparkles className="w-3 h-3 text-primary" />
                               <span>Arise_Neural_Engine</span>
                             </div>
                           )}
@@ -390,17 +387,17 @@ export default function MessagesPage() {
                             return (
                               <div className="space-y-4">
                                 {textParts.map((text, tidx) => (
-                                  <p key={tidx} className={`text-sm leading-relaxed whitespace-pre-wrap ${isAI ? 'font-medium' : 'font-normal'}`}>
+                                  <p key={tidx} className={`text-[13px] leading-relaxed whitespace-pre-wrap \${isAI ? 'font-medium' : 'font-medium text-slate-600'}`}>
                                     {text}
                                   </p>
                                 ))}
                                 {buttonParts.map((group, gidx) => (
-                                  <div key={gidx} className="flex flex-wrap gap-2 pt-2 border-t border-[#333]/20">
+                                  <div key={gidx} className="flex flex-wrap gap-2 pt-4 mt-4 border-t border-white/10">
                                     {group.map((btn, bidx) => (
                                       <button
                                         key={bidx}
                                         onClick={() => sendMessage(btn)}
-                                        className="px-4 py-2 bg-[#262626] hover:bg-[#333] border border-[#444] text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center gap-2"
+                                        className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 flex items-center gap-2"
                                       >
                                         {btn}
                                       </button>
@@ -411,7 +408,7 @@ export default function MessagesPage() {
                             );
                           })()}
                           
-                          <span className={`block mt-3 text-[10px] font-mono opacity-40 ${isAI ? 'text-left' : 'text-right'}`}>
+                          <span className={`block mt-4 text-[9px] font-black uppercase tracking-tighter opacity-40 \${isAI ? 'text-left' : 'text-right'}`}>
                             {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
                           </span>
                         </div>
@@ -424,12 +421,12 @@ export default function MessagesPage() {
             </div>
 
             {/* Input */}
-            <div className="p-8 bg-white border-none shrink-0">
-              <div className="max-w-4xl mx-auto flex items-center gap-4 bg-[#F9F7F6] p-4 rounded-[2.5rem] focus-within:ring-2 focus-within:ring-[#EAE1DF] transition-all shadow-inner">
+            <div className="p-8 bg-white/80 backdrop-blur-xl border-t border-slate-100 shrink-0">
+              <div className="max-w-4xl mx-auto flex items-center gap-4 bg-slate-50 p-4 rounded-[32px] focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-inner border border-slate-100">
                 <input 
                   type="text" 
-                  placeholder="Escribe como Agente Humano..."
-                  className="flex-1 bg-transparent border-none py-2 px-4 text-sm outline-none placeholder:text-[#BBB]"
+                  placeholder="ESCRIBIR_COMO_AGENTE_HUMANO_..."
+                  className="flex-1 bg-transparent border-none py-2 px-4 text-[13px] font-medium outline-none placeholder:text-slate-300 text-slate-900"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
@@ -437,7 +434,7 @@ export default function MessagesPage() {
                 <button 
                   onClick={() => sendMessage()}
                   disabled={!newMessage.trim()}
-                  className="p-4 bg-[#0047BB] hover:bg-[#003da1] disabled:bg-[#CCC] text-white rounded-full transition-all shadow-xl shadow-[#0047BB]/20 hover:scale-110 active:scale-95"
+                  className="p-4 bg-primary hover:bg-primary-dark disabled:bg-slate-200 text-white rounded-[20px] transition-all shadow-xl shadow-primary/20 hover:scale-105 active:scale-95"
                 >
                   <Send className="w-5 h-5" />
                 </button>
@@ -445,12 +442,15 @@ export default function MessagesPage() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-[#999] bg-[#FDFCFB]">
-            <div className="w-24 h-24 bg-[#F1EFEE] rounded-[2.5rem] flex items-center justify-center mb-8 animate-bounce">
-              <MessageSquare className="w-10 h-10" />
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-300 bg-slate-50 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-24 h-24 bg-white rounded-[40px] flex items-center justify-center mb-8 shadow-2xl animate-bounce">
+                <MessageSquare className="w-10 h-10 text-primary" />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">Selector de Frecuencia</h3>
+              <p className="text-[10px] tracking-[0.4em] uppercase font-black text-slate-400">esperando_enlace_neuronal_...</p>
             </div>
-            <h3 className="text-2xl font-bold text-[#1A1A1A] mb-2">Selector de Frecuencia</h3>
-            <p className="text-sm tracking-widest uppercase font-mono opacity-50">esperando_enlace_neuronal_...</p>
           </div>
         )}
       </div>

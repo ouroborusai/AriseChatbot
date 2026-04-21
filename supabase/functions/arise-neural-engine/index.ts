@@ -1,88 +1,156 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
-const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+/**
+ * MASTER NEURAL ENGINE v9.2 - Ouroborus AI
+ * Procesa pulsos de la DB y genera respuestas inteligentes con soporte para acciones neurales.
+ */
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!, 
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+);
+
+const DIRECTOR_PHONE = "56990062213";
+
+async function sendWhatsApp(to: string, payload: any, token: string, phoneId: string) {
+  return await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messaging_product: 'whatsapp', to, ...payload })
+  });
+}
 
 serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
     const body = await req.json();
 
-    if (req.method === 'GET') return new Response(url.searchParams.get('hub.challenge'), { status: 200 });
+    if (req.method === 'GET') {
+        const challenge = url.searchParams.get('hub.challenge');
+        return new Response(challenge, { status: 200 });
+    }
 
+    // --- TRIGGER MODE (tr_neural_pulse) ---
     if (url.searchParams.get('source') === 'trigger' && body.messageId) {
       console.log(`[Neural] Pulse received for message: ${body.messageId}`);
-      const { data: msg } = await supabase.from('messages').select('*, conversations(*)').eq('id', body.messageId).single();
-      const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', msg.conversations.company_id).eq('is_active', true).limit(1).maybeSingle();
       
-      let keys = (Deno.env.get('GEMINI_API_KEY') || "").split(',').map(k => k.trim()).filter(k => k.length > 0);
+      // 1. Obtener mensaje y contexto de conversación
+      const { data: msg, error: msgErr } = await supabase
+        .from('messages')
+        .select('*, conversations(*)')
+        .eq('id', body.messageId)
+        .single();
+
+      if (msgErr || !msg) return new Response('Msg not found', { status: 404 });
+
+      const companyId = msg.conversations.company_id;
+      const convId = msg.conversation_id;
+
+      // 2. Obtener Prompt y API Keys
+      const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', companyId).eq('is_active', true).limit(1).maybeSingle();
+      const { data: history } = await supabase.from('messages').select('sender_type, content').eq('conversation_id', convId).order('created_at', { ascending: false }).limit(10);
       
+      let keys = (Deno.env.get('GEMINI_API_KEY') || "").split(',').map((k: string) => k.trim()).filter((k: string) => k.length > 0);
       if (keys.length === 0) {
-        console.log("[Neural] GEMINI_API_KEY env empty. Fetching from Vault table...");
         const { data: vaultKeys } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
-        if (vaultKeys && vaultKeys.length > 0) {
-           keys = vaultKeys.map(k => k.api_key);
-        }
+        if (vaultKeys) keys = vaultKeys.map((k: any) => k.api_key);
       }
 
-      if (keys.length === 0) {
-         console.error("[Neural] CRITICAL: No API keys found in ENV or Vault.");
-         return new Response('Fatal');
-      }
+      if (keys.length === 0) return new Response('No API Keys', { status: 500 });
+
+      // 3. Formatear historial para Gemini
+      const formattedHistory = (history || [])
+        .reverse()
+        .map((m: any) => `${m.sender_type === 'user' ? 'Usuario' : 'Arise'}: ${m.content}`)
+        .join('\n');
+
+      const systemPrompt = p?.system_prompt || "Eres Arise Business OS v9.0, el cerebro neural de la empresa.";
+      const promptWithContext = `
+${systemPrompt}
+
+[HISTORIAL DE CONVERSACIÓN]
+${formattedHistory}
+
+[INSTRUCCIÓN FINAL]
+Genera una respuesta ejecutiva y breve. 
+Si necesitas realizar una acción (inventario, reporte, etc.), incluye el bloque [[ { "action": "..." } ]] al final.
+Para botones, usa el formato: [Texto de respuesta] --- [Botón 1] | [Botón 2]
+`;
 
       let aiResponse = null;
+      const apiKey = keys[Math.floor(Math.random() * keys.length)];
 
-      for (const key of keys) {
-        console.log(`[Neural] Trying core starting with ${key.substring(0, 5)}...`);
-        // USANDO EL MODELO CERTIFICADO EN AUDITORÍA: gemini-2.5-flash-lite
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: `${p?.system_prompt || "Eres Arise Business OS v9.0."}\n\nMensaje: ${msg.content}` }]}] })
-        });
-        
-        if (res.status === 200) {
-          const d = await res.json();
-          aiResponse = d.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (aiResponse) {
-            console.log(`[Neural] Core success! Response length: ${aiResponse.length}`);
-            break;
-          }
-        } else {
-          console.warn(`[Neural] Core failed with status ${res.status}`);
-        }
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: promptWithContext }] }] })
+      });
+      
+      if (res.status === 200) {
+        const d = await res.json();
+        aiResponse = d.candidates?.[0]?.content?.parts?.[0]?.text;
       }
 
       if (aiResponse) {
-        await supabase.from('messages').insert({ conversation_id: msg.conversation_id, sender_type: 'bot', content: aiResponse.trim() });
-        const { data: comp } = await supabase.from('companies').select('settings').eq('id', msg.conversations.company_id).single();
+        // 4. Persistir respuesta del Bot
+        const { data: botMsg } = await supabase.from('messages').insert({ 
+            conversation_id: convId, 
+            sender_type: 'bot', 
+            content: aiResponse.trim() 
+        }).select('id').single();
+
+        // 5. Enviar a WhatsApp
+        const { data: comp } = await supabase.from('companies').select('settings').eq('id', companyId).single();
         const { data: cont } = await supabase.from('contacts').select('phone').eq('id', msg.conversations.contact_id).single();
         
-        await fetch(`https://graph.facebook.com/v19.0/${comp.settings.whatsapp.phone_number_id}/messages`, {
-           method: 'POST',
-           headers: { 'Authorization': `Bearer ${comp.settings.whatsapp.access_token}`, 'Content-Type': 'application/json' },
-           body: JSON.stringify({ messaging_product: 'whatsapp', to: cont.phone, type: 'text', text: { body: aiResponse.trim() } })
-        });
+        const waToken = comp.settings.whatsapp.access_token;
+        const phoneId = comp.settings.whatsapp.phone_number_id;
+
+        // Limpiar bloques de acción para el mensaje de texto
+        const cleanAiText = aiResponse.replace(/\[\[[^\[\]]+\]\]/g, '').trim();
+        const parts = cleanAiText.split('---');
+        const textPart = parts[0]?.trim();
+        const buttonsPart = parts.length > 1 ? parts[1] : null;
+
+        let payload: any = { type: 'text', text: { body: textPart } };
+
+        if (buttonsPart) {
+          const rows = buttonsPart.split('|').map((o: string) => {
+            const title = o.trim().substring(0, 24);
+            return { id: `btn_${title.toLowerCase().replace(/\s+/g, '_')}`, title };
+          });
+          payload = {
+            type: 'interactive',
+            interactive: {
+              type: 'list',
+              body: { text: textPart },
+              action: { button: 'Opciones', sections: [{ title: 'Acciones', rows }] }
+            }
+          };
+        }
+
+        await sendWhatsApp(cont.phone, payload, waToken, phoneId);
+
+        // 6. Bridge al Neural Processor (Si hay acciones)
+        if (aiResponse.includes('[[')) {
+          const appUrl = Deno.env.get('APP_URL') || "https://arise-business-os.vercel.app";
+          fetch(`${appUrl}/api/neural-processor`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json', 
+              'x-api-key': Deno.env.get('INTERNAL_API_KEY') || 'arise_internal_v9_secret' 
+            },
+            body: JSON.stringify({ messageId: botMsg?.id, companyId: companyId })
+          }).catch((e: Error) => console.error('[Neural Bridge] Failed:', e));
+        }
       }
       return new Response('OK');
     }
 
-    // Ingesta de Webhook (Fallback directo)
-    const m = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-    if (m) {
-      const { data: c } = await supabase.from('contacts').select('id, company_id').eq('phone', m.from).limit(1).maybeSingle();
-      if (c) {
-        let { data: conv } = await supabase.from('conversations').select('id').eq('contact_id', c.id).order('updated_at', { ascending: false }).limit(1).maybeSingle();
-        if (!conv) {
-          const { data: nc } = await supabase.from('conversations').insert({ contact_id: c.id, company_id: c.company_id, status: 'open' }).select('id').single();
-          conv = nc;
-        }
-        await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'user', content: m.text?.body || '[Multimedia]' });
-      }
-    }
-    return new Response('OK');
-  } catch (e) {
+    return new Response('Not a trigger', { status: 400 });
+  } catch (e: any) {
     console.error(`[Neural] Fatal error: ${e.message}`);
-    return new Response('Fatal');
+    return new Response('Fatal', { status: 500 });
   }
 });
+
