@@ -238,6 +238,20 @@ export async function POST(req: Request) {
           });
         }
 
+        if (actionData.action === 'reminder_create' && actionData.content) {
+          const { data: currentMsg } = await supabase.from('messages').select('conversation_id').eq('id', messageId).single();
+          const { data: conv } = await supabase.from('conversations').select('contact_id').eq('id', currentMsg?.conversation_id).single();
+          
+          await supabase.from('reminders').insert({
+            company_id: companyId,
+            contact_id: conv?.contact_id,
+            content: actionData.content,
+            due_at: actionData.due_at || new Date(Date.now() + 86400000).toISOString(),
+            status: 'active'
+          });
+          results.push({ action: 'reminder_create', status: 'success' });
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // ACCIÓN: PDF_GENERATE
         // ─────────────────────────────────────────────────────────────────────

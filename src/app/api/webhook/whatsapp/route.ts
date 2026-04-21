@@ -235,14 +235,31 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
   let payload: any = { messaging_product: 'whatsapp', to, type: 'text', text: { body: aiText } };
 
   if (buttonsPart) {
-    const options = buttonsPart.split('|').map((o: string) => o.replace(/\[\[[^\[\]]+\]\]/g, '').trim()).filter((o: string) => o.length > 0).slice(0, 3);
+    const iconMap: Record<string, string> = {
+      'inv': '📦', 'stock': '📦', 'fin': '💰', 'pag': '💰', 'adm': '⚙️', 
+      'ajust': '⚙️', 'rrhh': '👥', 'person': '👥', 'rec': '🔔', 'tarea': '📌',
+      'vol': '⬅️', 'men': '🏠', 'ini': '🏠'
+    };
+
+    const options = buttonsPart.split('|')
+      .map((o: string) => o.replace(/\[\[[^\[\]]+\]\]/g, '').trim())
+      .filter((o: string) => o.length > 0)
+      .slice(0, 3)
+      .map((o: string) => {
+        const text = o.substring(0, 20);
+        const hasEmoji = /\p{Emoji}/u.test(text);
+        if (hasEmoji) return text;
+        const key = Object.keys(iconMap).find(k => text.toLowerCase().includes(k));
+        return key ? `${iconMap[key]} ${text}`.substring(0, 20) : text;
+      });
+
     if (options.length > 0) {
       payload = {
         messaging_product: 'whatsapp', to, type: 'interactive',
         interactive: {
           type: 'button',
           body: { text: textPart.trim().substring(0, 1024) || 'Selecciona una opción:' },
-          action: { buttons: options.map((btn: string, i: number) => ({ type: 'reply', reply: { id: `ai_btn_${i}`, title: btn.substring(0, 20) } })) }
+          action: { buttons: options.map((btn: string, i: number) => ({ type: 'reply', reply: { id: `ai_btn_${i}`, title: btn } })) }
         }
       };
     }
