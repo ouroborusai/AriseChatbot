@@ -168,6 +168,11 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error('[WH_CRITICAL_ERROR]', error);
+    await supabase.from('audit_logs').insert({
+      action: 'WEBHOOK_POST_FAILURE',
+      table_name: 'messages',
+      new_data: { error: error.message, stack: error.stack }
+    });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -229,6 +234,18 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
   });
 
   const gData = await geminiRes.json();
+  
+  if (!geminiRes.ok) {
+    console.error('[GEMINI_ERROR]', gData);
+    await supabase.from('audit_logs').insert({
+      company_id: companyId,
+      action: 'GEMINI_API_FAILURE',
+      table_name: 'messages',
+      new_data: { error: gData, model: process.env.GEMINI_MODEL || "gemini-2.5-flash-lite" }
+    });
+    return;
+  }
+
   const aiText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "Arise Neural Engine: Fallo de percepción.";
 
   // Persistir respuesta
