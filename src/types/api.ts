@@ -88,6 +88,7 @@ export type NeuralActionType =
   | 'inventory_remove'
   | 'inventory_scan'
   | 'task_create'
+  | 'reminder_create'
   | 'pdf_generate'
   | 'unknown';
 
