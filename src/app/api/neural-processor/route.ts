@@ -148,8 +148,18 @@ export async function POST(req: Request) {
               category: actionData.category || 'Varios',
               unit: actionData.unit || 'uds',
             })
-            .select('id')
+            .select()
             .single();
+
+          if (!insertError && newItem) {
+            await supabase.from('audit_logs').insert({
+              company_id: companyId,
+              action: 'NEURAL_INVENTORY_CREATE',
+              table_name: 'inventory_items',
+              record_id: newItem.id,
+              new_data: actionData
+            });
+          }
 
           if (insertError) {
             results.push({
@@ -222,15 +232,74 @@ export async function POST(req: Request) {
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // ACCIÓN: INVENTORY_SCAN (Consulta de Stock con Feedback)
+        // ─────────────────────────────────────────────────────────────────────
+        if (actionData.action === 'inventory_scan' && (actionData.sku || actionData.name)) {
+          const { data: items } = await supabase
+            .from('inventory_items')
+            .select('id, name, sku, current_stock')
+            .eq('company_id', companyId)
+            .or(`sku.ilike.${actionData.sku || 'none'},name.ilike.%${actionData.name || 'none'}%`)
+            .limit(3);
+
+          // Obtener datos para WhatsApp Feedback
+          const { data: msgInfo } = await supabase.from('messages').select('conversation_id').eq('id', messageId).single();
+          const { data: conv } = await supabase.from('conversations').select('contacts(phone)').eq('id', msgInfo?.conversation_id).single();
+          const { data: company } = await supabase.from('companies').select('settings').eq('id', companyId).single();
+          
+          const phone = (conv as any)?.contacts?.phone;
+          const token = company?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
+          const phoneId = company?.settings?.whatsapp?.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+          if (items && items.length > 0) {
+            const feedback = `🔍 *Consulta de Stock Arise*\n\n` + 
+              items.map(i => `• *${i.name}*\n  SKU: ${i.sku}\n  Stock: ${i.current_stock} uds.`).join('\n\n');
+            
+            if (phone) {
+              fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messaging_product: 'whatsapp', to: phone, type: 'text', text: { body: feedback } })
+              });
+            }
+
+            for (const item of items) {
+              results.push({ action: 'inventory_scan', status: 'success', sku: item.sku, name: item.name });
+              await supabase.from('audit_logs').insert({
+                company_id: companyId, action: 'NEURAL_INVENTORY_SCAN', table_name: 'inventory_items',
+                record_id: item.id, new_data: { query: actionData, found: item }
+              });
+            }
+          } else if (phone) {
+            fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ messaging_product: 'whatsapp', to: phone, type: 'text', text: { body: `❌ Arise: No hallamos productos para "${actionData.sku || actionData.name}".` } })
+            });
+          }
+          continue;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // ACCIÓN: TASK_CREATE
         // ─────────────────────────────────────────────────────────────────────
         if (actionData.action === 'task_create' && actionData.title) {
-          await supabase.from('service_requests').insert({
+          const { data: newTask } = await supabase.from('service_requests').insert({
             company_id: companyId,
             title: actionData.title,
             description: actionData.description || 'Creado vía Neural AI',
             status: 'pending',
-          });
+          }).select().single();
+
+          if (newTask) {
+            await supabase.from('audit_logs').insert({
+              company_id: companyId,
+              action: 'NEURAL_TASK_CREATE',
+              table_name: 'service_requests',
+              record_id: newTask.id,
+              new_data: actionData
+            });
+          }
 
           results.push({
             action: 'task_create',
@@ -242,13 +311,23 @@ export async function POST(req: Request) {
           const { data: currentMsg } = await supabase.from('messages').select('conversation_id').eq('id', messageId).single();
           const { data: conv } = await supabase.from('conversations').select('contact_id').eq('id', currentMsg?.conversation_id).single();
           
-          await supabase.from('reminders').insert({
+          const { data: newReminder } = await supabase.from('reminders').insert({
             company_id: companyId,
             contact_id: conv?.contact_id,
             content: actionData.content,
             due_at: actionData.due_at || new Date(Date.now() + 86400000).toISOString(),
             status: 'active'
-          });
+          }).select().single();
+
+          if (newReminder) {
+            await supabase.from('audit_logs').insert({
+              company_id: companyId,
+              action: 'NEURAL_REMINDER_CREATE',
+              table_name: 'reminders',
+              record_id: newReminder.id,
+              new_data: actionData
+            });
+          }
           results.push({ action: 'reminder_create', status: 'success' });
         }
 

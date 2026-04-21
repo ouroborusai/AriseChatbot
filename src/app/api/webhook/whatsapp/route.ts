@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     
     if (!content && message.type !== 'text') {
       console.log('--- Ignorando mensaje no soportado (Multimedia/Audio) ---');
-      continue;
+      return NextResponse.json({ status: 'unsupported_message_type' });
     }
 
     // Persistir mensaje del usuario independientemente del estado (para el log)
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
     // Re-verificar estado justo antes de enviar (Atomic Check)
     const { data: latestConv } = await supabase.from('conversations').select('status').eq('id', conv.id).single();
     if (latestConv?.status === 'open') {
-      await generateAndSendAIResponse(conv.id, companyId, sender, content, profileName, phoneNumberId, activeKey);
+      await generateAndSendAIResponse(conv.id, companyId, sender, content, profileName, phoneNumberId);
     }
 
     return NextResponse.json({ status: 'success' });
@@ -143,11 +143,19 @@ export async function POST(req: Request) {
 /**
  * Genera y envía la respuesta de IA con Contexto Histórico (Diamond v9.2)
  */
-async function generateAndSendAIResponse(convId: string, companyId: string, to: string, content: string, profileName: string, phoneNumberId: string, apiKey: string) {
-  // 1. Recuperar Contexto Maestro (Historial + Empresa + Prompt)
+async function generateAndSendAIResponse(convId: string, companyId: string, to: string, content: string, profileName: string, phoneNumberId: string) {
+  // 1. Recuperar Contexto Maestro (Historial + Empresa + Prompt + API Key)
   const { data: company } = await supabase.from('companies').select('settings, name').eq('id', companyId).single();
   const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', companyId).eq('is_active', true).limit(1).maybeSingle();
   const { data: history } = await supabase.from('messages').select('sender_type, content').eq('conversation_id', convId).order('created_at', { ascending: false }).limit(10);
+  
+  // Rotación de API Keys (Industrial)
+  let keys = (process.env.GEMINI_API_KEY || "").split(',').map((k: string) => k.trim()).filter((k: string) => k.length > 0);
+  if (keys.length === 0) {
+    const { data: vaultKeys } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
+    if (vaultKeys) keys = vaultKeys.map((k: any) => k.api_key);
+  }
+  const apiKey = (keys[Math.floor(Math.random() * keys.length)] || process.env.GEMINI_API_KEY || "") as string;
   
   const systemPrompt = p?.system_prompt || "Eres Arise Director AI. Responde breve y ejecutivo.";
   const whatsappToken = company?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
@@ -191,51 +199,106 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
 
   // Trigger Neural Processor (Procesamiento de acciones)
   if (botMsg && aiText.includes('[[')) {
-    fetch(`${process.env.APP_URL || 'http://localhost:3000'}/api/neural-processor`, {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+    fetch(`${baseUrl}/api/neural-processor`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messageId: botMsg.id, companyId: companyId })
     }).catch(e => console.error('[NEURAL_BRIDGE] Failed:', e));
   }
 
-  // Enviar a WhatsApp
-  const [textPart, buttonsPart] = aiText.split('---');
-  let payload: any = { messaging_product: 'whatsapp', to, type: 'text', text: { body: aiText } };
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MOTOR DE ESCALABILIDAD DINÁMICA (Diamond v9.6)
+  // Decide automáticamente: texto plano | botones (≤3) | lista (4-10)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const cleanAiText = aiText.replace(/\[\[[^\[\]]+\]\]/g, '').trim();
+  const parts = cleanAiText.split('---');
+  const textPart = parts[0]?.trim() || "Arise Engine: Respuesta procesada.";
+  const buttonsPart = parts.length > 1 ? parts[1] : null;
+
+  const iconMap: Record<string, string> = {
+    'inv': '📦', 'stock': '📦', 'fin': '💰', 'pag': '💰', 'adm': '⚙️', 
+    'ajust': '⚙️', 'rrhh': '👥', 'person': '👥', 'rec': '🔔', 'tarea': '📌',
+    'vol': '⬅️', 'men': '🏠', 'ini': '🏠', 'repo': '📊', 'doc': '📄',
+    'fac': '🧾', 'cli': '🤝', 'ven': '💵', 'cot': '📋', 'aud': '🔎'
+  };
+
+  // Helper: Inyecta emoji si falta
+  const enrichText = (text: string): string => {
+    const hasEmoji = /\p{Emoji}/u.test(text);
+    if (hasEmoji) return text;
+    const key = Object.keys(iconMap).find(k => text.toLowerCase().includes(k));
+    return key ? `${iconMap[key]} ${text}` : text;
+  };
+
+  let payload: any = { 
+    messaging_product: 'whatsapp', to, type: 'text', 
+    text: { body: textPart } 
+  };
 
   if (buttonsPart) {
-    const iconMap: Record<string, string> = {
-      'inv': '📦', 'stock': '📦', 'fin': '💰', 'pag': '💰', 'adm': '⚙️', 
-      'ajust': '⚙️', 'rrhh': '👥', 'person': '👥', 'rec': '🔔', 'tarea': '📌',
-      'vol': '⬅️', 'men': '🏠', 'ini': '🏠'
-    };
+    const allOptions = buttonsPart.split('|')
+      .map((o: string) => o.trim())
+      .filter((o: string) => o.length > 0);
 
-    const options = buttonsPart.split('|')
-      .map((o: string) => o.replace(/\[\[[^\[\]]+\]\]/g, '').trim())
-      .filter((o: string) => o.length > 0)
-      .slice(0, 3)
-      .map((o: string) => {
-        const text = o.substring(0, 20);
-        const hasEmoji = /\p{Emoji}/u.test(text);
-        if (hasEmoji) return text;
-        const key = Object.keys(iconMap).find(k => text.toLowerCase().includes(k));
-        return key ? `${iconMap[key]} ${text}`.substring(0, 20) : text;
+    if (allOptions.length > 0 && allOptions.length <= 3) {
+      // ── MODO BOTONES (≤3 opciones) ──
+      const buttons = allOptions.map((o: string) => {
+        const title = enrichText(o).substring(0, 20);
+        return {
+          type: 'reply',
+          reply: { 
+            id: `btn_${title.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)}`, 
+            title 
+          }
+        };
       });
-
-    if (options.length > 0) {
       payload = {
         messaging_product: 'whatsapp', to, type: 'interactive',
         interactive: {
           type: 'button',
-          body: { text: textPart.trim().substring(0, 1024) || 'Selecciona una opción:' },
-          action: { buttons: options.map((btn: string, i: number) => ({ type: 'reply', reply: { id: `ai_btn_${i}`, title: btn } })) }
+          body: { text: textPart.substring(0, 1024) },
+          action: { buttons }
+        }
+      };
+    } else if (allOptions.length > 3) {
+      // ── MODO LISTA (4-10 opciones) ──
+      const rows = allOptions.slice(0, 10).map((o: string) => {
+        const title = enrichText(o).substring(0, 24);
+        return {
+          id: `lst_${title.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)}`,
+          title
+        };
+      });
+      payload = {
+        messaging_product: 'whatsapp', to, type: 'interactive',
+        interactive: {
+          type: 'list',
+          body: { text: textPart.substring(0, 1024) },
+          footer: { text: 'Arise Director AI' },
+          action: {
+            button: 'Ver Opciones',
+            sections: [{ title: 'Acciones Disponibles', rows }]
+          }
         }
       };
     }
   }
 
-  await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+  const waRes = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
+
+  if (!waRes.ok) {
+    const errorData = await waRes.json();
+    await supabase.from('audit_logs').insert({
+      company_id: companyId,
+      action: 'WHATSAPP_DELIVERY_FAILURE',
+      table_name: 'messages',
+      new_data: { error: errorData, payload }
+    });
+    console.error('[WHATSAPP_ERROR]', errorData);
+  }
 }
