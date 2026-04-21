@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ARISE AUTO-CLEANUP TOOL v9.0
  * Corrige automáticamente inconsistencias detectadas en el código base
@@ -8,9 +7,8 @@
 
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { join, extname } from 'path';
-import { existsSync } from 'fs';
 
-const SKIP_DIRS = ['node_modules', '.git', '.next', '.claude', 'public', 'scratch'];
+const SKIP_DIRS = ['node_modules', '.git', '.next', '.claude', 'public', 'scratch', 'scripts'];
 const TARGET_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'];
 
 interface CleanupRule {
@@ -18,26 +16,29 @@ interface CleanupRule {
   pattern: RegExp;
   replacement: string | ((match: string) => string);
   description: string;
+  skipIfContains?: string[];
 }
 
 const CLEANUP_RULES: CleanupRule[] = [
   {
     name: 'Diamond Version Unification',
-    pattern: /Diamond\s*v?\d+\.\d+|v[78]\.\d+(?:\.\d+)?/gi,
+    pattern: /Diamond\s*v?(?:7|8)\.\d+|v[78]\.\d+(?:\.\d+)?/gi,
     replacement: 'Diamond v9.0',
-    description: 'Unifica versiones de protocolo a v9.0'
+    description: 'Unifica versiones de protocolo a v9.0',
+    skipIfContains: ['arise-card', 'shadow-arise', 'arise_', 'Diamond v9']
   },
   {
-    name: 'SUPABASE_SERVICE_ROLE_KEY Unification',
-    pattern: /SUPABASE_SERVICE_ROLE_KEY/g,
-    replacement: 'SUPABASE_SERVICE_ROLE_KEY',
-    description: 'Unifica nombre de variable de entorno'
-  },
-  {
-    name: 'Facebook API Version',
+    name: 'Facebook API Version Update',
     pattern: /graph\.facebook\.com\/v18\.0/g,
     replacement: 'graph.facebook.com/v19.0',
     description: 'Actualiza API de WhatsApp a v19.0'
+  },
+  {
+    name: 'Console Log Cleanup (Opcional)',
+    pattern: /console\.(log|debug)/g,
+    replacement: '// console.$1',
+    description: 'Comenta console.log/debug en producción',
+    skipIfContains: ['// console.']
   }
 ];
 
@@ -73,14 +74,14 @@ async function applyCleanupRules(filePath: string): Promise<{ changed: boolean; 
   for (const rule of CLEANUP_RULES) {
     const matches = newContent.match(rule.pattern);
     if (matches && matches.length > 0) {
-      // Verificar si el reemplazo ya está aplicado
       const uniqueMatches = [...new Set(matches)];
 
       for (const match of uniqueMatches) {
-        // Skip si ya es la versión correcta
-        if (match === 'Diamond v9.0' && rule.name.includes('Diamond')) continue;
-        if (match === 'SUPABASE_SERVICE_ROLE_KEY' && rule.name.includes('ARISE')) continue;
-        if (match.includes('v19.0') && rule.name.includes('Facebook')) continue;
+        // Skip si coincide con skipIfContains
+        if (rule.skipIfContains) {
+          const shouldSkip = rule.skipIfContains.some(s => match.includes(s));
+          if (shouldSkip) continue;
+        }
 
         const replacement = typeof rule.replacement === 'string'
           ? rule.replacement

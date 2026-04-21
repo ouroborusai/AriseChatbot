@@ -88,7 +88,8 @@ function extractTableReferences(content: string, filePath: string): TableReferen
 
 async function getSupabaseSchema(): Promise<Set<string>> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Probar con service_role_key o anon_key como fallback
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     console.log('⚠️  Variables de Supabase no configuradas, saltando validación contra DB real');
@@ -98,21 +99,53 @@ async function getSupabaseSchema(): Promise<Set<string>> {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    // Obtener todas las tablas del schema public
+    // Método 1: Usar RPC si existe (más confiable)
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_table_names');
+
+    if (!rpcError && rpcData) {
+      return new Set(rpcData as string[]);
+    }
+
+    // Método 2: Intentar información_schema (requiere permisos)
     const { data, error } = await supabase
       .from('information_schema.tables')
       .select('table_name')
       .eq('table_schema', 'public');
 
-    if (error) {
-      // Fallback: intentar query directa
-      console.log('⚠️  Fallback: intentando query directa...');
-      return new Set();
+    if (!error && data) {
+      return new Set(data?.map(d => d.table_name) || []);
     }
 
-    return new Set(data?.map(d => d.table_name) || []);
+    // Método 3: Fallback - usar Rest API directa con anon key
+    console.log('⚠️  Fallback: intentando Rest API directa...');
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (anonKey) {
+      try {
+        const response = await fetch(`${supabaseUrl}/rest/v1/?apikey=${anonKey}`, {
+          headers: {
+            'apikey': anonKey,
+            'Authorization': `Bearer ${anonKey}`,
+            'Prefer': 'count=exact'
+          }
+        });
+
+        if (response.ok) {
+          const spec = await response.json();
+          const tables = Object.keys(spec.paths || {})
+            .filter(path => path.startsWith('/'))
+            .map(path => path.split('/')[1])
+            .filter(t => !t.includes('(')); // Filtrar RPCs
+
+          return new Set(tables);
+        }
+      } catch {
+        // Ignorar error del fallback
+      }
+    }
+
+    return new Set();
   } catch (error) {
-    console.log('⚠️  Error obteniendo schema:', error);
+    console.log('⚠️  Error obteniendo schema:', error instanceof Error ? error.message : error);
     return new Set();
   }
 }

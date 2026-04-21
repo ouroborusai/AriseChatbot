@@ -308,6 +308,59 @@ export const templates: Record<string, string> = {
     </body>
     </html>
   `,
+  inventory: `
+    <!DOCTYPE html>
+    <html>
+    <head><style>${baseStyles}</style></head>
+    <body style="padding: 30px;">
+      <div class="header">
+        <div>
+          <h1 class="title">REPORTE DE EXISTENCIAS (INVENTARIO)</h1>
+          <div class="meta" style="margin-top: 5px;">Control de Activos: {{company_name}}</div>
+        </div>
+        <div style="text-align: right">
+          <div class="meta">EMITIDO: {{date}}</div>
+          <p class="diamond-accent" style="font-size: 10px; margin: 5px 0;">Folio: #{{folio}}</p>
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding: 0; overflow: hidden; border: 1px solid #0045bd;">
+        <table style="margin-top: 0;">
+          <thead style="background: #f1f5f9;">
+            <tr>
+              <th style="width: 25%;">SKU / CÓDIGO</th>
+              <th style="width: 50%;">DESCRIPCIÓN DEL PRODUCTO</th>
+              <th style="width: 25%; text-align: right;">CANTIDAD DISPONIBLE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each items}}
+            <tr>
+              <td style="font-family: 'Courier New', monospace; font-weight: 800; color: #0045bd;">{{sku}}</td>
+              <td style="font-weight: 600;">{{name}}</td>
+              <td style="text-align: right;">
+                <span class="badge {{#if low_stock}}badge-warning{{else}}badge-success{{/if}}">
+                  {{quantity}}
+                </span>
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 30px; background: #0045bd; color: white; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 10px; font-weight: 800;">TOTAL DE ACTIVOS EN REPORTE</span>
+        <span style="font-size: 14px; font-weight: 800;">{{items.length}} Ítems Registrados</span>
+      </div>
+
+      <div class="footer">
+        Este documento es una representación fiel de la base de datos de <b>Arise Business OS</b>.
+        Generado por OuroborusAI Core v9.0.
+      </div>
+    </body>
+    </html>
+  `,
   dashboard: `
     <!DOCTYPE html>
     <html>

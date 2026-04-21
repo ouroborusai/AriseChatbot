@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     }
 
     // Validación de reportType
-    const validTypes = ['balance', 'factura', 'invoice', 'compliance', 'f29', 'liquidacion', 'sueldo', '8-columnas', 'dashboard', 'resumen'];
+    const validTypes = ['balance', 'factura', 'invoice', 'compliance', 'f29', 'liquidacion', 'sueldo', '8-columnas', 'dashboard', 'resumen', 'inventory', 'stock'];
     if (reportType && !validTypes.some(t => reportType.toLowerCase().includes(t))) {
         return NextResponse.json({
             error: `Invalid reportType. Valid options: ${validTypes.join(', ')}`
@@ -45,14 +45,31 @@ export async function POST(req: Request) {
     const type = (reportType || 'Resumen').toLowerCase();
     let templateSource = templates.default;
     
-    if (type.includes('8-columnas')) templateSource = templates.columnas8;
-    else if (type.includes('balance')) templateSource = templates.balance;
-    else if (type.includes('factura') || type.includes('invoice')) templateSource = templates.invoice;
-    else if (type.includes('compliance') || type.includes('f29')) templateSource = templates.compliance;
-    else if (type.includes('liquidacion') || type.includes('sueldo')) templateSource = templates.payroll;
-    else if (type.includes('dashboard') || type.includes('resumen')) templateSource = templates.dashboard;
+    // Try to fetch custom template from database first
+    const { data: customTemplate } = await supabase
+        .from('document_templates')
+        .select('design_html')
+        .ilike('document_type', `%${type}%`)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    // 2. Data Acquisition
+    if (customTemplate?.design_html) {
+        console.log(`[PDF_PIPELINE] Using dynamic template from DB for: ${type}`);
+        templateSource = customTemplate.design_html;
+    } else {
+        console.log(`[PDF_PIPELINE] Using hardcoded template for: ${type}`);
+        if (type.includes('8-columnas')) templateSource = templates.columnas8;
+        else if (type.includes('inventory') || type.includes('stock')) templateSource = templates.inventory;
+        else if (type.includes('balance')) templateSource = templates.balance;
+        else if (type.includes('factura') || type.includes('invoice')) templateSource = templates.invoice;
+        else if (type.includes('compliance') || type.includes('f29')) templateSource = templates.compliance;
+        else if (type.includes('liquidacion') || type.includes('sueldo')) templateSource = templates.payroll;
+        else if (type.includes('dashboard') || type.includes('resumen')) templateSource = templates.dashboard;
+    }
+
+    // 2. Data Acquisition (Diamond v9.0 Summary Cache)
     const { data: companyData } = await supabase.from('companies').select('name').eq('id', companyId).single();
     
     let finalData: any = {
@@ -62,52 +79,55 @@ export async function POST(req: Request) {
         items: []
     };
 
-    // --- CASE 1: REAL INVENTORY DATA ---
-    if (type.includes('inventory') || type.includes('stock')) {
-        const { data: realItems } = await supabase
-            .from('inventory_items')
-            .select('sku, name, current_stock')
+    // Attempt to fetch from SUMMARIES table first
+    const summaryType = type.includes('8-columnas') ? '8-columnas' : 
+                        (type.includes('inventory') || type.includes('stock')) ? 'inventory' : null;
+
+    if (summaryType) {
+        const { data: summary } = await supabase
+            .from('financial_summaries')
+            .select('summary_data')
             .eq('company_id', companyId)
-            .order('name');
-        
-        if (realItems && realItems.length > 0) {
-            finalData.items = realItems.map(i => ({
-                sku: i.sku,
-                name: i.name,
-                quantity: `${i.current_stock} uds.`,
-                low_stock: i.current_stock < 5 
-            }));
+            .eq('report_type', summaryType)
+            .order('last_updated', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (summary?.summary_data) {
+            console.log(`[PDF_PIPELINE] Using cached summary for: ${summaryType}`);
+            finalData = { ...finalData, ...summary.summary_data };
+            // Ensure company name and date are preserved from the current session if not in summary
+            if (!finalData.company_name) finalData.company_name = companyData?.name || 'Arise Business OS';
+            if (!finalData.date) finalData.date = new Date().toLocaleDateString('es-CL');
+        } else {
+            console.warn(`[PDF_PIPELINE] No summary found for ${summaryType}. Falling back to live data.`);
+            // Fallback to legacy live data acquisition (maintaining compatibility)
+            if (type.includes('inventory') || type.includes('stock')) {
+                const { data: realItems } = await supabase
+                    .from('inventory_items')
+                    .select('sku, name, current_stock')
+                    .eq('company_id', companyId)
+                    .order('name');
+                
+                if (realItems && realItems.length > 0) {
+                    finalData.items = realItems.map(i => ({
+                        sku: i.sku,
+                        name: i.name,
+                        quantity: `${i.current_stock} uds.`,
+                        low_stock: i.current_stock < 5 
+                    }));
+                }
+            }
         }
-    } 
-    // --- CASE 2: 8 COLUMNAS (Accounting Mock) ---
-    else if (type.includes('8-columnas')) {
-        finalData.company_rut = '76.462.417-3';
-        finalData.company_address = 'AVENIDA PLAYA BRAVA #2109-A IQUIQUE';
-        finalData.rep_legal = 'MARCO ANTONIO ROJAS REJAS';
-        finalData.period = 'ENERO A DICIEMBRE 2023';
-        finalData.accounts = [
-            { name: '1101-01 CUENTA CAJA', sum_debit: '1.182.433.333', sum_credit: '973.893.183', balance_deudor: '208.540.150', balance_acreedor: '', inventory_asset: '208.540.150', inventory_liability: '', result_loss: '', result_gain: '' },
-            { name: '1104-01 DEUDORES CLIENTES', sum_debit: '252.983', sum_credit: '', balance_deudor: '252.983', balance_acreedor: '', inventory_asset: '252.983', inventory_liability: '', result_loss: '', result_gain: '' },
-            { name: '2105-01 FACTURAS POR PAGAR', sum_debit: '940.621.653', sum_credit: '2.008.133.798', balance_deudor: '', balance_acreedor: '1.067.512.145', inventory_asset: '', inventory_liability: '1.067.512.145', result_loss: '', result_gain: '' },
-            { name: '5101-01 VENTAS', sum_debit: '', sum_credit: '306.762.825', balance_deudor: '', balance_acreedor: '306.762.825', inventory_asset: '', inventory_liability: '', result_loss: '', result_gain: '306.762.825' }
-        ];
-        finalData.totals = {
-            sum_debit: '4.277.116.904', sum_credit: '4.277.116.904',
-            balance_deudor: '1.849.234.584', balance_acreedor: '1.849.234.584',
-            inventory_asset: '1.353.157.804', inventory_liability: '1.353.157.804',
-            result_loss: '508.604.586', result_gain: '508.604.586'
-        };
-    } 
-    // --- CASE 3: PAYROLL (Mock) ---
-    else if (type.includes('liquidacion') || type.includes('sueldo')) {
+    } else if (type.includes('liquidacion') || type.includes('sueldo')) {
+        // Payroll still uses mock for now as it lacks a summaries counterpart
         finalData.period = 'ABRIL 2026';
         finalData.employee_name = 'PERSONAL ARISE';
         finalData.net_salary = '$2,019,220';
         finalData.earnings = [{ name: 'Sueldo Base', amount: '$2,500,000', imponible: true }];
         finalData.deductions = [{ name: 'Previsión', amount: '$354,950' }];
-    } 
-    // --- CASE 4: OTHER/GENERIC ---
-    else {
+    } else {
+        // Default generic items
         finalData.items = [
             { sku: 'SYS-SRV-01', name: 'Sincronización de Directorio Arise', quantity: 'OK', low_stock: false },
             { sku: 'DOC-REP-02', name: 'Emisión de Reportes Dynamicos', quantity: 'ACTIVO', low_stock: false }

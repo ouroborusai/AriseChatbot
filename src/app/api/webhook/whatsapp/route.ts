@@ -98,8 +98,14 @@ export async function POST(req: Request) {
     if (!conv) return NextResponse.json({ status: 'conversation_failure' });
 
     // --- 4. PROCESAMIENTO DE CONTENIDO ---
-    // Soporte solo para Mensajes de Texto e Interactivos (Diamond v9.5)
+    // Soporte solo para Mensajes de Texto e Interactivos (Diamond v9.6)
+    const buttonId = message.interactive?.button_reply?.id || message.interactive?.list_reply?.id;
     let content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
+    
+    // Si es una acción técnica, la anteponemos al contenido para que la IA/Lógica la reconozca
+    if (buttonId) {
+      console.log(`[ACTION_DETECTED] Button ID: ${buttonId}`);
+    }
     
     if (!content && message.type !== 'text') {
       console.log('--- Ignorando mensaje no soportado (Multimedia/Audio) ---');
@@ -120,7 +126,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'ai_silenced_handoff' });
     }
 
-    // --- 6. GENERACIÓN DE RESPUESTA NEURAL ---
+    // --- 6. ACTION ROUTER v9.7 (Real Execution) ---
+    if (buttonId === 'gen_report_now' || content.toLowerCase().includes('informe de inventario')) {
+      console.log(`[ACTION_ROUTER] Disparando Pipeline Real para ${sender}`);
+      
+      const { data: company } = await supabase.from('companies').select('settings').eq('id', companyId).single();
+      const waConfig = company?.settings?.whatsapp;
+
+      if (waConfig) {
+        // Disparo asíncrono (Fire and Forget para no bloquear el webhook)
+        fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/pdf`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.INTERNAL_API_KEY || '' },
+            body: JSON.stringify({
+                targetPhone: sender,
+                whatsappToken: waConfig.access_token,
+                phoneNumberId: waConfig.phone_number_id,
+                reportType: 'inventory',
+                companyId: companyId
+            })
+        }).catch(e => console.error('[PDF_TRIGGER_ERROR]', e));
+
+        await supabase.from('messages').insert({
+          conversation_id: conv.id,
+          sender_type: 'agent',
+          content: '🚀 *Pipeline de Documentos Activado*\n\nGenerando su informe industrial. Recibirá el archivo en unos segundos...'
+        });
+      }
+
+      return NextResponse.json({ status: 'action_triggered' });
+    }
+
+    // --- 7. GENERACIÓN DE RESPUESTA NEURAL ---
     // Re-verificar estado justo antes de enviar (Atomic Check)
     const { data: latestConv } = await supabase.from('conversations').select('status').eq('id', conv.id).single();
     if (latestConv?.status === 'open') {

@@ -30,6 +30,22 @@ export interface TextMessage {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// INTERFACES PARA MENSAJES DE DOCUMENTOS
+// ════════════════════════════════════════════════════════════════════════════
+
+export interface DocumentMessage {
+  messaging_product: 'whatsapp';
+  recipient_type: 'individual';
+  to: string;
+  type: 'document';
+  document: {
+    link: string;
+    filename?: string;
+    caption?: string;
+  };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // INTERFACES PARA BOTONES INTERACTIVOS
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -106,7 +122,7 @@ export interface ListInteractive {
 // UNION TYPE PARA TODOS LOS MENSAJES
 // ════════════════════════════════════════════════════════════════════════════
 
-export type WhatsAppMessage = TextMessage | ButtonInteractive | ListInteractive;
+export type WhatsAppMessage = TextMessage | ButtonInteractive | ListInteractive | DocumentMessage;
 
 // ════════════════════════════════════════════════════════════════════════════
 // PARSED CONTENT (para uso interno)
@@ -374,6 +390,28 @@ export function buildListMessage(
         button: button.substring(0, WHATSAPP_LIMITS.MAX_LIST_BUTTON_TEXT),
         sections: validSections,
       },
+    },
+  };
+}
+
+/**
+ * Construye un mensaje de documento (PDF, etc) para WhatsApp
+ */
+export function buildDocumentMessage(
+  phone: string,
+  link: string,
+  filename?: string,
+  caption?: string
+): DocumentMessage {
+  return {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: phone,
+    type: 'document',
+    document: {
+      link,
+      filename,
+      caption,
     },
   };
 }

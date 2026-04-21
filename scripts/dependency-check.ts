@@ -48,47 +48,67 @@ async function walkDir(dir: string): Promise<string[]> {
 
 function extractImports(content: string, filePath: string): ImportInfo[] {
   const imports: ImportInfo[] = [];
-  const lines = content.split('\n');
 
-  // Patrones de import
-  const importRegex = /(?:import\s+.*?\s+from\s+['"](.+?)['"]|import\s+['"](.+?)['"])/g;
+  // Patrones de import (soporta multilínea con el flag de búsqueda global)
+  const importRegex = /import\s+[\s\S]*?from\s+['"](.+?)['"]|import\s+['"](.+?)['"]/g;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    let match;
+  let match;
+  while ((match = importRegex.exec(content)) !== null) {
+    const importPath = match[1] || match[2];
+    if (!importPath) continue;
 
-    // Reset regex
-    importRegex.lastIndex = 0;
+    // Calcular la línea aproximada
+    const offset = match.index;
+    const lineNumber = content.substring(0, offset).split('\n').length;
 
-    while ((match = importRegex.exec(line)) !== null) {
-      const importPath = match[1] || match[2];
-      if (!importPath) continue;
+    // Imports internos de Next.js (@/) no son externos
+    const isExternal = !importPath.startsWith('.') &&
+                       !importPath.startsWith('/') &&
+                       (!importPath.startsWith('@') || (importPath.startsWith('@') && !importPath.startsWith('@/')));
 
-      const isExternal = !importPath.startsWith('.') && !importPath.startsWith('/');
-
-      imports.push({
-        file: filePath,
-        importPath,
-        line: i + 1,
-        isExternal,
-        exists: true // Se valida después
-      });
-    }
+    imports.push({
+      file: filePath,
+      importPath,
+      line: lineNumber,
+      isExternal,
+      exists: true // Se valida después
+    });
   }
 
   return imports;
 }
 
 function resolveImportPath(importPath: string, fromFile: string): string | null {
-  // Imports externos no se resuelven
+  // Imports externos no se resuelven (se validan contra package.json)
   if (!importPath.startsWith('.') && !importPath.startsWith('/')) {
     return null;
   }
 
+  // Imports con alias de Next.js (@/) - requieren tsconfig.json para resolverse
+  if (importPath.startsWith('@/')) {
+    // Simular resolución de alias @ -> src/
+    const dir = dirname(fromFile);
+    const relativePath = importPath.replace('@/', 'src/');
+    let resolved = resolve(dir, relativePath);
+
+    const extensions = ['', '.ts', '.tsx', '.js', '.jsx', '/index.ts', '/index.tsx', '/index.js', '/index.jsx'];
+
+    for (const ext of extensions) {
+      const candidate = resolved + ext;
+      if (existsSync(candidate)) {
+        return candidate;
+      }
+    }
+
+    // Si no existe pero el path base existe, es un alias válido
+    const baseResolved = resolve(dir, relativePath);
+    return baseResolved;
+  }
+
+  // Imports relativos normales
   const dir = dirname(fromFile);
   let resolved = resolve(dir, importPath);
 
-  // Intentar extensiones
   const extensions = ['', '.ts', '.tsx', '.js', '.jsx', '/index.ts', '/index.tsx', '/index.js', '/index.jsx'];
 
   for (const ext of extensions) {
@@ -98,23 +118,30 @@ function resolveImportPath(importPath: string, fromFile: string): string | null 
     }
   }
 
-  return resolved; // Retornar aunque no exista para reportar el error
+  return resolved; // Retornar path aunque no exista para reportar el error
 }
 
-async function checkPackageJson(): Promise<{ missing: string[]; unused: string[] }> {
+async function checkPackageJson(): Promise<{
+  missing: string[];
+  unusedProd: string[];
+  unusedDev: string[];
+}> {
   const packageJsonPath = join(process.cwd(), 'package.json');
 
   try {
     const content = await readFile(packageJsonPath, 'utf-8');
     const pkg = JSON.parse(content);
 
-    const dependencies = {
-      ...pkg.dependencies,
-      ...pkg.devDependencies
-    };
+    const prodDeps = pkg.dependencies || {};
+    const devDeps = pkg.devDependencies || {};
 
-    const depNames = Object.keys(dependencies);
+    const prodDepNames = Object.keys(prodDeps);
+    const devDepNames = Object.keys(devDeps);
+    const allDepNames = [...prodDepNames, ...devDepNames];
+
     const usedDeps = new Set<string>();
+    const usedProdDeps = new Set<string>();
+    const usedDevDeps = new Set<string>();
 
     // Buscar imports externos en todos los archivos
     const files = await walkDir(process.cwd());
@@ -125,33 +152,52 @@ async function checkPackageJson(): Promise<{ missing: string[]; unused: string[]
 
       for (const imp of imports) {
         if (imp.isExternal) {
-          // Extraer nombre del paquete (ej: @supabase/ssr -> @supabase/ssr)
+          // Ignorar imports de Deno/JSR (usados en Edge Functions de Supabase)
+          if (imp.importPath.startsWith('jsr:') || imp.importPath.startsWith('std/')) {
+            continue;
+          }
+
+          // Extraer nombre del paquete
           const pkgName = imp.importPath.split('/')[0]?.startsWith('@')
             ? imp.importPath.split('/').slice(0, 2).join('/')
             : imp.importPath.split('/')[0];
 
-          if (pkgName) {
-            usedDeps.add(pkgName);
+          // Ignorar imports que parecen paquetes pero son protocolos o módulos nativos
+          if (pkgName && !['http:', 'https:', 'node:', 'deno:', 'npm:', 'fs', 'path', 'url', 'os', 'crypto'].includes(pkgName)) {
+            // Limpiar posibles trailing slashes o sub-paths
+            const cleanPkgName = pkgName.trim();
+            
+            usedDeps.add(cleanPkgName);
+
+            // Clasificar si es prod o dev
+            if (prodDepNames.includes(cleanPkgName)) {
+              usedProdDeps.add(cleanPkgName);
+            } else if (devDepNames.includes(cleanPkgName)) {
+              usedDevDeps.add(cleanPkgName);
+            }
           }
         }
       }
     }
 
-    // Dependencias no usadas
-    const unused = depNames.filter(dep => !usedDeps.has(dep));
+    // Dependencias de producción no usadas
+    const unusedProd = prodDepNames.filter(dep => !usedProdDeps.has(dep));
+
+    // Dependencias de desarrollo no usadas
+    const unusedDev = devDepNames.filter(dep => !usedDevDeps.has(dep));
 
     // Dependencias faltantes (usadas pero no instaladas)
-    const missing = Array.from(usedDeps).filter(dep => !depNames.includes(dep));
+    const missing = Array.from(usedDeps).filter(dep => !allDepNames.includes(dep));
 
-    return { missing, unused };
+    return { missing, unusedProd, unusedDev };
   } catch (error) {
-    return { missing: [], unused: [] };
+    return { missing: [], unusedProd: [], unusedDev: [] };
   }
 }
 
 function printReport(
   brokenImports: ImportInfo[],
-  packageReport: { missing: string[]; unused: string[] }
+  packageReport: { missing: string[]; unusedProd: string[]; unusedDev: string[] }
 ) {
   console.log('\n' + '='.repeat(80));
   console.log('🔗 ARISE DEPENDENCY CHECKER v9.0 - REPORTE');
@@ -183,16 +229,29 @@ function printReport(
     console.log('   ✅ No faltan dependencias');
   }
 
-  if (packageReport.unused.length > 0) {
-    console.log(`\n   🟡 SIN USO (instaladas pero no importadas): ${packageReport.unused.length}`);
-    for (const dep of packageReport.unused.slice(0, 20)) {
+  // DevDependencies no usadas (las más comunes - no alarmar)
+  if (packageReport.unusedDev.length > 0) {
+    console.log(`\n   🟡 DEV DEPENDENCIAS SIN USO: ${packageReport.unusedDev.length}`);
+    console.log('      (pueden estar en uso indirectamente o ser herramientas de build)');
+    for (const dep of packageReport.unusedDev.slice(0, 10)) {
       console.log(`      - ${dep}`);
     }
-    if (packageReport.unused.length > 20) {
-      console.log(`      ... y ${packageReport.unused.length - 20} más`);
+    if (packageReport.unusedDev.length > 10) {
+      console.log(`      ... y ${packageReport.unusedDev.length - 10} más`);
     }
   } else {
-    console.log('   ✅ Todas las dependencias están en uso');
+    console.log('   ✅ Todas las devDependencies están en uso');
+  }
+
+  // Dependencies de producción no usadas (más importante)
+  if (packageReport.unusedProd.length > 0) {
+    console.log(`\n   🟠 DEPENDENCIAS PROD SIN USO: ${packageReport.unusedProd.length}`);
+    console.log('      (considera remover para reducir bundle size)');
+    for (const dep of packageReport.unusedProd) {
+      console.log(`      - ${dep}`);
+    }
+  } else {
+    console.log('   ✅ Todas las dependencies están en uso');
   }
 
   console.log('\n' + '='.repeat(80) + '\n');
@@ -216,13 +275,20 @@ async function main() {
 
   console.log(`🔗 ${allImports.length} imports encontrados`);
 
-  // Resolver y validar imports internos
+  // Resolver y validar imports internos (los externos se validan contra package.json)
   const brokenImports: ImportInfo[] = [];
 
   for (const imp of allImports) {
     if (!imp.isExternal) {
       imp.resolvedPath = resolveImportPath(imp.importPath, imp.file);
-      imp.exists = imp.resolvedPath ? existsSync(imp.resolvedPath) : false;
+
+      // Si el resolvedPath es null, significa que es un alias (@/) que necesita configuración TS
+      if (imp.resolvedPath === null) {
+        // Ignorar imports con alias - TypeScript los resuelve en build time
+        continue;
+      }
+
+      imp.exists = existsSync(imp.resolvedPath);
 
       if (!imp.exists) {
         brokenImports.push(imp);
@@ -240,6 +306,7 @@ async function main() {
   console.log(`⏱️  Verificación completada en ${duration}s`);
 
   // Exit con código de error si hay problemas críticos
+  // (imports rotos o dependencias faltantes - no unused)
   if (brokenImports.length > 0 || packageReport.missing.length > 0) {
     process.exit(1);
   }

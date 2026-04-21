@@ -1,9 +1,8 @@
-// @ts-nocheck
 /**
  * ARISE CODE AUDITOR v9.0
  * Herramienta de análisis estático para detectar inconsistencias en el código base
  *
- * Ejecución: bun run scripts/code-audit.ts
+ * Ejecución: npx tsx scripts/code-audit.ts
  */
 
 import { readdir, readFile } from 'fs/promises';
@@ -14,14 +13,20 @@ const SKIP_DIRS = ['node_modules', '.git', '.next', '.claude', 'public', 'scratc
 const SKIP_FILES = ['test_pdf_sender.js', 'test_whatsapp.js', 'test_engine.js', 'scratch_audit.js'];
 const TARGET_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'];
 
+interface AuditPattern {
+  pattern: RegExp;
+  description: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  skipIfContains?: string[];
+}
+
 // Patrones de inconsistencia a detectar
-const AUDIT_PATTERNS = {
+const AUDIT_PATTERNS: Record<string, AuditPattern> = {
   versionInconsistency: {
     // Detectar SOLO versiones v7.x y v8.x (v9.0 es la correcta)
     pattern: /Diamond\s*v?(?:7|8)\.\d+|v[78]\.\d+(?:\.\d+)?/gi,
     description: 'Versiones obsoletas del protocolo (debe ser v9.0)',
     severity: 'HIGH',
-    // Ignorar matches dentro de strings de clase CSS
     skipIfContains: ['arise-card', 'shadow-arise', 'arise_', 'graph.facebook.com', 'Diamond v9', 'Diamond v9.0']
   },
   hardcodedLocalhost: {
@@ -47,11 +52,6 @@ const AUDIT_PATTERNS = {
   todoComments: {
     pattern: /(?:TODO|FIXME|XXX|HACK):/gi,
     description: 'Comentarios técnicos pendientes',
-    severity: 'LOW'
-  },
-  magicNumbers: {
-    pattern: /(?:if\s*\(\s*\w+\s*[<>=]+\s*)(\d{4,})/g,
-    description: 'Números mágicos en comparaciones',
     severity: 'LOW'
   },
   hardcodedPhoneIds: {
@@ -98,11 +98,11 @@ async function walkDir(dir: string): Promise<string[]> {
 function getLineInfo(content: string, index: number): { line: number; column: number; snippet: string } {
   const lines = content.substring(0, index).split('\n');
   const line = lines.length;
-  const column = lines[lines.length - 1].length + 1;
+  const column = lines[lines.length - 1]?.length ?? 0 + 1;
 
   // Obtener snippet (línea completa)
   const allLines = content.split('\n');
-  const snippet = allLines[line - 1]?.trim() || '';
+  const snippet = allLines[line - 1]?.trim() ?? '';
 
   return { line, column, snippet };
 }
@@ -126,12 +126,9 @@ async function auditFile(filePath: string): Promise<Finding[]> {
         if (key === 'consoleLog' && snippet.includes('//')) continue;
 
         // Filtrar versiones en clases CSS (arise-card, shadow-arise, etc.)
-        if (key === 'versionInconsistency') {
-          const skipConfig = config as any;
-          if (skipConfig.skipIfContains) {
-            const shouldSkip = skipConfig.skipIfContains.some((s: string) => snippet.includes(s));
-            if (shouldSkip) continue;
-          }
+        if (key === 'versionInconsistency' && config.skipIfContains) {
+          const shouldSkip = config.skipIfContains.some(s => snippet.includes(s));
+          if (shouldSkip) continue;
         }
 
         findings.push({
@@ -140,12 +137,12 @@ async function auditFile(filePath: string): Promise<Finding[]> {
           column,
           pattern: match[0],
           description: config.description,
-          severity: config.severity as 'HIGH' | 'MEDIUM' | 'LOW',
+          severity: config.severity,
           snippet
         });
       }
     }
-  } catch (error) {
+  } catch {
     // Ignorar archivos no legibles
   }
 
