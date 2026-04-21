@@ -8,6 +8,7 @@ import {
   ShieldCheck, 
   FileText 
 } from 'lucide-react';
+import { MetricSmall } from '@/components/ui/MetricSmall';
 
 export default function TeamPage() {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -34,7 +35,7 @@ export default function TeamPage() {
           <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Operational_Units</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
             <Activity size={10} className="text-primary" />
-            Human Capital Intelligence / v7.0
+            Human Capital Intelligence / v9.0
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto">
@@ -114,19 +115,6 @@ export default function TeamPage() {
   );
 }
 
-function MetricSmall({ title, value, icon: Icon }: any) {
-  return (
-    <div className="bg-white p-10 rounded-[32px] shadow-arise border-none group transition-all">
-      <div className="flex justify-between items-start mb-10">
-        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em]">{title}</p>
-        <div className="w-14 h-14 rounded-[22px] bg-[#f7f9fb] flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
-          <Icon size={20} />
-        </div>
-      </div>
-      <h3 className="text-3xl md:text-4xl font-black text-slate-900 leading-none tracking-tighter italic uppercase">{value}</h3>
-    </div>
-  );
-}
 
 function SecurityEvent({ type, user, time, color }: any) {
   return (

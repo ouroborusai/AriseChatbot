@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 /**
- * NEURAL OCR PROCESSOR v7.9
+ * NEURAL OCR PROCESSOR v9.0
  * Utiliza Gemini Vision para extraer datos de facturas y actualizar el inventario.
  */
 export async function POST(req: Request) {
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       Si no hay códigos claros, inventa un SKU basado en el nombre (ej: MANZANA_ROJA).
     `;
 
-    const visionResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+    const visionResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

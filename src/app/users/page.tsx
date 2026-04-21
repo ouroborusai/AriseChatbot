@@ -9,6 +9,7 @@ import {
   Zap, 
   Settings2 
 } from 'lucide-react';
+import { MetricSmall } from '@/components/ui/MetricSmall';
 
 export default function UsersManagement() {
   const [users, setUsers] = useState<any[]>([]);
@@ -35,7 +36,7 @@ export default function UsersManagement() {
           <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Identity_Bunker</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
             <Activity size={10} className="text-primary" />
-            Security & Identity Protocol / v7.0
+            Security & Identity Protocol / v9.0
           </p>
         </div>
         <button className="flex items-center justify-center gap-4 bg-primary text-white px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:scale-105 transition-all">
@@ -117,7 +118,7 @@ export default function UsersManagement() {
           <div className="bg-[#f7f9fb] p-8 rounded-[32px] border-none shadow-sm relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-20" />
             <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-loose italic">
-              * Access authorizations are audited by the Arise v7.0 Neural Shield. All terminal operations are logged via operative telemetry.
+              * Access authorizations are audited by the Arise v9.0 Neural Shield. All terminal operations are logged via operative telemetry.
             </p>
           </div>
         </div>
@@ -126,16 +127,3 @@ export default function UsersManagement() {
   );
 }
 
-function MetricSmall({ title, value, icon: Icon }: any) {
-  return (
-    <div className="bg-white p-10 rounded-[32px] shadow-arise border-none group transition-all">
-      <div className="flex justify-between items-start mb-10">
-        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em]">{title}</p>
-        <div className="w-14 h-14 rounded-[22px] bg-[#f7f9fb] flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
-          <Icon size={20} />
-        </div>
-      </div>
-      <h3 className="text-3xl md:text-4xl font-black text-slate-900 leading-none tracking-tighter italic uppercase">{value}</h3>
-    </div>
-  );
-}

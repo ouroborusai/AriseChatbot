@@ -67,7 +67,7 @@ export default function LoginPage() {
           <h1 className="text-5xl font-black text-slate-900 tracking-widest leading-none italic uppercase mb-4">Arise</h1>
           <div className="flex items-center gap-3">
              <Activity size={10} className="text-primary" />
-             <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.6em]">Neural_Business_OS / v7.0</p>
+             <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.6em]">Neural_Business_OS / v9.0</p>
           </div>
         </div>
 

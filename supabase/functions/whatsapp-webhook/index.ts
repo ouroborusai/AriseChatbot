@@ -1,15 +1,108 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
+import { serve } from "std/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
+
+// ════════════════════════════════════════════════════════════════════════════
+// ARISE WHATSAPP PARSER (Inline para Deno Edge Functions)
+// Diamond v9.0 Smart Parser - Detecta --- y | para crear interactivos
+// ════════════════════════════════════════════════════════════════════════════
+
+const WHATSAPP_LIMITS = {
+  MAX_BUTTONS: 3,
+  MAX_BUTTON_TITLE_LENGTH: 20,
+  MAX_TEXT_BODY_LENGTH: 1024,
+  MAX_TEXT_LENGTH: 4096,
+  MAX_ROW_TITLE_LENGTH: 24,
+  MAX_ROW_DESCRIPTION_LENGTH: 72,
+  MAX_ROWS_PER_SECTION: 10,
+  MAX_LIST_BUTTON_TEXT: 20,
+} as const;
+
+function buildInteractivePayload(sender: string, aiText: string) {
+  // Si no hay separador, enviar texto plano
+  if (!aiText.includes('---')) {
+    return {
+      messaging_product: 'whatsapp' as const,
+      to: sender,
+      type: 'text' as const,
+      text: { body: aiText.substring(0, WHATSAPP_LIMITS.MAX_TEXT_LENGTH) },
+    };
+  }
+
+  const parts = aiText.split('---').map(s => s.trim());
+  const bodyText = parts[0] || 'Seleccione una opción:';
+  const optionsStr = parts[parts.length - 1];
+
+  // Limpiar tags de acción [[...]] y parsear opciones
+  const options = optionsStr.split('|')
+    .map(o => o.replace(/\[\[.*?\]\]/g, '').trim())
+    .filter(o => o.length > 0);
+
+  if (options.length === 0) {
+    return {
+      messaging_product: 'whatsapp' as const,
+      to: sender,
+      type: 'text' as const,
+      text: { body: aiText.substring(0, WHATSAPP_LIMITS.MAX_TEXT_LENGTH) },
+    };
+  }
+
+  // 1-3 opciones: Botones interactivos (mejor UX)
+  if (options.length <= WHATSAPP_LIMITS.MAX_BUTTONS) {
+    return {
+      messaging_product: 'whatsapp' as const,
+      to: sender,
+      type: 'interactive' as const,
+      interactive: {
+        type: 'button' as const,
+        body: { text: bodyText.substring(0, WHATSAPP_LIMITS.MAX_TEXT_BODY_LENGTH) },
+        action: {
+          buttons: options.slice(0, WHATSAPP_LIMITS.MAX_BUTTONS).map((o, i) => ({
+            type: 'reply' as const,
+            reply: {
+              id: `bot_btn_${i}_${Date.now()}`,
+              title: o.substring(0, WHATSAPP_LIMITS.MAX_BUTTON_TITLE_LENGTH),
+            },
+          })),
+        },
+      },
+    };
+  }
+
+  // 4+ opciones: Lista interactiva (más capacidad)
+  return {
+    messaging_product: 'whatsapp' as const,
+    to: sender,
+    type: 'interactive' as const,
+    interactive: {
+      type: 'list' as const,
+      body: { text: bodyText.substring(0, WHATSAPP_LIMITS.MAX_TEXT_BODY_LENGTH) },
+      footer: { text: 'Arise Diamond v9.0' },
+      action: {
+        button: 'Ver Opciones',
+        sections: [{
+          title: 'Opciones de IA',
+          rows: options.slice(0, WHATSAPP_LIMITS.MAX_ROWS_PER_SECTION).map((o, i) => ({
+            id: `bot_list_${i}_${Date.now()}`,
+            title: o.substring(0, WHATSAPP_LIMITS.MAX_ROW_TITLE_LENGTH),
+            description: 'Comando Neural',
+          })),
+        }],
+      },
+    },
+  };
+}
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const VERIFY_TOKEN = Deno.env.get('WHATSAPP_VERIFY_TOKEN')!;
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 serve(async (req: Request) => {
   const url = new URL(req.url);
 
+  // --- 0. WEBHOOK VERIFICATION ---
   if (req.method === 'GET') {
     const mode = url.searchParams.get('hub.mode');
     const token = url.searchParams.get('hub.verify_token');
@@ -18,8 +111,55 @@ serve(async (req: Request) => {
     return new Response('Forbidden', { status: 403 });
   }
 
+  const isTriggerSource = url.searchParams.get('source') === 'trigger';
+
   try {
     const body = await req.json();
+    
+    // --- MODO ASÍNCRONO v9.0 (Neural Pulse) ---
+    if (isTriggerSource && body.messageId) {
+       console.log(`[Neural_Brain] Iniciando inferencia para mensaje: ${body.messageId}`);
+       // Recuperar mensaje y contexto
+       const { data: msg } = await supabase.from('messages').select('*, conversations(*)').eq('id', body.messageId).single();
+       if (!msg) return new Response('Msg not found');
+
+       const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', msg.conversations.company_id).eq('is_active', true).limit(1).maybeSingle();
+       const baseSystemPrompt = p?.system_prompt || "Eres Arise Diamond v9.0.";
+       
+       const keys = GEMINI_API_KEY.split(',').map(k => k.trim());
+       const activeKey = keys[Math.floor(Math.random() * keys.length)];
+
+       const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${activeKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: `${baseSystemPrompt}\n\nMENSAJE: ${msg.content}` }]}] })
+       });
+
+       const gData = await geminiRes.json();
+       const aiText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "Arise Engine: Error.";
+
+       // Guardar respuesta
+       await supabase.from('messages').insert({
+          conversation_id: msg.conversation_id,
+          sender_type: 'bot',
+          content: aiText
+       });
+
+       // Enviar a WhatsApp
+       const { data: comp } = await supabase.from('companies').select('settings').eq('id', msg.conversations.company_id).single();
+       const waToken = comp.settings?.whatsapp?.access_token;
+       const phoneId = comp.settings?.whatsapp?.phone_number_id;
+       const { data: contact } = await supabase.from('contacts').select('phone').eq('id', msg.conversations.contact_id).single();
+
+       await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+         method: 'POST',
+         headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({ messaging_product: 'whatsapp', to: contact.phone, type: 'text', text: { body: aiText } })
+       });
+
+       return new Response('Neural Done');
+    }
+
     const entry = body.entry?.[0];
     const changes = entry?.changes?.[0]?.value;
     if (!changes || !changes.messages) return new Response('OK');
@@ -30,155 +170,167 @@ serve(async (req: Request) => {
     const profileName = changes.contacts?.[0]?.profile?.name || 'Usuario';
     const phoneNumberId = changes.metadata?.phone_number_id;
 
+    console.log(`[Webhook_Perception] Msg from ${sender} to ID ${phoneNumberId}`);
+
     // --- 1. IDEMPOTENCY ---
-    const { data: existingMsg } = await supabase.from('messages').select('id').contains('metadata', { whatsapp_message_id: waId }).maybeSingle();
-    if (existingMsg) return new Response('OK');
+    const { data: existingMsg, error: idEmpError } = await supabase.from('messages').select('id').contains('metadata', { whatsapp_message_id: waId }).maybeSingle();
+    if (idEmpError) console.error('[Webhook] Idempotency Check Error:', idEmpError);
+    if (existingMsg) {
+      console.log(`[Webhook] Duplicate message detected: ${waId}`);
+      return new Response('OK');
+    }
 
-    // --- 2. CONFIG & IDENTITY (NEURAL ROUTING v8.0) ---
-    const { data: allCompanies } = await supabase.from('companies').select('*').contains('settings', { whatsapp: { phone_number_id: phoneNumberId } });
-    if (!allCompanies || allCompanies.length === 0) return new Response('OK');
+    // --- 2. IDENTITY RESOLUTION ---
+    let companyId = '';
+    let contactId = '';
 
-    let company = allCompanies[0];
+    const { data: staff, error: staffError } = await supabase.from('internal_directory').select('company_id').eq('phone', sender).maybeSingle();
+    if (staffError) console.error('[Webhook] Staff Lookup Error:', staffError);
 
-    // Si hay múltiples empresas con el mismo número, buscamos la más relevante para el usuario
-    if (allCompanies.length > 1) {
-      // 1. Priorizar empresa con conversación ACTIVA (open o waiting_human)
-      const { data: activeConvs } = await supabase
-        .from('conversations')
-        .select('company_id')
-        .eq('contact_id', (await supabase.from('contacts').select('id').eq('phone', sender).in('company_id', allCompanies.map(c => c.id))).data?.[0]?.id || '')
-        .in('status', ['open', 'new', 'waiting_human'])
-        .in('company_id', allCompanies.map(c => c.id))
-        .order('updated_at', { ascending: false })
-        .limit(1);
+    const { data: contact, error: contactError } = await supabase.from('contacts').select('id, company_id').eq('phone', sender).limit(1).maybeSingle();
+    if (contactError) console.error('[Webhook] Contact Lookup Error:', contactError);
 
-      if (activeConvs && activeConvs.length > 0) {
-        company = allCompanies.find(c => c.id === activeConvs[0].company_id) || company;
+    if (staff) {
+      companyId = staff.company_id;
+      console.log(`[Identity] Staff detected for Company ${companyId}`);
+      if (contact && contact.company_id === companyId) {
+        contactId = contact.id;
       } else {
-        // 2. Priorizar si el usuario es empleado (internal_directory)
-        const { data: internal } = await supabase
-          .from('internal_directory')
-          .select('company_id')
-          .eq('phone', sender)
-          .in('company_id', allCompanies.map(c => c.id))
-          .limit(1);
-        
-        if (internal && internal.length > 0) {
-          company = allCompanies.find(c => c.id === internal[0].company_id) || company;
-        }
+        const { data: nc, error: nce } = await supabase.from('contacts').insert({ full_name: `${profileName} (Admin)`, phone: sender, company_id: companyId }).select('id').single();
+        if (nce) console.error('[Webhook] Staff-Contact Insert Error:', nce);
+        contactId = nc?.id;
       }
+    } else if (contact) {
+      companyId = contact.company_id;
+      contactId = contact.id;
+      console.log(`[Identity] Existing contact found for Company ${companyId}`);
+    } else {
+      console.log(`[Identity] Unknown sender. Resolving fallback via PhoneID ${phoneNumberId}`);
+      const { data: defaultComp, error: defError } = await supabase.from('companies').select('id').contains('settings', { whatsapp: { phone_number_id: phoneNumberId } }).limit(1).maybeSingle();
+      if (defError) console.error('[Webhook] Default Company Lookup Error:', defError);
+      
+      if (!defaultComp) {
+        console.error(`[Webhook] CRITICAL: No company found for PhoneID ${phoneNumberId}`);
+        return new Response('OK');
+      }
+      companyId = defaultComp.id;
+      const { data: nc, error: nce } = await supabase.from('contacts').insert({ full_name: profileName, phone: sender, company_id: companyId }).select('id').single();
+      if (nce) console.error('[Webhook] New Contact Insert Error:', nce);
+      contactId = nc?.id;
     }
 
-    const whatsappToken = company.settings?.whatsapp?.access_token;
-    if (!whatsappToken) return new Response('OK');
-
-    const [internalUser, contact] = await Promise.all([
-      supabase.from('internal_directory').select('name, role').eq('phone', sender).eq('company_id', company.id).maybeSingle(),
-      supabase.from('contacts').select('id').eq('phone', sender).eq('company_id', company.id).maybeSingle()
-    ]);
-
-    const isInternal = !!internalUser.data;
-    const userName = internalUser.data?.name || profileName;
-    const userRole = internalUser.data?.role || 'client';
-
-    let content = message.text?.body || '';
-    if (message.type === 'interactive') content = message.interactive.button_reply?.title || message.interactive.list_reply?.title || '';
-
-    // --- 3. DATA PERSISTENCE ---
-    let cid = contact.data?.id;
-    if (!cid) {
-      const { data: nc } = await supabase.from('contacts').insert({ full_name: userName, phone: sender, company_id: company.id, category: isInternal ? 'client' : 'lead' }).select('id').single();
-      cid = nc.id;
+    if (!companyId || !contactId) {
+      console.error('[Webhook] Failed to resolve identity. Aborting.');
+      return new Response('OK');
     }
 
-    let { data: conv } = await supabase.from('conversations').select('id, status').eq('contact_id', cid).eq('company_id', company.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    // --- 3. CONFIG RETRIEVAL ---
+    const { data: company } = await supabase.from('companies').select('*').eq('id', companyId).single();
+    if (!company) return new Response('OK');
+    const waToken = company.settings?.whatsapp?.access_token || Deno.env.get('WHATSAPP_ACCESS_TOKEN');
+
+    // --- 4. PERCEPTION (Text Optimized) ---
+    let content = '';
+    if (message.type === 'text') {
+      content = message.text?.body || '';
+    } else if (message.type === 'interactive') {
+      content = message.interactive.button_reply?.title || message.interactive.list_reply?.title || '';
+    } else if (message.type === 'audio' || message.type === 'voice') {
+      content = '[Audio recibido - No procesado]';
+    } else {
+      content = `[Multimedia: ${message.type}]`;
+    }
+
+    // --- 5. IMMEDIATE PERSISTENCE (UI Speed) ---
+    let { data: conv } = await supabase.from('conversations').select('id, status').eq('contact_id', contactId).eq('company_id', companyId).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+    
     if (!conv || conv.status === 'closed') {
-      const { data: nconv } = await supabase.from('conversations').insert({ contact_id: cid, company_id: company.id, status: 'open' }).select('id').single();
+      const { data: nconv } = await supabase.from('conversations').insert({ contact_id: contactId, company_id: companyId, status: 'open' }).select('id').single();
       conv = nconv;
     }
 
-    await supabase.from('messages').insert({ 
-      conversation_id: conv.id, sender_type: 'user', content, 
-      metadata: { whatsapp_message_id: waId, type: message.type } 
-    });
+    // A. Persistir mensaje de usuario inmediatamente
+    const { data: userMsg, error: ume } = await supabase.from('messages').insert({
+      conversation_id: conv.id,
+      sender_type: 'user',
+      content: content || '[Mensaje]',
+      metadata: { whatsapp_message_id: waId, type: message.type }
+    }).select('id').single();
+    if (ume) console.error('[Webhook] User Message Persistence Error:', ume);
 
-    if (conv.status === 'open') {
-      const startTime = Date.now();
-      const { data: keys } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
-      const activeKey = keys?.[0]?.api_key;
-      if (!activeKey) return new Response('OK');
+    // --- 6. NEURAL RESPONSE BRAIN ---
+    if (conv.status === 'open' && userMsg) {
+       // Buscar Prompt
+       const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', companyId).eq('is_active', true).in('category', ['General', 'Internal']).limit(1).maybeSingle();
+       const baseSystemPrompt = p?.system_prompt || "Eres Arise Diamond v9.0 (Director AI). Responde de forma ejecutiva.";
+       
+       const promptWithContext = `${baseSystemPrompt}\n\n[USUARIO: ${profileName}]\n[CONTEXTO: El mensaje de arriba ya fue guardado en el chat. Responde ahora.]\n[MENSAJE: ${content}]`;
 
-      const promptCategory = isInternal ? 'Internal' : 'General';
-      const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', company.id).eq('category', promptCategory).maybeSingle();
-      
-      const elitePrompt = `${p?.system_prompt || ''}\n\n[IDENTIDAD: Hablas con ${userName} (${userRole}). Empresa: ${company.name}]\n\nMensaje: ${content}`;
-
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${activeKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: elitePrompt }] }] })
-      });
-
-      if (geminiRes.ok) {
-        const res = await geminiRes.json();
-        const aiRawText = res.candidates?.[0]?.content?.parts?.[0]?.text || '...';
+        let keys = (GEMINI_API_KEY || "").split(',').map(k => k.trim()).filter(k => k.length > 0);
         
-        let payload: any = { messaging_product: 'whatsapp', to: sender, type: 'text', text: { body: aiRawText.substring(0, 4000) } };
-        
-        // --- RESILIENT PARSER v7.5 ---
-        if (aiRawText.includes('---') || aiRawText.includes('|')) {
-          let bodyPart = aiRawText;
-          let options: string[] = [];
-          if (aiRawText.includes('---')) {
-            const parts = aiRawText.split('---').map(s => s.trim());
-            if (parts[1] && parts[1].includes('|')) {
-              bodyPart = parts[0];
-              options = parts[1].split('|');
-            } else if (parts[0].includes('|')) {
-              const sub = parts[0].split('|');
-              bodyPart = sub[0];
-              options = sub.slice(1);
-            }
-          } else {
-            const parts = aiRawText.split('|');
-            bodyPart = parts[0];
-            options = parts.slice(1);
-          }
-
-          const cleanOptions = options.map(o => o.trim()).filter(o => o.length > 0 && o.length <= 20).slice(0, 3);
-          if (cleanOptions.length > 0) {
-            payload = {
-              messaging_product: 'whatsapp', to: sender, type: 'interactive',
-              interactive: {
-                type: 'button', body: { text: bodyPart.substring(0, 1024) },
-                action: { buttons: cleanOptions.map((o, i) => ({ type: 'reply', reply: { id: `act_${i}`, title: o } })) }
-              }
-            };
-          }
+        if (keys.length === 0) {
+           console.log('[Neural_Brain] GEMINI_API_KEY env empty. Fetching from Vault table...');
+           const { data: vaultKeys } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
+           if (vaultKeys && vaultKeys.length > 0) {
+              keys = vaultKeys.map(k => k.api_key);
+           }
         }
 
-        await supabase.from('messages').insert({ conversation_id: conv.id, sender_type: 'bot', content: aiRawText });
-        
-        const metaRes = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        if (keys.length === 0) {
+           console.error('[Neural_Brain] No API Keys found in GEMINI_API_KEY env or Vault table.');
+           return new Response('OK');
+        }
+        const activeKey = keys[Math.floor(Math.random() * keys.length)];
+
+        console.log(`[Neural_Brain] Thinking via Gemini with key: ${activeKey.substring(0, 8)}...`);
+
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${activeKey}`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ contents: [{ parts: [{ text: promptWithContext }]}] })
         });
 
-        if (!metaRes.ok) {
-          // Fallback to text
-          await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messaging_product: 'whatsapp', to: sender, type: 'text', text: { body: aiRawText.split('---')[0].trim() } })
-          });
+        const gData = await geminiRes.json();
+        if (!geminiRes.ok) {
+           console.error('[Neural_Brain] Gemini Error:', JSON.stringify(gData));
+           return new Response('OK');
         }
-      }
+
+        const aiText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "Arise Neural Engine: Fallo de percepción.";
+        console.log(`[Neural_Brain] Gemini Response: ${aiText.substring(0, 100)}...`);
+
+        // B. Persistir respuesta de IA
+        const { data: botMsg, error: bme } = await supabase.from('messages').insert({
+          conversation_id: conv.id,
+          sender_type: 'bot',
+          content: aiText
+        }).select('id').single();
+        if (bme) console.error('[Webhook] Bot Message Persistence Error:', bme);
+
+       // --- 7. NEURAL PROCESSOR BRIDGE ---
+       if (botMsg && aiText.includes('[[')) {
+         const appUrl = Deno.env.get('APP_URL') || 'http://localhost:3000';
+         fetch(`${appUrl}/api/neural-processor`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messageId: botMsg.id, companyId: companyId })
+         }).catch(e => console.error('[Neural_Bridge] Failed:', e));
+       }
+
+       // --- 8. WHATSAPP DELIVERY (Diamond v9.0 Smart Parser) ---
+       // Parser inteligente: detecta --- y | para crear interactivos
+       const waPayload = buildInteractivePayload(sender, aiText);
+
+       await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+         method: 'POST',
+         headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify(waPayload)
+       });
     }
 
     return new Response('OK');
   } catch (err) {
-    console.error('SERVER_ERROR:', err);
+    console.error('[CRITICAL] Webhook Error:', err);
     return new Response('OK');
   }
 });

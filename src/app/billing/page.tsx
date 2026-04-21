@@ -13,6 +13,7 @@ import {
   MoreVertical,
   Activity
 } from 'lucide-react';
+import { MetricSmall } from '@/components/ui/MetricSmall';
 
 export default function BillingPage() {
   const [docs, setDocs] = useState<any[]>([]);
@@ -73,7 +74,7 @@ export default function BillingPage() {
           <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Billing_Terminal</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.5em] mt-4 flex items-center gap-2">
             <Activity size={10} className="text-primary animate-pulse" />
-            Financial Node Compliance / Diamond v7.9
+            Financial Node Compliance / Diamond v9.0
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto relative z-10">
@@ -172,24 +173,6 @@ export default function BillingPage() {
   );
 }
 
-function MetricSmall({ title, value, drift, icon: Icon, loading }: any) {
-  if (loading) return <div className="arise-card p-10 bg-white border-none shadow-arise animate-pulse h-44 rounded-[32px]" />;
-  
-  return (
-    <div className="arise-card p-10 group border-none shadow-arise bg-white rounded-[32px]">
-      <div className="flex justify-between items-start mb-10">
-        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em]">{title}</p>
-        <div className="w-14 h-14 rounded-[22px] bg-[#f7f9fb] flex items-center justify-center text-slate-300 group-hover:text-primary group-hover:bg-primary/5 transition-all shadow-sm">
-          <Icon size={20} />
-        </div>
-      </div>
-      <div className="flex items-end justify-between">
-        <h3 className="text-2xl md:text-3xl font-black text-slate-900 leading-none tracking-tighter italic uppercase">{value}</h3>
-        <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg tracking-widest">{drift}</span>
-      </div>
-    </div>
-  );
-}
 
 function SkeletonRow() {
   return (

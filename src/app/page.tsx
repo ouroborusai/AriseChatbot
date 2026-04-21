@@ -35,7 +35,7 @@ export default function LandingPage() {
       <main className="flex-1 relative z-10 flex flex-col items-center justify-center text-center px-4 max-w-5xl mx-auto w-full mt-10 lg:mt-0">
         <div className="flex items-center gap-3 mb-8 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100">
            <Activity size={12} className="text-primary animate-pulse" />
-           <p className="text-primary text-[9px] font-black uppercase tracking-[0.4em]">Business Engine v7.0</p>
+           <p className="text-primary text-[9px] font-black uppercase tracking-[0.4em]">Business Engine v9.0</p>
         </div>
         
         <h1 className="text-5xl md:text-8xl font-black text-slate-900 tracking-tighter leading-[0.9] mb-8 uppercase italic filter drop-shadow-sm">

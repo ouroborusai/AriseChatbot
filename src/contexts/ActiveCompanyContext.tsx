@@ -33,13 +33,14 @@ export const ActiveCompanyProvider = ({ children }: { children: ReactNode }) => 
       setActiveCompanyState({ 
         id: storedId, 
         name: storedName,
-        role: localStorage.getItem("arise_active_role") || 'viewer'
+        role: localStorage.getItem("arise_active_role") || 'viewer',
+        plan_tier: localStorage.getItem("arise_active_plan") || 'free'
       });
     }
     setIsLoading(false);
   }, []);
 
-  const setActiveCompany = (company: Company) => {
+  const setActiveCompany = React.useCallback((company: Company) => {
     setActiveCompanyState(company);
     localStorage.setItem("arise_active_company", company.id);
     localStorage.setItem("arise_active_company_name", company.name);
@@ -49,10 +50,16 @@ export const ActiveCompanyProvider = ({ children }: { children: ReactNode }) => 
     // Cookie para SSR/Middleware
     document.cookie = `arise_company_id=${company.id}; path=/; max-age=31536000; SameSite=Lax`;
     document.cookie = `arise_plan_tier=${company.plan_tier || 'free'}; path=/; max-age=31536000; SameSite=Lax`;
-  };
+  }, []);
+
+  const value = React.useMemo(() => ({ 
+    activeCompany, 
+    setActiveCompany, 
+    isLoading 
+  }), [activeCompany, setActiveCompany, isLoading]);
 
   return (
-    <ActiveCompanyContext.Provider value={{ activeCompany, setActiveCompany, isLoading }}>
+    <ActiveCompanyContext.Provider value={value}>
       {children}
     </ActiveCompanyContext.Provider>
   );

@@ -16,11 +16,33 @@ import {
 } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 
+interface Contact {
+  full_name: string | null;
+  phone: string | null;
+}
+
+interface Conversation {
+  id: string;
+  status: 'new' | 'open' | 'waiting_human' | 'closed';
+  updated_at: string;
+  company_id: string;
+  contact_id: string;
+  contacts?: Contact;
+}
+
+interface Message {
+  id: string;
+  content: string;
+  sender_type: 'bot' | 'user' | 'agent';
+  created_at: string;
+  conversation_id: string;
+}
+
 export default function MessagesPage() {
   const { activeCompany } = useActiveCompany();
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [selectedConv, setSelectedConv] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,27 +57,57 @@ export default function MessagesPage() {
   }, [messages]);
 
   const fetchConversations = async (silent = false) => {
+    if (!activeCompany) return;
     if (!silent) setLoading(true);
 
-    const { data } = await supabase
-      .from('conversations')
-      .select('*, contacts(full_name, phone)')
-      .order('updated_at', { ascending: false });
+    const startTime = performance.now();
+    console.log(`[Telemetry] Iniciando carga de conversaciones para Nodo: ${activeCompany.name}`);
 
-    if (data) {
-      // De-duplicación por contacto: Solo quedarnos con el hilo más reciente por persona
-      const uniqueContacts: any = {};
-      const filtered = data.filter(conv => {
-        if (!conv.contact_id) return true; // Hilos sin contacto (raro)
-        if (!uniqueContacts[conv.contact_id]) {
-          uniqueContacts[conv.contact_id] = true;
-          return true;
-        }
-        return false;
-      });
-      setConversations(filtered);
+    try {
+      let query = supabase
+        .from('conversations')
+        .select('*, contacts(full_name, phone)')
+        .order('updated_at', { ascending: false });
+
+      // Filtro Multi-tenant Industrial (Bypass para SuperAdmin)
+      if (activeCompany.id !== 'global' && activeCompany.id !== 'ca69f43b-7b11-4dd3-abe8-8338580b2d84') {
+        query = query.eq('company_id', activeCompany.id);
+      } else {
+        console.log('[SuperAdmin] Modo Global Detectado: Aplicando percepción omnicanal.');
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      if (data) {
+        const uniqueContacts: Record<string, boolean> = {};
+        const filtered = data.filter(conv => {
+          if (!conv.contact_id) return true;
+          if (!uniqueContacts[conv.contact_id]) {
+            uniqueContacts[conv.contact_id] = true;
+            return true;
+          }
+          return false;
+        });
+        
+        // --- SMART TRIAGE v9.0 ---
+        // Priorizar hilos en espera de humano y ordenar por actualización
+        const sorted = [...filtered].sort((a, b) => {
+          if (a.status === 'waiting_human' && b.status !== 'waiting_human') return -1;
+          if (a.status !== 'waiting_human' && b.status === 'waiting_human') return 1;
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        });
+
+        setConversations(sorted);
+        const duration = (performance.now() - startTime).toFixed(2);
+        console.log(`[Telemetry] Carga finalizada en ${duration}ms. Nodos: ${sorted.length}`);
+      }
+    } catch (err) {
+      console.error('[CRITICAL] Error en fetchConversations:', err);
+    } finally {
+      if (!silent) setLoading(false);
     }
-    if (!silent) setLoading(false);
   };
 
   // --- CARGA DE MENSAJES ---
@@ -74,7 +126,32 @@ export default function MessagesPage() {
     }
   };
 
-  // --- SUSCRIPCIÓN REALTIME (INDUSTRIAL) ---
+  // --- SUSCRIPCIÓN GLOBAL (SIDEBAR) ---
+  useEffect(() => {
+    if (!activeCompany) return;
+
+    console.log('[Realtime] Suscribiendo a flujo global de conversaciones...');
+    const globalChannel = supabase.channel('global_conversations')
+      .on('postgres_changes', { 
+        event: '*', // Escuchar INSERT, UPDATE y DELETE
+        schema: 'public', 
+        table: 'conversations'
+      }, (payload) => {
+        console.log(`[Realtime] Cambio en conversaciones detectado (${payload.eventType})`);
+        fetchConversations(true); // Re-fetch ligero
+      })
+      .subscribe();
+
+    // Auto-refresh industrial cada 60s como failsafe
+    const interval = setInterval(() => fetchConversations(true), 60000);
+
+    return () => {
+      supabase.removeChannel(globalChannel);
+      clearInterval(interval);
+    };
+  }, [activeCompany?.id]);
+
+  // --- SUSCRIPCIÓN ESPECÍFICA (MENSAJES) ---
   useEffect(() => {
     if (!selectedConv?.id) return;
 
@@ -87,29 +164,22 @@ export default function MessagesPage() {
         schema: 'public', 
         table: 'messages',
         filter: `conversation_id=eq.${convId}` 
-      }, async (payload: any) => {
+      }, async (payload: { new: Message }) => {
         console.log('[Realtime] Nuevo mensaje recibido:', payload.new);
         
-        // --- TRIGGER NEURAL PROCESSOR v7.9 ---
+        // --- TRIGGER NEURAL PROCESSOR v9.0 ---
         if (payload.new.sender_type === 'bot') {
-          console.log('[Neural] Triggering processor for action detection...');
           fetch('/api/neural-processor', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              messageId: payload.new.id, 
-              companyId: selectedConv.company_id 
-            })
+            body: JSON.stringify({ messageId: payload.new.id, companyId: selectedConv.company_id })
           }).catch(e => console.error('[Neural] Processor Trigger Failed:', e));
         }
 
         setMessages(prev => {
           if (prev.some(m => m.id === payload.new.id)) return prev;
-          const newList = [...prev, payload.new];
-          return newList.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          return [...prev, payload.new].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         });
-        
-        fetchConversations(true);
       })
       .subscribe();
 
@@ -119,11 +189,18 @@ export default function MessagesPage() {
   }, [selectedConv?.id]);
 
   useEffect(() => {
-    fetchConversations();
-  }, []); // Carga global única al montar
+    if (activeCompany) {
+      fetchConversations();
+      // Limpiar selección si la empresa activa ya no coincide con la conversación seleccionada
+      if (selectedConv && activeCompany.id !== 'global' && selectedConv.company_id !== activeCompany.id) {
+        setSelectedConv(null);
+        setMessages([]);
+      }
+    }
+  }, [activeCompany?.id]);
 
   // Selección de conversación
-  const selectConversation = async (conv: any) => {
+  const selectConversation = async (conv: Conversation) => {
     const newStatus = conv.status === 'new' ? 'open' : conv.status;
     setSelectedConv({ ...conv, status: newStatus });
     await fetchMessages(conv.id);
@@ -137,7 +214,7 @@ export default function MessagesPage() {
     }
   };
 
-  const toggleHandoff = async (conv: any) => {
+  const toggleHandoff = async (conv: Conversation) => {
     const newStatus = conv.status === 'waiting_human' ? 'open' : 'waiting_human';
     const { error } = await supabase
       .from('conversations')
@@ -210,15 +287,25 @@ export default function MessagesPage() {
             >
               <div className="relative z-10 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold tracking-wide uppercase truncate">
+                  <span className="text-sm font-bold tracking-wide uppercase truncate max-w-[180px]">
                     {conv.contacts?.full_name || 'CONTACT_UNKNOWN'}
                   </span>
-                  <span className={`text-[10px] px-2 py-1 rounded-full font-black ${
-                    selectedConv?.id === conv.id ? 'bg-white/20 text-white' : 'bg-[#1A1A1A] text-white'
-                  }`}>
-                    {conv.status === 'waiting_human' ? 'MASTER' : 'AI'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {conv.status === 'waiting_human' && (
+                      <div className="w-2 h-2 bg-red-400 rounded-full animate-ping" />
+                    )}
+                    <span className={`text-[10px] px-2 py-1 rounded-full font-black ${
+                      selectedConv?.id === conv.id ? 'bg-white/20 text-white' : 'bg-[#1A1A1A] text-white'
+                    }`}>
+                      {conv.status === 'waiting_human' ? 'MASTER' : 'AI'}
+                    </span>
+                  </div>
                 </div>
+                {activeCompany?.id === 'global' && (
+                   <span className={`text-[9px] font-black uppercase tracking-widest opacity-50 block mb-1 ${selectedConv?.id === conv.id ? 'text-white' : 'text-primary'}`}>
+                      {conv.company_id === 'ca69f43b-7b11-4dd3-abe8-8338580b2d84' ? '🏢 Sede Central' : '🏢 Nodo Secundario'}
+                   </span>
+                )}
                 <span className={`text-xs opacity-60 font-mono ${selectedConv?.id === conv.id ? 'text-white' : 'text-[#666]'}`}>
                   {conv.contacts?.phone ? `+${conv.contacts.phone}` : 'ID_UNLINKED'}
                 </span>

@@ -1,22 +1,44 @@
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import {
+  buildWhatsAppMessage,
+  validateMessage,
+  debugParse,
+  type WhatsAppApiResponse,
+} from '@/lib/whatsapp-parser';
 
+/**
+ * ARISE WHATSAPP SEND API v9.0
+ * Envía mensajes interactivos con tipos TypeScript estrictos
+ */
 export async function POST(req: Request) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
-  const { contactId, content } = await req.json();
 
   try {
+    const { contactId, content } = await req.json();
+
+    if (!contactId || !content) {
+      return NextResponse.json(
+        { error: 'Parámetros requeridos: contactId y content' },
+        { status: 400 }
+      );
+    }
+
     // 1. Obtener datos de empresa y contacto
-    const { data: contact } = await supabase
+    const { data: contact, error: contactError } = await supabase
       .from('contacts')
-      .select('*, companies(id, settings)')
+      .select('phone, companies(id, settings)')
       .eq('id', contactId)
       .single();
 
-    if (!contact || !contact.companies?.settings?.whatsapp) {
-      return NextResponse.json({ error: 'Configuración de WhatsApp no encontrada' }, { status: 404 });
+    if (contactError || !contact?.companies?.settings?.whatsapp) {
+      console.error('[WhatsApp Send] Contacto o configuración no encontrada');
+      return NextResponse.json(
+        { error: 'Configuración de WhatsApp no encontrada' },
+        { status: 404 }
+      );
     }
 
     const { access_token, phone_number_id } = contact.companies.settings.whatsapp;
@@ -29,89 +51,72 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (!conv) {
-       return NextResponse.json({ error: 'Conversación no encontrada' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Conversación no encontrada' },
+        { status: 404 }
+      );
     }
 
-    // 3. DIAMOND V7.9 UI SCALING (Advanced Parser for Agents)
-    let payload: any = {
-      messaging_product: "whatsapp",
-      to: contact.phone,
-      type: "text",
-      text: { body: content }
-    };
+    // 3. Validar contenido antes de enviar
+    const validation = validateMessage(content);
+    if (!validation.valid) {
+      console.warn('[WhatsApp Send] Validación fallida:', validation.errors);
+    }
 
-    if (content.includes('---') && content.includes('|')) {
-      const lines = content.split('\n');
-      const buttonLineIndex = lines.findIndex((l: any) => l.includes('|'));
-      
-      if (buttonLineIndex !== -1) {
-        const rawOptions = lines[buttonLineIndex].replace(/---/g, '').trim();
-        const options = rawOptions.split('|').map((o: string) => o.trim()).filter((o: string) => o.length > 0);
-        const bodyText = lines.filter((_: string, i: number) => i !== buttonLineIndex).join('\n').trim() || 'Elige una opción:';
+    // 4. Debug parse (solo en desarrollo)
+    if (process.env.NODE_ENV === 'development') {
+      debugParse(content);
+    }
 
-        if (options.length > 0) {
-          if (options.length <= 3) {
-            payload = {
-              messaging_product: 'whatsapp', to: contact.phone, type: 'interactive',
-              interactive: {
-                type: 'button',
-                body: { text: bodyText.substring(0, 1024) },
-                action: {
-                  buttons: options.slice(0, 3).map((o: string, i: number) => ({
-                    type: 'reply',
-                    reply: { id: `agent_btn_${i}_${Date.now()}`, title: o.substring(0, 20).trim() }
-                  }))
-                }
-              }
-            };
-          } else {
-            payload = {
-              messaging_product: 'whatsapp', to: contact.phone, type: 'interactive',
-              interactive: {
-                type: 'list',
-                header: { type: 'text', text: 'Arise Operations' },
-                body: { text: bodyText.substring(0, 1024) },
-                footer: { text: 'Arise Agent Dispatch' },
-                action: {
-                  button: 'Ver Opciones',
-                  sections: [{
-                    title: 'Comandos Disponibles',
-                    rows: options.slice(0, 10).map((o: string, i: number) => ({
-                      id: `agent_act_${i}_${Date.now()}`,
-                      title: o.substring(0, 20).trim(),
-                      description: 'Acción de Agente'
-                    }))
-                  }]
-                }
-              }
-            };
-          }
-        }
+    // 5. Construir mensaje con parser inteligente
+    const waPayload = buildWhatsAppMessage(contact.phone, content);
+
+    // 6. Enviar a WhatsApp API
+    const response = await fetch(
+      `https://graph.facebook.com/v19.0/${phone_number_id}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(waPayload),
       }
+    );
+
+    const result: WhatsAppApiResponse = await response.json();
+
+    if (result.error) {
+      console.error('[WhatsApp Send] Error de API:', result.error);
+      throw new Error(result.error.message);
     }
 
-    // 4. Enviar a WhatsApp API
-    const response = await fetch(`https://graph.facebook.com/v19.0/${phone_number_id}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const result = await response.json();
-    if (result.error) throw new Error(result.error.message);
-
-    // 5. Registrar mensaje del agente
+    // 7. Registrar mensaje del agente
     await supabase.from('messages').insert({
       conversation_id: conv.id,
       sender_type: 'agent',
-      content: content
+      content: content,
+      metadata: {
+        message_type: waPayload.type,
+        interactive_count: waPayload.type === 'interactive'
+          ? waPayload.interactive.type === 'button'
+            ? waPayload.interactive.action.buttons.length
+            : waPayload.interactive.action.sections.reduce((acc, s) => acc + s.rows.length, 0)
+          : 0,
+      },
     });
 
-    return NextResponse.json({ success: true, result });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      messageId: result.messages?.[0]?.id,
+      messageType: waPayload.type,
+    });
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+    console.error('[WhatsApp Send] Error:', err);
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 500 }
+    );
   }
 }

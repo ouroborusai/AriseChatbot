@@ -8,6 +8,8 @@ import {
   Check,
   Building2
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 
 interface CompanySelectorProps {
   className?: string;
@@ -17,72 +19,73 @@ interface CompanySelectorProps {
 export default function CompanySelector({ className = '', variant = 'sidebar' }: CompanySelectorProps) {
   const [companies, setCompanies] = useState<any[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<any[]>([]);
-  const [activeCompany, setActiveCompany] = useState<any>(null);
+  const { activeCompany, setActiveCompany } = useActiveCompany();
+  const { user, loading: authLoading } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isFetched = useRef(false);
 
   useEffect(() => {
-    async function fetchUserContext() {
+    async function fetchCompanies() {
+      if (!user || isFetched.current) return;
+      
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError || !user) {
-          console.error('Error de Auth:', userError);
-          return;
-        }
+        console.time('PORTFOLIO_LOAD');
+        // Identificación robusta: Verificar si el usuario es Admin Global
+        const { data: adminCheck } = await supabase
+          .from('user_company_access')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .limit(1);
 
-        // Identificación robusta (Case insensitive + prefijo)
-        const email = user.email?.toLowerCase() || '';
-        const isMaster = email === 'ouroborusai@gmail.com' || email.includes('ouroborus.ai');
-        
-        console.log('Nivel de Acceso:', isMaster ? 'MASTER' : 'STANDARD');
+        const isMaster = adminCheck && adminCheck.length > 0;
+        console.log('Contexto de Acceso:', isMaster ? 'MASTER (Global Portfolio)' : 'STANDARD (Filtered View)');
 
         if (isMaster) {
-          const { data: all, error: fetchError } = await supabase
-            .from('companies')
-            .select('id, name')
+          const { data: all } = await supabase
+            .from('vw_company_subscriptions')
+            .select('id, name, plan_tier')
             .order('name', { ascending: true });
 
-          if (fetchError) console.error('Error cargando empresas:', fetchError);
-
           if (all) {
-            console.log(`Total empresas detectadas: ${all.length}`);
             const list = [
-              { id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin' },
-              ...all.map(c => ({ id: c.id, name: c.name, role: 'admin' }))
+              { id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin', plan_tier: 'enterprise' },
+              ...all.map(c => ({ id: c.id, name: c.name, role: 'admin', plan_tier: c.plan_tier }))
             ];
             setCompanies(list);
             setFilteredCompanies(list);
-            
-            const savedId = localStorage.getItem('arise_active_company');
-            setActiveCompany(list.find(l => l.id === savedId) || list[0]);
-            return;
+            isFetched.current = true;
+          }
+        } else {
+          const { data: access } = await supabase
+            .from('user_company_access')
+            .select('company_id, role, companies(name, plan_tier)')
+            .eq('user_id', user.id);
+
+          if (access) {
+            const list = access.map((a: any) => ({
+              id: a.company_id,
+              name: a.companies?.name || 'Empresa',
+              role: a.role,
+              plan_tier: a.companies?.plan_tier || 'free'
+            })).sort((a, b) => a.name.localeCompare(b.name));
+
+            setCompanies(list);
+            setFilteredCompanies(list);
+            isFetched.current = true;
           }
         }
-
-        // Si no es master, procedemos con lógica normal
-        const { data: access } = await supabase
-          .from('user_company_access')
-          .select('company_id, role, companies(name)')
-          .eq('user_id', user.id);
-
-        if (access) {
-          const list = access.map((a: any) => ({
-            id: a.company_id,
-            name: a.companies?.name || 'Empresa',
-            role: a.role
-          })).sort((a, b) => a.name.localeCompare(b.name));
-
-          setCompanies(list);
-          setFilteredCompanies(list);
-          const savedId = localStorage.getItem('arise_active_company');
-          setActiveCompany(list.find(l => l.id === savedId) || list[0]);
-        }
+        console.timeEnd('PORTFOLIO_LOAD');
       } catch (err) {
-        console.error('Error crítico en CompanySelector:', err);
+        console.error('CRITICAL_SELECTOR_ERROR:', err);
       }
     }
-    fetchUserContext();
+
+    if (!authLoading && user) {
+      fetchCompanies();
+    }
 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -147,7 +150,12 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
                     activeCompany?.id === c.id ? 'bg-gradient-to-br from-primary to-primary-container text-white shadow-lg shadow-primary/20' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                   }`}
                 >
-                  <span className="truncate pr-4">{c.name}</span>
+                  <div className="flex flex-col gap-0.5 truncate pr-4">
+                    <span className="truncate">{c.name}</span>
+                    <span className={`text-[7px] font-black uppercase tracking-widest ${activeCompany?.id === c.id ? 'text-white/70' : 'text-primary/50'}`}>
+                      Tier {c.plan_tier || 'free'}
+                    </span>
+                  </div>
                   {activeCompany?.id === c.id && <Check size={12} />}
                 </button>
               ))}
@@ -198,7 +206,12 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                   }`}
                 >
-                  <span className="truncate pr-4">{c.name}</span>
+                  <div className="flex flex-col gap-0.5 truncate pr-4">
+                    <span className="truncate">{c.name}</span>
+                    <span className={`text-[7px] font-black uppercase tracking-widest ${activeCompany?.id === c.id ? 'text-white/70' : 'text-primary/50'}`}>
+                      Tier {c.plan_tier || 'free'}
+                    </span>
+                  </div>
                   {activeCompany?.id === c.id && <Check size={12} />}
                 </button>
               ))

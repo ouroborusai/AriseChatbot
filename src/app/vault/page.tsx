@@ -24,7 +24,7 @@ export default function ClientVaultPage() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Diamond v7.1 Theme Constants
+  // Arise Design Tokens v9.0
   const colors = {
     bg: '#07090d',
     card: 'rgba(255, 255, 255, 0.03)',
@@ -73,7 +73,7 @@ export default function ClientVaultPage() {
               <ShieldCheck className="text-[#6366f1]" size={20} />
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Secure_Encryption_Active</span>
             </div>
-            <h1 className="text-4xl font-black italic uppercase tracking-tighter">B\u00F3veda <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6366f1] to-[#a855f7]">Digital v7.1</span></h1>
+            <h1 className="text-4xl font-black italic uppercase tracking-tighter">B\u00F3veda <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6366f1] to-[#a855f7]">Digital v9.0</span></h1>
           </div>
           {!isRegistered && (
             <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-xl">

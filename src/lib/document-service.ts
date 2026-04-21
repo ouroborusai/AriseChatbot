@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 /**
- * Arise Document AI Service v7.9
+ * Arise Document AI Service v9.0
  * Bridge for OCR and Document Analysis via Gemini Vision
  */
 export const DocumentService = {

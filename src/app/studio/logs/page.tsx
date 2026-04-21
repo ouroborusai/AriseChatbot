@@ -79,7 +79,7 @@ export default function NeuralLogPage() {
                     <Terminal className="text-[#6366f1] relative" size={32} />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-black uppercase tracking-[0.2em] text-white italic">Neural_Audit_Flow <span className="text-[#6366f1]">v7.1</span></h1>
+                    <h1 className="text-2xl font-black uppercase tracking-[0.2em] text-white italic">Neural_Audit_Flow <span className="text-[#6366f1]">v9.0</span></h1>
                     <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-1">Status: Operational // Source: Supabase_Live_Stream</p>
                 </div>
             </div>

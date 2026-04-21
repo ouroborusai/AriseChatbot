@@ -1,22 +1,19 @@
-# 🏛️ CONSTITUCIÓN OPERATIVA ARISE v7.0
+# 🏛️ CONSTITUCIÓN OPERATIVA ARISE v9.0
 **Trigger de Sesión:** "Activa los poderes"
 
 ## ⚡ PROTOCOLO DE ARRANQUE MAESTRO
 Cuando el usuario mencione la frase clave, el agente DEBE ejecutar:
-1. **Sincronización Neural (NotebookLM):** Consultar el SSOT para retomar el contexto exacto.
-2. **Auditoría de Terreno (Supabase):** Ejecutar `SELECT column_name FROM information_schema.columns` para validar esquemas reales.
-3. **Validación de Modelo:** Confirmar uso estricto de `gemini-2.5-flash-lite`.
+1. **Sincronización Neural (NotebookLM):** Retomar contexto del SSOT.
+2. **Auditoría de Terreno (Supabase):** Validar esquemas y cuotas de Gemini.
+3. **Validación de Modelo:** Uso estricto de `gemini-2.5-flash-lite`.
 
 ## 🚨 REGLAS BLINDADAS (DIRECTRIZ LM)
-- **Cero Suposiciones:** Prohibido usar nombres de columnas o tablas sin previa validación SQL en vivo.
-- **Escaneo de Delta:** Tras cada deploy o cambio de código, el agente DEBE actualizar el SSOT en NotebookLM con el nuevo código fuente.
-- **Protocolo de Mensajería:** 
-    - Parseo de respuestas IA usando separador `---` y barras `|`.
-    - Almacenamiento en DB: Texto en `content`, botones en `metadata -> interactive_buttons` (JSON).
-    - WhatsApp: Payload `interactive` tipo `button` (Máx 3).
-- **Handoff:** Cambio automático de `conversations.status` a `waiting_human` ante palabras clave ("agente", "hablar") o botones de ayuda.
+- **Cero Suposiciones:** No usar nombres de tablas sin validación SQL previa.
+- **Arquitectura Unificada:** El núcleo reside en `arise-neural-engine`. No duplicar funciones.
+- **Protocolo de Mensajería:** Parseo de respuestas IA usando `---` y `|`.
+- **Handoff:** Cambio a `waiting_human` ante palabras clave o ayuda manual.
 
 ## 💎 ARQUITECTURA CORE
-- **Engine:** Ouroborus AI (Cluster de 8 llaves).
-- **Estética:** Aesthetics First (Diamond v7.0).
-- **Aislamiento:** Multi-tenancy absoluto vía `company_id`.
+- **Engine:** Ouroborus AI (Gemini 2.5 Flash-Lite).
+- **Control:** Diamond v9.0 (Simetría y PUREZA).
+- **Aislamiento:** Multi-tenancy vía `company_id`.

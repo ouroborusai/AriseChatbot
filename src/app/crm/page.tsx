@@ -4,20 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   Users, 
-  MessageSquare, 
   Search, 
   UserPlus, 
-  MoreHorizontal, 
   ArrowLeft, 
-  ArrowRight,
-  ShieldCheck,
-  Activity,
-  Send,
-  X,
-  Bot,
-  User,
-  Power
+  ArrowRight
 } from 'lucide-react';
+import { CRMStats } from '@/components/crm/CRMStats';
+import { CRMContactTable } from '@/components/crm/CRMContactTable';
+import { ChatNeuralSlideOver } from '@/components/crm/ChatNeuralSlideOver';
 
 const PAGE_SIZE = 10;
 
@@ -184,7 +178,7 @@ export default function CRMPage() {
           <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-none">CRM (Pagos)</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
             <Users size={10} className="text-primary" />
-            Neural Relationship Mapping / v7.1
+            Neural Relationship Mapping / v9.0
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto">
@@ -205,89 +199,14 @@ export default function CRMPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
-        <MetricSmall title="Registros Maestro" value={totalCount} icon={Users} loading={loading} />
-        <MetricSmall title="Vínculos Neurales" value={stats.activeChats} icon={MessageSquare} active loading={loading} />
-        <MetricSmall title="Estado de Sincronía" value="Online" icon={Activity} loading={loading} />
-        <MetricSmall title="Integridad de Datos" value="99.9%" icon={ShieldCheck} loading={loading} />
-      </div>
+      <CRMStats totalCount={totalCount} activeChats={stats.activeChats} loading={loading} />
 
-      <div className="arise-card bg-white border-none shadow-arise overflow-hidden rounded-[24px] md:rounded-[32px] p-6 md:p-10">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[700px] md:min-w-[800px]">
-          <thead>
-            <tr>
-              <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Master_Identity</th>
-              <th className="hidden md:table-cell pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Metadata_Stack</th>
-              <th className="hidden lg:table-cell pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Protocol_Segment</th>
-              <th className="hidden md:table-cell pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Registry_Date</th>
-              <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              Array(6).fill(0).map((_, i) => (
-                <tr key={i}>
-                  <td className="py-6"><div className="w-48 h-10 arise-skeleton rounded-xl" /></td>
-                  <td className="hidden md:table-cell py-6"><div className="w-32 h-6 arise-skeleton rounded-lg" /></td>
-                  <td className="hidden lg:table-cell py-6 text-center"><div className="w-24 h-6 arise-skeleton mx-auto rounded-full" /></td>
-                  <td className="hidden md:table-cell py-6"><div className="w-28 h-6 arise-skeleton rounded-lg" /></td>
-                  <td className="py-6 text-right"><div className="w-10 h-10 arise-skeleton ml-auto rounded-lg" /></td>
-                </tr>
-              ))
-            ) : filteredContacts.map((contact) => (
-              <tr key={contact.id} className="group hover:bg-[#f7f9fb] transition-all cursor-pointer">
-                <td className="py-6 md:py-8" onClick={() => openChat(contact)}>
-                  <div className="flex items-center gap-4 md:gap-6">
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-900 text-white rounded-[16px] flex items-center justify-center font-black text-xs shadow-md shadow-slate-200 group-hover:bg-primary group-hover:shadow-lg transition-all">
-                      {contact.full_name?.[0] || '?'}
-                    </div>
-                    <div>
-                      <span className="text-[13px] md:text-[14px] font-black text-slate-900 uppercase tracking-tight group-hover:text-primary transition-colors">{contact.full_name || 'Anonymous_Node'}</span>
-                      <p className="md:hidden text-[9px] font-mono text-slate-400 mt-1">{contact.phone}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="hidden md:table-cell py-6 md:py-8">
-                  <p className="text-[11px] font-mono text-slate-900 font-medium">{contact.phone}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{contact.email || 'NO_COMMS'}</p>
-                    {contact.companies?.name && (
-                      <span className="text-[7px] font-black bg-primary/5 text-primary border border-primary/10 px-2 py-0.5 rounded-md uppercase tracking-[0.2em]">
-                        {contact.companies.name}
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="hidden lg:table-cell py-6 md:py-8 text-center">
-                  <select 
-                    value={contact.category || 'lead'}
-                    onChange={(e) => handleUpdateSegment(contact.id, e.target.value)}
-                    className={`text-[8px] font-black px-4 py-2 rounded-lg border border-slate-100 appearance-none cursor-pointer outline-none transition-all shadow-sm ${
-                      contact.category === 'client' ? 'bg-emerald-50/50 text-emerald-600 border-emerald-100/50' : 
-                      contact.category === 'family' ? 'bg-indigo-50/50 text-indigo-600 border-indigo-100/50' : 
-                      'bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <option value="lead">LEAD</option>
-                    <option value="client">ELITE_NODE</option>
-                    <option value="family">FAMILY_LINK</option>
-                  </select>
-                </td>
-                <td className="hidden md:table-cell py-6 md:py-8 text-[10px] font-mono text-slate-400 font-medium">
-                  {new Date(contact.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </td>
-                <td className="py-6 md:py-8 text-right">
-                  <button className="w-10 h-10 flex ml-auto items-center justify-center bg-white border border-slate-100 text-slate-400 rounded-[12px] hover:border-primary hover:text-primary transition-all shadow-sm">
-                    <MoreHorizontal size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-</div>
+      <CRMContactTable 
+        loading={loading} 
+        contacts={filteredContacts} 
+        onOpenChat={openChat} 
+        onUpdateSegment={handleUpdateSegment} 
+      />
 
       <div className="p-6 md:p-10 flex flex-col sm:flex-row justify-between items-center bg-[#f7f9fb] mt-4 rounded-[24px] gap-6">
         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">
@@ -299,125 +218,16 @@ export default function CRMPage() {
         </div>
       </div>
 
-      {/* CHAT NEURAL SLIDE-OVER */}
-      {isChatOpen && (
-        <div className="fixed inset-0 z-[100] flex justify-end animate-in fade-in duration-300">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" onClick={() => setIsChatOpen(false)} />
-            <div className="relative w-full max-w-xl bg-white h-full flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden shadow-2xl">
-              <header className="p-6 md:p-10 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 border-none">
-                <div className="flex items-center gap-4 md:gap-6">
-                  <div className="relative">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-slate-900 text-white rounded-[18px] md:rounded-[20px] flex items-center justify-center font-black text-base md:text-lg shadow-md uppercase">
-                      {selectedContact?.full_name?.[0]}
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-emerald-500 border-2 border-white rounded-full" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight leading-none mb-1 md:mb-2 uppercase">{selectedContact?.full_name}</h3>
-                    <div className="flex items-center gap-2 md:gap-4">
-                       <span className="flex items-center gap-2 px-2 py-0.5 rounded-md bg-emerald-50 text-[7px] md:text-[8px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100/50">
-                         <Activity size={10} />
-                         Live_Comm
-                       </span>
-                       <p className="text-[7px] md:text-[9px] font-mono text-slate-400">+{selectedContact?.phone}</p>
-                    </div>
-                  </div>
-                </div>
-                <button onClick={() => setIsChatOpen(false)} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-[#f7f9fb] hover:bg-rose-50 rounded-xl md:rounded-2xl transition-all text-slate-400 hover:text-rose-500">
-                  <X className="w-4 h-4 md:w-5 md:h-5" />
-                </button>
-              </header>
-
-              <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 md:space-y-10 bg-[#f7f9fb]/50 custom-scrollbar">
-                {chatMessages.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full opacity-10">
-                    <MessageSquare size={80} strokeWidth={1} className="mb-6" />
-                    <p className="text-[9px] font-black uppercase tracking-[1em]">Establishing_Link</p>
-                  </div>
-                )}
-                {chatMessages.map((m, idx) => {
-                  const isAgent = m.sender_type === 'agent';
-                  const isBot = m.sender_type === 'bot';
-                  const isClient = m.sender_type === 'user';
-                  
-                  return (
-                    <div key={idx} className={`flex ${isClient ? 'justify-start' : 'justify-end'}`}>
-                      <div className={`group relative max-w-[90%] p-5 md:p-6 rounded-[24px] md:rounded-[28px] text-[12px] md:text-[13px] font-bold leading-relaxed shadow-sm transition-all hover:shadow-md ${
-                        isClient 
-                          ? 'bg-white text-slate-700 rounded-tl-none ring-1 ring-slate-100' 
-                          : isBot
-                            ? 'bg-[#191c1e] text-white rounded-tr-none'
-                            : 'bg-primary text-white rounded-tr-none shadow-lg shadow-primary/20'
-                      }`}>
-                        {(isBot || isAgent) && (
-                          <div className={`flex items-center gap-3 mb-3 md:mb-4 text-[7px] font-black uppercase tracking-[0.3em] opacity-40 ${!isBot ? 'text-white/70' : ''}`}>
-                            {isBot ? <Bot size={12} /> : <ShieldCheck size={12} />}
-                            {isBot ? 'Arise_Neural_Engine' : 'Human_Supervisor'}
-                          </div>
-                        )}
-                        <p className="tracking-tight">{m.content}</p>
-                        <div className={`mt-3 md:mt-4 flex items-center gap-3 opacity-30 text-[8px] font-black uppercase tracking-widest`}>
-                          {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="p-6 md:p-10 bg-white border-none shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.1)]">
-                <div className="flex items-center justify-between mb-6 md:mb-8">
-                   <button 
-                     onClick={toggleHandoff}
-                     className={`flex items-center gap-3 md:gap-4 px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] transition-all ${
-                       selectedContact?.convStatus === 'waiting_human'
-                        ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-200 rotate-0'
-                        : 'bg-[#f2f4f6] text-slate-400 hover:bg-slate-200'
-                     }`}
-                   >
-                     <Power className="w-4 h-4 md:w-5 md:h-5" />
-                     {selectedContact?.convStatus === 'waiting_human' ? 'Manual_Control' : 'AI_Operational'}
-                   </button>
-                   <div className="text-[7px] md:text-[8px] font-black text-slate-300 uppercase tracking-[0.4em] italic">
-                     v7.0_Diamond_Protocol
-                   </div>
-                </div>
-                
-                <div className="relative">
-                  <textarea 
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={selectedContact?.convStatus === 'waiting_human' ? "Escribe como Agente Humano..." : "La IA responderá automáticamente..."}
-                    className="w-full bg-[#f7f9fb] border-none rounded-[24px] md:rounded-[32px] p-6 md:p-8 pr-20 md:pr-24 text-[12px] md:text-[13px] font-bold text-slate-800 outline-none focus:bg-white focus:shadow-arise transition-all resize-none h-32 md:h-40"
-                  />
-                  <button 
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim()}
-                    className="absolute right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-2xl shadow-primary/40 disabled:opacity-20 disabled:grayscale"
-                  >
-                    <Send className="w-5 h-5 md:w-6 md:h-6" />
-                  </button>
-                </div>
-              </div>
-           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MetricSmall({ title, value, icon: Icon, active, loading }: any) {
-  if (loading) return <div className="arise-card p-6 md:p-10 bg-white border-none shadow-arise animate-pulse h-32 md:h-40" />;
-  
-  return (
-    <div className={`arise-card p-6 md:p-8 border-none shadow-arise group ${active ? 'bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white shadow-[0_20px_40px_-5px_rgba(19,91,236,0.3)]' : 'bg-white text-slate-900 hover:bg-white/90'}`}>
-      <div className="flex justify-between items-start mb-6 md:mb-8">
-        <p className={`text-[8px] md:text-[9px] font-black uppercase tracking-[0.3em] ${active ? 'text-white/70' : 'text-slate-400'}`}>{title}</p>
-        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-all ${active ? 'bg-white/20' : 'bg-[#f7f9fb] text-slate-300 group-hover:text-primary group-hover:bg-primary/5'}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-      <h3 className="text-2xl md:text-4xl font-black tracking-tighter leading-none">{value}</h3>
+      <ChatNeuralSlideOver 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        selectedContact={selectedContact}
+        chatMessages={chatMessages}
+        newMessage={newMessage}
+        setNewMessage={setNewMessage}
+        onSendMessage={sendMessage}
+        onToggleHandoff={toggleHandoff}
+      />
     </div>
   );
 }

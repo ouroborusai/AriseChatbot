@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Arise Diamond Elite Architecture v7.9 (Industrial Edition) */
+  /* Arise Diamond Elite Architecture v9.0 (Industrial Edition) */
   --color-primary: #0045bd;         /* Neural Core */
   --color-accent: #135bec;          /* Electric Blue Spark */
   --color-bg-base: #f8fafc;         /* Surface Canvas */
@@ -17,7 +17,7 @@
   --shadow-arise: 0 4px 24px -6px rgba(0, 69, 189, 0.08), 0 1px 4px -2px rgba(0, 0, 0, 0.02);
   --shadow-arise-hover: 0 30px 80px -20px rgba(0, 69, 189, 0.15);
   
-  /* Glassmorphism Tokens v7.9 */
+  /* Glassmorphism Tokens v9.0 */
   --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-border: rgba(255, 255, 255, 0.5);
   --glass-blur: blur(20px);
@@ -87,6 +87,27 @@
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+@keyframes shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 /* Custom Scrollbar for FinTech look */

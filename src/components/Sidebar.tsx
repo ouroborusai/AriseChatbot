@@ -23,6 +23,7 @@ import {
   Lock
 } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import CompanySelector from './CompanySelector';
 
 const menuItems = [
@@ -30,8 +31,10 @@ const menuItems = [
   { name: 'Mensajes', icon: MessageSquare, path: '/messages', premium: true },
   { name: 'Bóveda (Vault)', icon: User, path: '/vault', premium: false },
   { name: 'CRM (Pagos)', icon: Users, path: '/crm', premium: true },
+  { name: 'Equipo (Units)', icon: Users, path: '/team', premium: true },
   { name: 'Inventario', icon: Package, path: '/inventory', premium: true },
   { name: 'Analítica', icon: BarChart3, path: '/billing', premium: true },
+  { name: 'Empresa', icon: Settings, path: '/company', premium: true },
   { name: 'Arise Studio', icon: Code2, path: '/studio', premium: true },
   { name: 'Configuración', icon: Settings, path: '/users', premium: false },
 ];
@@ -40,7 +43,7 @@ export default function Sidebar() {
   const { activeCompany, setActiveCompany } = useActiveCompany();
   const [companies, setCompanies] = useState<any[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<any[]>([]);
-  const [userData, setUserData] = useState<any>(null);
+  const { user: userData, loading: authLoading } = useAuth();
   const [userRole, setUserRole] = useState<string>('viewer');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,14 +52,7 @@ export default function Sidebar() {
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    async function fetchUserContext() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setUserData(user);
-    }
-    fetchUserContext();
-  }, []);
+  // Removido sync asíncrono redundante - consumiendo AuthContext
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

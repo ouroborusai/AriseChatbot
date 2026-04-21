@@ -14,7 +14,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const TARGET_PHONE = '56990062213';
 
 async function generateAndSendPdf() {
-    console.log("Iniciando generador de PDF (Diamond v7.0 Test)...");
+    console.log("Iniciando generador de PDF (Diamond v9.0 Test)...");
 
     // 2. Plantilla Hardcodeada para el Test (Evitando el caché de PostgREST)
     const design_html = `
@@ -68,7 +68,7 @@ async function generateAndSendPdf() {
     </table>
 
     <div class="footer">
-        <p>Documento generado confidencialmente mediante Arise Business OS v7.0.</p>
+        <p>Documento generado confidencialmente mediante Arise Business OS Diamond v9.0.</p>
     </div>
 </body>
 </html>
@@ -77,7 +77,7 @@ async function generateAndSendPdf() {
     // 3. Mock de Datos (Lo que Gemini extraería)
     const mockData = {
         date: new Date().toLocaleDateString('es-CL'),
-        company_name: 'Tech Industrial S.A. (Prueba v7.0)',
+        company_name: 'Tech Industrial S.A. (Prueba Diamond v9.0)',
         items: [
             { sku: 'SRV-G7-001', name: 'Servidor ProLiant DL380 Gen10', quantity: 5, low_stock: false },
             { sku: 'NET-SW-048', name: 'Switch Cisco Catalyst 9300', quantity: 2, low_stock: true },
@@ -119,7 +119,7 @@ async function generateAndSendPdf() {
     form.append('type', 'document');
     form.append('messaging_product', 'whatsapp');
 
-    const uploadRes = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/media`, {
+    const uploadRes = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/media`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${whatsappToken}` },
         body: form
@@ -136,7 +136,7 @@ async function generateAndSendPdf() {
 
     // 7. Enviar Mensaje a WhatsApp
     console.log(`Enviando Documento vía WhatsApp al número ${TARGET_PHONE}...`);
-    const sendRes = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+    const sendRes = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${whatsappToken}`,

@@ -30,7 +30,7 @@ export default function CompanyPage() {
           <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Operational_Node</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
             <Activity size={10} className="text-primary" />
-            Unit Configuration & Governance / v7.0 
+            Unit Configuration & Governance / v9.0 
           </p>
         </div>
         <button className="flex items-center justify-center gap-4 bg-primary text-white px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:scale-105 transition-all">
@@ -88,7 +88,7 @@ export default function CompanyPage() {
                  <div className="w-2 h-2 rounded-full bg-emerald-500/20" />
                </div>
                <pre className="text-[10px] leading-relaxed text-emerald-500/70 font-mono overflow-x-auto scrollbar-hide">
-                 {JSON.stringify(company?.metadata || { status: "ACTIVE", core: "Arise_v7.0" }, null, 2)}
+                 {JSON.stringify(company?.metadata || { status: "ACTIVE", core: "Arise_v9.0" }, null, 2)}
                </pre>
              </div>
           </div>
@@ -102,7 +102,7 @@ export default function CompanyPage() {
                 <ShieldCheck size={14} />
                 Security_Uplink
               </h3>
-              <p className="text-[10px] font-black text-white/50 mb-8 leading-loose uppercase tracking-widest">Protocol v7.0 Active. Identity nodes synchronized across the industrial multi-tenant gateway.</p>
+              <p className="text-[10px] font-black text-white/50 mb-8 leading-loose uppercase tracking-widest">Protocol v9.0 Active. Identity nodes synchronized across the industrial multi-tenant gateway.</p>
               
               <div className="space-y-6">
                 <div className="flex justify-between items-end mb-2">
