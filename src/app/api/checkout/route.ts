@@ -1,13 +1,47 @@
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { NextResponse } from 'next/server';
+import { requireAuth, verifyCompanyAccess } from '@/lib/api-auth';
 
-const client = new MercadoPagoConfig({ 
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || '' 
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || ''
 });
 
 export async function POST(req: Request) {
   try {
+    // Verificar autenticación
+    const authResult = await requireAuth();
+    if (authResult.error) return authResult.error;
+
     const { companyId, companyName, userEmail } = await req.json();
+
+    // Validar inputs requeridos
+    if (!companyId || !companyName || !userEmail) {
+      return NextResponse.json(
+        { error: 'Missing required parameters: companyId, companyName, userEmail' },
+        { status: 400 }
+      );
+    }
+
+    // Validar formato de UUID para companyId
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(companyId)) {
+      return NextResponse.json({ error: 'Invalid companyId format. Expected UUID' }, { status: 400 });
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+    }
+
+    // Verificar acceso a la compañía
+    const hasAccess = await verifyCompanyAccess(authResult.user.id, companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'Access denied to this company' },
+        { status: 403 }
+      );
+    }
 
     const preference = new Preference(client);
     
@@ -37,9 +71,13 @@ export async function POST(req: Request) {
     }
     });
 
-    return NextResponse.json({ init_point: result.init_point });
-  } catch (error: any) {
+    return NextResponse.json({
+      init_point: result.init_point,
+      preference_id: result.id
+    });
+  } catch (error: unknown) {
     console.error('MP_CHECKOUT_ERROR:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

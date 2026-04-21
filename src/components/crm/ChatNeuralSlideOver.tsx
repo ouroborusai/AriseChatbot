@@ -1,26 +1,40 @@
-import React from 'react';
 import { X, MessageSquare, Activity, Bot, ShieldCheck, Send, Power } from 'lucide-react';
+import { parseUIMessageContent } from '@/lib/whatsapp-parser';
+
+interface ChatMessage {
+  sender_type: 'user' | 'agent' | 'bot';
+  content: string;
+  created_at: string;
+}
+
+interface Contact {
+  full_name?: string;
+  phone?: string;
+  convStatus?: string;
+}
 
 interface ChatNeuralSlideOverProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedContact: any;
-  chatMessages: any[];
+  selectedContact: Contact;
+  chatMessages: ChatMessage[];
   newMessage: string;
   setNewMessage: (msg: string) => void;
   onSendMessage: () => void;
   onToggleHandoff: () => void;
+  isSending?: boolean;
 }
 
-export function ChatNeuralSlideOver({ 
-  isOpen, 
-  onClose, 
-  selectedContact, 
-  chatMessages, 
-  newMessage, 
-  setNewMessage, 
+export function ChatNeuralSlideOver({
+  isOpen,
+  onClose,
+  selectedContact,
+  chatMessages,
+  newMessage,
+  setNewMessage,
   onSendMessage,
-  onToggleHandoff
+  onToggleHandoff,
+  isSending = false
 }: ChatNeuralSlideOverProps) {
   if (!isOpen) return null;
 
@@ -79,7 +93,33 @@ export function ChatNeuralSlideOver({
                       {isBot ? 'Arise_Neural_Engine' : 'Human_Supervisor'}
                     </div>
                   )}
-                  <p className="tracking-tight">{m.content}</p>
+                  {/* Lógica de Renderizado Inteligente v9.0 */}
+                  {(() => {
+                    const { textParts, buttonParts } = parseUIMessageContent(m.content);
+                    return (
+                      <div className="space-y-4">
+                        {textParts.map((text, tidx) => (
+                          <p key={tidx} className="tracking-tight">{text}</p>
+                        ))}
+                        {buttonParts.map((group, gidx) => (
+                          <div key={gidx} className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
+                            {group.map((btn, bidx) => (
+                              <button
+                                key={bidx}
+                                onClick={() => {
+                                  setNewMessage(btn);
+                                  // El usuario debe presionar Send para enviar, o podrías llamar a onSendMessage() aquí
+                                }}
+                                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-[9px] font-bold uppercase tracking-wider rounded-lg transition-all active:scale-95"
+                              >
+                                {btn}
+                              </button>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                   <div className={`mt-3 md:mt-4 flex items-center gap-3 opacity-30 text-[8px] font-black uppercase tracking-widest`}>
                     {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                   </div>
@@ -114,12 +154,16 @@ export function ChatNeuralSlideOver({
               placeholder={selectedContact?.convStatus === 'waiting_human' ? "Escribe como Agente Humano..." : "La IA responderá automáticamente..."}
               className="w-full bg-[#f7f9fb] border-none rounded-[24px] md:rounded-[32px] p-6 md:p-8 pr-20 md:pr-24 text-[12px] md:text-[13px] font-bold text-slate-800 outline-none focus:bg-white focus:shadow-arise transition-all resize-none h-32 md:h-40"
             />
-            <button 
+            <button
               onClick={onSendMessage}
-              disabled={!newMessage.trim()}
+              disabled={!newMessage.trim() || isSending}
               className="absolute right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-2xl shadow-primary/40 disabled:opacity-20 disabled:grayscale"
             >
-              <Send className="w-5 h-5 md:w-6 md:h-6" />
+              {isSending ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Send className="w-5 h-5 md:w-6 md:h-6" />
+              )}
             </button>
           </div>
         </div>

@@ -18,7 +18,7 @@ export interface Contact {
   email?: string;
   segment?: string;
   tags?: string[];
-  purchase_history: any; // Legacy JSONB - To be deprecated by SalesOrder
+  purchase_history: Record<string, unknown>; // Legacy JSONB - To be deprecated by SalesOrder
 }
 
 export interface SalesOrder {
@@ -28,7 +28,7 @@ export interface SalesOrder {
   order_code: string;
   status: 'pending' | 'completed' | 'cancelled';
   total_amount: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 

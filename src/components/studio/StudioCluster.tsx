@@ -1,10 +1,29 @@
 import React from 'react';
 import { Cpu, Zap, Activity, RefreshCw, Send } from 'lucide-react';
 
+interface ApiKeyResult {
+  status: 'ok' | 'error' | 'testing';
+  latency?: number;
+}
+
+interface ApiKey {
+  id: string;
+  key_name: string;
+  key_value: string;
+}
+
+interface TelemetryData {
+  tokens: number;
+  cost: number;
+  latency: number;
+  wabaId?: string;
+  phoneId?: string;
+}
+
 interface StudioClusterProps {
-  telemetry: any;
-  apiKeys: any[];
-  keyResults: Record<string, { status: 'ok' | 'error' | 'testing', latency?: number }>;
+  telemetry: TelemetryData;
+  apiKeys: ApiKey[];
+  keyResults: Record<string, ApiKeyResult>;
   onTestKey: (id: string, key: string) => void;
 }
 
@@ -68,7 +87,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
                           <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded text-[7px] font-black uppercase">Standby</span>
                         )}
                       </div>
-                      <p className="text-[9px] font-mono text-slate-400 mt-1 tracking-tight">{k.api_key.substring(0, 40)}...</p>
+                      <p className="text-[9px] font-mono text-slate-400 mt-1 tracking-tight">{k.key_value.substring(0, 40)}...</p>
                     </div>
                   </div>
                   
@@ -80,7 +99,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
                       </div>
                     )}
                     <button 
-                      onClick={() => onTestKey(k.id, k.api_key)}
+                      onClick={() => onTestKey(k.id, k.key_value)}
                       disabled={result?.status === 'testing'}
                       className="w-10 h-10 flex items-center justify-center bg-primary/5 hover:bg-primary text-primary hover:text-white rounded-xl transition-all disabled:opacity-50 shadow-sm"
                     >
@@ -112,8 +131,8 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
                 <div className="pt-4 border-t border-white/10">
                   <p className="text-[9px] font-black text-slate-500 uppercase mb-4">Meta Data IDs</p>
                   <div className="space-y-2">
-                     <p className="text-[10px] font-mono text-slate-400 flex justify-between">WABA: <span className="text-white">{telemetry?.wabaId || '192744...'}</span></p>
-                     <p className="text-[10px] font-mono text-slate-400 flex justify-between">Phone: <span className="text-white">{telemetry?.phoneId || '106687...'}</span></p>
+                     <p className="text-[10px] font-mono text-slate-400 flex justify-between">WABA: <span className="text-white">{telemetry.wabaId || '192744...'}</span></p>
+                     <p className="text-[10px] font-mono text-slate-400 flex justify-between">Phone: <span className="text-white">{telemetry.phoneId || '106687...'}</span></p>
                   </div>
                 </div>
              </div>

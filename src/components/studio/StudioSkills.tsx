@@ -1,8 +1,14 @@
 import React from 'react';
 import { FileCode } from 'lucide-react';
 
+interface Template {
+  id: string;
+  name: string;
+  category: string;
+}
+
 interface StudioSkillsProps {
-  templates: any[];
+  templates: Template[];
 }
 
 export function StudioSkills({ templates }: StudioSkillsProps) {

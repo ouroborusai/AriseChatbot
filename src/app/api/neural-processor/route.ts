@@ -5,6 +5,7 @@ import type {
   NeuralProcessorResponse,
   NeuralAction,
 } from '@/types/api';
+import { requireAuth, verifyCompanyAccess } from '@/lib/api-auth';
 
 /**
  * NEURAL PROCESSOR v9.0 Industrial CORE
@@ -18,6 +19,10 @@ import type {
  * - pdf_generate: Generar y enviar PDF por WhatsApp
  */
 export async function POST(req: Request) {
+  // Verificar autenticación
+  const authResult = await requireAuth();
+  if (authResult.error) return authResult.error;
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -32,6 +37,15 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: 'Missing required parameters: messageId and companyId' },
         { status: 400 }
+      );
+    }
+
+    // Verificar acceso a la compañía
+    const hasAccess = await verifyCompanyAccess(authResult.user.id, companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'Access denied to this company' },
+        { status: 403 }
       );
     }
 
@@ -67,7 +81,27 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Buscar bloques de acción [[ ... ]]
+    // 2. Obtener estado de la conversación para validar Handoff
+    const { data: msgConv, error: convError } = await supabase
+      .from('messages')
+      .select('conversation_id, conversations(status)')
+      .eq('id', messageId)
+      .single();
+
+    const conversation = msgConv as any;
+    const status = conversation?.conversations?.status;
+
+    if (convError || !status) {
+      return NextResponse.json({ error: 'Conversation status not found' }, { status: 404 });
+    }
+
+    // --- CLÁUSULA DE GUARDA v9.0 ---
+    if (status !== 'open') {
+      console.log(`[NEURAL_PROCESSOR] Handoff detected (Status: ${status}). Aborting actions for message ${messageId}`);
+      return NextResponse.json({ status: 'aborted_handoff_active' });
+    }
+
+    // 3. Buscar bloques de acción [[ ... ]]
     const actionBlocks = message.content.match(/\[\[([\s\S]*?)\]\]/g);
 
     if (!actionBlocks || actionBlocks.length === 0) {

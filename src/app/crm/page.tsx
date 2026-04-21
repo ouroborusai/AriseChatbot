@@ -26,22 +26,40 @@ export default function CRMPage() {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
 
   const fetchCRMData = async (currentPage: number) => {
     setLoading(true);
-    const activeCompanyId = typeof window !== 'undefined' ? localStorage.getItem('arise_active_company') : null;
-    
-    if (!activeCompanyId || activeCompanyId === 'null' || activeCompanyId === 'undefined') {
+    const storedCompanyId = typeof window !== 'undefined' ? localStorage.getItem('arise_active_company') : null;
+
+    if (!storedCompanyId || storedCompanyId === 'null' || storedCompanyId === 'undefined') {
       setLoading(false);
       return;
     }
 
-    const isGlobal = activeCompanyId === 'global';
+    // Validar que la empresa existe en DB
+    const { data: companyData, error: companyError } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('id', storedCompanyId)
+      .single();
+
+    if (companyError || !companyData) {
+      localStorage.removeItem('arise_active_company');
+      console.error('[CRM] Empresa no existe o RLS bloquea acceso');
+      setLoading(false);
+      return;
+    }
+
+    const companyId = companyData.id;
+    setActiveCompanyId(companyId);
+    const isGlobal = companyId === 'global';
 
     try {
       // 1. Contador Maestro
       let countQuery = supabase.from('contacts').select('*', { count: 'exact', head: true });
-      if (!isGlobal) countQuery = countQuery.eq('company_id', activeCompanyId);
+      if (!isGlobal) countQuery = countQuery.eq('company_id', companyId);
       const { count } = await countQuery;
       setTotalCount(count || 0);
 
@@ -49,20 +67,20 @@ export default function CRMPage() {
       let contactQuery = supabase
         .from('contacts')
         .select('*, companies(name)');
-      
-      if (!isGlobal) contactQuery = contactQuery.eq('company_id', activeCompanyId);
-      
+
+      if (!isGlobal) contactQuery = contactQuery.eq('company_id', companyId);
+
       const { data: contactData, error: contactError } = await contactQuery
         .order('created_at', { ascending: false })
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
-      
+
       if (contactError) throw contactError;
 
       // 3. Vínculos Neurales (Conversaciones)
       let activeCount = 0;
       try {
         let chatsQuery = supabase.from('conversations').select('*', { count: 'exact', head: true }).eq('status', 'open');
-        if (!isGlobal) chatsQuery = chatsQuery.eq('company_id', activeCompanyId);
+        if (!isGlobal) chatsQuery = chatsQuery.eq('company_id', companyId);
         const { count: c } = await chatsQuery;
         activeCount = c || 0;
       } catch (e) { console.warn('Legacy conversations schema'); }
@@ -77,19 +95,25 @@ export default function CRMPage() {
   };
 
   const fetchMessages = async (contactId: string) => {
+    if (!activeCompanyId) return null;
+
+    // Obtener conversación MÁS RECIENTE con company_id correcto
     const { data: conv } = await supabase
       .from('conversations')
       .select('id, status')
       .eq('contact_id', contactId)
-      .single();
+      .eq('company_id', activeCompanyId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (conv) {
       // Suscripción Realtime para esta conversación
       const channel = supabase
         .channel(`chat_${conv.id}`)
-        .on('postgres_changes', { 
-          event: 'INSERT', 
-          schema: 'public', 
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
           table: 'messages',
           filter: `conversation_id=eq.${conv.id}`
         }, (payload) => {
@@ -102,22 +126,31 @@ export default function CRMPage() {
         .select('*')
         .eq('conversation_id', conv.id)
         .order('created_at', { ascending: true });
-      
+
       if (msgs) setChatMessages(msgs);
-      return () => { supabase.removeChannel(channel); };
+
+      // Cleanup function para eliminar subscription
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else {
       setChatMessages([]);
     }
+    return null;
   };
 
   const toggleHandoff = async () => {
-    if (!selectedContact) return;
-    
+    if (!selectedContact || !activeCompanyId) return;
+
+    // Obtener conversación MÁS RECIENTE con company_id correcto
     const { data: conv } = await supabase
       .from('conversations')
       .select('id, status')
       .eq('contact_id', selectedContact.id)
-      .single();
+      .eq('company_id', activeCompanyId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (conv) {
       const newStatus = conv.status === 'waiting_human' ? 'open' : 'waiting_human';
@@ -125,8 +158,12 @@ export default function CRMPage() {
         .from('conversations')
         .update({ status: newStatus })
         .eq('id', conv.id);
-        
-      if (!error) setSelectedContact({ ...selectedContact, convStatus: newStatus });
+
+      if (!error) {
+        setSelectedContact({ ...selectedContact, convStatus: newStatus });
+      } else {
+        console.error('[Handoff] Error al actualizar estado:', error);
+      }
     }
   };
 
@@ -137,10 +174,10 @@ export default function CRMPage() {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedContact) return;
-    
+    if (!newMessage.trim() || !selectedContact || isSending) return;
+
+    setIsSending(true);
     const content = newMessage;
-    setNewMessage('');
 
     try {
       const res = await fetch('/api/whatsapp/send', {
@@ -148,17 +185,35 @@ export default function CRMPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contactId: selectedContact.id, content })
       });
-      
+
       const data = await res.json();
-      if (data.error) alert(`Error de Transmisión: ${data.error}`);
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // ✅ Solo limpiar si se envió correctamente
+      setNewMessage('');
     } catch (err) {
-      console.error('SEND ERROR:', err);
+      // ✅ Mantener el mensaje para reintentar
+      console.error('[SEND ERROR]:', err);
+      alert(`Error al enviar: ${err instanceof Error ? err.message : 'Error desconocido'}`);
+    } finally {
+      setIsSending(false);
     }
   };
 
   useEffect(() => {
     fetchCRMData(page);
   }, [page]);
+
+  // Cleanup de subscription Realtime cuando cambia el contacto o se cierra el chat
+  useEffect(() => {
+    return () => {
+      // Limpiar todas las subscriptions al desmontar componente
+      supabase.removeAllChannels();
+    };
+  }, []);
 
   const handleUpdateSegment = async (id: string, newCategory: string) => {
     const { error } = await supabase.from('contacts').update({ category: newCategory }).eq('id', id);
@@ -218,7 +273,7 @@ export default function CRMPage() {
         </div>
       </div>
 
-      <ChatNeuralSlideOver 
+      <ChatNeuralSlideOver
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         selectedContact={selectedContact}
@@ -227,6 +282,7 @@ export default function CRMPage() {
         setNewMessage={setNewMessage}
         onSendMessage={sendMessage}
         onToggleHandoff={toggleHandoff}
+        isSending={isSending}
       />
     </div>
   );

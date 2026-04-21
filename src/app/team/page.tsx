@@ -10,8 +10,15 @@ import {
 } from 'lucide-react';
 import { MetricSmall } from '@/components/ui/MetricSmall';
 
+interface Employee {
+  id: string;
+  full_name: string;
+  position?: string;
+  contract_type?: string;
+}
+
 export default function TeamPage() {
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -68,7 +75,7 @@ export default function TeamPage() {
                 <div key={emp.id} className="p-10 flex items-center justify-between hover:bg-[#f7f9fb] transition-all group cursor-pointer">
                   <div className="flex items-center gap-6">
                     <div className="w-16 h-16 bg-[#f2f4f6] rounded-[24px] flex items-center justify-center font-black text-primary text-xs shadow-sm group-hover:bg-primary group-hover:text-white transition-all">
-                      {emp.full_name.split(' ').map((n:any) => n[0]).join('').toUpperCase()}
+                      {emp.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                     </div>
                     <div>
                       <p className="text-sm font-black text-slate-900 uppercase italic tracking-tight">{emp.full_name}</p>
@@ -116,7 +123,14 @@ export default function TeamPage() {
 }
 
 
-function SecurityEvent({ type, user, time, color }: any) {
+interface SecurityEventProps {
+  type: string;
+  user: string;
+  time: string;
+  color: string;
+}
+
+function SecurityEvent({ type, user, time, color }: SecurityEventProps) {
   return (
     <div className="p-6 bg-white/5 rounded-[24px] border border-white/5 backdrop-blur-md transition-all hover:bg-white/10 group cursor-pointer">
        <div className="flex justify-between items-center mb-3">

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 import Handlebars from 'handlebars';
 import { templates } from '@/lib/pdf/templates';
+import { requireAuth } from '@/lib/api-auth';
 
 /**
  * ARISE PDF PIPELINE v9.0
@@ -9,10 +10,29 @@ import { templates } from '@/lib/pdf/templates';
  */
 export async function POST(req: Request) {
   try {
+    // Verificar autenticación
+    const authResult = await requireAuth();
+    if (authResult.error) return authResult.error;
+
     const { targetPhone, whatsappToken, phoneNumberId, reportType } = await req.json();
 
+    // Validación de parámetros requeridos
     if (!targetPhone || !whatsappToken || !phoneNumberId) {
-        return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+        return NextResponse.json({ error: 'Missing required parameters: targetPhone, whatsappToken, phoneNumberId' }, { status: 400 });
+    }
+
+    // Validación de formato de teléfono (prefijo + dígitos)
+    const phoneRegex = /^\+?\d{8,15}$/;
+    if (!phoneRegex.test(targetPhone.replace(/[\s\-\(\)]/g, ''))) {
+        return NextResponse.json({ error: 'Invalid phone format. Expected: +CC9XXXXXXXX' }, { status: 400 });
+    }
+
+    // Validación de reportType
+    const validTypes = ['balance', 'factura', 'invoice', 'compliance', 'f29', 'liquidacion', 'sueldo', '8-columnas', 'dashboard', 'resumen'];
+    if (reportType && !validTypes.some(t => reportType.toLowerCase().includes(t))) {
+        return NextResponse.json({
+            error: `Invalid reportType. Valid options: ${validTypes.join(', ')}`
+        }, { status: 400 });
     }
 
     // 1. Template Selection
@@ -158,8 +178,48 @@ export async function POST(req: Request) {
             type: 'document',
             document: {
                 id: mediaId,
-                caption: '📄 *Aquí tienes tu reporte interactivo*\n\nOuroborusAI - Arise Business OS v9.0 ha finalizado el procesamiento.',
+                caption: `📄 *Aquí tienes tu reporte de ${reportType || 'Resumen'}*\n\nOuroborusAI - Arise Business OS v9.0 ha finalizado el procesamiento.`,
                 filename: fileName
+            }
+        })
+    });
+
+    // --- 5. INTERACTIVE FOLLOW-UP LIST (Diamond v9.0 Scale) ---
+    await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${whatsappToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: targetPhone,
+            type: 'interactive',
+            interactive: {
+                type: 'list',
+                header: { type: 'text', text: 'Operaciones Finalizadas' },
+                body: { text: 'El procesamiento ha concluido exitosamente. ¿Qué deseas hacer a continuación?' },
+                footer: { text: 'Arise Neural Assistant' },
+                action: {
+                    button: 'Ver Opciones',
+                    sections: [
+                        {
+                            title: 'Navegación Maestro',
+                            rows: [
+                                { id: 'pdf_again', title: '🔄 Generar otro reporte', description: 'Reinicia el flujo de documentación' },
+                                { id: 'back_to_menu', title: '⬅️ Volver al Menú', description: 'Regresa al panel de control principal' },
+                                { id: 'talk_human', title: '👥 Hablar con Agente', description: 'Solicita asistencia humana inmediata' }
+                            ]
+                        },
+                        {
+                            title: 'Acciones de Reporte',
+                            rows: [
+                                { id: 'pdf_send_email', title: '📧 Enviar por Correo', description: 'Despacha este PDF a tu email registrado' },
+                                { id: 'pdf_audit', title: '🔎 Auditar Datos', description: 'Inicia análisis profundo del reporte' }
+                            ]
+                        }
+                    ]
+                }
             }
         })
     });

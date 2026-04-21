@@ -15,8 +15,18 @@ import {
 } from 'lucide-react';
 import { MetricSmall } from '@/components/ui/MetricSmall';
 
+interface ClientDocument {
+  id: string;
+  folio?: string;
+  amount_total?: number;
+  created_at: string;
+  document_type?: string;
+  company_id: string;
+  status?: string;
+}
+
 export default function BillingPage() {
-  const [docs, setDocs] = useState<any[]>([]);
+  const [docs, setDocs] = useState<ClientDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, tax: 0, count: 0, efficiency: 0 });
 

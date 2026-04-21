@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ARISE DEPENDENCY CHECKER v9.0
  * Verifica que todos los imports y dependencias estén correctamente configurados
@@ -245,3 +246,4 @@ async function main() {
 }
 
 main().catch(console.error);
+

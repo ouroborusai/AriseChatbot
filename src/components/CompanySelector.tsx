@@ -16,9 +16,16 @@ interface CompanySelectorProps {
   variant?: 'sidebar' | 'header';
 }
 
+interface CompanyListItem {
+  id: string;
+  name: string;
+  role: string;
+  plan_tier: string;
+}
+
 export default function CompanySelector({ className = '', variant = 'sidebar' }: CompanySelectorProps) {
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [filteredCompanies, setFilteredCompanies] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<CompanyListItem[]>([]);
   const { activeCompany, setActiveCompany } = useActiveCompany();
   const { user, loading: authLoading } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -50,9 +57,9 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
             .order('name', { ascending: true });
 
           if (all) {
-            const list = [
+            const list: CompanyListItem[] = [
               { id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin', plan_tier: 'enterprise' },
-              ...all.map(c => ({ id: c.id, name: c.name, role: 'admin', plan_tier: c.plan_tier }))
+              ...all.map((c: { id: string; name: string; plan_tier: string }) => ({ id: c.id, name: c.name, role: 'admin', plan_tier: c.plan_tier }))
             ];
             setCompanies(list);
             setFilteredCompanies(list);
@@ -65,12 +72,15 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
             .eq('user_id', user.id);
 
           if (access) {
-            const list = access.map((a: any) => ({
-              id: a.company_id,
-              name: a.companies?.name || 'Empresa',
-              role: a.role,
-              plan_tier: a.companies?.plan_tier || 'free'
-            })).sort((a, b) => a.name.localeCompare(b.name));
+            const list: CompanyListItem[] = access.map((a) => {
+              const companiesData = Array.isArray(a.companies) ? a.companies[0] : a.companies;
+              return {
+                id: a.company_id,
+                name: (companiesData as { name?: string; plan_tier?: string })?.name || 'Empresa',
+                role: a.role,
+                plan_tier: (companiesData as { name?: string; plan_tier?: string })?.plan_tier || 'free'
+              };
+            }).sort((a, b) => a.name.localeCompare(b.name));
 
             setCompanies(list);
             setFilteredCompanies(list);
@@ -103,7 +113,7 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
     setFilteredCompanies(filtered);
   }, [searchQuery, companies]);
 
-  const handleCompanyChange = (company: any) => {
+  const handleCompanyChange = (company: CompanyListItem) => {
     setActiveCompany(company);
     localStorage.setItem('arise_active_company', company.id);
     setIsDropdownOpen(false);

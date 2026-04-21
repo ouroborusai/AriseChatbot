@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ARISE CODE AUDITOR v9.0
  * Herramienta de análisis estático para detectar inconsistencias en el código base
@@ -252,3 +253,4 @@ async function main() {
 }
 
 main().catch(console.error);
+

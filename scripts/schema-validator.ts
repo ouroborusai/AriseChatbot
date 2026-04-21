@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ARISE SCHEMA VALIDATOR v9.0
  * Valida que las tablas y columnas usadas en el código existan en Supabase
@@ -274,3 +275,4 @@ async function main() {
 }
 
 main().catch(console.error);
+

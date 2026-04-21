@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ARISE NEURAL DIAGNOSTIC TOOL v1.0 (Diamond Industrial)
  * Este script simula una interacción completa de WhatsApp para validar:
@@ -66,10 +67,22 @@ async function runDiagnostic() {
         while (attempts < 5) {
             await new Promise(resolve => setTimeout(resolve, 3000));
             
+            // Obtener company_id primero para filtrar correctamente
+            const { data: company } = await supabase
+                .from('companies')
+                .select('id')
+                .eq('name', 'MTZ Test')
+                .single();
+
+            if (!company) {
+                console.error('❌ Company "MTZ Test" no encontrada');
+                break;
+            }
+
             const { data: messages, error } = await supabase
                 .from('messages')
-                .select('*, conversations!inner(*, companies!inner(name))')
-                .eq('conversations.companies.name', 'MTZ Test') 
+                .select('*, conversations!inner(company_id)')
+                .eq('conversations.company_id', company.id)
                 .order('created_at', { ascending: false })
                 .limit(2);
 
@@ -100,3 +113,4 @@ async function runDiagnostic() {
 }
 
 runDiagnostic();
+

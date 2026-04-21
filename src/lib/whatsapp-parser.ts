@@ -13,9 +13,11 @@ import {
   buildListMessage,
   WHATSAPP_LIMITS,
   type WhatsAppMessage,
+  type WhatsAppApiResponse,
   type ParsedInteractiveContent,
-  type InteractiveOption,
 } from './whatsapp-types';
+
+export type { WhatsAppMessage, WhatsAppApiResponse, ParsedInteractiveContent };
 
 /**
  * Parsea el contenido de una respuesta de IA y detecta elementos interactivos
@@ -42,13 +44,13 @@ export function parseInteractiveContent(content: string): ParsedInteractiveConte
   const rawOptions = optionsPart.split('|').map(o => o.trim()).filter(o => o.length > 0);
 
   // Extraer opciones limpias (sin tags de acción [[...]])
-  const options: InteractiveOption[] = rawOptions.map((opt, index) => {
-    // Extraer tags de acción si existen
-    const actionMatch = opt.match(/\[\[(.*?)\]\]/);
+  const options = rawOptions.map((opt, index) => {
+    // Extraer tags de acción si existen (Regex seguro para evitar backtracking)
+    const actionMatch = opt.match(/\[\[([^\[\]]+)\]\]/);
     const actionPayload = actionMatch ? actionMatch[1] : null;
 
-    // Limpiar el texto de la opción
-    const cleanTitle = opt.replace(/\[\[.*?\]\]/g, '').trim();
+    // Limpiar el texto de la opción omitiendo los bloques de acción
+    const cleanTitle = opt.replace(/\[\[[^\[\]]+\]\]/g, '').trim();
 
     return {
       id: `opt_${index}_${Date.now()}`,
@@ -169,6 +171,11 @@ export function validateMessage(content: string): { valid: boolean; errors: stri
  * );
  * // Resultado: "Hola! ¿Qué deseas hacer? --- Ver Contactos | Agregar Cliente | Buscar"
  */
+export interface ParsedMessageContent {
+  textParts: string[];
+  buttonParts: string[][];
+}
+
 export function formatAIResponse(
   bodyText: string,
   options: string[]
@@ -218,4 +225,30 @@ export function debugParse(content: string): void {
   }
 
   console.log('═══════════════════════════════════════════════════════════\n');
+}
+
+/**
+ * PARSER PARA UI (Diamond v9.0 resilient)
+ * Divide el mensaje en partes de texto y bloques de botones, manejando múltiples separadores ---
+ */
+export function parseUIMessageContent(content: string): ParsedMessageContent {
+  const segments = content.split('---').map(s => s.trim());
+  const textParts: string[] = [];
+  const buttonParts: string[][] = [];
+
+  segments.forEach((segment, index) => {
+    // Si contiene |, es un bloque de botones
+    if (segment.includes('|')) {
+      const buttons = segment.split('|').map(b => b.replace(/\[\[[^\[\]]+\]\]/g, '').trim()).filter(b => b.length > 0);
+      if (buttons.length > 0) {
+        buttonParts.push(buttons);
+      } else {
+        textParts.push(segment);
+      }
+    } else {
+      textParts.push(segment);
+    }
+  });
+
+  return { textParts, buttonParts };
 }

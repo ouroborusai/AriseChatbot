@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { requireAuth, verifyCompanyAccess } from '@/lib/api-auth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,10 +13,24 @@ const supabase = createClient(
  */
 export async function POST(req: Request) {
   try {
+    // Verificar autenticación
+    const authResult = await requireAuth();
+    if (authResult.error) return authResult.error;
+
     const { filePath, companyId } = await req.json();
 
+    // Validar inputs requeridos
     if (!filePath || !companyId) {
-      return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing parameters: filePath and companyId' }, { status: 400 });
+    }
+
+    // Verificar acceso a la compañía
+    const hasAccess = await verifyCompanyAccess(authResult.user.id, companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'Access denied to this company' },
+        { status: 403 }
+      );
     }
 
     // 1. Descargar el archivo desde Supabase Storage

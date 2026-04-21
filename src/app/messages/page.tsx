@@ -15,6 +15,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import { parseUIMessageContent } from '@/lib/whatsapp-parser';
 
 interface Contact {
   full_name: string | null;
@@ -382,34 +383,33 @@ export default function MessagesPage() {
                             </div>
                           )}
                           
-                          {/* Lógica de Renderizado Inteligente de Botones */}
-                          {m.content.includes('---') ? (() => {
-                            const [text, buttonsPart] = m.content.split('---');
-                            const buttons = buttonsPart.split('|').map((b: string) => b.trim()).filter((b: string) => b.length > 0);
+                          {/* Lógica de Renderizado Inteligente de Botones v9.0 */}
+                          {(() => {
+                            const { textParts, buttonParts } = parseUIMessageContent(m.content);
                             
                             return (
-                              <div className="space-y-3">
-                                <p className={`text-sm leading-relaxed whitespace-pre-wrap ${isAI ? 'font-medium' : 'font-normal'}`}>
-                                  {text.trim()}
-                                </p>
-                                <div className="flex flex-wrap gap-2 pt-2 border-t border-[#333]">
-                                  {buttons.map((btn: string, j: number) => (
-                                    <button
-                                      key={j}
-                                      onClick={() => sendMessage(btn)}
-                                      className="px-4 py-2 bg-[#262626] hover:bg-[#333] border border-[#444] text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center gap-2"
-                                    >
-                                      {btn}
-                                    </button>
-                                  ))}
-                                </div>
+                              <div className="space-y-4">
+                                {textParts.map((text, tidx) => (
+                                  <p key={tidx} className={`text-sm leading-relaxed whitespace-pre-wrap ${isAI ? 'font-medium' : 'font-normal'}`}>
+                                    {text}
+                                  </p>
+                                ))}
+                                {buttonParts.map((group, gidx) => (
+                                  <div key={gidx} className="flex flex-wrap gap-2 pt-2 border-t border-[#333]/20">
+                                    {group.map((btn, bidx) => (
+                                      <button
+                                        key={bidx}
+                                        onClick={() => sendMessage(btn)}
+                                        className="px-4 py-2 bg-[#262626] hover:bg-[#333] border border-[#444] text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center gap-2"
+                                      >
+                                        {btn}
+                                      </button>
+                                    ))}
+                                  </div>
+                                ))}
                               </div>
                             );
-                          })() : (
-                            <p className={`text-sm leading-relaxed whitespace-pre-wrap ${isAI ? 'font-medium' : 'font-normal'}`}>
-                              {m.content}
-                            </p>
-                          )}
+                          })()}
                           
                           <span className={`block mt-3 text-[10px] font-mono opacity-40 ${isAI ? 'text-left' : 'text-right'}`}>
                             {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}

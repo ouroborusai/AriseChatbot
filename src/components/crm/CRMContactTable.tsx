@@ -1,10 +1,20 @@
 import React from 'react';
 import { MoreHorizontal } from 'lucide-react';
 
+interface CRMContact {
+  id: string;
+  full_name?: string;
+  phone?: string;
+  email?: string;
+  category?: string;
+  created_at: string;
+  companies?: { name: string };
+}
+
 interface CRMContactTableProps {
   loading: boolean;
-  contacts: any[];
-  onOpenChat: (contact: any) => void;
+  contacts: CRMContact[];
+  onOpenChat: (contact: CRMContact) => void;
   onUpdateSegment: (id: string, newCategory: string) => void;
 }
 

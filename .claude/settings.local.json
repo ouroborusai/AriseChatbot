@@ -3,7 +3,10 @@
     "allow": [
       "Bash(bun run *)",
       "Bash(npx tsx *)",
-      "Bash(ls -la *.md)"
+      "Bash(ls -la *.md)",
+      "Bash(curl -s \"https://zosravrfpfechanatucx.supabase.co/rest/v1/ai_prompts?select=*&is_active=eq.true\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpvc3JhdnJmcGZlY2hhbmF0dWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTk1NDMsImV4cCI6MjA5MjEzNTU0M30.kBn8Flv2o8vQUFERJdjKVdCwxXIxc4rnErw-FNsx5gc\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpvc3JhdnJmcGZlY2hhbmF0dWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTk1NDMsImV4cCI6MjA5MjEzNTU0M30.kBn8Flv2o8vQUFERJdjKVdCwxXIxc4rnErw-FNsx5gc\")",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

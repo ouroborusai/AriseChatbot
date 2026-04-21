@@ -9,8 +9,8 @@ const supabase = createClient(
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
 /**
- * INDUSTRIAL WHATSAPP NEURAL WEBHOOK v9.0 (Next.js Edition)
- * Soporta: Texto, Botones, Imágenes (OCR) y AUDIOS (Voz a Acción).
+ * INDUSTRIAL WHATSAPP NEURAL WEBHOOK v9.0 CORE
+ * Arquitectura de Control de Flujo Estricto.
  */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -27,10 +27,9 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log('[WH_INPUT] Payload received:', JSON.stringify(body, null, 2));
-
     const entry = body.entry?.[0];
     const changes = entry?.changes?.[0]?.value;
+    
     if (!changes || !changes.messages) return NextResponse.json({ status: 'no_messages' });
 
     const message = changes.messages[0];
@@ -39,213 +38,100 @@ export async function POST(req: Request) {
     const profileName = changes.contacts?.[0]?.profile?.name || 'Usuario';
     const phoneNumberId = changes.metadata?.phone_number_id;
 
+    console.log(`[WH_INPUT] New message from ${sender} (${profileName})`);
+
     // --- 1. IDEMPOTENCIA ---
     const { data: existingMsg } = await supabase
       .from('messages')
       .select('id')
       .contains('metadata', { whatsapp_message_id: waId })
       .maybeSingle();
-    if (existingMsg) return NextResponse.json({ status: 'idempotent' });
-
-    // --- 2. ENRUTAMIENTO NEURAL v9.0 ---
-    const { data: allCompanies } = await supabase
-      .from('companies')
-      .select('*')
-      .contains('settings', { whatsapp: { phone_number_id: phoneNumberId } });
-
-    if (!allCompanies || allCompanies.length === 0) {
-       console.error('[WH_ERROR] Company not found for phoneId:', phoneNumberId);
-       return NextResponse.json({ status: 'company_not_found' });
-    }
-
-    const company = allCompanies[0];
-    const whatsappToken = company.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
-
-    // --- 3. PROCESAMIENTO MULTIMODAL (AUDIO HABILITADO) ---
-    let content = '';
-    let isAudio = false;
-
-    if (message.type === 'text') {
-      content = message.text?.body || '';
-    } else if (message.type === 'interactive') {
-      content = message.interactive.button_reply?.title || message.interactive.list_reply?.title || '';
-    } else if (message.type === 'audio' || message.type === 'voice') {
-      console.log('[WH_AUDIO] Audio message detected. Processing via Neural Engine...');
-      isAudio = true;
-      const mediaId = message.audio?.id || message.voice?.id;
       
-      // Descargar audio de Meta
-      const mediaRes = await fetch(`https://graph.facebook.com/v19.0/${mediaId}`, {
-        headers: { 'Authorization': `Bearer ${whatsappToken}` }
-      });
-      const mediaData = await mediaRes.json();
-      
-      if (mediaData.url) {
-        const audioBuffer = await fetch(mediaData.url, {
-          headers: { 'Authorization': `Bearer ${whatsappToken}` }
-        }).then(res => res.arrayBuffer());
-        
-        // --- GEMINI 2.5 FLASH LITE VOICE PERCEPTION ---
-        const base64Audio = Buffer.from(audioBuffer).toString('base64');
-        const voicePrompt = "Transcribe este audio de WhatsApp y responde a la solicitud. Si es una orden de inventario, genera el JSON correspondiente.";
-        
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: voicePrompt },
-                { inline_data: { mime_type: "audio/ogg", data: base64Audio } }
-              ]
-            }]
-          })
-        });
-        
-        const geminiData = await geminiRes.json();
-        content = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '[Audio no procesable]';
-        console.log('[WH_AUDIO] Transcription result:', content);
+    if (existingMsg) return NextResponse.json({ status: 'idempotent_skip' });
+
+    // --- 2. RESOLUCIÓN DE IDENTIDAD Y EMPRESA (Lógica Consolidada) ---
+    // Intentar resolver contact_id y company_id de una sola vez
+    let { data: contact } = await supabase
+      .from('contacts')
+      .select('id, company_id')
+      .eq('phone', sender)
+      .limit(1)
+      .maybeSingle();
+
+    let companyId = contact?.company_id;
+    let contactId = contact?.id;
+
+    // Si no hay contacto, resolver por el directorio interno o el Phone ID de la empresa
+    if (!companyId) {
+      const { data: staff } = await supabase.from('internal_directory').select('company_id').eq('phone', sender).maybeSingle();
+      if (staff) {
+        companyId = staff.company_id;
+      } else {
+        const { data: comp } = await supabase.from('companies').select('id').contains('settings', { whatsapp: { phone_number_id: phoneNumberId } }).limit(1).maybeSingle();
+        companyId = comp?.id;
       }
+
+      if (!companyId) return NextResponse.json({ status: 'unauthorized_sender' }, { status: 401 });
+
+      // Crear contacto si no existe
+      const { data: newContact } = await supabase.from('contacts').insert({ full_name: profileName, phone: sender, company_id: companyId }).select('id').single();
+      contactId = newContact?.id;
     }
 
-    // --- 4. PERSISTENCIA ---
-    const { data: contact } = await supabase.from('contacts').select('id').eq('phone', sender).eq('company_id', company.id).maybeSingle();
-    let cid = contact?.id;
-    if (!cid) {
-      const { data: nc, error: nce } = await supabase.from('contacts').insert({ full_name: profileName, phone: sender, company_id: company.id }).select('id').single();
-      if (nce || !nc) {
-        console.error('[WH_ERROR] Failed to create contact:', nce);
-        return NextResponse.json({ status: 'contact_creation_failed' });
-      }
-      cid = nc.id;
-    }
+    if (!contactId || !companyId) return NextResponse.json({ status: 'identity_resolution_failed' });
 
-    let { data: conv } = await supabase.from('conversations').select('id, status').eq('contact_id', cid).eq('company_id', company.id).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+    // --- 3. GESTIÓN DE CONVERSACIÓN ---
+    let { data: conv } = await supabase
+      .from('conversations')
+      .select('id, status')
+      .eq('contact_id', contactId)
+      .eq('company_id', companyId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     if (!conv || conv.status === 'closed') {
-      const { data: nconv, error: nce } = await supabase.from('conversations').insert({ contact_id: cid, company_id: company.id, status: 'open' }).select('id, status').single();
-      if (nce || !nconv) {
-        console.error('[WH_ERROR] Failed to create conversation:', nce);
-        return NextResponse.json({ status: 'conv_creation_failed' });
-      }
+      const { data: nconv } = await supabase.from('conversations').insert({ contact_id: contactId, company_id: companyId, status: 'open' }).select('id, status').single();
       conv = nconv;
     }
 
-    // Guardar el mensaje del usuario (o transcripción de audio)
-    const { data: savedMsg, error: sme } = await supabase.from('messages').insert({ 
-      conversation_id: conv.id, sender_type: 'user', content, 
-      metadata: { whatsapp_message_id: waId, type: message.type, is_audio: isAudio } 
-    }).select('id').single();
-    if (sme || !savedMsg) {
-      console.error('[WH_ERROR] Failed to save message:', sme);
-      return NextResponse.json({ status: 'msg_save_failed' });
+    if (!conv) return NextResponse.json({ status: 'conversation_failure' });
+
+    // --- 4. PROCESAMIENTO DE CONTENIDO ---
+    let content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
+    
+    // Obtener llaves disponibles (Rotación Industrial)
+    let keys = (process.env.GEMINI_API_KEY || "").split(',').map((k: string) => k.trim()).filter((k: string) => k.length > 0);
+    if (keys.length === 0) {
+      const { data: vaultKeys } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
+      if (vaultKeys) keys = vaultKeys.map((k: any) => k.api_key);
+    }
+    const activeKey = (keys[Math.floor(Math.random() * keys.length)] || process.env.GEMINI_API_KEY || "") as string;
+
+    // Soporte para Audio Neural (Gemini Voice Perception)
+    if (message.type === 'audio' || message.type === 'voice') {
+      content = await processAudioMessage(message, companyId, activeKey);
     }
 
-    // --- 5. RESPUESTA NEURAL (INDUSTRIAL v9.0) ---
-    if (conv.status === 'open') {
-      // Buscar Prompt Activo
-      const { data: p } = await supabase
-        .from('ai_prompts')
-        .select('system_prompt')
-        .eq('company_id', company.id)
-        .eq('is_active', true)
-        .in('category', ['General', 'Internal'])
-        .limit(1)
-        .maybeSingle();
+    // Persistir mensaje del usuario independientemente del estado (para el log)
+    await supabase.from('messages').insert({ 
+      conversation_id: conv.id,
+      sender_type: 'user',
+      content, 
+      metadata: { whatsapp_message_id: waId, type: message.type } 
+    });
 
-      const baseSystemPrompt = p?.system_prompt || "Eres Arise Diamond v9.0 (Director AI). Responde de forma ejecutiva.";
+    // --- 5. CLÁUSULA DE GUARDA v9.1 (Doble Validación) ---
+    if (conv.status !== 'open') {
+      console.log(`[HANDOFF] AI Interrupted for conv ${conv.id}. Status: ${conv.status}`);
+      return NextResponse.json({ status: 'ai_silenced_handoff' });
+    }
 
-      // Rotación de API Keys (env + vault)
-      let keys = (process.env.GEMINI_API_KEY || "").split(',').map(k => k.trim()).filter(k => k.length > 0);
-
-      if (keys.length === 0) {
-        const { data: vaultKeys } = await supabase
-          .from('gemini_api_keys')
-          .select('api_key')
-          .eq('is_active', true);
-        if (vaultKeys && vaultKeys.length > 0) {
-          keys = vaultKeys.map(k => k.api_key);
-        }
-      }
-
-      if (keys.length > 0) {
-        const activeKey = keys[Math.floor(Math.random() * keys.length)];
-
-        const promptWithContext = `${baseSystemPrompt}\n\n[USUARIO: ${profileName}]\n[MENSAJE: ${content}]`;
-
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${activeKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: promptWithContext }] }] })
-        });
-
-        const gData = await geminiRes.json();
-        const aiText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "Arise Neural Engine: Fallo de percepción.";
-
-        // Guardar respuesta del bot
-        const { data: botMsg, error: bme } = await supabase
-          .from('messages')
-          .insert({
-            conversation_id: conv.id,
-            sender_type: 'bot',
-            content: aiText
-          })
-          .select('id')
-          .single();
-
-        // --- TRIGGER NEURAL PROCESSOR (si hay bloques de acción) ---
-        if (botMsg && aiText.includes('[[')) {
-          fetch(`${process.env.APP_URL || 'http://localhost:3000'}/api/neural-processor`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messageId: botMsg.id, companyId: company.id })
-          }).catch(e => console.error('[NEURAL_BRIDGE] Failed:', e));
-        }
-
-        // --- 6. WHATSAPP DELIVERY (Diamond v9.0 Smart Parser) ---
-        const [textPart, buttonsPart] = aiText.split('---');
-        const responseText = textPart.trim();
-
-        let payload: any = {
-          messaging_product: 'whatsapp',
-          to: sender,
-          type: 'text',
-          text: { body: aiText }
-        };
-
-        // Parsear botones si existen
-        if (buttonsPart) {
-          const options = buttonsPart.split('|')
-            .map(o => o.replace(/\[\[.*?\]\]/g, '').trim())
-            .filter(o => o.length > 0);
-
-          if (options.length > 0 && options.length <= 3) {
-            payload = {
-              messaging_product: 'whatsapp',
-              to: sender,
-              type: 'interactive',
-              interactive: {
-                type: 'button',
-                body: { text: responseText.substring(0, 1024) },
-                action: {
-                  buttons: options.slice(0, 3).map((btn: string, i: number) => ({
-                    type: 'reply',
-                    reply: { id: `ai_btn_${i}_${Date.now()}`, title: btn.substring(0, 20) }
-                  }))
-                }
-              }
-            };
-          }
-        }
-
-        await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${whatsappToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-      }
+    // --- 6. GENERACIÓN DE RESPUESTA NEURAL ---
+    // Re-verificar estado justo antes de enviar (Atomic Check)
+    const { data: latestConv } = await supabase.from('conversations').select('status').eq('id', conv.id).single();
+    if (latestConv?.status === 'open') {
+      await generateAndSendAIResponse(conv.id, companyId, sender, content, profileName, phoneNumberId, activeKey);
     }
 
     return NextResponse.json({ status: 'success' });
@@ -254,4 +140,117 @@ export async function POST(req: Request) {
     console.error('[WH_CRITICAL_ERROR]', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+/**
+ * Función interna para procesamiento de audio mediante Gemini 2.5
+ */
+async function processAudioMessage(message: any, companyId: string, apiKey: string) {
+  const { data: company } = await supabase.from('companies').select('settings').eq('id', companyId).single();
+  const token = company?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
+  const mediaId = message.audio?.id || message.voice?.id;
+
+  try {
+    const mediaRes = await fetch(`https://graph.facebook.com/v19.0/${mediaId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const { url } = await mediaRes.json();
+    if (!url) return '[Audio fallido]';
+
+    const audioBuffer = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.arrayBuffer());
+    const base64Audio = Buffer.from(audioBuffer).toString('base64');
+
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: "Transcribe y responde a la solicitud." }, { inline_data: { mime_type: "audio/ogg", data: base64Audio } }] }]
+      })
+    });
+    const gData = await geminiRes.json();
+    return gData.candidates?.[0]?.content?.parts?.[0]?.text || '[Audio no procesable]';
+  } catch (e) {
+    return '[Error procesando audio]';
+  }
+}
+
+/**
+ * Genera y envía la respuesta de IA con Contexto Histórico (Diamond v9.2)
+ */
+async function generateAndSendAIResponse(convId: string, companyId: string, to: string, content: string, profileName: string, phoneNumberId: string, apiKey: string) {
+  // 1. Recuperar Contexto Maestro (Historial + Empresa + Prompt)
+  const { data: company } = await supabase.from('companies').select('settings, name').eq('id', companyId).single();
+  const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', companyId).eq('is_active', true).limit(1).maybeSingle();
+  const { data: history } = await supabase.from('messages').select('sender_type, content').eq('conversation_id', convId).order('created_at', { ascending: false }).limit(10);
+  
+  const systemPrompt = p?.system_prompt || "Eres Arise Director AI. Responde breve y ejecutivo.";
+  const whatsappToken = company?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
+
+  // 2. Formatear Historial para Gemini (Excluyendo el mensaje actual para evitar eco)
+  const formattedHistory = (history || [])
+    .filter((m: any) => m.content !== content) // Evitar duplicado del mensaje actual
+    .reverse()
+    .map((m: any) => `${m.sender_type === 'user' ? 'Usuario' : 'Arise'}: ${m.content}`)
+    .join('\n');
+
+  const promptWithContext = `
+${systemPrompt}
+Socio Operativo de la empresa "${company?.name || 'Arise'}".
+
+[MEMORIA OPERATIVA]
+${formattedHistory}
+
+[SOLICITUD ACTUAL]
+Director ${profileName}: "${content}"
+
+INSTRUCCIONES DE ALTA PRIORIDAD:
+1. ANCLAJE DE MÓDULO: Si el usuario ya eligió un sector (Inventario, Finanzas, etc.) en el historial, MANTENTE en ese contexto. No saludes de nuevo ni muestres el Menú Maestro a menos que se te pida explícitamente ("menú", "volver", "inicio").
+2. FLUIDEZ EJECUTIVA: Responde directamente a la solicitud actual usando la memoria previa. Si el usuario dice "PENDIENTES" y en el historial se habla de RRHH, muestra los pendientes de RRHH.
+3. FORMATO DE SALIDA: [Respuesta] --- [Acción 1] | [Acción 2] | [Acción 3]
+   - Máximo 3 botones.
+   - Acciones Neurales: Solo al final de todo [[ { "action": "..." } ]].
+`;
+
+  const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: promptWithContext }] }] })
+  });
+
+  const gData = await geminiRes.json();
+  const aiText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "Arise Neural Engine: Fallo de percepción.";
+
+  // Persistir respuesta
+  const { data: botMsg } = await supabase.from('messages').insert({ conversation_id: convId, sender_type: 'bot', content: aiText }).select('id').single();
+
+  // Trigger Neural Processor (Procesamiento de acciones)
+  if (botMsg && aiText.includes('[[')) {
+    fetch(`${process.env.APP_URL || 'http://localhost:3000'}/api/neural-processor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messageId: botMsg.id, companyId: companyId })
+    }).catch(e => console.error('[NEURAL_BRIDGE] Failed:', e));
+  }
+
+  // Enviar a WhatsApp
+  const [textPart, buttonsPart] = aiText.split('---');
+  let payload: any = { messaging_product: 'whatsapp', to, type: 'text', text: { body: aiText } };
+
+  if (buttonsPart) {
+    const options = buttonsPart.split('|').map((o: string) => o.replace(/\[\[[^\[\]]+\]\]/g, '').trim()).filter((o: string) => o.length > 0).slice(0, 3);
+    if (options.length > 0) {
+      payload = {
+        messaging_product: 'whatsapp', to, type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: textPart.trim().substring(0, 1024) || 'Selecciona una opción:' },
+          action: { buttons: options.map((btn: string, i: number) => ({ type: 'reply', reply: { id: `ai_btn_${i}`, title: btn.substring(0, 20) } })) }
+        }
+      };
+    }
+  }
+
+  await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
 }

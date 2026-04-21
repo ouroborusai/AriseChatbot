@@ -10,8 +10,17 @@ import {
   CheckCircle2 
 } from 'lucide-react';
 
+interface Company {
+  id: string;
+  legal_name?: string;
+  rut?: string;
+  segment?: string;
+  created_at: string;
+  metadata?: Record<string, unknown>;
+}
+
 export default function CompanyPage() {
-  const [company, setCompany] = useState<any>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

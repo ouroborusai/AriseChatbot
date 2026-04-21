@@ -10,7 +10,7 @@ export interface Company {
   tax_id?: string;
   status?: string;
   plan_tier?: string;
-  settings?: any;
+  settings?: Record<string, unknown>;
 }
 
 interface ActiveCompanyContextType {

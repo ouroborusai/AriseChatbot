@@ -33,7 +33,11 @@ export async function POST(req: Request) {
       .eq('id', contactId)
       .single();
 
-    if (contactError || !contact?.companies?.settings?.whatsapp) {
+    const company = Array.isArray(contact?.companies) 
+      ? contact?.companies[0] 
+      : (contact?.companies as any);
+
+    if (contactError || !company?.settings?.whatsapp) {
       console.error('[WhatsApp Send] Contacto o configuración no encontrada');
       return NextResponse.json(
         { error: 'Configuración de WhatsApp no encontrada' },
@@ -41,7 +45,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { access_token, phone_number_id } = contact.companies.settings.whatsapp;
+    const { access_token, phone_number_id } = company.settings.whatsapp;
 
     // 2. Buscar conversación activa
     const { data: conv } = await supabase

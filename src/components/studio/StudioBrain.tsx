@@ -1,12 +1,18 @@
 import React from 'react';
-import { Terminal, RefreshCw, Sparks, Activity, Zap, Sparkles } from 'lucide-react';
+import { Terminal, RefreshCw, Activity, Zap, Sparkles } from 'lucide-react';
 
 interface StudioBrainProps {
   systemPrompt: string;
   setSystemPrompt: (prompt: string) => void;
   saving: boolean;
   onSave: () => void;
-  telemetry: any;
+  telemetry: Telemetry;
+}
+
+interface Telemetry {
+  tokens: number;
+  cost: number;
+  latency: number;
 }
 
 export function StudioBrain({ systemPrompt, setSystemPrompt, saving, onSave, telemetry }: StudioBrainProps) {

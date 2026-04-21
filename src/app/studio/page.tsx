@@ -13,17 +13,38 @@ import { StudioCluster } from '@/components/studio/StudioCluster';
 import { StudioBrain } from '@/components/studio/StudioBrain';
 import { StudioSkills } from '@/components/studio/StudioSkills';
 
+interface Template {
+  id: string;
+  name: string;
+  category: string;
+  system_prompt?: string;
+  created_at: string;
+}
+
+interface ApiKey {
+  id: string;
+  key_name: string;
+  key_value: string;
+  created_at: string;
+}
+
+interface Telemetry {
+  tokens: number;
+  cost: number;
+  latency: number;
+}
+
 export default function AIStudio() {
   const [activeTab, setActiveTab] = useState<'brain' | 'skills' | 'cluster'>('brain');
   const [systemPrompt, setSystemPrompt] = useState('');
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [filteredTemplates, setFilteredTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [templateSearch, setTemplateSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todas');
-  const [telemetry, setTelemetry] = useState<any>({ tokens: 0, cost: 0, latency: 0 });
-  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [telemetry, setTelemetry] = useState({ tokens: 0, cost: 0, latency: 0 });
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [keyResults, setKeyResults] = useState<Record<string, { status: 'ok' | 'error' | 'testing', latency?: number }>>({});
 
   useEffect(() => {
@@ -64,7 +85,7 @@ export default function AIStudio() {
         }
 
         if (telemetryData) {
-          const stats = telemetryData.reduce((acc: any, curr: any) => ({
+          const stats = telemetryData.reduce((acc, curr) => ({
             tokens: acc.tokens + ((curr.tokens_input || 0) + (curr.tokens_output || 0)),
             cost: acc.cost + (Number(curr.cost_estimated) || 0),
             latency: acc.latency + (curr.latency_ms || 0)

@@ -88,11 +88,12 @@ export type NeuralActionType =
   | 'inventory_remove'
   | 'inventory_scan'
   | 'task_create'
-  | 'pdf_generate';
+  | 'pdf_generate'
+  | 'unknown';
 
 export interface NeuralAction {
   action: NeuralActionType;
-  status: 'success' | 'failed' | 'item_not_found';
+  status: 'success' | 'failed' | 'item_not_found' | 'triggered';
   error?: string;
   sku?: string;
   name?: string;

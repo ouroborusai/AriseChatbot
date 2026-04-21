@@ -11,15 +11,27 @@ import {
 } from 'lucide-react';
 import { MetricSmall } from '@/components/ui/MetricSmall';
 
+interface User {
+  id: string;
+  email?: string;
+  role: string;
+  created_at?: string;
+}
+
+interface CompanyMinimal {
+  id: string;
+  name: string;
+}
+
 export default function UsersManagement() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [companies, setCompanies] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [companies, setCompanies] = useState<CompanyMinimal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       const [uRes, cRes] = await Promise.all([
-        supabase.from('profiles').select('*'),
+        supabase.from('profiles').select('id, email, role, created_at'),
         supabase.from('companies').select('id, name')
       ]);
       setUsers(uRes.data || []);

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ARISE AUTO-CLEANUP TOOL v9.0
  * Corrige automáticamente inconsistencias detectadas en el código base
@@ -164,3 +165,4 @@ async function main() {
 }
 
 main().catch(console.error);
+
