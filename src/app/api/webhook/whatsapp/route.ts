@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { generateGeminiResponse } from '@/lib/neural-engine/gemini';
+import { sendWhatsAppMessage } from '@/lib/neural-engine/whatsapp';
+import { ACTION_PREFIXES } from '@/lib/neural-engine/constants';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const supabaseKey = (process.env.ARISE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)?.trim();
@@ -64,7 +67,6 @@ export async function POST(req: Request) {
 
     console.log("==========================================");
     console.log(`[ID_RES_START] Processing message from: ${sender} (${profileName})`);
-    console.log(`[ID_RES_AUTH] Using Key: ${supabaseKey?.substring(0, 10)}...`);
     console.log(`[WH_INPUT] New message from ${sender} (${profileName})`);
 
     // --- 1. IDEMPOTENCIA ---
@@ -222,17 +224,20 @@ export async function POST(req: Request) {
     }
 
     // --- 6. ACTION ROUTER v9.8 (Intelligent Execution) ---
-    const isTechnicalAction = buttonId?.startsWith('gen_') || buttonId?.startsWith('lst_') || buttonId?.startsWith('btn_');
+    const isTechnicalAction =
+      buttonId?.startsWith(ACTION_PREFIXES.TECHNICAL) ||
+      buttonId?.startsWith(ACTION_PREFIXES.LIST) ||
+      buttonId?.startsWith(ACTION_PREFIXES.BUTTON);
 
     // Mapeo de acciones técnicas (Diamond v9.8)
     const actionMap: Record<string, string> = {
-      'gen_report_now': 'inventory_report',
-      'lst_inventario': 'inventory',
-      'lst_finanzas': 'finance',
-      'lst_rrhh': 'hr',
-      'btn_inventario': 'inventory',
-      'btn_finanzas': 'finance',
-      'btn_rrhh': 'hr',
+      [`${ACTION_PREFIXES.TECHNICAL}report_now`]: 'inventory_report',
+      [`${ACTION_PREFIXES.LIST}inventario`]: 'inventory',
+      [`${ACTION_PREFIXES.LIST}finanzas`]: 'finance',
+      [`${ACTION_PREFIXES.LIST}rrhh`]: 'hr',
+      [`${ACTION_PREFIXES.BUTTON}inventario`]: 'inventory',
+      [`${ACTION_PREFIXES.BUTTON}finanzas`]: 'finance',
+      [`${ACTION_PREFIXES.BUTTON}rrhh`]: 'hr',
     };
 
     const mappedAction = actionMap[buttonId?.toLowerCase() || ''] || actionMap[content?.toLowerCase().substring(0, 20) || ''];
@@ -320,23 +325,21 @@ export async function POST(req: Request) {
  * Genera y envía la respuesta de IA con Contexto Histórico (Diamond v9.8)
  */
 async function generateAndSendAIResponse(convId: string, companyId: string, to: string, content: string, profileName: string, phoneNumberId: string, currentMsgId?: string) {
-  // 1. Recuperar Contexto Maestro (Historial + Empresa + Prompt + API Key)
+  // 1. Recuperar Contexto Maestro
   const { data: company } = await supabase.from('companies').select('settings, name').eq('id', companyId).single();
   const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', companyId).eq('is_active', true).limit(1).maybeSingle();
   const { data: history } = await supabase.from('messages').select('sender_type, content').eq('conversation_id', convId).order('created_at', { ascending: false }).limit(10);
-  
-  // Rotación de API Keys (Industrial)
-  let keys = (process.env.GEMINI_API_KEY || "").split(',').map((k: string) => k.trim()).filter((k: string) => k.length > 0);
-  if (keys.length === 0) {
-    const { data: vaultKeys } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
-    if (vaultKeys) keys = vaultKeys.map((k: any) => k.api_key);
+
+  // Validación crítica: company debe existir
+  if (!company) {
+    console.error(`[GENERATE_RESPONSE] Company ${companyId} not found`);
+    return;
   }
-  const apiKey = (keys[Math.floor(Math.random() * keys.length)] || process.env.GEMINI_API_KEY || "") as string;
-  
+
   const systemPrompt = p?.system_prompt || "Eres Arise Director AI. Responde breve y ejecutivo.";
   const { token: whatsappToken } = await getWhatsAppConfig(companyId);
 
-  // 2. Formatear Historial para Gemini (Filtrado por ID para evitar eco)
+  // 2. Formatear Historial (Filtrado por ID)
   const formattedHistory = (history || [])
     .filter((m: any) => m.id !== currentMsgId) 
     .reverse()
@@ -354,150 +357,51 @@ ${formattedHistory}
 Director ${profileName}: "${content}"
 
 INSTRUCCIONES DE ALTA PRIORIDAD:
-1. ANCLAJE DE MÓDULO: Si el usuario ya eligió un sector (Inventario, Finanzas, etc.) en el historial, MANTENTE en ese contexto. No saludes de nuevo ni muestres el Menú Maestro a menos que se te pida explícitamente ("menú", "volver", "inicio").
-2. FLUIDEZ EJECUTIVA: Responde directamente a la solicitud actual usando la memoria previa. Si el usuario dice "PENDIENTES" y en el historial se habla de RRHH, muestra los pendientes de RRHH.
-3. FORMATO DE SALIDA: [Respuesta] --- [Acción 1] | [Acción 2] | [Acción 3]
-   - Máximo 3 botones.
-   - Acciones Neurales: Solo al final de todo [[ { "action": "..." } ]].
+1. ROL ESTRICTO: Eres un asistente experto para esta empresa. Asume 100% la identidad y el tono del rol definido en tu System Prompt (ej. Taller MMC u otro).
+2. ANCLAJE DE CONTEXTO: Mantén coherencia con los mensajes anteriores.
+3. FORMATO DE SALIDA: Debes responder en ESTRICTO formato: [Respuesta Corta] --- [Opción 1] | [Opción 2] | [Opción 3] | [Opción 4]
+   - SIEMPRE entrega entre 3 a 5 opciones interactivas para que el usuario pueda avanzar fluidamente.
+   - Acciones Neurales: Si se requiere acción técnica, anexa [[ { "action": "..." } ]] al final.
 `;
 
-  const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: promptWithContext }] }] })
-  });
+  // 3. Generar respuesta vía Librería Neural
+  const { text: aiText, error: aiError } = await generateGeminiResponse(promptWithContext, companyId);
+  if (aiError || !aiText) return;
 
-  const gData = await geminiRes.json();
-  
-  if (!geminiRes.ok) {
-    console.error('[GEMINI_ERROR]', gData);
-    await supabase.from('audit_logs').insert({
-      company_id: companyId,
-      action: 'GEMINI_API_FAILURE',
-      table_name: 'messages',
-      new_data: { error: gData, model: process.env.GEMINI_MODEL || "gemini-2.5-flash-lite" }
-    });
-    return;
-  }
-
-  const aiText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "Arise Neural Engine: Fallo de percepción.";
-
-  // Persistir respuesta
+  // 4. Persistir respuesta
   const { data: botMsg } = await supabase.from('messages').insert({ conversation_id: convId, sender_type: 'bot', content: aiText }).select('id').single();
 
-  // Trigger Neural Processor (Procesamiento de acciones)
+  // 5. Trigger Neural Processor (Si hay acciones)
   if (botMsg && aiText.includes('[[')) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
-
-    // Timeout para Neural Processor
-    const neuralController = new AbortController();
-    const neuralTimeout = setTimeout(() => neuralController.abort(), 30000);
-
     fetch(`${baseUrl}/api/neural-processor`, {
       method: 'POST',
-      signal: neuralController.signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messageId: botMsg.id, companyId: companyId })
-    }).catch(async (e) => {
-      if (e.name === 'AbortError') {
-        console.error('[NEURAL_BRIDGE] Timeout after 30s');
-      } else {
-        console.error('[NEURAL_BRIDGE] Failed:', e.message);
-      }
-      await supabase.from('audit_logs').insert({
-        company_id: companyId,
-        action: 'NEURAL_PROCESSOR_FAILURE',
-        new_data: { error: e.message, message_id: botMsg.id }
-      });
-    }).finally(() => clearTimeout(neuralTimeout));
+    }).catch(e => console.error('[NEURAL_BRIDGE_ERROR]', e));
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // MOTOR DE ESCALABILIDAD DINÁMICA (Diamond v9.6)
-  // Decide automáticamente: texto plano | botones (≤3) | lista (4-10)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // 6. Enviar a WhatsApp vía Librería Sender
   const cleanAiText = aiText.replace(/\[\[[^\[\]]+\]\]/g, '').trim();
   const parts = cleanAiText.split('---');
-  const textPart = parts[0]?.trim() || "Arise Engine: Respuesta procesada.";
+  const responseText = parts[0]?.trim() || "Respuesta procesada.";
   const buttonsPart = parts.length > 1 ? parts[1] : null;
 
-  const iconMap: Record<string, string> = {
-    'inv': '📦', 'stock': '📦', 'fin': '💰', 'pag': '💰', 'adm': '⚙️', 
-    'ajust': '⚙️', 'rrhh': '👥', 'person': '👥', 'rec': '🔔', 'tarea': '📌',
-    'vol': '⬅️', 'men': '🏠', 'ini': '🏠', 'repo': '📊', 'doc': '📄',
-    'fac': '🧾', 'cli': '🤝', 'ven': '💵', 'cot': '📋', 'aud': '🔎'
-  };
-
-  // Helper: Inyecta emoji si falta
-  const enrichText = (text: string): string => {
-    const hasEmoji = /\p{Emoji}/u.test(text);
-    if (hasEmoji) return text;
-    const key = Object.keys(iconMap).find(k => text.toLowerCase().includes(k));
-    return key ? `${iconMap[key]} ${text}` : text;
-  };
-
-  let payload: any = { 
-    messaging_product: 'whatsapp', to, type: 'text', 
-    text: { body: textPart } 
-  };
-
+  let options: string[] = [];
   if (buttonsPart) {
-    const allOptions = buttonsPart.split('|')
-      .map((o: string) => o.trim())
-      .filter((o: string) => o.length > 0);
-
-    if (allOptions.length > 0) {
-      // ── MODO LISTA UNIFICADO (Forzado para Diamond v9.6) ──
-      const rows = allOptions.slice(0, 10).map((o: string) => {
-        const title = enrichText(o).substring(0, 24);
-        return {
-          id: `lst_${title.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)}`,
-          title
-        };
-      });
-      payload = {
-        messaging_product: 'whatsapp', to, type: 'interactive',
-        interactive: {
-          type: 'list',
-          header: { type: 'text', text: 'Menú de Operaciones' },
-          body: { text: textPart.substring(0, 1024) },
-          footer: { text: 'Arise Business OS v9.8' },
-          action: {
-            button: '📋 Menú de Opciones',
-            sections: [{ title: 'Acciones Disponibles', rows }]
-          }
-        }
-      };
+    options = buttonsPart.split('|').map(o => o.trim()).filter(o => o.length > 0);
+    // Escape al Menú Principal
+    if (!options.some(o => o.toLowerCase().includes('menú')) && options.length < 9) {
+      options.push('Menú Principal');
     }
   }
 
-  const waRes = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+  await sendWhatsAppMessage({
+    to,
+    text: responseText,
+    options,
+    phoneNumberId,
+    whatsappToken: whatsappToken || "",
+    companyId
   });
-
-  if (!waRes.ok) {
-    const errorData = await waRes.json();
-    console.error('[WHATSAPP_ERROR]', errorData);
-
-    // Fallback: Si el mensaje interactivo falla, enviar texto plano para no perder contacto
-    await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to,
-        type: 'text',
-        text: { body: `${textPart}\n\n(Nota: No se pudo cargar el menú interactivo. Puede responder con texto normal.)` }
-      })
-    }).catch(e => console.error('[FALLBACK_ERROR]', e));
-
-    await supabase.from('audit_logs').insert({
-      company_id: companyId,
-      action: 'WHATSAPP_DELIVERY_FAILURE',
-      table_name: 'messages',
-      new_data: { error: errorData, payload }
-    });
-  }
 }

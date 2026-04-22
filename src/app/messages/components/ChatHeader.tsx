@@ -1,0 +1,63 @@
+'use client';
+
+import React from 'react';
+import { Power, MoreVertical } from 'lucide-react';
+
+interface Contact {
+  full_name: string | null;
+  phone: string | null;
+}
+
+interface Conversation {
+  id: string;
+  status: 'new' | 'open' | 'waiting_human' | 'closed';
+  updated_at: string;
+  company_id: string;
+  contact_id: string;
+  contacts?: Contact;
+}
+
+interface ChatHeaderProps {
+  selectedConv: Conversation;
+  onToggleHandoff: (conv: Conversation) => void;
+}
+
+export function ChatHeader({ selectedConv, onToggleHandoff }: ChatHeaderProps) {
+  return (
+    <div className="p-8 flex items-center justify-between border-b border-slate-100 bg-white/60 backdrop-blur-xl z-20">
+      <div className="flex items-center gap-5">
+        <div className="w-14 h-14 bg-slate-900 rounded-[20px] flex items-center justify-center text-white text-xl font-black shadow-xl">
+          {selectedConv.contacts?.full_name?.[0] || 'D'}
+        </div>
+        <div>
+          <h2 className="text-xl font-black tracking-tighter text-slate-900 uppercase italic">
+            {selectedConv.contacts?.full_name || 'CONTACTO_DESCONOCIDO'}
+          </h2>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em]">Enlace_Activo</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => onToggleHandoff(selectedConv)}
+          className={`flex items-center gap-3 px-6 py-3 rounded-[20px] font-black transition-all shadow-lg ${
+            selectedConv.status === 'waiting_human'
+              ? 'bg-rose-500 text-white shadow-rose-500/20'
+              : 'bg-emerald-500 text-white shadow-emerald-500/20'
+          }`}
+        >
+          <Power className="w-4 h-4" />
+          <span className="text-[10px] uppercase tracking-widest">
+            {selectedConv.status === 'waiting_human' ? 'Control_Manual' : 'Neural_Link'}
+          </span>
+        </button>
+        <button className="p-3 hover:bg-slate-50 rounded-[15px] transition-colors text-slate-300 hover:text-slate-900">
+          <MoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  );
+}

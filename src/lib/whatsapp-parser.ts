@@ -15,7 +15,7 @@ import {
   type WhatsAppMessage,
   type WhatsAppApiResponse,
   type ParsedInteractiveContent,
-} from './whatsapp-types';
+} from './whatsapp';
 
 export type { WhatsAppMessage, WhatsAppApiResponse, ParsedInteractiveContent };
 

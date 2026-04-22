@@ -38,55 +38,60 @@ export default function LandingPage() {
         </Link>
       </header>
 
-      <main className="flex-1 relative z-10 flex flex-col items-center justify-center text-center px-4 max-w-[1600px] mx-auto w-full mt-24 lg:mt-32 pb-40">
-        {/* The OUROBOT Pure Infinity Official Core */}
-        <div className="relative mb-24 group cursor-pointer">
-          <div className="absolute inset-0 bg-[#06b6d4]/20 blur-[120px] rounded-full animate-pulse group-hover:bg-[#0891b2]/40 transition-all duration-1000" />
-          
-          <div className="relative w-64 h-64 md:w-[600px] md:h-[600px] flex items-center justify-center group-hover:scale-105 transition-all duration-1000">
-             <img 
-               src="/ourobot-logo.png" 
-               alt="OUROBOT Official Logo" 
-               className="relative z-10 w-full h-full object-contain"
-             />
+      <main className="flex-1 relative z-10 flex flex-col items-center justify-center px-4 max-w-[1600px] mx-auto w-full mt-12 lg:mt-16 pb-20">
+        <div className="w-full flex flex-col lg:flex-row items-center lg:justify-between gap-12 lg:gap-20 mb-24">
+          {/* The OUROBOT Pure Infinity Official Core (Left) */}
+          <div className="relative group cursor-pointer flex-shrink-0 lg:ml-10">
+            <div className="absolute inset-0 bg-[#06b6d4]/20 blur-[100px] rounded-full animate-pulse group-hover:bg-[#0891b2]/40 transition-all duration-1000" />
+            
+            <div className="relative w-64 h-64 md:w-[450px] md:h-[450px] flex items-center justify-center group-hover:scale-105 transition-all duration-1000">
+               <img 
+                 src="/ourobot-logo.png" 
+                 alt="OUROBOT Official Logo" 
+                 className="relative z-10 w-full h-full object-contain"
+               />
+            </div>
+          </div>
+
+          {/* Text Content (Right) */}
+          <div className="flex flex-col items-center text-center lg:items-start lg:text-left flex-1 max-w-3xl">
+            {/* Badge Hero */}
+            <div className="flex items-center gap-4 mb-10 bg-white/[0.02] backdrop-blur-3xl px-8 py-3 rounded-full border border-white/5 shadow-2xl group cursor-pointer hover:bg-[#06b6d4]/10 transition-all w-fit">
+               <Heart size={16} className="text-[#06b6d4] fill-[#06b6d4] animate-pulse" />
+               <p className="text-white text-[11px] font-black uppercase tracking-[0.7em]">Ouroborus_Neural_Infinity_v9.9</p>
+            </div>
+            
+            <h1 className="text-5xl md:text-[85px] font-black text-white tracking-tight leading-none mb-8 uppercase italic">
+              Tu Empresa en<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#06b6d4] via-[#22d3ee] to-[#0891b2] filter drop-shadow-[0_30px_60px_rgba(6,182,212,0.4)]">
+                un Mensaje
+              </span>
+            </h1>
+            
+            <p className="text-lg md:text-xl text-slate-400 font-medium max-w-2xl mb-12 tracking-normal leading-relaxed">
+              Automatiza tu agenda, gestiona logística industrial y controla tu contabilidad desde WhatsApp con el poder de **OUROBOT**.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center lg:items-start gap-6">
+              <a 
+                href="https://wa.me/56990062213?text=Hola%20OUROBOT!%20Activa%20mi%20negocio"
+                className="w-full sm:w-auto h-16 md:h-20 px-10 md:px-12 bg-[#06b6d4] text-white rounded-full font-black text-[12px] md:text-[13px] uppercase tracking-[0.3em] md:tracking-[0.5em] shadow-[0_20px_50px_-10px_rgba(6,182,212,0.5)] hover:scale-[1.05] active:scale-95 transition-all flex items-center justify-center gap-4 md:gap-6 group"
+              >
+                Sincronizar con WhatsApp
+                <ArrowRight size={24} className="group-hover:translate-x-3 transition-transform" />
+              </a>
+              <Link 
+                href="/auth/login"
+                className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-500 hover:text-white transition-colors h-16 md:h-20 flex items-center"
+              >
+                Dashboard_Central
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Badge Hero */}
-        <div className="flex items-center gap-4 mb-14 bg-white/[0.02] backdrop-blur-3xl px-10 py-4 rounded-full border border-white/5 shadow-2xl group cursor-pointer hover:bg-[#06b6d4]/10 transition-all">
-           <Heart size={16} className="text-[#06b6d4] fill-[#06b6d4] animate-pulse" />
-           <p className="text-white text-[11px] font-black uppercase tracking-[0.7em]">Ouroborus_Neural_Infinity_v9.9</p>
-        </div>
-        
-        <h1 className="text-7xl md:text-[150px] font-black text-white tracking-tighter leading-[0.8] mb-14 uppercase italic">
-          Tu Empresa en<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#06b6d4] via-[#22d3ee] to-[#0891b2] filter drop-shadow-[0_30px_60px_rgba(6,182,212,0.4)]">
-            un Mensaje
-          </span>
-        </h1>
-        
-        <p className="text-xl md:text-3xl text-slate-400 font-medium max-w-4xl mb-24 tracking-tight leading-relaxed">
-          Automatiza tu agenda, gestiona logística industrial y controla tu contabilidad desde WhatsApp con el poder de **OUROBOT**.
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center gap-10 mb-48">
-          <a 
-            href="https://wa.me/56990062213?text=Hola%20OUROBOT!%20Activa%20mi%20negocio"
-            className="w-full sm:w-auto h-24 px-16 bg-[#06b6d4] text-white rounded-[32px] font-black text-[13px] uppercase tracking-[0.5em] shadow-[0_30px_70px_-15px_rgba(6,182,212,0.5)] hover:scale-[1.05] active:scale-95 transition-all flex items-center justify-center gap-8 group"
-          >
-            Sincronizar con WhatsApp
-            <ArrowRight size={24} className="group-hover:translate-x-3 transition-transform" />
-          </a>
-          <Link 
-            href="/auth/login"
-            className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-500 hover:text-white transition-colors"
-          >
-            Dashboard_Central
-          </Link>
-        </div>
-
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 w-full mb-56 text-left">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl mb-32 text-left">
           <FeatureCard 
             icon={Bell} 
             title="Auto-Respuesta IA" 
@@ -109,13 +114,13 @@ export default function LandingPage() {
 
         {/* Pricing Section */}
         <section id="pricing" className="w-full max-w-6xl mx-auto">
-          <div className="mb-24">
-            <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase italic mb-6">Planes OUROBOT</h2>
+          <div className="mb-16">
+            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic mb-6">Planes OUROBOT</h2>
             <div className="w-24 h-[4px] bg-[#06b6d4] mx-auto rounded-full" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[60px] p-16 text-left hover:border-[#06b6d4]/30 transition-all duration-700">
+            <div className="bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[40px] p-10 lg:p-12 text-left hover:border-[#06b6d4]/30 transition-all duration-700">
               <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.5em] mb-8">Uso Personal</h4>
               <h3 className="text-6xl font-black text-white mb-4 italic uppercase">Free</h3>
               <p className="text-slate-400 text-lg mb-12 font-medium leading-relaxed">Asistente personal inteligente para agendar tu vida diaria.</p>
@@ -124,10 +129,10 @@ export default function LandingPage() {
                 <PricingItem text="Mensajes de Voz" />
                 <PricingItem text="Caché de Datos 7 días" />
               </ul>
-              <button className="w-full h-20 bg-white/5 text-white rounded-[28px] font-black uppercase text-[11px] tracking-widest hover:bg-white hover:text-black transition-all">Empezar_Ahora</button>
+              <button className="w-full h-16 bg-white/5 text-white rounded-full font-black uppercase text-[11px] tracking-widest hover:bg-white hover:text-black transition-all">Empezar_Ahora</button>
             </div>
 
-            <div className="bg-[#06b6d4] text-[#020617] rounded-[60px] p-16 text-left shadow-[0_50px_100px_-20px_rgba(6,182,212,0.4)] relative overflow-hidden group hover:scale-[1.02] transition-all duration-700">
+            <div className="bg-[#06b6d4] text-[#020617] rounded-[40px] p-10 lg:p-12 text-left shadow-[0_30px_60px_-15px_rgba(6,182,212,0.4)] relative overflow-hidden group hover:scale-[1.02] transition-all duration-700">
               <div className="absolute top-0 right-0 p-10">
                 <Sparkles size={48} className="text-white opacity-20 animate-pulse" />
               </div>
@@ -143,7 +148,7 @@ export default function LandingPage() {
                 <PricingItem text="Inventario & Activos" isDark />
                 <PricingItem text="Soporte Prioritario" isDark />
               </ul>
-              <button className="w-full h-20 bg-[#020617] text-white rounded-[28px] font-black uppercase text-[11px] tracking-widest shadow-2xl hover:scale-105 transition-all">Activar_Enterprise</button>
+              <button className="w-full h-16 bg-[#020617] text-white rounded-full font-black uppercase text-[11px] tracking-widest shadow-2xl hover:scale-105 transition-all">Activar_Enterprise</button>
             </div>
           </div>
         </section>

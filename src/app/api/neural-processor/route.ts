@@ -6,6 +6,9 @@ import type {
   NeuralAction,
 } from '@/types/api';
 import { requireAuth, verifyCompanyAccess } from '@/lib/api-auth';
+import { handleInventoryAction } from '@/lib/neural-engine/actions/inventory';
+import { handleTaskAction } from '@/lib/neural-engine/actions/task';
+import { handlePdfAction } from '@/lib/neural-engine/actions/pdf';
 
 /**
  * NEURAL PROCESSOR v9.0 Industrial CORE
@@ -23,10 +26,19 @@ export async function POST(req: Request) {
   const authResult = await requireAuth();
   if (authResult.error) return authResult.error;
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  // Validación crítica: Service Role Key
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('[NEURAL_PROCESSOR] Missing Supabase credentials');
+    return NextResponse.json(
+      { error: 'Server configuration error: Missing Supabase credentials' },
+      { status: 500 }
+    );
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
     const body = await req.json();
@@ -67,7 +79,10 @@ export async function POST(req: Request) {
 
       lastError = error;
       console.warn(`[NEURAL_PROCESSOR] Attempt ${attempt}/3: Message ${messageId} not found yet...`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Backoff exponencial: 1s → 2s → 4s
+      const delay = Math.pow(2, attempt - 1) * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
 
     if (!message) {
@@ -113,291 +128,42 @@ export async function POST(req: Request) {
     // 3. Ejecutar cada bloque detectado
     for (const block of actionBlocks) {
       try {
-        let cleanJson = block.replace('[[', '').replace(']]', '').trim();
+        // Limpieza robusta de JSON
+        let cleanJson = block
+          .replace(/^\[\[/, '')     // Remover apertura [[
+          .replace(/\]\]$/, '')     // Remover cierre ]]
+          .trim();
 
-        // Fix: Unescape quotes from database storage (\" -> ")
-        cleanJson = cleanJson.replace(/\\"/g, '"');
+        // Normalizar escapes y caracteres de control
+        cleanJson = cleanJson
+          .replace(/\\"/g, '"')     // Unescape quotes
+          .replace(/\\n/g, ' ')     // Newlines → espacios
+          .replace(/\\r/g, '')      // Carriage returns → eliminar
+          .replace(/\s+/g, ' ')     // Múltiples espacios → uno solo
+          .trim();
 
-        // Fix: Remove escaped newlines that break JSON
-        cleanJson = cleanJson.replace(/\\n/g, '').replace(/\\r/g, '');
-
-        // Fix: Normalize multiple spaces to single space
-        cleanJson = cleanJson.replace(/\s+/g, ' ');
-
-        console.log(`[NEURAL_PROCESSOR] Raw block: ${block}`);
         console.log(`[NEURAL_PROCESSOR] Clean JSON: ${cleanJson}`);
 
         const actionData = JSON.parse(cleanJson);
+        const actionType = actionData.action || '';
 
-        console.log(`[NEURAL_PROCESSOR] Processing action: ${actionData.action}`);
+        console.log(`[NEURAL_PROCESSOR] Processing action: ${actionType}`);
 
-        // ─────────────────────────────────────────────────────────────────────
-        // ACCIÓN: INVENTORY_CREATE
-        // ─────────────────────────────────────────────────────────────────────
-        if (actionData.action === 'inventory_create' && actionData.name) {
-          const sku = actionData.sku || `SKU-${Date.now()}`;
-          const currentStock = parseFloat(actionData.stock) || 0;
+        let actionResults: NeuralAction[] = [];
 
-          const { data: newItem, error: insertError } = await supabase
-            .from('inventory_items')
-            .insert({
-              company_id: companyId,
-              name: actionData.name,
-              sku,
-              current_stock: currentStock,
-              category: actionData.category || 'Varios',
-              unit: actionData.unit || 'uds',
-            })
-            .select()
-            .single();
-
-          if (!insertError && newItem) {
-            await supabase.from('audit_logs').insert({
-              company_id: companyId,
-              action: 'NEURAL_INVENTORY_CREATE',
-              table_name: 'inventory_items',
-              record_id: newItem.id,
-              new_data: actionData
-            });
-          }
-
-          if (insertError) {
-            results.push({
-              action: 'inventory_create',
-              status: 'failed',
-              error: insertError.message,
-            });
-            continue;
-          }
-
-          if (newItem && currentStock > 0) {
-            await supabase.from('inventory_transactions').insert({
-              company_id: companyId,
-              item_id: newItem.id,
-              quantity: currentStock,
-              type: 'in',
-            });
-          }
-
-          results.push({
-            action: 'inventory_create',
-            status: 'success',
-            name: actionData.name,
-            sku,
-          });
+        // 1. Handlers por Dominio (Strategy Pattern)
+        if (actionType.startsWith('inventory_')) {
+          actionResults = await handleInventoryAction(supabase, actionData, companyId, messageId);
+        } else if (actionType.startsWith('task_') || actionType.startsWith('reminder_')) {
+          actionResults = await handleTaskAction(supabase, actionData, companyId, messageId);
+        } else if (actionType === 'pdf_generate') {
+          actionResults = await handlePdfAction(supabase, actionData, companyId, messageId);
+        } else {
+          console.warn(`[NEURAL_PROCESSOR] Unsupported action type: ${actionType}`);
+          actionResults = [{ action: 'unknown', status: 'failed', error: `Unsupported action type: ${actionType}` }];
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // ACCIÓN: INVENTORY_ADD / INVENTORY_REMOVE
-        // ─────────────────────────────────────────────────────────────────────
-        if (
-          (actionData.action === 'inventory_add' ||
-            actionData.action === 'inventory_remove') &&
-          actionData.sku
-        ) {
-          const { data: item } = await supabase
-            .from('inventory_items')
-            .select('id')
-            .ilike('sku', actionData.sku)
-            .eq('company_id', companyId)
-            .maybeSingle();
-
-          if (!item) {
-            results.push({
-              action: actionData.action,
-              status: 'item_not_found',
-              sku: actionData.sku,
-            });
-            continue;
-          }
-
-          const quantity = parseFloat(actionData.quantity) || 1;
-          const type = actionData.action === 'inventory_add' ? 'in' : 'out';
-
-          const { error: transactionError } = await supabase
-            .from('inventory_transactions')
-            .insert({
-              company_id: companyId,
-              item_id: item.id,
-              quantity,
-              type,
-            });
-
-          results.push({
-            action: actionData.action,
-            status: transactionError ? 'failed' : 'success',
-            sku: actionData.sku,
-            error: transactionError?.message,
-          });
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // ACCIÓN: INVENTORY_SCAN (Consulta de Stock con Feedback)
-        // ─────────────────────────────────────────────────────────────────────
-        if (actionData.action === 'inventory_scan' && (actionData.sku || actionData.name)) {
-          const { data: items } = await supabase
-            .from('inventory_items')
-            .select('id, name, sku, current_stock')
-            .eq('company_id', companyId)
-            .or(`sku.ilike.${actionData.sku || 'none'},name.ilike.%${actionData.name || 'none'}%`)
-            .limit(3);
-
-          // Obtener datos para WhatsApp Feedback
-          const { data: msgInfo } = await supabase.from('messages').select('conversation_id').eq('id', messageId).single();
-          const { data: conv } = await supabase.from('conversations').select('contacts(phone)').eq('id', msgInfo?.conversation_id).single();
-          const { data: company } = await supabase.from('companies').select('settings').eq('id', companyId).single();
-          
-          const phone = (conv as any)?.contacts?.phone;
-          const token = company?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
-          const phoneId = company?.settings?.whatsapp?.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID;
-
-          if (items && items.length > 0) {
-            const feedback = `🔍 *Consulta de Stock Arise*\n\n` + 
-              items.map(i => `• *${i.name}*\n  SKU: ${i.sku}\n  Stock: ${i.current_stock} uds.`).join('\n\n');
-            
-            if (phone) {
-              fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messaging_product: 'whatsapp', to: phone, type: 'text', text: { body: feedback } })
-              });
-            }
-
-            for (const item of items) {
-              results.push({ action: 'inventory_scan', status: 'success', sku: item.sku, name: item.name });
-              await supabase.from('audit_logs').insert({
-                company_id: companyId, action: 'NEURAL_INVENTORY_SCAN', table_name: 'inventory_items',
-                record_id: item.id, new_data: { query: actionData, found: item }
-              });
-            }
-          } else if (phone) {
-            fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ messaging_product: 'whatsapp', to: phone, type: 'text', text: { body: `❌ Arise: No hallamos productos para "${actionData.sku || actionData.name}".` } })
-            });
-          }
-          continue;
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // ACCIÓN: TASK_CREATE
-        // ─────────────────────────────────────────────────────────────────────
-        if (actionData.action === 'task_create' && actionData.title) {
-          const { data: newTask } = await supabase.from('service_requests').insert({
-            company_id: companyId,
-            title: actionData.title,
-            description: actionData.description || 'Creado vía Neural AI',
-            status: 'pending',
-          }).select().single();
-
-          if (newTask) {
-            await supabase.from('audit_logs').insert({
-              company_id: companyId,
-              action: 'NEURAL_TASK_CREATE',
-              table_name: 'service_requests',
-              record_id: newTask.id,
-              new_data: actionData
-            });
-          }
-
-          results.push({
-            action: 'task_create',
-            status: 'success',
-          });
-        }
-
-        if (actionData.action === 'reminder_create' && actionData.content) {
-          const { data: currentMsg } = await supabase.from('messages').select('conversation_id').eq('id', messageId).single();
-          const { data: conv } = await supabase.from('conversations').select('contact_id').eq('id', currentMsg?.conversation_id).single();
-          
-          const { data: newReminder } = await supabase.from('reminders').insert({
-            company_id: companyId,
-            contact_id: conv?.contact_id,
-            content: actionData.content,
-            due_at: actionData.due_at || new Date(Date.now() + 86400000).toISOString(),
-            status: 'active'
-          }).select().single();
-
-          if (newReminder) {
-            await supabase.from('audit_logs').insert({
-              company_id: companyId,
-              action: 'NEURAL_REMINDER_CREATE',
-              table_name: 'reminders',
-              record_id: newReminder.id,
-              new_data: actionData
-            });
-          }
-          results.push({ action: 'reminder_create', status: 'success' });
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // ACCIÓN: PDF_GENERATE
-        // ─────────────────────────────────────────────────────────────────────
-        if (actionData.action === 'pdf_generate') {
-          const { data: msgInfo } = await supabase
-            .from('messages')
-            .select('conversation_id')
-            .eq('id', messageId)
-            .single();
-
-          if (msgInfo) {
-            const { data: contactInfo } = await supabase
-              .from('conversations')
-              .select('contacts(phone)')
-              .eq('id', msgInfo.conversation_id)
-              .single();
-
-            const phone = (contactInfo as unknown as { contacts?: { phone: string } })?.contacts?.phone;
-
-            if (phone) {
-              console.log(`[NEURAL_PROCESSOR] Triggering PDF generation for ${phone}`);
-
-              // Obtener credenciales de la empresa
-              const { data: companyData } = await supabase
-                .from('companies')
-                .select('settings')
-                .eq('id', companyId)
-                .single();
-              
-              const whatsappToken = companyData?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
-              const phoneNumberId = companyData?.settings?.whatsapp?.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID;
-
-              if (!whatsappToken || !phoneNumberId) {
-                console.error('[NEURAL_PROCESSOR] Missing WhatsApp config for PDF');
-                results.push({ action: 'pdf_generate', status: 'failed', error: 'Configuración de WhatsApp faltante' });
-                continue;
-              }
-
-              const appUrl = process.env.APP_URL || 'http://localhost:3000';
-
-              fetch(`${appUrl}/api/pdf`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  targetPhone: phone,
-                  whatsappToken,
-                  phoneNumberId,
-                  reportType: actionData.type || 'balance',
-                  companyId: companyId,
-                }),
-              }).catch(async (err) => {
-                console.error('[NEURAL_PROCESSOR] PDF API Call Failed:', err.message);
-                await supabase.from('audit_logs').insert({
-                  company_id: companyId,
-                  action: 'NEURAL_PDF_TRIGGER_FAILURE',
-                  new_data: { error: err.message, phone }
-                });
-              });
-
-              results.push({
-                action: 'pdf_generate',
-                status: 'triggered',
-                to: phone,
-              });
-            }
-          }
-        }
+        results.push(...actionResults);
       } catch (parseError) {
         const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
         console.error(
