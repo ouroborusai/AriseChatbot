@@ -7,7 +7,8 @@ import {
   Plus, 
   ArrowLeft, 
   ArrowRight,
-  Activity
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import { InventoryStats } from '@/components/inventory/InventoryStats';
 import { InventoryTable } from '@/components/inventory/InventoryTable';

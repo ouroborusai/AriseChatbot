@@ -351,9 +351,23 @@ export async function POST(req: Request) {
             const phone = (contactInfo as unknown as { contacts?: { phone: string } })?.contacts?.phone;
 
             if (phone) {
-              console.log(
-                `[NEURAL_PROCESSOR] Triggering PDF generation for ${phone}`
-              );
+              console.log(`[NEURAL_PROCESSOR] Triggering PDF generation for ${phone}`);
+
+              // Obtener credenciales de la empresa
+              const { data: companyData } = await supabase
+                .from('companies')
+                .select('settings')
+                .eq('id', companyId)
+                .single();
+              
+              const whatsappToken = companyData?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
+              const phoneNumberId = companyData?.settings?.whatsapp?.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+              if (!whatsappToken || !phoneNumberId) {
+                console.error('[NEURAL_PROCESSOR] Missing WhatsApp config for PDF');
+                results.push({ action: 'pdf_generate', status: 'failed', error: 'Configuración de WhatsApp faltante' });
+                continue;
+              }
 
               const appUrl = process.env.APP_URL || 'http://localhost:3000';
 
@@ -362,14 +376,19 @@ export async function POST(req: Request) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   targetPhone: phone,
-                  whatsappToken: process.env.WHATSAPP_ACCESS_TOKEN,
-                  phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+                  whatsappToken,
+                  phoneNumberId,
                   reportType: actionData.type || 'balance',
                   companyId: companyId,
                 }),
-              }).catch(err =>
-                console.error('[NEURAL_PROCESSOR] PDF API Call Failed:', err)
-              );
+              }).catch(async (err) => {
+                console.error('[NEURAL_PROCESSOR] PDF API Call Failed:', err.message);
+                await supabase.from('audit_logs').insert({
+                  company_id: companyId,
+                  action: 'NEURAL_PDF_TRIGGER_FAILURE',
+                  new_data: { error: err.message, phone }
+                });
+              });
 
               results.push({
                 action: 'pdf_generate',

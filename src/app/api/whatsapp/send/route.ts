@@ -98,7 +98,7 @@ export async function POST(req: Request) {
     // 7. Registrar mensaje del agente
     await supabase.from('messages').insert({
       conversation_id: conv.id,
-      sender_type: 'agent',
+      sender_type: 'bot',
       content: content,
       metadata: {
         message_type: waPayload.type,

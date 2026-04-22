@@ -14,7 +14,8 @@ import {
   ChevronRight,
   Database,
   Lock,
-  CloudLightning
+  CloudLightning,
+  Sparkles
 } from 'lucide-react';
 
 export default function ClientVaultPage() {

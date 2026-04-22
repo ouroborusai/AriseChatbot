@@ -12,6 +12,30 @@ const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
  * INDUSTRIAL WHATSAPP NEURAL WEBHOOK v9.0 CORE
  * Arquitectura de Control de Flujo Estricto.
  */
+
+/**
+ * Helper: Obtiene configuración de WhatsApp centralizada (Diamond v9.7)
+ */
+async function getWhatsAppConfig(companyId: string) {
+  const { data: companyData } = await supabase
+    .from('companies')
+    .select('settings')
+    .eq('id', companyId)
+    .single();
+
+  const token = companyData?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneId = companyData?.settings?.whatsapp?.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+  if (!token || !phoneId) {
+    await supabase.from('audit_logs').insert({
+      company_id: companyId,
+      action: 'WHATSAPP_CONFIG_MISSING',
+      new_data: { has_token: !!token, has_phone_id: !!phoneId }
+    });
+  }
+
+  return { token, phoneId };
+}
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const mode = searchParams.get('hub.mode');
@@ -117,27 +141,79 @@ export async function POST(req: Request) {
     if (!conv) return NextResponse.json({ status: 'conversation_failure' });
 
     // --- 4. PROCESAMIENTO DE CONTENIDO ---
-    // Soporte solo para Mensajes de Texto e Interactivos (Diamond v9.6)
+    // Soporte para Mensajes de Texto, Interactivos y Documentos (Diamond v9.7)
     const buttonId = message.interactive?.button_reply?.id || message.interactive?.list_reply?.id;
     let content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
-    
+    const isDocument = message.type === 'document';
+
     // Si es una acción técnica, la anteponemos al contenido para que la IA/Lógica la reconozca
     if (buttonId) {
       console.log(`[ACTION_DETECTED] Button ID: ${buttonId}`);
     }
-    
+
+    // Manejo de Documentos PDF
+    if (isDocument) {
+      const docName = message.document?.filename || 'archivo.pdf';
+      const mimeType = message.document?.mime_type || 'application/pdf';
+
+      console.log(`[DOCUMENT_RECEIVED] ${docName} (${mimeType}) from ${sender}`);
+
+      // Persistir el documento en el historial
+      await supabase.from('messages').insert({
+        conversation_id: conv.id,
+        sender_type: 'user',
+        content: `[Documento: ${docName}]`,
+        metadata: {
+          whatsapp_message_id: waId,
+          type: 'document',
+          filename: docName,
+          mime_type: mimeType
+        }
+      });
+
+      // Obtener configuración de WhatsApp centralizada
+      const { token: whatsappToken } = await getWhatsAppConfig(companyId);
+
+      // Feedback inmediato al usuario
+      const feedbackMsg = `📄 *Documento Recepcionado*\n\n*Archivo:* ${docName}\n*Estado:* Procesado y guardado en el historial.\n\n¿Qué deseas hacer con este documento?`;
+
+      await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${whatsappToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: sender,
+          type: 'text',
+          text: { body: feedbackMsg }
+        })
+      }).catch(async (e) => {
+        console.error('[DOC_FEEDBACK_ERROR]', e.message);
+        await supabase.from('audit_logs').insert({
+          company_id: companyId,
+          action: 'WHATSAPP_FEEDBACK_FAILURE',
+          new_data: { error: e.message, phone: sender }
+        });
+      });
+
+      return NextResponse.json({ status: 'document_received' });
+    }
+
+    // Ignorar otros tipos de multimedia no soportados
     if (!content && message.type !== 'text') {
-      console.log('--- Ignorando mensaje no soportado (Multimedia/Audio) ---');
+      console.log(`--- Ignorando mensaje no soportado (type: ${message.type}) ---`);
       return NextResponse.json({ status: 'unsupported_message_type' });
     }
 
-    // Persistir mensaje del usuario independientemente del estado (para el log)
-    await supabase.from('messages').insert({ 
+    // --- 4.5 PERSISTENCIA CON ID (Para evitar doble inserción) ---
+    const { data: userMsg } = await supabase.from('messages').insert({
       conversation_id: conv.id,
       sender_type: 'user',
-      content, 
-      metadata: { whatsapp_message_id: waId, type: message.type } 
-    });
+      content,
+      metadata: { whatsapp_message_id: waId, type: message.type }
+    }).select('id').single();
 
     // --- 5. CLÁUSULA DE GUARDA v9.1 (Doble Validación) ---
     if (conv.status !== 'open') {
@@ -145,46 +221,82 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'ai_silenced_handoff' });
     }
 
-    // --- 6. ACTION ROUTER v9.7 (Real Execution) ---
-    if (buttonId === 'gen_report_now' || content.toLowerCase().includes('informe de inventario')) {
-      console.log(`[ACTION_ROUTER] Disparando Pipeline Real para ${sender}`);
-      
-      const { data: company } = await supabase.from('companies').select('settings').eq('id', companyId).single();
-      const waConfig = company?.settings?.whatsapp;
+    // --- 6. ACTION ROUTER v9.8 (Intelligent Execution) ---
+    const isTechnicalAction = buttonId?.startsWith('gen_') || buttonId?.startsWith('lst_') || buttonId?.startsWith('btn_');
 
-      if (waConfig) {
-        // Disparo asíncrono (Fire and Forget para no bloquear el webhook)
-        fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/pdf`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.INTERNAL_API_KEY || '' },
-            body: JSON.stringify({
-                targetPhone: sender,
-                whatsappToken: waConfig.access_token,
-                phoneNumberId: waConfig.phone_number_id,
-                reportType: 'inventory',
-                companyId: companyId
-            })
-        }).catch(e => console.error('[PDF_TRIGGER_ERROR]', e));
+    // Mapeo de acciones técnicas (Diamond v9.8)
+    const actionMap: Record<string, string> = {
+      'gen_report_now': 'inventory_report',
+      'lst_inventario': 'inventory',
+      'lst_finanzas': 'finance',
+      'lst_rrhh': 'hr',
+      'btn_inventario': 'inventory',
+      'btn_finanzas': 'finance',
+      'btn_rrhh': 'hr',
+    };
 
-        await supabase.from('messages').insert({
-          conversation_id: conv.id,
-          sender_type: 'agent',
-          content: '🚀 *Pipeline de Documentos Activado*\n\nGenerando su informe industrial. Recibirá el archivo en unos segundos...'
-        });
+    const mappedAction = actionMap[buttonId?.toLowerCase() || ''] || actionMap[content?.toLowerCase().substring(0, 20) || ''];
+
+    if (isTechnicalAction || content.toLowerCase().includes('informe de inventario') || mappedAction) {
+      console.log(`[ACTION_ROUTER] Processing action: ${buttonId || mappedAction || 'text_trigger'}`);
+
+      const { token: whatsappToken, phoneId: waPhoneId } = await getWhatsAppConfig(companyId);
+
+      if (whatsappToken && waPhoneId) {
+        // Lógica para Reporte de Inventario (Existente)
+        if (buttonId === 'gen_report_now' || content.toLowerCase().includes('informe de inventario')) {
+          // Timeout para PDF trigger
+          const pdfController = new AbortController();
+          const pdfTimeout = setTimeout(() => pdfController.abort(), 30000);
+
+          fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/pdf`, {
+              method: 'POST',
+              signal: pdfController.signal,
+              headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.INTERNAL_API_KEY || '' },
+              body: JSON.stringify({
+                  targetPhone: sender,
+                  whatsappToken,
+                  phoneNumberId: waPhoneId,
+                  reportType: 'inventory',
+                  companyId: companyId
+              })
+          }).catch(async (e) => {
+              if (e.name === 'AbortError') {
+                console.error('[PDF_TRIGGER] Timeout after 30s');
+              } else {
+                console.error('[PDF_TRIGGER_ERROR]', e.message);
+              }
+              await supabase.from('audit_logs').insert({
+                  company_id: companyId,
+                  action: 'PDF_TRIGGER_FAILURE',
+                  new_data: { error: e.message, phone: sender }
+              });
+          }).finally(() => clearTimeout(pdfTimeout));
+
+          await supabase.from('messages').insert({
+            conversation_id: conv.id,
+            sender_type: 'bot',
+            content: '🚀 *Pipeline de Documentos Activado*\n\nGenerando su informe industrial. Recibirá el archivo en unos segundos...'
+          });
+
+          return NextResponse.json({ status: 'action_triggered' });
+        }
+
+        // Manejo para otras acciones mapeadas
+        if (mappedAction && !buttonId?.includes('gen_report')) {
+          console.log(`[ACTION_ROUTER] Mapped action '${mappedAction}' from ${buttonId || content}. Passing to AI for execution.`);
+          // La IA procesará esta acción en generateAndSendAIResponse
+        }
       }
-
-      return NextResponse.json({ status: 'action_triggered' });
     }
 
     // --- 7. GENERACIÓN DE RESPUESTA NEURAL (DELEGADO AL MOTOR CENTRAL) ---
     // Según la Constitución Arise, la respuesta se gestiona vía Trigger DB -> arise-neural-engine.
     // Esto garantiza una sola respuesta y reduce el consumo de tokens.
-    /*
     const { data: latestConv } = await supabase.from('conversations').select('status').eq('id', conv.id).single();
     if (latestConv?.status === 'open') {
-      await generateAndSendAIResponse(conv.id, companyId, sender, content, profileName, phoneNumberId);
+      await generateAndSendAIResponse(conv.id, companyId, sender, content, profileName, phoneNumberId, userMsg?.id);
     }
-    */
 
     return NextResponse.json({ status: 'success' });
 
@@ -205,9 +317,9 @@ export async function POST(req: Request) {
 // Módulo de audio removido.
 
 /**
- * Genera y envía la respuesta de IA con Contexto Histórico (Diamond v9.2)
+ * Genera y envía la respuesta de IA con Contexto Histórico (Diamond v9.8)
  */
-async function generateAndSendAIResponse(convId: string, companyId: string, to: string, content: string, profileName: string, phoneNumberId: string) {
+async function generateAndSendAIResponse(convId: string, companyId: string, to: string, content: string, profileName: string, phoneNumberId: string, currentMsgId?: string) {
   // 1. Recuperar Contexto Maestro (Historial + Empresa + Prompt + API Key)
   const { data: company } = await supabase.from('companies').select('settings, name').eq('id', companyId).single();
   const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', companyId).eq('is_active', true).limit(1).maybeSingle();
@@ -222,11 +334,11 @@ async function generateAndSendAIResponse(convId: string, companyId: string, to: 
   const apiKey = (keys[Math.floor(Math.random() * keys.length)] || process.env.GEMINI_API_KEY || "") as string;
   
   const systemPrompt = p?.system_prompt || "Eres Arise Director AI. Responde breve y ejecutivo.";
-  const whatsappToken = company?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
+  const { token: whatsappToken } = await getWhatsAppConfig(companyId);
 
-  // 2. Formatear Historial para Gemini (Excluyendo el mensaje actual para evitar eco)
+  // 2. Formatear Historial para Gemini (Filtrado por ID para evitar eco)
   const formattedHistory = (history || [])
-    .filter((m: any) => m.content !== content) // Evitar duplicado del mensaje actual
+    .filter((m: any) => m.id !== currentMsgId) 
     .reverse()
     .map((m: any) => `${m.sender_type === 'user' ? 'Usuario' : 'Arise'}: ${m.content}`)
     .join('\n');
@@ -276,11 +388,28 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
   // Trigger Neural Processor (Procesamiento de acciones)
   if (botMsg && aiText.includes('[[')) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+
+    // Timeout para Neural Processor
+    const neuralController = new AbortController();
+    const neuralTimeout = setTimeout(() => neuralController.abort(), 30000);
+
     fetch(`${baseUrl}/api/neural-processor`, {
       method: 'POST',
+      signal: neuralController.signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messageId: botMsg.id, companyId: companyId })
-    }).catch(e => console.error('[NEURAL_BRIDGE] Failed:', e));
+    }).catch(async (e) => {
+      if (e.name === 'AbortError') {
+        console.error('[NEURAL_BRIDGE] Timeout after 30s');
+      } else {
+        console.error('[NEURAL_BRIDGE] Failed:', e.message);
+      }
+      await supabase.from('audit_logs').insert({
+        company_id: companyId,
+        action: 'NEURAL_PROCESSOR_FAILURE',
+        new_data: { error: e.message, message_id: botMsg.id }
+      });
+    }).finally(() => clearTimeout(neuralTimeout));
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -330,10 +459,11 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
         messaging_product: 'whatsapp', to, type: 'interactive',
         interactive: {
           type: 'list',
+          header: { type: 'text', text: 'Menú de Operaciones' },
           body: { text: textPart.substring(0, 1024) },
-          footer: { text: 'Arise Business OS v9.6' },
+          footer: { text: 'Arise Business OS v9.8' },
           action: {
-            button: 'Ver Opciones',
+            button: '📋 Menú de Opciones',
             sections: [{ title: 'Acciones Disponibles', rows }]
           }
         }
@@ -349,12 +479,25 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
 
   if (!waRes.ok) {
     const errorData = await waRes.json();
+    console.error('[WHATSAPP_ERROR]', errorData);
+
+    // Fallback: Si el mensaje interactivo falla, enviar texto plano para no perder contacto
+    await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to,
+        type: 'text',
+        text: { body: `${textPart}\n\n(Nota: No se pudo cargar el menú interactivo. Puede responder con texto normal.)` }
+      })
+    }).catch(e => console.error('[FALLBACK_ERROR]', e));
+
     await supabase.from('audit_logs').insert({
       company_id: companyId,
       action: 'WHATSAPP_DELIVERY_FAILURE',
       table_name: 'messages',
       new_data: { error: errorData, payload }
     });
-    console.error('[WHATSAPP_ERROR]', errorData);
   }
 }

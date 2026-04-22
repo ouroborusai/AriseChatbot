@@ -12,7 +12,8 @@ import {
   Activity,
   ShieldCheck,
   MoreVertical,
-  Filter
+  Filter,
+  Sparkles
 } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { parseUIMessageContent } from '@/lib/whatsapp-parser';
