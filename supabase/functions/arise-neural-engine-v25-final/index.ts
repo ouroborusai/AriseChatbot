@@ -61,10 +61,10 @@ serve(async (req: Request) => {
       // 3. Formatear historial para Gemini
       const formattedHistory = (history || [])
         .reverse()
-        .map((m: any) => `${m.sender_type === 'user' ? 'Usuario' : 'Loop'}: ${m.content}`)
+        .map((m: any) => `${m.sender_type === 'user' ? 'Usuario' : 'Arise'}: ${m.content}`)
         .join('\n');
 
-      const systemPrompt = p?.system_prompt || 'Eres LOOP, el Director de Operaciones (Diamond CORE). Tu misión: "Cierra el ciclo de tus tareas con Loop".';
+      const systemPrompt = p?.system_prompt || "Eres Arise Business OS v9.0, el cerebro neural de la empresa.";
       
       const lastMsgLower = msg.content.trim().toLowerCase();
       const isReset = lastMsgLower === 'hola' || lastMsgLower === 'menú' || lastMsgLower === 'menu' || lastMsgLower === 'inicio';
@@ -77,8 +77,8 @@ ${formattedHistory}
 
 [INSTRUCCIÓN FINAL]
 ${isReset 
-  ? "ATENCIÓN: SALUDO DETECTADO. Reinicia el contexto. Muestra OBLIGATORIAMENTE el Menú Inicial con al menos 5 opciones (📦 Inventario | 💰 Finanzas | 👥 Personal | 📊 Reportes | ⚙️ Ajustes) usando el formato: [Texto] --- [Opción 1] | [Opción 2] | [Opción 3] | [Opción 4] | [Opción 5]" 
-  : "Genera una respuesta ejecutiva y breve. Ofrece alternativas para cerrar el ciclo."}
+  ? "ATENCIÓN: EL USUARIO ACABA DE ENVIAR UN SALUDO O COMANDO DE INICIO ('Hola', 'Menu', etc.). IGNORA cualquier flujo pendiente en el historial (como acciones a medio terminar, '[Saltar]', etc.) y REINICIA la conversación saludando y mostrando el [Menú Principal]." 
+  : "Genera una respuesta ejecutiva y breve."}
 Si necesitas realizar una acción (inventario, reporte, etc.), incluye el bloque [[ { "action": "..." } ]] al final.
 Para botones, usa el formato: [Texto de respuesta] --- [Botón 1] | [Botón 2]
 `;
@@ -95,17 +95,6 @@ Para botones, usa el formato: [Texto de respuesta] --- [Botón 1] | [Botón 2]
       if (res.status === 200) {
         const d = await res.json();
         aiResponse = d.candidates?.[0]?.content?.parts?.[0]?.text;
-      } else {
-        const errorText = await res.text();
-        console.error(`[Neural] Gemini API Error (${res.status}): ${errorText}`);
-        // Registrar telemetría de error si es posible
-        await supabase.from('ai_api_telemetry').insert({
-          company_id: companyId,
-          model_name: 'gemini-2.5-flash-lite',
-          latency_ms: 0,
-          created_at: new Date().toISOString(),
-          metadata: { error: errorText, status: res.status, phase: 'generation' }
-        });
       }
 
       if (aiResponse) {
@@ -133,7 +122,7 @@ Para botones, usa el formato: [Texto de respuesta] --- [Botón 1] | [Botón 2]
 
         if (buttonsPart) {
           const rows = buttonsPart.split('|').map((o: string) => {
-            const title = o.trim().replace(/[\[\]]/g, '').substring(0, 24);
+            const title = o.trim().substring(0, 24);
             return { id: `btn_${title.toLowerCase().replace(/\s+/g, '_')}`, title };
           });
           payload = {

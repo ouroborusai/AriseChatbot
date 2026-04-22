@@ -22,7 +22,7 @@ export function MetricSmall({
   drift,
   className = "" 
 }: MetricSmallProps) {
-  if (loading) return <div className={`arise-card p-6 md:p-10 bg-white border-none shadow-arise animate-pulse h-32 md:h-40 ${className}`} />;
+  if (loading) return <div className={`loop-card p-6 md:p-10 bg-white border-none shadow-arise animate-pulse h-32 md:h-40 ${className}`} />;
   
   const bgClass = active 
     ? 'bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white shadow-[0_20px_40px_-5px_rgba(19,91,236,0.3)]' 
@@ -38,7 +38,7 @@ export function MetricSmall({
       : 'bg-[#f7f9fb] text-slate-300 group-hover:text-primary group-hover:bg-primary/5';
 
   return (
-    <div className={`arise-card p-6 md:p-8 transition-all duration-500 group relative overflow-hidden ${bgClass} ${className}`}>
+    <div className={`loop-card p-6 md:p-8 transition-all duration-500 group relative overflow-hidden ${bgClass} ${className}`}>
       <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
         <div className="space-y-1">
           <p className={`text-[8px] md:text-[9px] font-black uppercase tracking-[0.3em] ${titleClass}`}>{title}</p>

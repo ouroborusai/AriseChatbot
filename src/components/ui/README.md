@@ -101,7 +101,7 @@ import { Users } from 'lucide-react';
 
 ```tsx
 // Clase base para cualquier card
-<div className="arise-card p-6 md:p-8 bg-white border-none shadow-arise">
+<div className="loop-card p-6 md:p-8 bg-white border-none shadow-arise">
   {/* Contenido */}
 </div>
 ```
@@ -129,12 +129,12 @@ import { Users } from 'lucide-react';
 
 ```tsx
 // Primario (acción principal)
-<button className="btn-arise">
+<button className="btn-loop">
   ACCIÓN PRINCIPAL
 </button>
 
 // Secundario (acciones secundarias)
-<button className="btn-arise-outline">
+<button className="btn-loop-outline">
   CANCELAR
 </button>
 ```
@@ -144,7 +144,7 @@ import { Users } from 'lucide-react';
 ```tsx
 <input
   type="text"
-  className="arise-input"
+  className="loop-input"
   placeholder="Ingresa valor..."
 />
 ```
@@ -152,11 +152,11 @@ import { Users } from 'lucide-react';
 ### 4. Badges de Estado
 
 ```tsx
-<span className="badge-arise-success">
+<span className="badge-loop-success">
   ACTIVO
 </span>
 
-<span className="badge-arise-danger">
+<span className="badge-loop-danger">
   ERROR
 </span>
 ```
@@ -204,7 +204,7 @@ import { designTokens } from '@/lib/design-tokens';
 const MyComponent = () => {
   return (
     <div
-      className="arise-card"
+      className="loop-card"
       style={{
         background: designTokens.glassmorphism.card.background,
       }}

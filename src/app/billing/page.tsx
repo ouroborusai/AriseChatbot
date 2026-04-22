@@ -88,11 +88,11 @@ export default function BillingPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto relative z-10">
-          <button className="btn-arise-outline px-10 flex items-center justify-center gap-4 bg-white/50 backdrop-blur-md">
+          <button className="btn-loop-outline px-10 flex items-center justify-center gap-4 bg-white/50 backdrop-blur-md">
             <Download size={16} />
             <span>Audit_Archive</span>
           </button>
-          <button className="btn-arise px-10 flex items-center justify-center gap-4">
+          <button className="btn-loop px-10 flex items-center justify-center gap-4">
             <span>Neural_Report_v7</span>
           </button>
         </div>
@@ -106,7 +106,7 @@ export default function BillingPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-16">
-        <div className="lg:col-span-2 arise-card bg-white/80 backdrop-blur-2xl border-white/50 shadow-arise overflow-hidden rounded-[48px]">
+        <div className="lg:col-span-2 loop-card bg-white/80 backdrop-blur-2xl border-white/50 shadow-arise overflow-hidden rounded-[48px]">
           <div className="p-8 md:p-12 flex flex-col sm:flex-row justify-between items-center bg-[#f8fafc]/50 border-b border-slate-50 gap-8">
             <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400">Master_Archive_Registry</h2>
             <div className="relative w-full sm:w-auto">
@@ -147,13 +147,13 @@ export default function BillingPage() {
                  </div>
                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.6em] mb-6">Financial_Pool_Empty</h3>
                  <p className="max-w-xs text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest leading-loose mb-12">No high-integrity documents detected in the current node. Pulse the generator to initiate flux.</p>
-                 <button className="btn-arise">Initialize_Vault</button>
+                 <button className="btn-loop">Initialize_Vault</button>
               </div>
             )}
           </div>
         </div>
 
-        <div className="arise-card bg-[#0b1326] border-none p-12 flex flex-col justify-between overflow-hidden relative rounded-[48px] shadow-2xl">
+        <div className="loop-card bg-[#0b1326] border-none p-12 flex flex-col justify-between overflow-hidden relative rounded-[48px] shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[180px] rounded-full -mr-48 -mt-48 transition-opacity duration-1000 group-hover:opacity-100" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/10 blur-[130px] rounded-full -ml-32 -mb-32" />
           
@@ -188,13 +188,13 @@ function SkeletonRow() {
   return (
     <div className="p-6 md:p-10 flex items-center justify-between">
       <div className="flex items-center gap-6">
-        <div className="w-12 h-12 md:w-16 md:h-16 arise-skeleton rounded-[20px] md:rounded-[24px]" />
+        <div className="w-12 h-12 md:w-16 md:h-16 loop-skeleton rounded-[20px] md:rounded-[24px]" />
         <div className="space-y-3">
-          <div className="w-32 md:w-48 h-3 md:h-4 arise-skeleton rounded-md" />
-          <div className="w-20 md:w-32 h-2 arise-skeleton rounded-sm" />
+          <div className="w-32 md:w-48 h-3 md:h-4 loop-skeleton rounded-md" />
+          <div className="w-20 md:w-32 h-2 loop-skeleton rounded-sm" />
         </div>
       </div>
-      <div className="w-20 md:w-24 h-6 md:h-8 arise-skeleton rounded-xl" />
+      <div className="w-20 md:w-24 h-6 md:h-8 loop-skeleton rounded-xl" />
     </div>
   );
 }

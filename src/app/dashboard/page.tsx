@@ -178,7 +178,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
-        <section className="arise-card p-0 overflow-hidden lg:col-span-2">
+        <section className="loop-card p-0 overflow-hidden lg:col-span-2">
           <div className="p-10">
             <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Neural Signal Velocity</h2>
             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">24H Real-time activity pulse</p>
@@ -202,7 +202,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <div className="arise-card p-10 bg-white/40">
+        <div className="loop-card p-10 bg-white/40">
           <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-900 mb-10">System Status</h3>
           <div className="space-y-8">
             {loading ? (
@@ -228,7 +228,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="arise-card p-10 overflow-hidden">
+      <div className="loop-card p-10 overflow-hidden">
         <div className="mb-10">
           <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Operational Governance Ledger</h2>
           <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time interaction matrix</p>
@@ -270,10 +270,10 @@ export default function Dashboard() {
 }
 
 function MetricCard({ title, value, drift, icon: Icon, primary, negative, loading }: any) {
-  if (loading) return <div className="arise-card p-10 min-h-[200px] border-none" />;
+  if (loading) return <div className="loop-card p-10 min-h-[200px] border-none" />;
 
   return (
-    <div className={`arise-card p-8 border-none shadow-arise ${primary ? 'bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white shadow-[0_20px_40px_-5px_rgba(19,91,236,0.3)]' : 'text-slate-900 hover:bg-white/90'}`}>
+    <div className={`loop-card p-8 border-none shadow-arise ${primary ? 'bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white shadow-[0_20px_40px_-5px_rgba(19,91,236,0.3)]' : 'text-slate-900 hover:bg-white/90'}`}>
       <div className="flex justify-between items-start mb-10">
         <p className={`text-[9px] font-black uppercase tracking-[0.3em] ${primary ? 'text-white/70' : 'text-slate-400'}`}>{title}</p>
         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${primary ? 'bg-white/20' : 'bg-[#f7f9fb] text-slate-300'}`}>
@@ -291,10 +291,10 @@ function MetricCard({ title, value, drift, icon: Icon, primary, negative, loadin
 function SkeletonRow() {
   return (
     <div className="flex items-center gap-4">
-      <div className="w-12 h-12 arise-skeleton rounded-2xl" />
+      <div className="w-12 h-12 loop-skeleton rounded-2xl" />
       <div className="space-y-2">
-        <div className="w-32 h-3 arise-skeleton" />
-        <div className="w-20 h-2 arise-skeleton" />
+        <div className="w-32 h-3 loop-skeleton" />
+        <div className="w-20 h-2 loop-skeleton" />
       </div>
     </div>
   );

@@ -25,8 +25,8 @@ export default function LandingPage() {
              />
           </div>
           <div className="flex flex-col text-left">
-            <span className="text-3xl font-black text-white italic uppercase tracking-[-0.05em] leading-none">OUROBOT</span>
-            <span className="text-[9px] font-black text-[#06b6d4] uppercase tracking-[0.4em] mt-1 italic">Pure_Infinity_AI</span>
+            <span className="text-3xl font-black text-white italic uppercase tracking-[-0.05em] leading-none">LOOP</span>
+            <span className="text-[9px] font-black text-[#06b6d4] uppercase tracking-[0.4em] mt-1 italic">Neural_Business_OS</span>
           </div>
         </div>
         <Link 
@@ -58,7 +58,7 @@ export default function LandingPage() {
             {/* Badge Hero */}
             <div className="flex items-center gap-4 mb-10 bg-white/[0.02] backdrop-blur-3xl px-8 py-3 rounded-full border border-white/5 shadow-2xl group cursor-pointer hover:bg-[#06b6d4]/10 transition-all w-fit">
                <Heart size={16} className="text-[#06b6d4] fill-[#06b6d4] animate-pulse" />
-               <p className="text-white text-[11px] font-black uppercase tracking-[0.7em]">Ouroborus_Neural_Infinity_v9.9</p>
+               <p className="text-white text-[11px] font-black uppercase tracking-[0.7em]">Loop_Neural_Intelligence_v10.0</p>
             </div>
             
             <h1 className="text-5xl md:text-[85px] font-black text-white tracking-tight leading-none mb-8 uppercase italic">
@@ -69,12 +69,12 @@ export default function LandingPage() {
             </h1>
             
             <p className="text-lg md:text-xl text-slate-400 font-medium max-w-2xl mb-12 tracking-normal leading-relaxed">
-              Automatiza tu agenda, gestiona logística industrial y controla tu contabilidad desde WhatsApp con el poder de **OUROBOT**.
+              Automatiza tu agenda, gestiona logística industrial y controla tu contabilidad desde WhatsApp con el poder de **LOOP**.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center lg:items-start gap-6">
               <a 
-                href="https://wa.me/56990062213?text=Hola%20OUROBOT!%20Activa%20mi%20negocio"
+                href="https://wa.me/56990062213?text=Hola%20LOOP!%20Cierra%20el%20ciclo%20de%20mis%20tareas"
                 className="w-full sm:w-auto h-16 md:h-20 px-10 md:px-12 bg-[#06b6d4] text-white rounded-full font-black text-[12px] md:text-[13px] uppercase tracking-[0.3em] md:tracking-[0.5em] shadow-[0_20px_50px_-10px_rgba(6,182,212,0.5)] hover:scale-[1.05] active:scale-95 transition-all flex items-center justify-center gap-4 md:gap-6 group"
               >
                 Sincronizar con WhatsApp
@@ -95,7 +95,7 @@ export default function LandingPage() {
           <FeatureCard 
             icon={Bell} 
             title="Auto-Respuesta IA" 
-            desc="Sincronización total de citas y recordatorios mediante lenguaje natural. OUROBOT nunca olvida." 
+            desc="Sincronización total de citas y recordatorios mediante lenguaje natural. LOOP nunca olvida." 
             accent="bg-[#06b6d4]/10"
           />
           <FeatureCard 
@@ -115,7 +115,7 @@ export default function LandingPage() {
         {/* Pricing Section */}
         <section id="pricing" className="w-full max-w-6xl mx-auto">
           <div className="mb-16">
-            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic mb-6">Planes OUROBOT</h2>
+            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic mb-6">Planes LOOP</h2>
             <div className="w-24 h-[4px] bg-[#06b6d4] mx-auto rounded-full" />
           </div>
 
@@ -160,7 +160,7 @@ export default function LandingPage() {
             <Bell size={16} />
             <Sparkles size={16} />
          </div>
-         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">© 2026 OUROBOT_Systems. Powered by Ouroborus AI Cluster.</p>
+         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">© 2026 LOOP_Systems. Powered by Loop Neural Cluster.</p>
       </footer>
     </div>
   );

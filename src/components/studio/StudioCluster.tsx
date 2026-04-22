@@ -31,7 +31,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
   return (
     <section className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <div className="arise-card p-6 md:p-8 bg-white border-none shadow-arise">
+        <div className="loop-card p-6 md:p-8 bg-white border-none shadow-arise">
            <div className="flex items-center justify-between mb-4 md:mb-6">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">IA Vitality</p>
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
@@ -39,7 +39,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
            <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter leading-none">{apiKeys.length}/{apiKeys.length}</h2>
            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Active Neural Nodes</p>
         </div>
-        <div className="arise-card p-6 md:p-8 bg-[#f2f4f6] border-none shadow-none">
+        <div className="loop-card p-6 md:p-8 bg-[#f2f4f6] border-none shadow-none">
            <div className="flex items-center justify-between mb-4 md:mb-6">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">WhatsApp Bridge</p>
               <Zap size={14} className="text-primary fill-primary/20" />
@@ -47,7 +47,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
            <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tighter">CONNECTED</h2>
            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Infrastructure Live</p>
         </div>
-        <div className="arise-card p-6 md:p-8 bg-white border-none shadow-arise">
+        <div className="loop-card p-6 md:p-8 bg-white border-none shadow-arise">
            <div className="flex items-center justify-between mb-4 md:mb-6">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Latency_MS</p>
               <Activity size={14} className="text-slate-300" />
@@ -71,7 +71,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
             {apiKeys.map((k, index) => {
               const result = keyResults[k.id];
               return (
-                <div key={k.id} className="arise-card p-5 bg-white border-none shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
+                <div key={k.id} className="loop-card p-5 bg-white border-none shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
                   <div className="flex items-center gap-6">
                     <div className="w-10 h-10 bg-[#f7f9fb] rounded-xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
                       <Cpu size={14} />
@@ -113,7 +113,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
         </div>
 
         <div className="lg:col-span-4 gap-6 flex flex-col">
-          <div className="arise-card p-6 md:p-8 bg-slate-900 text-white border-none shrink-0 overflow-hidden relative rounded-[32px]">
+          <div className="loop-card p-6 md:p-8 bg-slate-900 text-white border-none shrink-0 overflow-hidden relative rounded-[32px]">
              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2" />
              <h3 className="text-[11px] font-black uppercase tracking-widest text-primary mb-4 md:mb-6 flex items-center gap-3">
                 <Activity size={14} />

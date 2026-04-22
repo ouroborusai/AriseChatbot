@@ -67,10 +67,13 @@ export default function LoginPage() {
                className="w-full h-full object-contain filter drop-shadow-[0_0_20px_rgba(6,182,212,0.3)]"
              />
           </div>
-          <h1 className="text-5xl font-black text-white tracking-widest leading-none italic uppercase mb-4">OUROBOT</h1>
-          <div className="flex items-center gap-3">
-             <Activity size={10} className="text-[#06b6d4]" />
-             <p className="text-[#06b6d4] text-[9px] font-black uppercase tracking-[0.6em]">Neural_Business_OS / v9.9</p>
+          <h1 className="text-5xl font-black text-white tracking-[0.5em] leading-none italic uppercase mb-6">LOOP</h1>
+          <div className="flex flex-col items-center gap-3">
+             <div className="flex items-center gap-3">
+                <Activity size={10} className="text-[#06b6d4]" />
+                <p className="text-[#06b6d4] text-[9px] font-black uppercase tracking-[0.6em]">Neural_Business_OS / v10.0</p>
+             </div>
+             <p className="text-slate-400 text-[10px] font-bold italic tracking-wider mt-2 whitespace-nowrap">"Cierra el ciclo de tus tareas con Loop"</p>
           </div>
         </div>
 
@@ -146,7 +149,7 @@ export default function LoginPage() {
              <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em]">Quantum_Encryption: 256B</p>
           </div>
           <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em]">
-            © 2026 OUROBOT_Intelligence
+            © 2026 LOOP_Intelligence
           </p>
         </div>
       </div>

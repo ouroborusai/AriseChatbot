@@ -19,7 +19,7 @@ export function StudioBrain({ systemPrompt, setSystemPrompt, saving, onSave, tel
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 items-start animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="lg:col-span-3 space-y-10">
-        <section className="arise-card p-0 overflow-hidden bg-white border-none shadow-arise">
+        <section className="loop-card p-0 overflow-hidden bg-white border-none shadow-arise">
           <div className="bg-[#f2f4f6] px-6 md:px-8 py-4 md:py-6 flex justify-between items-center">
             <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
                 <Terminal size={12} className="text-primary fill-primary/20" />
@@ -47,7 +47,7 @@ export function StudioBrain({ systemPrompt, setSystemPrompt, saving, onSave, tel
         </section>
       </div>
       <aside className="space-y-6 sticky top-10">
-        <div className="arise-card p-8 bg-black/90 text-white border-none shadow-2xl backdrop-blur-xl rounded-[32px]">
+        <div className="loop-card p-8 bg-black/90 text-white border-none shadow-2xl backdrop-blur-xl rounded-[32px]">
           <h3 className="text-[9px] font-black uppercase tracking-[0.3em] mb-8 flex items-center gap-3 text-primary">
             <Zap size={12} className="fill-primary" />
             Engineering Vault
@@ -59,7 +59,7 @@ export function StudioBrain({ systemPrompt, setSystemPrompt, saving, onSave, tel
             </div>
           </div>
         </div>
-        <div className="arise-card p-8 bg-white border-none shadow-arise rounded-[32px]">
+        <div className="loop-card p-8 bg-white border-none shadow-arise rounded-[32px]">
           <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-900 mb-8 flex items-center gap-3">
             <Activity size={12} className="text-primary" />
             Neural Pulse

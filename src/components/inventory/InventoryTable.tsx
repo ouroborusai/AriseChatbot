@@ -8,7 +8,7 @@ interface InventoryTableProps {
 
 export function InventoryTable({ loading, items }: InventoryTableProps) {
   return (
-    <div className="arise-card bg-white/80 backdrop-blur-2xl border-white/50 shadow-arise overflow-hidden rounded-[40px] p-8 md:p-12 mb-16">
+    <div className="loop-card bg-white/80 backdrop-blur-2xl border-white/50 shadow-arise overflow-hidden rounded-[40px] p-8 md:p-12 mb-16">
       <div className="overflow-x-auto">
         <table className="w-full text-left min-w-[800px]">
           <thead>
@@ -24,11 +24,11 @@ export function InventoryTable({ loading, items }: InventoryTableProps) {
             {loading ? (
               Array(6).fill(0).map((_, i) => (
                 <tr key={i}>
-                  <td className="py-8"><div className="w-56 h-12 arise-skeleton rounded-2xl" /></td>
-                  <td className="hidden lg:table-cell py-8"><div className="w-32 h-6 arise-skeleton rounded-xl" /></td>
-                  <td className="py-8 text-center"><div className="w-20 h-10 arise-skeleton mx-auto rounded-xl" /></td>
-                  <td className="hidden md:table-cell py-8"><div className="w-32 h-8 arise-skeleton rounded-full" /></td>
-                  <td className="py-8 text-right"><div className="w-12 h-12 arise-skeleton ml-auto rounded-2xl" /></td>
+                  <td className="py-8"><div className="w-56 h-12 loop-skeleton rounded-2xl" /></td>
+                  <td className="hidden lg:table-cell py-8"><div className="w-32 h-6 loop-skeleton rounded-xl" /></td>
+                  <td className="py-8 text-center"><div className="w-20 h-10 loop-skeleton mx-auto rounded-xl" /></td>
+                  <td className="hidden md:table-cell py-8"><div className="w-32 h-8 loop-skeleton rounded-full" /></td>
+                  <td className="py-8 text-right"><div className="w-12 h-12 loop-skeleton ml-auto rounded-2xl" /></td>
                 </tr>
               ))
             ) : items.length > 0 ? (
@@ -84,7 +84,7 @@ export function InventoryTable({ loading, items }: InventoryTableProps) {
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-loose mb-12">
                       Zero operational assets detected in this node. Initialize logistics to establish control.
                     </p>
-                    <button className="btn-arise px-12">Initialize_Protocol</button>
+                    <button className="btn-loop px-12">Initialize_Protocol</button>
                   </div>
                 </td>
               </tr>

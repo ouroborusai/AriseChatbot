@@ -102,7 +102,7 @@ export async function handleInventoryAction(
       .select('id, name, sku, current_stock')
       .eq('company_id', companyId)
       .or(`sku.ilike.%${safeSku}%,name.ilike.%${safeName}%`)
-      .limit(3);
+      .limit(10);
 
     if (items && items.length > 0) {
       // Feedback via WhatsApp (Reutilizando lógica del motor)

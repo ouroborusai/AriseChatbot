@@ -3,7 +3,7 @@ import { Zap, Activity } from 'lucide-react';
 
 export function InventoryQuickActions() {
   return (
-    <div className="arise-card bg-[#0b1326] p-10 flex flex-col rounded-[48px] shadow-2xl relative overflow-hidden">
+    <div className="loop-card bg-[#0b1326] p-10 flex flex-col rounded-[48px] shadow-2xl relative overflow-hidden">
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] -mr-32 -mt-32" />
       <div className="relative z-10">
         <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-primary mb-10">Intake_Quick_Action</h3>
@@ -42,7 +42,7 @@ export function InventoryQuickActions() {
             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-4">Manual_Sequence</label>
             <div className="flex gap-4">
                <input type="number" placeholder="000" className="w-full bg-white/5 border-none rounded-2xl p-5 text-white font-black italic text-xl outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
-               <button className="btn-arise px-10">Exec</button>
+               <button className="btn-loop px-10">Exec</button>
             </div>
           </div>
         </div>

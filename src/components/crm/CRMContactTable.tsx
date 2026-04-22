@@ -20,7 +20,7 @@ interface CRMContactTableProps {
 
 export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateSegment }: CRMContactTableProps) {
   return (
-    <div className="arise-card bg-white border-none shadow-arise overflow-hidden rounded-[24px] md:rounded-[32px] p-6 md:p-10">
+    <div className="loop-card bg-white border-none shadow-arise overflow-hidden rounded-[24px] md:rounded-[32px] p-6 md:p-10">
       <div className="overflow-x-auto">
         <table className="w-full text-left min-w-[700px] md:min-w-[800px]">
           <thead>
@@ -36,11 +36,11 @@ export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateSegment
             {loading ? (
               Array(6).fill(0).map((_, i) => (
                 <tr key={i}>
-                  <td className="py-6"><div className="w-48 h-10 arise-skeleton rounded-xl" /></td>
-                  <td className="hidden md:table-cell py-6"><div className="w-32 h-6 arise-skeleton rounded-lg" /></td>
-                  <td className="hidden lg:table-cell py-6 text-center"><div className="w-24 h-6 arise-skeleton mx-auto rounded-full" /></td>
-                  <td className="hidden md:table-cell py-6"><div className="w-28 h-6 arise-skeleton rounded-lg" /></td>
-                  <td className="py-6 text-right"><div className="w-10 h-10 arise-skeleton ml-auto rounded-lg" /></td>
+                  <td className="py-6"><div className="w-48 h-10 loop-skeleton rounded-xl" /></td>
+                  <td className="hidden md:table-cell py-6"><div className="w-32 h-6 loop-skeleton rounded-lg" /></td>
+                  <td className="hidden lg:table-cell py-6 text-center"><div className="w-24 h-6 loop-skeleton mx-auto rounded-full" /></td>
+                  <td className="hidden md:table-cell py-6"><div className="w-28 h-6 loop-skeleton rounded-lg" /></td>
+                  <td className="py-6 text-right"><div className="w-10 h-10 loop-skeleton ml-auto rounded-lg" /></td>
                 </tr>
               ))
             ) : (

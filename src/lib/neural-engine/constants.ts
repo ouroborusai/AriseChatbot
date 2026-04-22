@@ -66,7 +66,7 @@ export const TIMEOUTS = {
 // ════════════════════════════════════════════════════════════════════════════
 
 export const SYSTEM_STRINGS = {
-  DEFAULT_SYSTEM_PROMPT: 'Eres Arise Director AI. Responde breve y ejecutivo.',
-  NEURAL_AI_CREATED: 'Creado vía Neural AI',
-  FALLBACK_RESPONSE: 'Arise Neural Engine: Fallo de percepción.',
+  DEFAULT_SYSTEM_PROMPT: 'Eres LOOP Director AI. "Cierra el ciclo de tus tareas con Loop".',
+  NEURAL_AI_CREATED: 'Creado vía LOOP Neural AI',
+  FALLBACK_RESPONSE: 'LOOP Neural Engine: Fallo de percepción.',
 } as const;

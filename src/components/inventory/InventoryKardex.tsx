@@ -14,7 +14,7 @@ export function InventoryKardex({ transactions }: InventoryKardexProps) {
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {transactions.map(t => (
-          <div key={t.id} className="arise-card bg-white/90 p-8 flex items-center justify-between group rounded-[32px] hover:shadow-2xl transition-all">
+          <div key={t.id} className="loop-card bg-white/90 p-8 flex items-center justify-between group rounded-[32px] hover:shadow-2xl transition-all">
             <div className="flex items-center gap-6">
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 \${t.type === 'in' ? 'bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white' : 'bg-rose-500/10 text-rose-500 group-hover:bg-rose-500 group-hover:text-white'}`}>
                 {t.type === 'in' ? <ArrowLeft size={20} className="-rotate-45" /> : <ArrowRight size={20} className="-rotate-45" />}

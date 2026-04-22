@@ -149,7 +149,7 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
     <div
       className={`
         pointer-events-auto
-        arise-card min-w-[320px] max-w-md p-4
+        loop-card min-w-[320px] max-w-md p-4
         bg-white/95 backdrop-blur-2xl
         border-l-4 ${config.border}
         shadow-2xl shadow-slate-900/20

@@ -2,8 +2,8 @@ import { serve } from "std/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
 
 // ════════════════════════════════════════════════════════════════════════════
-// ARISE WHATSAPP PARSER (Inline para Deno Edge Functions)
-// Diamond v9.0 Smart Parser - Detecta --- y | para crear interactivos
+// LOOP WHATSAPP PARSER (Inline para Deno Edge Functions)
+// Diamond v10.0 Smart Parser - Detecta --- y | para crear interactivos
 // ════════════════════════════════════════════════════════════════════════════
 
 const WHATSAPP_LIMITS = {
@@ -34,7 +34,7 @@ function buildInteractivePayload(sender: string, aiText: string) {
 
   // Limpiar tags de acción [[...]] y parsear opciones
   const options = optionsStr.split('|')
-    .map(o => o.replace(/\[\[.*?\]\]/g, '').trim())
+    .map(o => o.replace(/\[\[.*?\]\]/g, '').replace(/[\[\]]/g, '').trim())
     .filter(o => o.length > 0);
 
   if (options.length === 0) {
@@ -46,29 +46,7 @@ function buildInteractivePayload(sender: string, aiText: string) {
     };
   }
 
-  // 1-3 opciones: Botones interactivos (mejor UX)
-  if (options.length <= WHATSAPP_LIMITS.MAX_BUTTONS) {
-    return {
-      messaging_product: 'whatsapp' as const,
-      to: sender,
-      type: 'interactive' as const,
-      interactive: {
-        type: 'button' as const,
-        body: { text: bodyText.substring(0, WHATSAPP_LIMITS.MAX_TEXT_BODY_LENGTH) },
-        action: {
-          buttons: options.slice(0, WHATSAPP_LIMITS.MAX_BUTTONS).map((o, i) => ({
-            type: 'reply' as const,
-            reply: {
-              id: `bot_btn_${i}_${Date.now()}`,
-              title: o.substring(0, WHATSAPP_LIMITS.MAX_BUTTON_TITLE_LENGTH),
-            },
-          })),
-        },
-      },
-    };
-  }
-
-  // 4+ opciones: Lista interactiva (más capacidad)
+  // Siempre usar Lista interactiva para mantener consistencia y ofrecer alternativas (Capacidad 10)
   return {
     messaging_product: 'whatsapp' as const,
     to: sender,
@@ -76,16 +54,19 @@ function buildInteractivePayload(sender: string, aiText: string) {
     interactive: {
       type: 'list' as const,
       body: { text: bodyText.substring(0, WHATSAPP_LIMITS.MAX_TEXT_BODY_LENGTH) },
-      footer: { text: 'Arise Diamond v9.0' },
+      footer: { text: 'Cierra el ciclo de tus tareas con Loop' },
       action: {
         button: 'Ver Opciones',
         sections: [{
-          title: 'Opciones de IA',
-          rows: options.slice(0, WHATSAPP_LIMITS.MAX_ROWS_PER_SECTION).map((o, i) => ({
-            id: `bot_list_${i}_${Date.now()}`,
-            title: o.substring(0, WHATSAPP_LIMITS.MAX_ROW_TITLE_LENGTH),
-            description: 'Comando Neural',
-          })),
+          title: 'Acciones Sugeridas',
+          rows: options.slice(0, WHATSAPP_LIMITS.MAX_ROWS_PER_SECTION).map((o, i) => {
+            const title = o.substring(0, WHATSAPP_LIMITS.MAX_ROW_TITLE_LENGTH);
+            return {
+              id: `bot_list_${i}_${Date.now()}`,
+              title: title,
+              description: 'Comando Neural',
+            };
+          }),
         }],
       },
     },
@@ -124,7 +105,7 @@ serve(async (req: Request) => {
        if (!msg) return new Response('Msg not found');
 
        const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', msg.conversations.company_id).eq('is_active', true).limit(1).maybeSingle();
-       const baseSystemPrompt = p?.system_prompt || "Eres Arise Diamond v9.0.";
+       const baseSystemPrompt = p?.system_prompt || 'Eres LOOP Director AI. "Cierra el ciclo de tus tareas con Loop".';
        
        const keys = GEMINI_API_KEY.split(',').map(k => k.trim());
        const activeKey = keys[Math.floor(Math.random() * keys.length)];
@@ -136,7 +117,7 @@ serve(async (req: Request) => {
        });
 
        const gData = await geminiRes.json();
-       const aiText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "Arise Engine: Error.";
+       const aiText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "Loop Engine: Error.";
 
        // Guardar respuesta
        await supabase.from('messages').insert({

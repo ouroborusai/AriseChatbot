@@ -63,9 +63,9 @@ export async function sendWhatsAppMessage(params: {
       type: 'interactive',
       interactive: {
         type: 'list',
-        header: { type: 'text', text: 'Arise Business OS' },
+        header: { type: 'text', text: 'Loop Business OS' },
         body: { text: textPart },
-        footer: { text: 'Seleccione una opción para continuar' },
+        footer: { text: 'Cierra el ciclo de tus tareas con Loop' },
         action: {
           button: '📋 Ver Opciones',
           sections: [{ title: 'Acciones Sugeridas', rows }]

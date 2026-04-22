@@ -16,7 +16,7 @@ export function StudioSkills({ templates }: StudioSkillsProps) {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {templates.map(t => (
-            <div key={t.id} className="arise-card p-8 bg-white border-none shadow-arise relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer rounded-[32px]">
+            <div key={t.id} className="loop-card p-8 bg-white border-none shadow-arise relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer rounded-[32px]">
                <div className="flex items-center justify-between mb-8">
                   <div className="w-12 h-12 bg-[#f7f9fb] rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
                     <FileCode size={20} />
