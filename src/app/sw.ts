@@ -11,7 +11,13 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: [
+    {
+      matcher: ({ url }) => url.pathname.startsWith("/auth/"),
+      handler: ({ request }) => fetch(request),
+    },
+    ...defaultCache,
+  ],
 });
 
 serwist.addEventListeners();
