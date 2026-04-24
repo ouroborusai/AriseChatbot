@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, Zap, Activity, RefreshCw, Send } from 'lucide-react';
+import { Cpu, Zap, Activity, RefreshCw, Send, ShieldCheck, Database, Server } from 'lucide-react';
 
 interface ApiKeyResult {
   status: 'ok' | 'error' | 'testing';
@@ -29,81 +29,97 @@ interface StudioClusterProps {
 
 export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: StudioClusterProps) {
   return (
-    <section className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <div className="loop-card p-6 md:p-8 bg-white border-none shadow-arise">
-           <div className="flex items-center justify-between mb-4 md:mb-6">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Vitalidad IA</p>
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+    <section className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
+      {/* VITALITY STATS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="loop-card p-10 bg-white/5 border-white/5 shadow-2xl rounded-[40px] relative overflow-hidden group">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 blur-3xl rounded-full" />
+           <div className="flex items-center justify-between mb-10">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] italic">Vitalidad IA</p>
+              <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_15px_#22c55e]" />
            </div>
-           <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter leading-none">{apiKeys.length}/{apiKeys.length}</h2>
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Nodos Neurales Activos</p>
+           <h2 className="text-5xl font-black text-white tracking-tighter italic">{apiKeys.length}<span className="text-slate-700 text-2xl ml-1">/</span>{apiKeys.length}</h2>
+           <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] mt-4 flex items-center gap-2">
+              <Server size={14} />
+              Nodos Neurales Activos
+           </p>
         </div>
-        <div className="loop-card p-6 md:p-8 bg-slate-100 border-none shadow-none">
-           <div className="flex items-center justify-between mb-4 md:mb-6">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Puente WhatsApp</p>
-              <Zap size={14} className="text-primary fill-primary/20" />
+        
+        <div className="loop-card p-10 bg-white/5 border-white/5 shadow-2xl rounded-[40px] relative overflow-hidden group">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full" />
+           <div className="flex items-center justify-between mb-10">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] italic">Puente Meta</p>
+              <Zap size={16} className="text-blue-500 fill-blue-500/20" />
            </div>
-           <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tighter">CONECTADO</h2>
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Infraestructura Activa</p>
+           <h2 className="text-2xl font-black text-white tracking-tighter uppercase italic">CONECTADO</h2>
+           <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] mt-8 flex items-center gap-2">
+              <Activity size={14} />
+              Infraestructura Operativa
+           </p>
         </div>
-        <div className="loop-card p-6 md:p-8 bg-white border-none shadow-arise">
-           <div className="flex items-center justify-between mb-4 md:mb-6">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Latencia MS</p>
-              <Activity size={14} className="text-slate-300" />
+
+        <div className="loop-card p-10 bg-[#020617] border-white/5 shadow-2xl rounded-[40px] relative overflow-hidden group border-dashed">
+           <div className="flex items-center justify-between mb-10">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] italic">Latencia MS</p>
+              <Cpu size={16} className="text-slate-700" />
            </div>
-           <h2 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">{telemetry.latency}</h2>
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Ritmo de Respuesta Actual</p>
+           <h2 className="text-5xl font-black text-white tracking-tighter italic">{telemetry.latency}</h2>
+           <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] mt-4 flex items-center gap-2">
+              <Zap size={14} />
+              Ritmo de Respuesta Actual
+           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-8 space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[11px] font-black uppercase text-slate-900 flex items-center gap-3">
-              <Zap size={14} className="text-primary" />
-              Estado de los Nodos Gemini-2.5-Flash-Lite
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        {/* API NODES MONITOR */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="flex items-center justify-between mb-8 px-2">
+            <h3 className="text-[12px] font-black uppercase text-white flex items-center gap-4 italic">
+              <Database size={16} className="text-green-500" />
+              Estado de los Nodos Gemini-2.5
             </h3>
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Balanceo Round-Robin Activo</span>
+            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-lg">Round-Robin v2.5</span>
           </div>
           
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 gap-4">
             {apiKeys.map((k, index) => {
               const result = keyResults[k.id];
               return (
-                <div key={k.id} className="loop-card p-5 bg-white border-none shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
-                  <div className="flex items-center gap-6">
-                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
-                      <Cpu size={14} />
+                <div key={k.id} className="loop-card p-6 bg-white/5 border-white/5 flex items-center justify-between group hover:bg-white/[0.08] hover:border-white/10 transition-all rounded-[32px] shadow-2xl">
+                  <div className="flex items-center gap-8">
+                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-700 group-hover:bg-green-500 group-hover:text-slate-900 transition-all border border-white/5 group-hover:border-transparent">
+                      <Cpu size={18} />
                     </div>
                     <div>
                       <div className="flex items-center gap-4">
-                        <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest">NODO {index + 1}</p>
+                        <p className="text-[10px] font-black text-white uppercase tracking-widest italic">NODO {index + 1}</p>
                         {result?.status === 'ok' ? (
-                          <span className="bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded text-[7px] font-black uppercase">Activo</span>
+                          <span className="bg-green-500/10 text-green-500 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border border-green-500/20">OPERATIVO</span>
                         ) : result?.status === 'error' ? (
-                          <span className="bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded text-[7px] font-black uppercase">Agotado</span>
+                          <span className="bg-red-500/10 text-red-500 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border border-red-500/20">AGOTADO</span>
                         ) : (
-                          <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded text-[7px] font-black uppercase">En Espera</span>
+                          <span className="bg-white/5 text-slate-600 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border border-white/10">ESPERA</span>
                         )}
                       </div>
-                      <p className="text-[9px] font-mono text-slate-400 mt-1 tracking-tight">{k.key_value.substring(0, 40)}...</p>
+                      <p className="text-[10px] font-mono text-slate-600 mt-2 tracking-tighter opacity-60">{k.key_value.substring(0, 32)}...</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-8">
                     {result?.latency && (
                       <div className="text-right">
-                        <p className="text-[9px] font-black text-emerald-500 uppercase">{result.latency}ms</p>
-                        <p className="text-[8px] font-bold text-slate-300 uppercase">Latencia</p>
+                        <p className="text-xl font-black text-green-500 tracking-tighter">{result.latency}ms</p>
+                        <p className="text-[8px] font-black text-slate-700 uppercase tracking-widest">LATENCIA</p>
                       </div>
                     )}
                     <button 
                       onClick={() => onTestKey(k.id, k.key_value)}
                       disabled={result?.status === 'testing'}
-                      className="w-10 h-10 flex items-center justify-center bg-primary/5 hover:bg-primary text-primary hover:text-white rounded-xl transition-all disabled:opacity-50 shadow-sm"
+                      className="w-12 h-12 flex items-center justify-center bg-white/5 hover:bg-white text-slate-500 hover:text-slate-900 rounded-2xl transition-all disabled:opacity-20 shadow-2xl group/btn"
                     >
-                      {result?.status === 'testing' ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                      {result?.status === 'testing' ? <RefreshCw size={18} className="animate-spin" /> : <Send size={18} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />}
                     </button>
                   </div>
                 </div>
@@ -112,27 +128,38 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
           </div>
         </div>
 
-        <div className="lg:col-span-4 gap-6 flex flex-col">
-          <div className="loop-card p-6 md:p-8 bg-slate-900 text-white border-none shrink-0 overflow-hidden relative rounded-[32px]">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2" />
-             <h3 className="text-[11px] font-black uppercase tracking-widest text-primary mb-4 md:mb-6 flex items-center gap-3">
-                <Activity size={14} />
-                Salud de Meta
+        {/* META HEALTH CARD */}
+        <div className="lg:col-span-4">
+          <div className="loop-card p-10 bg-white/5 border-white/5 text-white shrink-0 overflow-hidden relative rounded-[40px] shadow-2xl">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2" />
+             
+             <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-blue-500 mb-10 flex items-center gap-4 italic">
+                <ShieldCheck size={16} />
+                Salud de Infra
              </h3>
-             <div className="space-y-6 relative z-10">
-                <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Estado del Token</span>
-                  <span className="text-[10px] font-black text-emerald-400">VÁLIDO</span>
+             
+             <div className="space-y-8 relative z-10">
+                <div className="flex justify-between items-center bg-white/5 p-6 rounded-2xl border border-white/5 group hover:border-blue-500/30 transition-all">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Token Auth</span>
+                  <span className="text-[10px] font-black text-green-500 tracking-[0.2em] shadow-[0_0_10px_#22c55e33]">VÁLIDO_OK</span>
                 </div>
-                <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Pulso del Webhook</span>
-                  <span className="text-[10px] font-black text-primary animate-pulse">ACTIVO</span>
+                
+                <div className="flex justify-between items-center bg-white/5 p-6 rounded-2xl border border-white/5 group hover:border-blue-500/30 transition-all">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">WABA Webhook</span>
+                  <span className="text-[10px] font-black text-blue-500 animate-pulse tracking-[0.2em]">ACTIVO_SYNC</span>
                 </div>
-                <div className="pt-4 border-t border-white/10">
-                  <p className="text-[9px] font-black text-slate-500 uppercase mb-4">Meta Data IDs</p>
-                  <div className="space-y-2">
-                     <p className="text-[10px] font-mono text-slate-400 flex justify-between">WABA <span className="text-white">{telemetry.wabaId || '192744...'}</span></p>
-                     <p className="text-[10px] font-mono text-slate-400 flex justify-between">Phone <span className="text-white">{telemetry.phoneId || '106687...'}</span></p>
+                
+                <div className="pt-8 border-t border-white/10">
+                  <p className="text-[9px] font-black text-slate-700 uppercase mb-6 tracking-widest">Meta Data Registry</p>
+                  <div className="space-y-4">
+                     <div className="flex flex-col gap-1.5">
+                        <span className="text-[8px] font-black text-slate-500 uppercase">WABA_ID</span>
+                        <code className="text-[11px] font-mono text-white tracking-tighter bg-black/40 p-3 rounded-xl border border-white/5 truncate">{telemetry.wabaId || '192744882582782'}</code>
+                     </div>
+                     <div className="flex flex-col gap-1.5">
+                        <span className="text-[8px] font-black text-slate-500 uppercase">PHONE_ID</span>
+                        <code className="text-[11px] font-mono text-white tracking-tighter bg-black/40 p-3 rounded-xl border border-white/5 truncate">{telemetry.phoneId || '106687442345511'}</code>
+                     </div>
                   </div>
                 </div>
              </div>

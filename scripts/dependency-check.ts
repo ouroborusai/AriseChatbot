@@ -89,7 +89,7 @@ function resolveImportPath(importPath: string, fromFile: string): string | null 
     // Simular resolución de alias @ -> src/
     const dir = dirname(fromFile);
     const relativePath = importPath.replace('@/', 'src/');
-    let resolved = resolve(dir, relativePath);
+    const resolved = resolve(dir, relativePath);
 
     const extensions = ['', '.ts', '.tsx', '.js', '.jsx', '/index.ts', '/index.tsx', '/index.js', '/index.jsx'];
 
@@ -107,7 +107,7 @@ function resolveImportPath(importPath: string, fromFile: string): string | null 
 
   // Imports relativos normales
   const dir = dirname(fromFile);
-  let resolved = resolve(dir, importPath);
+  const resolved = resolve(dir, importPath);
 
   const extensions = ['', '.ts', '.tsx', '.js', '.jsx', '/index.ts', '/index.tsx', '/index.js', '/index.jsx'];
 

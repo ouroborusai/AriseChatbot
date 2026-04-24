@@ -7,11 +7,18 @@ import {
   User, 
   ShieldCheck, 
   Zap, 
-  Settings2 
+  Settings2,
+  Lock,
+  Fingerprint,
+  Building2,
+  Cpu,
+  ChevronRight,
+  UserPlus
 } from 'lucide-react';
 import { MetricSmall } from '@/components/ui/MetricSmall';
+import Image from 'next/image';
 
-interface User {
+interface UserProfile {
   id: string;
   email?: string;
   role: string;
@@ -24,16 +31,19 @@ interface CompanyMinimal {
 }
 
 export default function UsersManagement() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [companies, setCompanies] = useState<CompanyMinimal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
+      const activeCompanyId = localStorage.getItem('arise_active_company');
+      
       const [uRes, cRes] = await Promise.all([
         supabase.from('profiles').select('id, email, role, created_at'),
         supabase.from('companies').select('id, name')
       ]);
+      
       setUsers(uRes.data || []);
       setCompanies(cRes.data || []);
       setLoading(false);
@@ -42,100 +52,127 @@ export default function UsersManagement() {
   }, []);
 
   return (
-    <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-x-hidden">
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16">
-        <div>
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Búnker de Identidad</h1>
-          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
-            <Activity size={10} className="text-primary" />
-            Protocolo de Seguridad e Identidad / v9.0
+    <div className="flex flex-col w-full max-w-full py-6 md:py-12 animate-in fade-in duration-700 overflow-x-hidden relative">
+      
+      {/* PREMIUM BACKGROUND ACCENTS */}
+      <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-green-500/5 blur-[120px] rounded-full -z-10" />
+      <div className="absolute bottom-0 left-0 w-[50%] h-[50%] bg-emerald-500/5 blur-[120px] rounded-full -z-10" />
+
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16 px-2">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+             <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
+             <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Protocolo de Identidad</span>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none italic uppercase">
+            Búnker de <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-500">Acceso</span>
+          </h1>
+          <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
+            <Lock size={12} className="text-green-500" />
+            SEGURIDAD E IDENTIDAD / v2.5
           </p>
         </div>
-        <button className="flex items-center justify-center gap-4 bg-primary text-white px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+
+        <button className="flex items-center justify-center gap-6 bg-white text-slate-900 px-10 py-5 rounded-[22px] text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-green-500 hover:text-white transition-all active:scale-95 group relative z-10">
           <span>Autorizar Operador</span>
+          <UserPlus size={16} className="group-hover:scale-110 transition-transform" />
         </button>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+      {/* METRICS SECTION */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16 relative z-10">
         <MetricSmall title="Operadores Activos" value={loading ? '..' : users.length} icon={User} />
-        <MetricSmall title="Unidades Conectadas" value={loading ? '..' : companies.length} icon={ShieldCheck} />
-        <MetricSmall title="Nivel de Seguridad" value="Industrial" icon={Activity} />
-        <MetricSmall title="Integridad de Sincronización" value="100%" icon={Zap} />
+        <MetricSmall title="Unidades Link" value={loading ? '..' : companies.length} icon={Building2} />
+        <MetricSmall title="Estado Búnker" value="Industrial" icon={ShieldCheck} />
+        <MetricSmall title="Integridad DNA" value="100%" icon={Zap} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 bg-white rounded-[32px] shadow-arise border-none overflow-hidden">
-          <div className="p-10 bg-slate-50 flex justify-between items-center">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Registro de Bóveda de Identidad</h2>
-            <span className="text-[8px] font-black bg-white text-slate-400 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm">Operadores {users.length}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 relative z-10">
+        {/* IDENTITY VAULT LIST */}
+        <div className="lg:col-span-2 bg-white/5 rounded-[48px] border border-white/5 overflow-hidden shadow-2xl backdrop-blur-3xl">
+          <div className="p-10 md:p-12 bg-white/5 flex justify-between items-center border-b border-white/5">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-600 italic">Registro de Bóveda</h2>
+            <span className="text-[9px] font-black bg-white/5 text-green-500 px-4 py-1.5 rounded-xl uppercase tracking-widest border border-green-500/20">OPERADORES_{users.length}</span>
           </div>
-          <div className="divide-y-0">
+          
+          <div className="divide-y divide-white/5">
             {loading ? (
-              <div className="p-20 text-center animate-pulse text-slate-300 font-black uppercase tracking-widest text-[10px]">Accediendo a la Bóveda de Identidad...</div>
+              <div className="p-40 text-center flex flex-col items-center">
+                 <Cpu size={48} className="text-green-500 animate-spin opacity-20 mb-10" />
+                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-[1em] animate-pulse">Neural_Sync_Active</p>
+              </div>
             ) : users.map(user => (
-              <div key={user.id} className="p-10 flex items-center justify-between hover:bg-slate-50 transition-all group cursor-pointer border-none">
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 bg-slate-900 text-white rounded-[24px] flex items-center justify-center font-black text-sm shadow-xl italic">
+              <div key={user.id} className="p-10 md:p-12 flex items-center justify-between hover:bg-white/[0.03] transition-all group cursor-pointer relative overflow-hidden">
+                <div className="absolute left-0 w-1 h-0 bg-green-500 group-hover:h-full transition-all duration-500" />
+                
+                <div className="flex items-center gap-8 relative z-10">
+                  <div className="w-16 h-16 bg-white text-slate-900 rounded-[26px] flex items-center justify-center font-black text-sm shadow-2xl group-hover:bg-green-500 group-hover:text-white transition-all duration-500 italic">
                     {user.email?.[0].toUpperCase() || '?'}
                   </div>
                   <div>
-                    <p className="text-sm font-black text-slate-900 uppercase italic tracking-tight">{user.email || 'N/A'}</p>
-                    <p className="text-[9px] font-mono text-slate-400 mt-2 uppercase tracking-widest opacity-60">OP_ID: {user.id.substring(0, 12)}</p>
+                    <p className="text-[16px] font-black text-white uppercase italic tracking-tight group-hover:text-green-500 transition-colors duration-500">{user.email || 'N_A'}</p>
+                    <p className="text-[10px] font-mono text-slate-600 mt-2 uppercase tracking-widest opacity-60">NODE_ID: {user.id.substring(0, 12).toUpperCase()}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-10">
-                  <div className="text-right">
-                    <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Rol de Acceso</p>
-                    <p className="text-[10px] font-black text-primary uppercase tracking-widest">{user.role}</p>
+                
+                <div className="flex items-center gap-12 relative z-10">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-[9px] font-black text-slate-700 uppercase tracking-widest mb-1">Rol de Acceso</p>
+                    <p className="text-[11px] font-black text-green-500 uppercase tracking-widest bg-green-500/10 px-3 py-1 rounded-lg border border-green-500/20">{user.role}</p>
                   </div>
-                  <button className="w-12 h-12 flex items-center justify-center bg-[#f2f4f6] text-slate-300 hover:text-slate-900 rounded-2xl shadow-sm transition-all"><Settings2 size={18} /></button>
+                  <button className="w-14 h-14 flex items-center justify-center bg-white/5 text-slate-700 hover:bg-white hover:text-slate-900 rounded-2xl border border-white/5 transition-all shadow-xl group-hover:scale-110">
+                    <Settings2 size={20} />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex flex-col gap-8">
-          <div className="bg-[#0a0c10] rounded-[40px] shadow-2xl p-10 flex flex-col overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[120px] rounded-full -mr-32 -mt-32" />
+        {/* AUTHORIZATION TERMINAL */}
+        <div className="flex flex-col gap-12">
+          <div className="loop-card bg-[#010409] rounded-[48px] border border-white/5 shadow-2xl p-12 flex flex-col overflow-hidden relative group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 blur-[120px] rounded-full -mr-32 -mt-32 transition-transform group-hover:scale-150 duration-1000" />
             
             <div className="relative z-10">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-12 flex items-center gap-3">
-                <Zap size={14} />
-                Terminal de Autorización Rápida
+              <h3 className="text-[11px] font-black uppercase tracking-[0.5em] text-white mb-12 flex items-center gap-4 italic">
+                <Zap size={16} className="text-green-500" />
+                Terminal de Acceso
               </h3>
               
               <div className="space-y-10">
                 <div className="space-y-4">
-                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] block">Enlace de Operador</label>
-                  <select className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-[10px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 transition-all">
-                    {users.map(u => <option key={u.id} value={u.id} className="bg-slate-900">{u.email || u.id.substring(0, 8)}</option>)}
+                  <label className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] block ml-2">Enlace de Operador</label>
+                  <select className="w-full bg-white/5 border border-white/5 rounded-[22px] p-5 text-[11px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 focus:border-green-500/30 transition-all appearance-none cursor-pointer">
+                    {users.map(u => <option key={u.id} value={u.id} className="bg-[#010409]">{u.email || u.id.substring(0, 8)}</option>)}
                   </select>
                 </div>
 
                 <div className="space-y-4">
-                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] block">Unidad Operativa</label>
-                  <select className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-[10px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 transition-all">
-                    {companies.map(c => <option key={c.id} value={c.id} className="bg-slate-900">{c.name}</option>)}
+                  <label className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] block ml-2">Unidad Operativa</label>
+                  <select className="w-full bg-white/5 border border-white/5 rounded-[22px] p-5 text-[11px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 focus:border-green-500/30 transition-all appearance-none cursor-pointer">
+                    {companies.map(c => <option key={c.id} value={c.id} className="bg-[#010409]">{c.name}</option>)}
                   </select>
                 </div>
 
-                <button className="w-full bg-primary text-white py-5 rounded-[20px] text-[10px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                <button className="w-full bg-green-500 text-slate-900 py-6 rounded-[24px] text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl shadow-green-500/20 hover:bg-white transition-all active:scale-95 mt-4">
                   Otorgar Acceso Industrial
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-50 p-8 rounded-[32px] border-none shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-20" />
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-loose italic">
-              * Las autorizaciones de acceso son auditadas por el Escudo Neural LOOP v9.0. Todas las operaciones de terminal se registran vía telemetría operativa.
-            </p>
+          <div className="loop-card bg-white/5 p-10 rounded-[40px] border border-white/5 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500 opacity-20" />
+            <div className="flex items-start gap-4">
+               <Fingerprint size={16} className="text-slate-800 mt-1" />
+               <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] leading-loose italic">
+                 * Las autorizaciones de acceso son auditadas por el Escudo Neural LOOP v2.5. Todas las operaciones de terminal se registran vía telemetría operativa blindada.
+               </p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

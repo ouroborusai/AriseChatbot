@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, AlertCircle, Info, X, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, X, Loader2, Zap, ShieldCheck } from 'lucide-react';
 
 // ════════════════════════════════════════════════════════════════════════════
-// ARISE TOAST SYSTEM v9.0
-// Sistema de notificaciones elegante para feedback de usuario
+// ARISE TOAST SYSTEM v10.0 - DIAMOND PROTOCOL
+// Sistema de notificaciones industrial de alta fidelidad
 // ════════════════════════════════════════════════════════════════════════════
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info' | 'loading';
@@ -108,7 +108,7 @@ function ToastContainer({ toasts, removeToast }: ToastContainerProps) {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none">
+    <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-4 pointer-events-none">
       {toasts.map(toast => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}
@@ -130,16 +130,17 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
   }, [toast.duration]);
 
   const handleAnimationEnd = () => {
-    setIsExiting(false);
-    onClose();
+    if (isExiting) {
+      onClose();
+    }
   };
 
   const iconConfig = {
-    success: { icon: CheckCircle2, colors: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-    error: { icon: AlertCircle, colors: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
-    warning: { icon: AlertCircle, colors: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-    info: { icon: Info, colors: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-    loading: { icon: Loader2, colors: 'text-primary animate-spin', bg: 'bg-primary/10', border: 'border-primary/20' },
+    success: { icon: CheckCircle2, colors: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/30' },
+    error: { icon: AlertCircle, colors: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/30' },
+    warning: { icon: Zap, colors: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+    info: { icon: Info, colors: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+    loading: { icon: Loader2, colors: 'text-green-500 animate-spin', bg: 'bg-green-500/10', border: 'border-green-500/30' },
   };
 
   const config = iconConfig[toast.type];
@@ -149,44 +150,51 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
     <div
       className={`
         pointer-events-auto
-        loop-card min-w-[320px] max-w-md p-4
-        bg-white/95 backdrop-blur-2xl
-        border-l-4 ${config.border}
-        shadow-2xl shadow-slate-900/20
-        transform transition-all duration-500 ease-arise
-        ${isExiting ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'}
+        min-w-[340px] max-w-md p-6
+        bg-[#0f172a]/90 backdrop-blur-3xl
+        rounded-[32px] border border-white/5
+        shadow-[0_20px_50px_rgba(0,0,0,0.5)]
+        transform transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]
+        ${isExiting ? 'translate-x-[120%] opacity-0 scale-90' : 'translate-x-0 opacity-100 scale-100'}
+        relative overflow-hidden group
       `}
-      onAnimationEnd={handleAnimationEnd}
+      onTransitionEnd={handleAnimationEnd}
     >
-      <div className="flex items-start gap-3">
-        <div className={`w-5 h-5 rounded-full ${config.bg} flex items-center justify-center shrink-0`}>
-          <Icon size={14} className={config.colors} />
+      {/* GLOW DE FONDO */}
+      <div className={`absolute top-0 right-0 w-32 h-32 blur-3xl opacity-10 ${config.bg} -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000`} />
+      
+      <div className="flex items-start gap-5 relative z-10">
+        <div className={`w-12 h-12 rounded-[18px] ${config.bg} border ${config.border} flex items-center justify-center shrink-0 shadow-xl group-hover:scale-110 transition-transform duration-500`}>
+          <Icon size={20} className={config.colors} />
         </div>
 
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest leading-tight">
+        <div className="flex-1 min-w-0 py-1">
+          <p className="text-[12px] font-black text-white uppercase tracking-[0.2em] leading-tight italic">
             {toast.title}
           </p>
           {toast.message && (
-            <p className="text-[10px] font-medium text-slate-500 mt-1 leading-relaxed">
+            <p className="text-[10px] font-black text-slate-600 mt-2 uppercase tracking-widest leading-loose italic">
               {toast.message}
             </p>
           )}
         </div>
 
         <button
-          onClick={onClose}
-          className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600"
+          onClick={() => {
+            setIsExiting(true);
+            setTimeout(onClose, 500);
+          }}
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/5 text-slate-700 hover:bg-white hover:text-slate-900 transition-all duration-500 shrink-0"
         >
-          <X size={12} />
+          <X size={14} />
         </button>
       </div>
 
-      {/* Progress bar para toasts con duración */}
+      {/* Progress bar técnica */}
       {toast.type !== 'loading' && toast.duration && (
-        <div className="mt-3 h-0.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className="absolute bottom-0 left-0 h-1 w-full bg-white/5 overflow-hidden">
           <div
-            className={`h-full ${config.bg.replace('/10', '/30')} animate-shrink`}
+            className={`h-full ${config.bg.replace('/10', '/60')} shadow-[0_0_10px_#22c55e33]`}
             style={{
               width: '100%',
               animation: `shrink ${toast.duration}ms linear forwards`
@@ -199,64 +207,12 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// ESTILOS GLOBALES (agregar a globals.css)
+// ESTILOS DE ANIMACIÓN
 // ════════════════════════════════════════════════════════════════════════════
 
 /*
 @keyframes shrink {
   from { width: 100%; }
   to { width: 0%; }
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-*/
-
-// ════════════════════════════════════════════════════════════════════════════
-// EJEMPLOS DE USO
-// ════════════════════════════════════════════════════════════════════════════
-
-/*
-// En cualquier componente:
-import { useToast } from '@/components/ui/Toast';
-
-function MiComponente() {
-  const toast = useToast();
-
-  const handleAction = async () => {
-    toast.loading('Procesando...', 'Espere un momento');
-
-    try {
-      await someAction();
-      toast.success('¡Completado!', 'La acción se realizó correctamente');
-    } catch (error) {
-      toast.error('Error', 'No se pudo completar la acción');
-    }
-  };
-
-  return <button onClick={handleAction}>Acción</button>;
-}
-
-// En el layout root, envolver con ToastProvider:
-import { ToastProvider } from '@/components/ui/Toast';
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="es">
-      <body>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
-      </body>
-    </html>
-  );
 }
 */

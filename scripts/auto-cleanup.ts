@@ -36,7 +36,7 @@ const CLEANUP_RULES: CleanupRule[] = [
   {
     name: 'Console Log Cleanup (Opcional)',
     pattern: /console\.(log|debug)/g,
-    replacement: '// console.$1',
+    replacement: 'console.log',
     description: 'Comenta console.log/debug en producción',
     skipIfContains: ['// console.']
   }

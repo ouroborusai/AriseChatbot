@@ -1,5 +1,7 @@
+'use client';
+
 import React from 'react';
-import { Activity, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Activity, ArrowUpRight, ArrowDownRight, Clock, Box } from 'lucide-react';
 
 interface InventoryKardexProps {
   transactions: any[];
@@ -7,39 +9,59 @@ interface InventoryKardexProps {
 
 export function InventoryKardex({ transactions }: InventoryKardexProps) {
   return (
-    <div className="lg:col-span-2">
-      <h2 className="text-[10px] font-black uppercase tracking-[0.6em] text-slate-400 mb-12 px-6 flex items-center gap-4">
-        <Activity size={14} className="text-primary animate-pulse" />
-        Neural_Kardex_Terminal
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {transactions.map(t => (
-          <div key={t.id} className="loop-card bg-white/90 p-8 flex items-center justify-between group rounded-[32px] hover:shadow-2xl transition-all">
-            <div className="flex items-center gap-6">
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 \${t.type === 'in' ? 'bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white' : 'bg-rose-500/10 text-rose-500 group-hover:bg-rose-500 group-hover:text-white'}`}>
-                {t.type === 'in' ? <ArrowLeft size={20} className="-rotate-45" /> : <ArrowRight size={20} className="-rotate-45" />}
+    <div className="loop-card p-10 bg-white/5 border-white/5 relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 blur-3xl rounded-full" />
+      
+      <div className="flex items-center justify-between mb-12">
+        <div>
+          <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-white italic">Registro de Movimientos</h3>
+          <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-2">Últimas 5 transacciones de nodo</p>
+        </div>
+        <div className="w-12 h-12 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-center text-slate-600 group-hover:text-green-500 transition-colors">
+          <Activity size={18} />
+        </div>
+      </div>
+
+      <div className="space-y-8">
+        {transactions.length === 0 ? (
+          <div className="py-20 text-center">
+            <Clock size={32} className="mx-auto text-slate-800 mb-4 opacity-20" />
+            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Sin registros recientes</p>
+          </div>
+        ) : (
+          transactions.map((t, i) => (
+            <div key={t.id || i} className="flex items-center justify-between group/item">
+              <div className="flex items-center gap-6">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all ${
+                  t.type === 'IN' 
+                    ? 'bg-green-500/10 border-green-500/20 text-green-500' 
+                    : 'bg-red-500/10 border-red-500/20 text-red-500'
+                }`}>
+                  {t.type === 'IN' ? <ArrowDownRight size={18} /> : <ArrowUpRight size={18} />}
+                </div>
+                <div>
+                  <p className="text-[11px] font-black text-white uppercase tracking-tight group-hover/item:text-green-500 transition-colors">
+                    {t.inventory_items?.name || 'Item Desconocido'}
+                  </p>
+                  <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">
+                    {t.type === 'IN' ? 'Entrada' : 'Salida'} \u2022 {new Date(t.created_at).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight italic truncate pr-4">{t.inventory_items?.name}</p>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3">
-                  {t.type === 'in' ? 'Kardex_Input' : t.type === 'out' ? 'Kardex_Output' : 'Audit_Sync'}
+              <div className="text-right">
+                <p className={`text-sm font-black italic tracking-tighter ${t.type === 'IN' ? 'text-green-500' : 'text-red-500'}`}>
+                  {t.type === 'IN' ? '+' : '-'}{t.quantity}
                 </p>
+                <p className="text-[8px] font-black text-slate-700 uppercase tracking-widest mt-0.5">UNIDADES</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className={`text-xl font-black italic tracking-tighter \${t.type === 'in' ? 'text-emerald-600' : 'text-rose-500'}`}>
-                {t.type === 'in' ? '+' : '-'}{t.quantity}
-              </p>
-              <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mt-3">{new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-            </div>
-          </div>
-        ))}
-        {transactions.length === 0 && (
-          <div className="col-span-full p-20 text-center bg-slate-50/30 rounded-[40px] border-2 border-dashed border-slate-100/50 backdrop-blur-sm">
-             <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.5em]">No recent flux detected</p>
-          </div>
+          ))
         )}
       </div>
+
+      <button className="mt-12 w-full py-4 bg-white/5 border border-white/5 rounded-2xl text-[9px] font-black text-slate-500 uppercase tracking-[0.4em] hover:bg-white/10 hover:text-white transition-all">
+         Ver Historial Completo (Kardex)
+      </button>
     </div>
   );
 }

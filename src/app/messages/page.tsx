@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { MessageSquare, Sparkles } from 'lucide-react';
+import { MessageSquare, Sparkles, Cpu, Activity, Search, ShieldCheck } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { ConversationList, ChatHeader, MessageBubble, MessageInput } from './components';
+import Image from 'next/image';
 
 interface Contact {
   full_name: string | null;
@@ -56,7 +57,6 @@ export default function MessagesPage() {
         .select('*, contacts(full_name, phone)')
         .order('updated_at', { ascending: false });
 
-      // Filtro Multi-tenant Industrial (Bypass para SuperAdmin)
       if (activeCompany.id !== 'global') {
         query = query.eq('company_id', activeCompany.id);
       }
@@ -76,7 +76,6 @@ export default function MessagesPage() {
           return false;
         });
 
-        // --- SMART TRIAGE v9.0 ---
         const sorted = [...filtered].sort((a, b) => {
           if (a.status === 'waiting_human' && b.status !== 'waiting_human') return -1;
           if (a.status !== 'waiting_human' && b.status === 'waiting_human') return 1;
@@ -107,7 +106,6 @@ export default function MessagesPage() {
     }
   };
 
-  // --- SUSCRIPCIÓN GLOBAL (SIDEBAR) ---
   useEffect(() => {
     if (!activeCompany) return;
 
@@ -129,7 +127,6 @@ export default function MessagesPage() {
     };
   }, [activeCompany?.id]);
 
-  // --- SUSCRIPCIÓN ESPECÍFICA (MENSAJES) ---
   useEffect(() => {
     if (!selectedConv?.id) return;
 
@@ -147,9 +144,7 @@ export default function MessagesPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messageId: payload.new.id, companyId: selectedConv.company_id }),
-          }).catch(() => {
-            // Neural processor trigger failure - silent fail
-          });
+          }).catch(() => {});
         }
 
         setMessages(prev => {
@@ -178,14 +173,9 @@ export default function MessagesPage() {
 
   const selectConversation = async (conv: Conversation) => {
     const newStatus = conv.status === 'new' ? 'open' : conv.status;
-
-    // Actualizar estado primero para UX responsiva
     setSelectedConv({ ...conv, status: newStatus });
-
-    // Fetchear mensajes en paralelo con actualización de estado
     await fetchMessages(conv.id);
 
-    // Solo actualizar DB si el status era 'new'
     if (conv.status === 'new') {
       const { error } = await supabase
         .from('conversations')
@@ -193,8 +183,6 @@ export default function MessagesPage() {
         .eq('id', conv.id);
 
       if (error) {
-        console.error('[selectConversation] Failed to update status:', error);
-        // Revertir estado local si falló la actualización
         setSelectedConv({ ...conv, status: conv.status });
       }
       fetchConversations(true);
@@ -231,61 +219,115 @@ export default function MessagesPage() {
         }),
       });
       fetchConversations(true);
-    } catch {
-      // Message send failure - silent fail
-    }
+    } catch {}
   };
 
   return (
-    <div className="flex h-screen bg-white text-[#1A1A1A] font-sans selection:bg-green-100">
-      <ConversationList
-        conversations={conversations}
-        selectedConv={selectedConv}
-        onSelect={selectConversation}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        loading={loading}
-        activeCompanyId={activeCompany?.id}
-      />
+    <div className="flex h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-[#25D366]/30 overflow-hidden relative">
+      
+      {/* VIBRANT MESH BACKGROUND (CONSISTENT WITH LANDING/LOGIN) */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        {/* Mint/Cyan Mesh Background */}
+        <div 
+          className="absolute inset-0 opacity-40 mix-blend-multiply"
+          style={{
+            backgroundImage: 'url("/brand/vibrant-mesh.png")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        
+        {/* Grain Texture Layer */}
+        <div 
+          className="absolute inset-0 opacity-30 mix-blend-overlay"
+          style={{
+            backgroundImage: 'url("/brand/auth-bg.png")',
+            backgroundSize: '400px',
+            backgroundRepeat: 'repeat',
+          }}
+        />
 
-      <div className="flex flex-col flex-1 bg-white relative overflow-hidden border-l border-slate-100">
-        {selectedConv ? (
-          <>
-            <ChatHeader selectedConv={selectedConv} onToggleHandoff={toggleHandoff} />
+        {/* Dynamic Light Accents */}
+        <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-[#80cbc4]/20 blur-[100px] rounded-full animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-[60%] h-[60%] bg-[#4db6ac]/10 blur-[100px] rounded-full" />
+      </div>
 
-            <div className="flex-1 overflow-y-auto p-12 space-y-8 bg-slate-50/50 relative">
-              <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
+      <div className="flex flex-1 relative z-10 overflow-hidden">
+        <ConversationList
+          conversations={conversations}
+          selectedConv={selectedConv}
+          onSelect={selectConversation}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          loading={loading}
+          activeCompanyId={activeCompany?.id}
+        />
 
-              <div className="relative space-y-8 max-w-4xl mx-auto">
-                {messages.map((m, i) => (
-                  <MessageBubble key={m.id} message={m} index={i} onSendMessage={sendMessage} />
-                ))}
-                <div ref={messagesEndRef} />
+        <div className="flex flex-col flex-1 bg-white/40 backdrop-blur-md relative overflow-hidden border-l border-white shadow-2xl">
+          {selectedConv ? (
+            <>
+              <ChatHeader selectedConv={selectedConv} onToggleHandoff={toggleHandoff} />
+
+              <div className="flex-1 overflow-y-auto p-6 lg:p-12 space-y-8 relative">
+                {/* SUBTLE DOT OVERLAY */}
+                <div className="absolute inset-0 bg-[radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+
+                <div className="relative space-y-8 max-w-4xl mx-auto">
+                  {messages.map((m, i) => (
+                    <MessageBubble key={m.id} message={m} index={i} onSendMessage={sendMessage} />
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+
+              <MessageInput
+                value={newMessage}
+                onChange={setNewMessage}
+                onSend={() => sendMessage()}
+              />
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(rgba(0,0,0,0.02)_1px,transparent_1px)] [background-size:40px_40px]" />
+              
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="relative mb-10 group">
+                   <div className="absolute inset-0 bg-[#25D366]/20 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                   <div className="w-24 h-24 bg-white/60 border border-white rounded-[40px] flex items-center justify-center shadow-xl relative z-10 transform group-hover:scale-105 transition-all duration-700 backdrop-blur-xl">
+                      <Image 
+                        src="/brand/official.png" 
+                        alt="LOOP" 
+                        width={48} 
+                        height={48} 
+                        className="object-contain"
+                      />
+                   </div>
+                   <div className="absolute -top-3 -right-3 w-8 h-8 bg-[#25D366]/10 border border-[#25D366]/20 rounded-full flex items-center justify-center backdrop-blur-md">
+                      <Activity size={14} className="text-[#25D366] animate-pulse" />
+                   </div>
+                </div>
+                
+                <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-4 text-center italic">
+                  Consola <span className="text-[#25D366]">Neural.</span>
+                </h3>
+                <p className="text-[10px] tracking-[0.5em] uppercase font-black text-slate-400 text-center">
+                  seleccione una frecuencia para sincronizar ...
+                </p>
+                
+                <div className="mt-16 flex items-center gap-10 opacity-40">
+                   <div className="flex flex-col items-center gap-2">
+                      <ShieldCheck size={16} className="text-slate-900" />
+                      <span className="text-[7px] font-black uppercase tracking-widest text-slate-900">E2EE Safe</span>
+                   </div>
+                   <div className="flex flex-col items-center gap-2">
+                      <Cpu size={16} className="text-slate-900" />
+                      <span className="text-[7px] font-black uppercase tracking-widest text-slate-900">Logic v2.5</span>
+                   </div>
+                </div>
               </div>
             </div>
-
-            <MessageInput
-              value={newMessage}
-              onChange={setNewMessage}
-              onSend={() => sendMessage()}
-            />
-          </>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-300 bg-slate-50 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="w-24 h-24 bg-white rounded-[40px] flex items-center justify-center mb-8 shadow-xl animate-bounce border border-slate-100">
-                <MessageSquare className="w-10 h-10 text-green-600" />
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">
-                Selector de Frecuencia
-              </h3>
-              <p className="text-[10px] tracking-[0.4em] uppercase font-black text-slate-400">
-                esperando enlace neuronal ...
-              </p>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

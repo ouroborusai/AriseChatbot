@@ -1,4 +1,4 @@
-import { X, MessageSquare, Activity, Bot, ShieldCheck, Send, Power } from 'lucide-react';
+import { X, MessageSquare, Activity, Bot, ShieldCheck, Send, Power, Cpu, Zap, ArrowRight } from 'lucide-react';
 import { parseUIMessageContent } from '@/lib/whatsapp-parser';
 
 interface ChatMessage {
@@ -40,129 +40,153 @@ export function ChatNeuralSlideOver({
 
   return (
     <div className="fixed inset-0 z-[100] flex justify-end animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" onClick={onClose} />
-      <div className="relative w-full max-w-xl bg-white h-full flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden shadow-2xl">
-        <header className="p-6 md:p-10 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 border-none">
-          <div className="flex items-center gap-4 md:gap-6">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      
+      <div className="relative w-full max-w-xl bg-[#010409] h-full flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] border-l border-white/5">
+        
+        {/* HEADER SECTION */}
+        <header className="p-8 md:p-10 flex items-center justify-between bg-white/5 backdrop-blur-3xl sticky top-0 z-10 border-b border-white/5">
+          <div className="flex items-center gap-6">
             <div className="relative">
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-slate-900 text-white rounded-[18px] md:rounded-[20px] flex items-center justify-center font-black text-base md:text-lg shadow-md uppercase">
-                {selectedContact?.full_name?.[0]}
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-white/5 text-white rounded-[22px] flex items-center justify-center font-black text-lg border border-white/10 shadow-2xl uppercase italic">
+                {selectedContact?.full_name?.[0] || '?'}
               </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-emerald-500 border-2 border-white rounded-full" />
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-[#010409] rounded-full shadow-[0_0_10px_#22c55e]" />
             </div>
             <div>
-              <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight leading-none mb-1 md:mb-2 uppercase">{selectedContact?.full_name}</h3>
-              <div className="flex items-center gap-2 md:gap-4">
-                 <span className="flex items-center gap-2 px-2 py-0.5 rounded-md bg-emerald-50 text-[7px] md:text-[8px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100/50">
-                   <Activity size={10} />
-                   Live_Comm
+              <h3 className="text-xl font-black text-white tracking-tight leading-none mb-2 uppercase italic">{selectedContact?.full_name || 'Nodo_Desconocido'}</h3>
+              <div className="flex items-center gap-4">
+                 <span className="flex items-center gap-2 px-3 py-1 rounded-lg bg-green-500/10 text-[8px] font-black text-green-500 uppercase tracking-widest border border-green-500/20 shadow-lg">
+                   <Activity size={10} className="animate-pulse" />
+                   LINK_ESTABLISHED
                  </span>
-                 <p className="text-[7px] md:text-[9px] font-mono text-slate-400">+{selectedContact?.phone}</p>
+                 <p className="text-[10px] font-mono text-slate-600 font-black tracking-widest">+{selectedContact?.phone}</p>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-slate-50 hover:bg-rose-50 rounded-xl md:rounded-2xl transition-all text-slate-400 hover:text-rose-500">
-            <X className="w-4 h-4 md:w-5 md:h-5" />
+          <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all text-slate-500 hover:text-white group">
+            <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 md:space-y-10 bg-slate-50/50 custom-scrollbar">
+        {/* CHAT AREA */}
+        <div className="flex-1 overflow-y-auto p-8 space-y-10 bg-transparent custom-scrollbar relative">
+          {/* GRID OVERLAY */}
+          <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] [background-size:32px_32px] pointer-events-none" />
+
           {chatMessages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full opacity-10">
-              <MessageSquare size={80} strokeWidth={1} className="mb-6" />
-              <p className="text-[9px] font-black uppercase tracking-[1em]">Establishing_Link</p>
+            <div className="flex flex-col items-center justify-center h-full opacity-5">
+              <MessageSquare size={120} strokeWidth={1} className="mb-8" />
+              <p className="text-[10px] font-black uppercase tracking-[1.5em] text-white">Neural_Mapping</p>
             </div>
           )}
-          {chatMessages.map((m, idx) => {
-            const isAgent = m.sender_type === 'agent';
-            const isBot = m.sender_type === 'bot';
-            const isClient = m.sender_type === 'user';
-            
-            return (
-              <div key={idx} className={`flex \${isClient ? 'justify-start' : 'justify-end'}`}>
-                <div className={`group relative max-w-[90%] p-5 md:p-6 rounded-[24px] md:rounded-[28px] text-[12px] md:text-[13px] font-bold leading-relaxed shadow-sm transition-all hover:shadow-md \${
-                  isClient 
-                    ? 'bg-white text-slate-700 rounded-tl-none ring-1 ring-slate-100' 
-                    : isBot
-                      ? 'bg-slate-900 text-white rounded-tr-none'
-                      : 'bg-primary text-white rounded-tr-none shadow-lg shadow-primary/20'
-                }`}>
-                  {(isBot || isAgent) && (
-                    <div className={`flex items-center gap-3 mb-3 md:mb-4 text-[7px] font-black uppercase tracking-[0.3em] opacity-40 \${!isBot ? 'text-white/70' : ''}`}>
-                      {isBot ? <Bot size={12} /> : <ShieldCheck size={12} />}
-                      {isBot ? 'Arise_Neural_Engine' : 'Human_Supervisor'}
+
+          <div className="relative space-y-10">
+            {chatMessages.map((m, idx) => {
+              const isBot = m.sender_type === 'bot';
+              const isClient = m.sender_type === 'user';
+              const isAgent = m.sender_type === 'agent';
+              
+              return (
+                <div key={idx} className={`flex ${isClient ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
+                  <div className={`max-w-[85%] space-y-3`}>
+                    
+                    {/* BUBBLE HEADER */}
+                    <div className={`flex items-center gap-3 mb-1 ${isClient ? 'justify-start' : 'justify-end'}`}>
+                       {isBot ? (
+                          <>
+                             <Cpu size={12} className="text-green-500" />
+                             <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest">Logic v2.5</span>
+                          </>
+                       ) : isAgent ? (
+                          <>
+                             <ShieldCheck size={12} className="text-blue-500" />
+                             <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest">Admin_Node</span>
+                          </>
+                       ) : (
+                          <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest">User_Request</span>
+                       )}
                     </div>
-                  )}
-                  {/* Lógica de Renderizado Inteligente v9.0 */}
-                  {(() => {
-                    const { textParts, buttonParts } = parseUIMessageContent(m.content);
-                    return (
-                      <div className="space-y-4">
-                        {textParts.map((text, tidx) => (
-                          <p key={tidx} className="tracking-tight">{text}</p>
-                        ))}
-                        {buttonParts.map((group, gidx) => (
-                          <div key={gidx} className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
-                            {group.map((btn, bidx) => (
-                              <button
-                                key={bidx}
-                                onClick={() => {
-                                  setNewMessage(btn);
-                                  // El usuario debe presionar Send para enviar, o podrías llamar a onSendMessage() aquí
-                                }}
-                                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-[9px] font-bold uppercase tracking-wider rounded-lg transition-all active:scale-95"
-                              >
-                                {btn}
-                              </button>
+
+                    <div className={`p-6 rounded-[32px] text-[13px] font-medium leading-relaxed shadow-2xl transition-all relative overflow-hidden ${
+                      isClient 
+                        ? 'bg-white text-slate-900 rounded-tl-none border border-white' 
+                        : isBot
+                          ? 'bg-slate-900/80 backdrop-blur-xl text-slate-200 rounded-tr-none border border-white/5'
+                          : 'bg-green-500 text-slate-900 rounded-tr-none font-bold'
+                    }`}>
+                      {(() => {
+                        const { textParts, buttonParts } = parseUIMessageContent(m.content);
+                        return (
+                          <div className="space-y-4">
+                            {textParts.map((text, tidx) => (
+                              <p key={tidx} className="tracking-tight whitespace-pre-wrap">{text}</p>
+                            ))}
+                            {buttonParts.map((group, gidx) => (
+                              <div key={gidx} className={`flex flex-wrap gap-2 pt-4 mt-4 border-t ${isClient || !isBot ? 'border-black/10' : 'border-white/5'}`}>
+                                {group.map((btn, bidx) => (
+                                  <button
+                                    key={bidx}
+                                    onClick={() => setNewMessage(btn)}
+                                    className={`px-4 py-2 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 border ${
+                                       isBot ? 'bg-white/5 border-white/10 text-white hover:bg-green-500 hover:text-slate-900 hover:border-transparent' : 'bg-black/5 border-black/10 text-slate-900 hover:bg-black/10'
+                                    }`}
+                                  >
+                                    {btn}
+                                  </button>
+                                ))}
+                              </div>
                             ))}
                           </div>
-                        ))}
+                        );
+                      })()}
+                      <div className={`mt-4 flex items-center gap-3 opacity-30 text-[8px] font-black uppercase tracking-widest ${isClient || !isBot ? 'text-slate-900' : 'text-white'}`}>
+                        {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </div>
-                    );
-                  })()}
-                  <div className={`mt-3 md:mt-4 flex items-center gap-3 opacity-30 text-[8px] font-black uppercase tracking-widest`}>
-                    {new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
-        <div className="p-6 md:p-10 bg-white border-none shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.1)]">
-          <div className="flex items-center justify-between mb-6 md:mb-8">
+        {/* INPUT AREA */}
+        <div className="p-8 md:p-10 bg-white/5 backdrop-blur-3xl border-t border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.3)]">
+          <div className="flex items-center justify-between mb-8">
              <button 
                onClick={onToggleHandoff}
-               className={`flex items-center gap-3 md:gap-4 px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] transition-all \${
+               className={`flex items-center gap-4 px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all border shadow-2xl ${
                  selectedContact?.convStatus === 'waiting_human'
-                  ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-200 rotate-0'
-                  : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                  ? 'bg-green-500 text-slate-900 border-green-400'
+                  : 'bg-white/5 text-slate-500 border-white/5 hover:bg-white/10 hover:text-white'
                }`}
              >
-               <Power className="w-4 h-4 md:w-5 md:h-5" />
-               {selectedContact?.convStatus === 'waiting_human' ? 'Manual_Control' : 'AI_Operational'}
+               <Power size={16} />
+               {selectedContact?.convStatus === 'waiting_human' ? 'CONTROL_HUMANO_ACTIVO' : 'IA_AUTÓNOMA'}
              </button>
-             <div className="text-[7px] md:text-[8px] font-black text-slate-300 uppercase tracking-[0.4em] italic">
-               v9.0_Diamond_Protocol
+             <div className="text-[8px] font-black text-slate-700 uppercase tracking-[0.4em] italic">
+               Loop_Neural_v2.5
              </div>
           </div>
           
-          <div className="relative">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-white/5 rounded-[32px] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
             <textarea 
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={selectedContact?.convStatus === 'waiting_human' ? "Escribe como Agente Humano..." : "La IA responderá automáticamente..."}
-              className="w-full bg-slate-50 border-none rounded-[24px] md:rounded-[32px] p-6 md:p-8 pr-20 md:pr-24 text-[12px] md:text-[13px] font-bold text-slate-800 outline-none focus:bg-white transition-all resize-none h-32 md:h-40"
+              placeholder={selectedContact?.convStatus === 'waiting_human' ? "ESCRIBIR_COMANDO_HUMANO..." : "MODO_ESCUCHA_IA_..."}
+              className="w-full bg-white/5 border border-white/5 rounded-[32px] p-8 pr-24 text-[13px] font-medium text-white outline-none focus:bg-white/10 focus:border-green-500/30 transition-all resize-none h-32 lg:h-40 relative z-10 placeholder:text-slate-700"
             />
             <button
               onClick={onSendMessage}
               disabled={!newMessage.trim() || isSending}
-              className="absolute right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-blue-600 to-blue-800 text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-2xl shadow-blue-500/40 disabled:opacity-20 disabled:grayscale"
+              className="absolute right-6 bottom-6 w-14 h-14 bg-white text-slate-900 rounded-full flex items-center justify-center hover:bg-green-500 hover:text-white hover:scale-110 active:scale-95 transition-all shadow-2xl z-20 disabled:opacity-10"
             >
               {isSending ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
               ) : (
-                <Send className="w-5 h-5 md:w-6 md:h-6" />
+                <Send size={20} />
               )}
             </button>
           </div>

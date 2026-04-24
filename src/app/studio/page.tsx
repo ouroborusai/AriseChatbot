@@ -7,11 +7,16 @@ import {
   Sparkles,
   BrainCircuit,
   Layers,
-  Network
+  Network,
+  Cpu,
+  Activity,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { StudioCluster } from '@/components/studio/StudioCluster';
 import { StudioBrain } from '@/components/studio/StudioBrain';
 import { StudioSkills } from '@/components/studio/StudioSkills';
+import Image from 'next/image';
 
 interface Template {
   id: string;
@@ -56,20 +61,17 @@ export default function AIStudio() {
       }
 
       try {
-        // Load Prompts
         const { data: prompts } = await supabase
           .from('ai_prompts')
           .select('*')
           .eq('company_id', activeCompanyId)
           .order('created_at', { ascending: true });
 
-        // Load Telemetry
         const { data: telemetryData } = await supabase
           .from('ai_api_telemetry')
           .select('tokens_input, tokens_output, cost_estimated, latency_ms')
           .eq('company_id', activeCompanyId);
         
-        // Load API Keys
         const { data: keys } = await supabase
           .from('gemini_api_keys')
           .select('*')
@@ -158,67 +160,99 @@ export default function AIStudio() {
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center h-screen bg-slate-50">
+    <div className="flex items-center justify-center h-screen bg-[#020617]">
       <div className="text-center">
-        <RefreshCw size={40} className="text-primary animate-spin mx-auto mb-4" />
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Sincronizando Studio Neural...</p>
+        <RefreshCw size={64} className="text-green-500 animate-spin mx-auto mb-10 opacity-20" />
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[1em] animate-pulse">Neural_Sync_Active</p>
       </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-x-hidden">
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-8 mb-12">
-        <div>
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">Studio</h1>
-          <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
-            <Sparkles size={10} className="text-primary fill-primary/20" />
-            Interfaz de Ingeniería Neural / Versión 9.0
+    <div className="flex flex-col w-full max-w-full py-6 md:py-12 animate-in fade-in duration-700 overflow-x-hidden relative">
+      
+      {/* PREMIUM BACKGROUND ACCENTS */}
+      <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-green-500/5 blur-[120px] rounded-full -z-10" />
+      <div className="absolute bottom-0 left-0 w-[50%] h-[50%] bg-emerald-500/5 blur-[120px] rounded-full -z-10" />
+
+      {/* HEADER SECTION - DIAMOND v10.0 */}
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16 px-2">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+             <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
+             <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Laboratorio de IA</span>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none italic uppercase">
+            Neural <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-500">Studio</span>
+          </h1>
+          <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
+            <Cpu size={12} className="text-green-500" />
+            ADN MAESTRO / PROTOCOLO LOOP v2.5
           </p>
         </div>
-        <div className="flex items-center bg-slate-200/40 p-1 rounded-2xl backdrop-blur-md">
+
+        <div className="flex items-center bg-white/5 p-1.5 rounded-[28px] backdrop-blur-3xl border border-white/10 relative z-10 shadow-2xl">
           <button 
             onClick={() => setActiveTab('brain')}
-            className={`flex items-center gap-3 px-4 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'brain' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex items-center gap-4 px-8 md:px-10 py-4 rounded-[22px] text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'brain' ? 'bg-white text-slate-900 shadow-2xl scale-105' : 'text-slate-500 hover:text-white'}`}
           >
-            <BrainCircuit size={14} />
-            Cerebro
+            <BrainCircuit size={16} />
+            <span>Cerebro</span>
           </button>
           <button 
             onClick={() => setActiveTab('skills')}
-            className={`flex items-center gap-3 px-4 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'skills' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex items-center gap-4 px-8 md:px-10 py-4 rounded-[22px] text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'skills' ? 'bg-white text-slate-900 shadow-2xl scale-105' : 'text-slate-500 hover:text-white'}`}
           >
-            <Layers size={14} />
-            Skills
+            <Layers size={16} />
+            <span>Skills</span>
           </button>
           <button 
             onClick={() => setActiveTab('cluster')}
-            className={`flex items-center gap-3 px-4 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'cluster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex items-center gap-4 px-8 md:px-10 py-4 rounded-[22px] text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'cluster' ? 'bg-white text-slate-900 shadow-2xl scale-105' : 'text-slate-500 hover:text-white'}`}
           >
-            <Network size={14} />
-            Infra
+            <Network size={16} />
+            <span>Infra</span>
           </button>
         </div>
       </header>
 
-      {activeTab === 'cluster' ? (
-        <StudioCluster 
-          telemetry={telemetry} 
-          apiKeys={apiKeys} 
-          keyResults={keyResults} 
-          onTestKey={testKey} 
-        />
-      ) : activeTab === 'brain' ? (
-        <StudioBrain 
-          systemPrompt={systemPrompt}
-          setSystemPrompt={setSystemPrompt}
-          saving={saving}
-          onSave={savePrompt}
-          telemetry={telemetry}
-        />
-      ) : (
-        <StudioSkills templates={filteredTemplates} />
-      )}
+      {/* DYNAMIC CONTENT AREA */}
+      <div className="animate-in slide-in-from-bottom-10 duration-700">
+        {activeTab === 'cluster' ? (
+          <StudioCluster 
+            telemetry={telemetry} 
+            apiKeys={apiKeys} 
+            keyResults={keyResults} 
+            onTestKey={testKey} 
+          />
+        ) : activeTab === 'brain' ? (
+          <StudioBrain 
+            systemPrompt={systemPrompt}
+            setSystemPrompt={setSystemPrompt}
+            saving={saving}
+            onSave={savePrompt}
+            telemetry={telemetry}
+          />
+        ) : (
+          <StudioSkills templates={filteredTemplates} />
+        )}
+      </div>
+
+      {/* FOOTER METRICS */}
+      <div className="mt-16 pt-10 border-t border-white/5 flex flex-wrap gap-10 opacity-20 px-2">
+         <div className="flex items-center gap-3">
+            <ShieldCheck size={16} />
+            <span className="text-[8px] font-black uppercase tracking-widest">Protocolo Blindado</span>
+         </div>
+         <div className="flex items-center gap-3">
+            <Zap size={16} />
+            <span className="text-[8px] font-black uppercase tracking-widest">Latencia Media: {telemetry.latency}ms</span>
+         </div>
+         <div className="flex items-center gap-3">
+            <Activity size={16} />
+            <span className="text-[8px] font-black uppercase tracking-widest">Uso de Tokens: {telemetry.tokens.toLocaleString()}</span>
+         </div>
+      </div>
     </div>
   );
 }

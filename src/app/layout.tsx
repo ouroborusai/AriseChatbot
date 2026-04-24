@@ -14,8 +14,8 @@ export const metadata: Metadata = {
   description: 'Sincroniza tus documentos con el cerebro de LOOP y accede a toda tu gestión empresarial desde WhatsApp.',
   manifest: "/manifest.json",
   icons: {
-    icon: '/ourobot-logo.png',
-    apple: '/ourobot-logo.png',
+    icon: '/brand/official.png',
+    apple: '/brand/official.png',
   },
   appleWebApp: {
     capable: true,

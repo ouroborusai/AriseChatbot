@@ -85,7 +85,7 @@ export async function POST(req: Request) {
 
     // --- 2. RESOLUCIÓN DE IDENTIDAD Y EMPRESA (Lógica Consolidada) ---
     // Intentar resolver contact_id y company_id de una sola vez
-    let { data: contact, error: contactError } = await supabase
+    const { data: contact, error: contactError } = await supabase
       .from('contacts')
       .select('id, company_id')
       .eq('phone', sender)
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
     // --- 4. PROCESAMIENTO DE CONTENIDO ---
     // Soporte para Mensajes de Texto, Interactivos y Documentos (Diamond v9.7)
     const buttonId = message.interactive?.button_reply?.id || message.interactive?.list_reply?.id;
-    let content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
+    const content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
     const isDocument = message.type === 'document';
 
 

@@ -130,7 +130,7 @@ export async function POST(req: Request) {
           throw new Error('Invalid action block format');
         }
 
-        let cleanJson = match[1]
+        const cleanJson = match[1]
           .trim()
           // Normalizar caracteres de control problemáticos
           .replace(/\r\n/g, ' ')    // CRLF → espacio

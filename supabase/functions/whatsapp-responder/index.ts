@@ -20,7 +20,7 @@ Deno.serve(async (req: Request) => {
     ]);
 
     // 2. Prompt Dinámico basado en Categoría (Lead vs Client)
-    let activeCategory = contact.data?.category === 'lead' ? 'Onboarding' : 'General';
+    const activeCategory = contact.data?.category === 'lead' ? 'Onboarding' : 'General';
     const promptQuery = await supabase
       .from('ai_prompts')
       .select('system_prompt')
