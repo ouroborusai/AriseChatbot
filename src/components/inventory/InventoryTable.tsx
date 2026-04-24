@@ -13,11 +13,11 @@ export function InventoryTable({ loading, items }: InventoryTableProps) {
         <table className="w-full text-left min-w-[800px]">
           <thead>
             <tr>
-              <th className="pb-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Asset_Identity / SKU</th>
-              <th className="hidden lg:table-cell pb-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Protocol_Spec</th>
-              <th className="pb-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] text-center">Current_Vol</th>
-              <th className="hidden md:table-cell pb-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Health_Status</th>
-              <th className="pb-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] text-right">Actions</th>
+              <th className="pb-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Identidad de Activo / SKU</th>
+              <th className="hidden lg:table-cell pb-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Especificación</th>
+              <th className="pb-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] text-center">Volumen Actual</th>
+              <th className="hidden md:table-cell pb-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Estado</th>
+              <th className="pb-10 text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -47,23 +47,23 @@ export function InventoryTable({ loading, items }: InventoryTableProps) {
                             item.current_stock < 5 ? 'bg-amber-50 text-amber-500' : 
                             'bg-emerald-50 text-emerald-500'
                           }`}>
-                            {item.current_stock === 0 ? 'STOCK_CRITICAL' : 
-                             item.current_stock < 5 ? 'STOCK_WARNING' : 
-                             'STOCK_OPTIMAL'}
+                            {item.current_stock === 0 ? 'STOCK CRÍTICO' : 
+                             item.current_stock < 5 ? 'ALERTA STOCK' : 
+                             'STOCK ÓPTIMO'}
                           </div>
                         </div>
-                        <p className="text-[9px] font-mono font-black text-slate-400 uppercase tracking-[0.2em]">{item.sku || 'SKU_VOID'}</p>
+                        <p className="text-[9px] font-mono font-black text-slate-400 uppercase tracking-[0.2em]">{item.sku || 'SIN SKU'}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="hidden lg:table-cell py-8 text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">{item.category || 'GEN_CARGO'}</td>
+                  <td className="hidden lg:table-cell py-8 text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">{item.category || 'CARGA GENERAL'}</td>
                   <td className="py-8 text-lg font-black text-slate-900 text-center tracking-tighter italic">
                     {item.current_stock} 
                     <span className="text-[9px] text-slate-300 font-black ml-2 uppercase tracking-widest not-italic">{item.unit || 'uds'}</span>
                   </td>
                   <td className="hidden md:table-cell py-8">
-                    <span className={`text-[8px] font-black px-5 py-2.5 rounded-xl uppercase tracking-[0.2em] shadow-sm \${item.current_stock <= item.min_stock_alert ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20 shadow-rose-100' : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shadow-emerald-100'}`}>
-                      {item.current_stock <= item.min_stock_alert ? 'REPLENISH' : 'MAX_FLOW'}
+                    <span className={`text-[8px] font-black px-5 py-2.5 rounded-xl uppercase tracking-[0.2em] shadow-sm ${item.current_stock <= item.min_stock_alert ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20 shadow-rose-100' : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shadow-emerald-100'}`}>
+                      {item.current_stock <= item.min_stock_alert ? 'REPONER' : 'FLUJO MÁXIMO'}
                     </span>
                   </td>
                   <td className="py-8 text-right">
@@ -80,11 +80,11 @@ export function InventoryTable({ loading, items }: InventoryTableProps) {
                     <div className="w-24 h-24 bg-[#f8fafc] flex items-center justify-center rounded-[32px] text-slate-200 mb-10 shadow-inner">
                       <Boxes size={48} strokeWidth={1} />
                     </div>
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.5em] mb-6">Inventory_Void</h3>
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.5em] mb-6">Inventario Vacío</h3>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-loose mb-12">
-                      Zero operational assets detected in this node. Initialize logistics to establish control.
+                      Cero activos operativos detectados en este nodo. Inicialice la logística para establecer el control.
                     </p>
-                    <button className="btn-loop px-12">Initialize_Protocol</button>
+                    <button className="btn-loop px-12">Inicializar Protocolo</button>
                   </div>
                 </td>
               </tr>

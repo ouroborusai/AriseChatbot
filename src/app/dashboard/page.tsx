@@ -103,7 +103,7 @@ export default function Dashboard() {
 
         setRecentSignals([
           ...lowStockItems.slice(0, 2).map((i: any) => ({
-            title: `Alerta: Stock Crítico`,
+            title: `Alerta Stock Crítico`,
             desc: `${i.name}`,
             time: 'Ahora',
             icon: AlertCircle,
@@ -138,17 +138,17 @@ export default function Dashboard() {
     <div className="flex flex-col w-full max-w-full py-4 md:py-10 animate-in fade-in duration-500 overflow-x-hidden">
       <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-8 mb-12">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Dashboard</h1>
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Panel de Control</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
             <TrendingUp size={10} className="text-green-600" />
-            INTELIGENCIA OPERACIONAL / PULSO DE INGRESOS 9.0
+            INTELIGENCIA OPERACIONAL / PULSO OPERATIVO 9.0
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6">
           <div className="relative flex-1 group">
             <input 
               type="text" 
-              placeholder="BUSCAR NODOS NEURALES..." 
+              placeholder="BUSCAR..." 
               className="w-full lg:w-96 pl-12 pr-6 py-4 bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-[24px] outline-none focus:bg-white focus:ring-4 focus:ring-green-500/10 focus:border-green-500/20 transition-all border border-slate-100"
             />
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -172,8 +172,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
         <section className="loop-card p-0 overflow-hidden lg:col-span-2">
           <div className="p-10">
-            <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Velocidad de Señal Neural</h2>
-            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Pulso de actividad 24h en tiempo real</p>
+            <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Actividad del Sistema</h2>
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Pulso de actividad 24h</p>
           </div>
           <div className="w-full h-[320px] bg-gradient-to-b from-white to-slate-50/50">
             <ResponsiveContainer width="100%" height={320}>
@@ -222,8 +222,8 @@ export default function Dashboard() {
 
       <div className="loop-card p-10 overflow-hidden">
         <div className="mb-10">
-          <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Libro de Gobernanza Operativa</h2>
-          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Matriz de interacción en tiempo real</p>
+          <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Registro de Operaciones</h2>
+          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Matriz de interacción</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[700px]">

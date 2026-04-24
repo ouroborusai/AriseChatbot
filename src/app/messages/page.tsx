@@ -281,7 +281,7 @@ export default function MessagesPage() {
                 Selector de Frecuencia
               </h3>
               <p className="text-[10px] tracking-[0.4em] uppercase font-black text-slate-400">
-                esperando_enlace_neuronal_...
+                esperando enlace neuronal ...
               </p>
             </div>
           </div>

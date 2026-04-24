@@ -36,14 +36,14 @@ export default function CompanyPage() {
     <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-x-hidden">
       <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Operational_Node</h1>
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Nodo Operativo</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
             <Activity size={10} className="text-primary" />
-            Unit Configuration & Governance / v9.0 
+            Configuración de Unidad y Gobernanza / v9.0 
           </p>
         </div>
         <button className="flex items-center justify-center gap-4 bg-primary text-white px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-          <span>Authorize_Credential_Update</span>
+          <span>Autorizar Actualización de Credenciales</span>
         </button>
       </header>
 
@@ -56,29 +56,29 @@ export default function CompanyPage() {
             
             <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-primary mb-12 flex items-center gap-3">
               <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> 
-              Legal_Entity_Profile
+              Perfil de Entidad Legal
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-16 gap-y-12">
               <div className="space-y-2">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Business_Nomenclature</p>
-                <p className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase italic">{company?.legal_name || 'INITIALIZING...'}</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Nomenclatura del Negocio</p>
+                <p className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase italic">{company?.legal_name || 'INICIALIZANDO...'}</p>
               </div>
               <div className="space-y-2">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Taxation_Identity_RUT</p>
-                <p className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter font-mono">{company?.rut || 'NOT_DECLARED'}</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Identidad Tributaria RUT</p>
+                <p className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter font-mono">{company?.rut || 'NO DECLARADO'}</p>
               </div>
               <div className="space-y-4">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Industrial_Matrix_Segment</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Segmento de Matriz Industrial</p>
                 <div className="inline-flex px-5 py-2 bg-emerald-500/10 text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest gap-2 items-center">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                  {company?.segment || 'INDUSTRIAL_STANDARD'}
+                  {company?.segment || 'ESTÁNDAR INDUSTRIAL'}
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Node_Deployment_Timestamp</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Marca de Tiempo de Despliegue</p>
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">
-                  {company?.created_at ? new Date(company.created_at).toLocaleString() : 'PENDING_INIT'}
+                  {company?.created_at ? new Date(company.created_at).toLocaleString() : 'PENDIENTE DE INICIO'}
                 </p>
               </div>
             </div>
@@ -87,7 +87,7 @@ export default function CompanyPage() {
           <div className="bg-slate-50 p-10 rounded-[32px] border-none shadow-sm relative group overflow-hidden">
              <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-30" />
              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] mb-10 flex items-center justify-between">
-               Operational_Metadata
+               Metadatos Operativos
                <Zap size={12} className="text-primary animate-pulse" />
              </h3>
              <div className="bg-[#0a0c10] p-8 rounded-2xl border-none shadow-2xl relative">
@@ -97,7 +97,7 @@ export default function CompanyPage() {
                  <div className="w-2 h-2 rounded-full bg-emerald-500/20" />
                </div>
                <pre className="text-[10px] leading-relaxed text-emerald-500/70 font-mono overflow-x-auto scrollbar-hide">
-                 {JSON.stringify(company?.metadata || { status: "ACTIVE", core: "Arise_v9.0" }, null, 2)}
+                 {JSON.stringify(company?.metadata || { estado: "ACTIVO", nucleo: "LOOP_v9.0" }, null, 2)}
                </pre>
              </div>
           </div>
@@ -109,13 +109,13 @@ export default function CompanyPage() {
             <div className="relative z-10">
               <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-primary mb-4 flex items-center gap-3">
                 <ShieldCheck size={14} />
-                Security_Uplink
+                Enlace de Seguridad
               </h3>
-              <p className="text-[10px] font-black text-white/50 mb-8 leading-loose uppercase tracking-widest">Protocol v9.0 Active. Identity nodes synchronized across the industrial multi-tenant gateway.</p>
+              <p className="text-[10px] font-black text-white/50 mb-8 leading-loose uppercase tracking-widest">Protocolo v9.0 Activo. Nodos de identidad sincronizados a través de la pasarela industrial multi-tenant.</p>
               
               <div className="space-y-6">
                 <div className="flex justify-between items-end mb-2">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Integrity_Score</span>
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Puntaje de Integridad</span>
                   <span className="text-[10px] font-black text-emerald-400">94.8%</span>
                 </div>
                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
@@ -126,14 +126,18 @@ export default function CompanyPage() {
           </div>
 
           <div className="bg-white rounded-[32px] shadow-arise p-10 border-none overflow-hidden relative">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400 mb-10">Trust_Certifications</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400 mb-10">Certificaciones de Confianza</h3>
             <ul className="space-y-6">
-               {['SII_Sync_Compliance', 'Global_Payroll_Node', 'Arise_Neural_Trust_v7'].map(item => (
-                 <li key={item} className="flex items-center gap-4 text-[9px] font-black text-slate-500 uppercase tracking-widest group cursor-pointer hover:text-primary transition-all">
+               {[
+                 { key: 'SII_Sync_Compliance', label: 'Cumplimiento Sincronización SII' },
+                 { key: 'Global_Payroll_Node', label: 'Nodo de Nómina Global' },
+                 { key: 'LOOP_Neural_Trust', label: 'Confianza Neural LOOP v9.0' }
+               ].map(item => (
+                 <li key={item.key} className="flex items-center gap-4 text-[9px] font-black text-slate-500 uppercase tracking-widest group cursor-pointer hover:text-primary transition-all">
                    <div className="w-8 h-8 rounded-xl bg-[#f2f4f6] flex items-center justify-center text-slate-300 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                      <CheckCircle2 size={14} />
                    </div>
-                   {item}
+                   {item.label}
                  </li>
                ))}
             </ul>

@@ -47,7 +47,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="hidden sm:block font-bold text-slate-400 hover:text-slate-900 text-[10px] uppercase tracking-widest transition">Login</Link>
+            <Link href="/auth/login" className="hidden sm:block font-bold text-slate-400 hover:text-slate-900 text-[10px] uppercase tracking-widest transition">INICIAR SESIÓN</Link>
             <button className="bg-slate-900 text-white px-7 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-green-600 hover:scale-105 transition-all shadow-xl active:scale-95">
               Comenzar
             </button>
@@ -61,7 +61,7 @@ export default function LandingPage() {
           <div className="lg:w-7/12 text-center lg:text-left relative z-10">
             <div className="inline-flex items-center gap-2 py-2 px-5 rounded-full bg-slate-900 text-white text-[10px] font-black mb-8 uppercase tracking-[0.2em]">
               <span className="flex h-2 w-2 rounded-full bg-green-400 animate-ping"></span>
-              Nuevo: Neural Engine v2.5
+              Nuevo Neural Engine v2.5
             </div>
             <h1 className="text-6xl md:text-8xl font-black leading-[0.95] mb-8 tracking-tighter text-slate-900 italic">
               Tus datos, <br />
@@ -74,7 +74,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-5">
               <button className="bg-slate-900 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-2xl shadow-slate-200 flex items-center justify-center gap-3 group">
-                Dashboard Central <Layout size={20} className="group-hover:rotate-12 transition-transform text-green-400" />
+                Panel de Control Central <Layout size={20} className="group-hover:rotate-12 transition-transform text-green-400" />
               </button>
               <button className="bg-white border-2 border-slate-100 px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-green-500 transition-all flex items-center justify-center gap-3">
                 Ver Demo <PlayCircle size={20} className="text-slate-400" />

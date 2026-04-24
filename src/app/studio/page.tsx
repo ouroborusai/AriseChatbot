@@ -173,7 +173,7 @@ export default function AIStudio() {
           <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">Studio</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
             <Sparkles size={10} className="text-primary fill-primary/20" />
-            Neural Engineering Interface / OS_VERSION_9.0
+            Interfaz de Ingeniería Neural / Versión 9.0
           </p>
         </div>
         <div className="flex items-center bg-slate-200/40 p-1 rounded-2xl backdrop-blur-md">

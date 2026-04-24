@@ -25,7 +25,7 @@ export function MetricSmall({
   if (loading) return <div className={`loop-card p-6 md:p-10 bg-white border-none shadow-arise animate-pulse h-32 md:h-40 ${className}`} />;
   
   const bgClass = active
-    ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-[0_20px_40px_-5px_rgba(37,99,235,0.3)]'
+    ? 'bg-gradient-to-br from-green-600 to-green-800 text-white shadow-[0_20px_40px_-5px_rgba(22,163,74,0.3)]'
     : warning
       ? 'bg-rose-500/10 text-rose-600 border border-rose-100 shadow-xl shadow-rose-100'
       : 'bg-white text-slate-900 hover:bg-slate-50/50 border-none shadow-arise';

@@ -91,21 +91,21 @@ export default function InventoryPage() {
         <div className="absolute -top-20 -left-20 w-64 h-64 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
         <div className="relative z-10">
           <div className="flex items-center gap-4 mb-4">
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Logística MMC</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Logística LOOP</h1>
             {typeof window !== 'undefined' && localStorage.getItem('arise_active_company') === 'global' && (
               <span className="bg-primary/10 text-primary text-[8px] font-black px-3 py-1 rounded-full tracking-[0.2em] uppercase border border-primary/20">Consolidado</span>
             )}
           </div>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.5em] flex items-center gap-2">
             <Sparkles size={10} className="text-primary animate-pulse" />
-            Gestión de Repuestos / Arise Business OS
+            Gestión de Repuestos / Sistemas LOOP
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto relative z-10">
           <div className="relative group flex-1 lg:flex-none">
             <input 
               type="text" 
-              placeholder="BUSCAR_REPUESTOS_..." 
+              placeholder="BUSCAR REPUESTOS..." 
               className="w-full lg:w-96 pl-12 pr-6 py-5 bg-white/40 backdrop-blur-xl text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-[24px] outline-none border border-white/20 focus:bg-white focus:shadow-xl transition-all"
             />
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-primary transition-colors" />
@@ -128,7 +128,7 @@ export default function InventoryPage() {
 
       <div className="p-8 flex flex-col sm:flex-row justify-between items-center bg-[#f8fafc]/50 backdrop-blur-sm mt-4 rounded-[32px] border border-white/50 border-dashed gap-8">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
-          Flux_Pool: {page * PAGE_SIZE + 1} - {Math.min((page + 1) * PAGE_SIZE, totalCount)} // Total_Catalog: {totalCount}
+          Página {page * PAGE_SIZE + 1} - {Math.min((page + 1) * PAGE_SIZE, totalCount)} // Catálogo Maestro {totalCount}
         </p>
         <div className="flex gap-4">
           <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="w-14 h-14 bg-white shadow-arise flex items-center justify-center text-slate-400 hover:text-primary disabled:opacity-20 transition-all rounded-2xl group"><ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform"/></button>

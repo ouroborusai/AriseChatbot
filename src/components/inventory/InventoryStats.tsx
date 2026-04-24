@@ -12,16 +12,16 @@ interface InventoryStatsProps {
 export function InventoryStats({ totalCount, criticalCount, hasCritical, loading }: InventoryStatsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-      <MetricSmall title="Master_Catalog" value={totalCount} icon={Package} loading={loading} />
+      <MetricSmall title="Catálogo Maestro" value={totalCount} icon={Package} loading={loading} />
       <MetricSmall 
-        title="Critical_Stock" 
+        title="Stock Crítico" 
         value={criticalCount} 
         icon={AlertTriangle} 
         warning={hasCritical} 
         loading={loading} 
       />
-      <MetricSmall title="Neural_Optimization" value="94.2%" icon={Zap} loading={loading} />
-      <MetricSmall title="Terminal_Utilization" value="72%" icon={Warehouse} loading={loading} />
+      <MetricSmall title="Optimización Neural" value="94.2%" icon={Zap} loading={loading} />
+      <MetricSmall title="Uso de Terminal" value="72%" icon={Warehouse} loading={loading} />
     </div>
   );
 }

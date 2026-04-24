@@ -39,37 +39,37 @@ export default function TeamPage() {
     <div className="flex flex-col w-full max-w-full p-4 md:p-10 animate-in fade-in duration-500 overflow-x-hidden">
       <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Operational_Units</h1>
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Unidades Operativas</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
             <Activity size={10} className="text-primary" />
-            Human Capital Intelligence / v9.0
+            Inteligencia de Capital Humano / v9.0
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto">
           <button className="flex items-center justify-center gap-4 bg-[#f2f4f6] text-slate-600 px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] hover:bg-slate-200 transition-all border-none">
-            <span>Audit_Log_Export</span>
+            <span>Exportar Auditoría</span>
           </button>
           <button className="flex items-center justify-center gap-4 bg-primary text-white px-8 py-5 rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-            <span>Deploy_Personnel</span>
+            <span>Desplegar Personal</span>
           </button>
         </div>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-        <MetricSmall title="Active_Headcount" value={loading ? '..' : employees.length} icon={User} />
-        <MetricSmall title="Audit_Logs_24h" value="1.2k" icon={Activity} />
-        <MetricSmall title="Security_Score" value="A+" icon={ShieldCheck} />
-        <MetricSmall title="Compliance_Rate" value="99%" icon={FileText} />
+        <MetricSmall title="Personal Activo" value={loading ? '..' : employees.length} icon={User} />
+        <MetricSmall title="Registros Auditoría 24h" value="1.2k" icon={Activity} />
+        <MetricSmall title="Puntaje de Seguridad" value="A+" icon={ShieldCheck} />
+        <MetricSmall title="Tasa de Cumplimiento" value="99%" icon={FileText} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 bg-white rounded-[32px] shadow-arise border-none overflow-hidden">
           <div className="p-10 bg-slate-50 flex justify-between items-center">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Organization_Member_Matrix</h2>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Matriz de Organización</h2>
           </div>
           <div className="divide-y-0">
             {loading ? (
-              <div className="p-20 text-center animate-pulse text-slate-300 font-black uppercase tracking-widest text-[10px]">Syncing_Personnel_Nodes...</div>
+              <div className="p-20 text-center animate-pulse text-slate-300 font-black uppercase tracking-widest text-[10px]">Sincronizando Nodos de Personal...</div>
             ) : employees.length > 0 ? (
               employees.map((emp) => (
                 <div key={emp.id} className="p-10 flex items-center justify-between hover:bg-slate-50 transition-all group cursor-pointer">
@@ -79,12 +79,12 @@ export default function TeamPage() {
                     </div>
                     <div>
                       <p className="text-sm font-black text-slate-900 uppercase italic tracking-tight">{emp.full_name}</p>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">{emp.position || 'OPERATIVE'} // {emp.contract_type || 'STANDARD'}</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">{emp.position || 'OPERATIVO'} // {emp.contract_type || 'ESTÁNDAR'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 bg-emerald-500/10 px-4 py-2 rounded-xl">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-pulse" />
-                    <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Active</span>
+                    <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Activo</span>
                   </div>
                 </div>
               ))
@@ -93,7 +93,7 @@ export default function TeamPage() {
                  <div className="w-24 h-24 bg-[#f2f4f6] rounded-[40px] flex items-center justify-center mb-10 text-slate-200">
                     <User size={48} strokeWidth={1} />
                  </div>
-                 <p className="max-w-xs text-slate-400 text-[9px] font-black uppercase tracking-[0.3em] leading-loose">No personnel records detected. Initiate organizational nodes to track capital evolution.</p>
+                  <p className="max-w-xs text-slate-400 text-[9px] font-black uppercase tracking-[0.3em] leading-loose">No se detectaron registros de personal. Inicie nodos organizativos para rastrear la evolución del capital.</p>
               </div>
             )}
           </div>
@@ -102,19 +102,19 @@ export default function TeamPage() {
         <div className="bg-[#0a0c10] rounded-[40px] shadow-2xl p-10 flex flex-col overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[120px] rounded-full -mr-32 -mt-32" />
           <div className="relative z-10">
-             <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-primary mb-10 flex items-center gap-3">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-primary mb-10 flex items-center gap-3">
                <ShieldCheck size={14} />
-               Security_Event_Log
+               Registro de Eventos de Seguridad
              </h2>
              <div className="space-y-6">
-                <SecurityEvent type="LOGIN_SUCCESS" user="A. Silva" time="Just Now" color="text-primary" />
-                <SecurityEvent type="SCHEMA_MOD" user="Arise_Engine" time="15m ago" color="text-amber-500" />
-                <SecurityEvent type="AUTH_KEY_ROT" user="Root_Admin" time="2h ago" color="text-emerald-500" />
+                 <SecurityEvent type="INICIO SESIÓN EXITOSO" user="A. Silva" time="Ahora" color="text-primary" />
+                 <SecurityEvent type="MOD ESQUEMA" user="Motor LOOP" time="15m" color="text-amber-500" />
+                 <SecurityEvent type="ROTACIÓN CLAVES" user="Admin Raíz" time="2h" color="text-emerald-500" />
              </div>
           </div>
           
           <div className="mt-auto pt-10 border-t border-white/5 relative z-10">
-            <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em]">Neural_Shield: Active</p>
+            <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em]">Escudo Neural: Activo</p>
           </div>
         </div>
       </div>
@@ -137,7 +137,7 @@ function SecurityEvent({ type, user, time, color }: SecurityEventProps) {
           <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-md bg-white/5 ${color}`}>{type}</span>
           <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest">{time}</span>
        </div>
-       <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Operator: <span className="text-white">{user}</span></p>
+        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Operador <span className="text-white">{user}</span></p>
     </div>
   );
 }

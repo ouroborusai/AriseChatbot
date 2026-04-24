@@ -240,7 +240,7 @@ export default function CRMPage() {
           <div className="relative group flex-1 lg:flex-none">
             <input 
               type="text" 
-              placeholder="QUER_CONTACTS_..." 
+              placeholder="BUSCAR CONTACTOS ..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full lg:w-96 pl-12 pr-6 py-4 bg-white/60 text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-2xl outline-none focus:bg-white focus:shadow-arise transition-all backdrop-blur-md"
@@ -249,7 +249,7 @@ export default function CRMPage() {
           </div>
           <button className="flex items-center justify-center gap-4 bg-primary text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
             <UserPlus size={16} />
-            <span>Deploy_Entity</span>
+            <span>Añadir Entidad</span>
           </button>
         </div>
       </header>
@@ -265,7 +265,7 @@ export default function CRMPage() {
 
       <div className="p-6 md:p-10 flex flex-col sm:flex-row justify-between items-center bg-[#f7f9fb] mt-4 rounded-[24px] gap-6">
         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">
-          Registry_Range: {page * PAGE_SIZE + 1} - {Math.min((page + 1) * PAGE_SIZE, totalCount)} // Total: {totalCount}
+          Rango de Registros: {page * PAGE_SIZE + 1} - {Math.min((page + 1) * PAGE_SIZE, totalCount)} // Total: {totalCount}
         </p>
         <div className="flex gap-4">
           <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="w-12 h-12 md:w-14 md:h-14 bg-white shadow-sm flex items-center justify-center text-slate-400 hover:text-primary disabled:opacity-20 transition-all rounded-2xl"><ArrowLeft size={18}/></button>

@@ -33,27 +33,27 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         <div className="loop-card p-6 md:p-8 bg-white border-none shadow-arise">
            <div className="flex items-center justify-between mb-4 md:mb-6">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">IA Vitality</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Vitalidad IA</p>
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
            </div>
            <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter leading-none">{apiKeys.length}/{apiKeys.length}</h2>
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Active Neural Nodes</p>
+           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Nodos Neurales Activos</p>
         </div>
         <div className="loop-card p-6 md:p-8 bg-slate-100 border-none shadow-none">
            <div className="flex items-center justify-between mb-4 md:mb-6">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">WhatsApp Bridge</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Puente WhatsApp</p>
               <Zap size={14} className="text-primary fill-primary/20" />
            </div>
-           <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tighter">CONNECTED</h2>
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Infrastructure Live</p>
+           <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tighter">CONECTADO</h2>
+           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Infraestructura Activa</p>
         </div>
         <div className="loop-card p-6 md:p-8 bg-white border-none shadow-arise">
            <div className="flex items-center justify-between mb-4 md:mb-6">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Latency_MS</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Latencia MS</p>
               <Activity size={14} className="text-slate-300" />
            </div>
            <h2 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">{telemetry.latency}</h2>
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Current Response Pace</p>
+           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Ritmo de Respuesta Actual</p>
         </div>
       </div>
 
@@ -78,13 +78,13 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
                     </div>
                     <div>
                       <div className="flex items-center gap-4">
-                        <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest">NODE_{index + 1}</p>
+                        <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest">NODO {index + 1}</p>
                         {result?.status === 'ok' ? (
-                          <span className="bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded text-[7px] font-black uppercase">Active</span>
+                          <span className="bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded text-[7px] font-black uppercase">Activo</span>
                         ) : result?.status === 'error' ? (
-                          <span className="bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded text-[7px] font-black uppercase">Exhausted</span>
+                          <span className="bg-rose-500/10 text-rose-600 px-2 py-0.5 rounded text-[7px] font-black uppercase">Agotado</span>
                         ) : (
-                          <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded text-[7px] font-black uppercase">Standby</span>
+                          <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded text-[7px] font-black uppercase">En Espera</span>
                         )}
                       </div>
                       <p className="text-[9px] font-mono text-slate-400 mt-1 tracking-tight">{k.key_value.substring(0, 40)}...</p>
@@ -117,22 +117,22 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2" />
              <h3 className="text-[11px] font-black uppercase tracking-widest text-primary mb-4 md:mb-6 flex items-center gap-3">
                 <Activity size={14} />
-                Meta Health
+                Salud de Meta
              </h3>
              <div className="space-y-6 relative z-10">
                 <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Token Status</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Estado del Token</span>
                   <span className="text-[10px] font-black text-emerald-400">VÁLIDO</span>
                 </div>
                 <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Webhook Pulse</span>
-                  <span className="text-[10px] font-black text-primary animate-pulse">LIVE</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Pulso del Webhook</span>
+                  <span className="text-[10px] font-black text-primary animate-pulse">ACTIVO</span>
                 </div>
                 <div className="pt-4 border-t border-white/10">
                   <p className="text-[9px] font-black text-slate-500 uppercase mb-4">Meta Data IDs</p>
                   <div className="space-y-2">
-                     <p className="text-[10px] font-mono text-slate-400 flex justify-between">WABA: <span className="text-white">{telemetry.wabaId || '192744...'}</span></p>
-                     <p className="text-[10px] font-mono text-slate-400 flex justify-between">Phone: <span className="text-white">{telemetry.phoneId || '106687...'}</span></p>
+                     <p className="text-[10px] font-mono text-slate-400 flex justify-between">WABA <span className="text-white">{telemetry.wabaId || '192744...'}</span></p>
+                     <p className="text-[10px] font-mono text-slate-400 flex justify-between">Phone <span className="text-white">{telemetry.phoneId || '106687...'}</span></p>
                   </div>
                 </div>
              </div>
