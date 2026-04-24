@@ -27,12 +27,12 @@ export default function LandingPage() {
       <nav className={`fixed w-full z-50 transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-100 py-4 shadow-sm' : 'bg-transparent py-8'}`}>
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
           <div className="flex items-center gap-4 group cursor-pointer">
-            {/* Logo SVG (Versión para fondo claro) */}
-            <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center shadow-lg shadow-green-100 group-hover:rotate-6 transition-transform">
-              <svg viewBox="0 0 100 100" className="w-8 h-8 fill-none stroke-white" strokeWidth="8">
-                <path d="M50 75 L30 90 L35 70 C15 65 10 45 30 30 C50 15 85 45 50 75 Z" fill="white" stroke="none" />
-                <path d="M35 50 Q35 40 45 40 Q55 40 50 50 Q45 60 55 60 Q65 60 65 50 Q65 40 55 40 Q45 40 50 50 Q55 60 45 60 Q35 60 35 50" stroke="#22c55e" strokeWidth="5" strokeLinecap="round" />
-              </svg>
+            <div className="w-12 h-12 relative group-hover:rotate-6 transition-transform">
+              <img 
+                src="/brand/official.png" 
+                alt="LOOP Logo" 
+                className="w-full h-full object-cover rounded-2xl shadow-lg shadow-green-100"
+              />
             </div>
             <div className="flex flex-col">
               <span className="text-2xl font-black tracking-tighter leading-none italic text-slate-900">LOOP</span>
@@ -41,7 +41,7 @@ export default function LandingPage() {
           </div>
           
           <div className="hidden md:flex space-x-10 font-bold text-slate-400 uppercase tracking-widest text-[10px]">
-            <a href="#data" className="hover:text-green-600 transition-colors">Data_Engine</a>
+            <a href="#data" className="hover:text-green-600 transition-colors">Motor de Datos</a>
             <a href="#features" className="hover:text-green-600 transition-colors">Módulos</a>
             <a href="#security" className="hover:text-green-600 transition-colors">Seguridad</a>
           </div>

@@ -60,18 +60,19 @@ export default function LoginPage() {
       <div className="w-full max-w-[480px] z-10 animate-in fade-in zoom-in-95 duration-700">
         <div className="flex flex-col items-center mb-16">
           <div className="w-24 h-24 relative mb-10 group cursor-pointer transition-all hover:scale-110">
-             <div className="w-full h-full bg-green-500 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-green-100 group-hover:rotate-6 transition-transform">
-                <svg viewBox="0 0 100 100" className="w-12 h-12 fill-none stroke-white" strokeWidth="8">
-                  <path d="M50 75 L30 90 L35 70 C15 65 10 45 30 30 C50 15 85 45 50 75 Z" fill="white" stroke="none" />
-                  <path d="M35 50 Q35 40 45 40 Q55 40 50 50 Q45 60 55 60 Q65 60 65 50 Q65 40 55 40 Q45 40 50 50 Q55 60 45 60 Q35 60 35 50" stroke="#16a34a" strokeWidth="5" strokeLinecap="round" />
-                </svg>
+             <div className="w-full h-full relative group-hover:rotate-6 transition-transform">
+                <img 
+                  src="/brand/official.png" 
+                  alt="LOOP Logo" 
+                  className="w-full h-full object-cover rounded-[2rem] shadow-2xl shadow-green-100"
+                />
              </div>
           </div>
           <h1 className="text-5xl font-black text-slate-900 tracking-[0.3em] leading-none italic uppercase mb-6">LOOP</h1>
           <div className="flex flex-col items-center gap-3">
              <div className="flex items-center gap-3">
                 <Activity size={10} className="text-green-600" />
-                <p className="text-green-600 text-[9px] font-black uppercase tracking-[0.6em]">Neural_Business_OS / v9.0</p>
+                <p className="text-green-600 text-[9px] font-black uppercase tracking-[0.6em]">SISTEMA OPERATIVO NEURAL / v9.0</p>
              </div>
              <p className="text-slate-400 text-[10px] font-bold italic tracking-wider mt-2 whitespace-nowrap">"Cierra el ciclo de tus tareas con Loop"</p>
           </div>
@@ -81,13 +82,13 @@ export default function LoginPage() {
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500/30 to-transparent" />
           
           <div className="mb-12 text-center">
-            <h2 className="text-2xl font-black text-slate-900 italic uppercase tracking-tighter">ACCESS_PROTOCOL</h2>
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] mb-12">PROTOCOLO DE ACCESO</h2>
             <p className="text-[10px] font-black text-slate-400 mt-3 uppercase tracking-[0.3em]">Credentials required for neural uplink</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-10">
             <div className="space-y-4">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">Operator_ID</label>
+              <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] mb-3 ml-2">ID DE OPERADOR</label>
               <div className="relative">
                 <input 
                   required
@@ -103,7 +104,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-4">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">Secure_Cipher</label>
+              <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] mb-3 ml-2">CLAVE DE SEGURIDAD</label>
               <div className="relative">
                 <input 
                   required

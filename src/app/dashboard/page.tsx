@@ -141,14 +141,14 @@ export default function Dashboard() {
           <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Dashboard</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
             <TrendingUp size={10} className="text-green-600" />
-            Operational Intelligence / REVENUE_PULSE_9.0
+            INTELIGENCIA OPERACIONAL / PULSO DE INGRESOS 9.0
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6">
           <div className="relative flex-1 group">
             <input 
               type="text" 
-              placeholder="SEARCH_NEURAL_NODES..." 
+              placeholder="BUSCAR NODOS NEURALES..." 
               className="w-full lg:w-96 pl-12 pr-6 py-4 bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-[24px] outline-none focus:bg-white focus:ring-4 focus:ring-green-500/10 focus:border-green-500/20 transition-all border border-slate-100"
             />
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -163,17 +163,17 @@ export default function Dashboard() {
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <MetricCard title="Nodos_Activos" value={stats.contacts} drift="+15.2%" icon={Users} primary loading={loading} />
-        <MetricCard title="Conversaciones_IA" value={stats.activeChats} drift="Live" icon={MessageCircle} loading={loading} />
-        <MetricCard title="Alertas_Sistema" value={stats.lowStock} drift="Critical" icon={Sparkles} negative={stats.lowStock > 0} loading={loading} />
-        <MetricCard title="Balance_Global" value={stats.revenue} drift="+2.4%" icon={Wallet} loading={loading} />
+        <MetricCard title="Nodos Activos" value={stats.contacts} drift="+15.2%" icon={Users} primary loading={loading} />
+        <MetricCard title="Conversaciones IA" value={stats.activeChats} drift="En vivo" icon={MessageCircle} loading={loading} />
+        <MetricCard title="Alertas del Sistema" value={stats.lowStock} drift="Crítico" icon={Sparkles} negative={stats.lowStock > 0} loading={loading} />
+        <MetricCard title="Balance Global" value={stats.revenue} drift="+2.4%" icon={Wallet} loading={loading} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
         <section className="loop-card p-0 overflow-hidden lg:col-span-2">
           <div className="p-10">
-            <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Neural Signal Velocity</h2>
-            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">24H Real-time activity pulse</p>
+            <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Velocidad de Señal Neural</h2>
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Pulso de actividad 24h en tiempo real</p>
           </div>
           <div className="w-full h-[320px] bg-gradient-to-b from-white to-slate-50/50">
             <ResponsiveContainer width="100%" height={320}>
@@ -195,7 +195,7 @@ export default function Dashboard() {
         </section>
 
         <div className="loop-card p-10 bg-slate-50/30">
-          <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-900 mb-10">System Status</h3>
+          <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-900 mb-10">Estado del Sistema</h3>
           <div className="space-y-8">
             {loading ? (
               Array(4).fill(0).map((_, i) => <SkeletonRow key={i} />)
@@ -222,17 +222,17 @@ export default function Dashboard() {
 
       <div className="loop-card p-10 overflow-hidden">
         <div className="mb-10">
-          <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Operational Governance Ledger</h2>
-          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time interaction matrix</p>
+          <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Libro de Gobernanza Operativa</h2>
+          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Matriz de interacción en tiempo real</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[700px]">
             <thead>
               <tr>
-                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Reference_ID</th>
-                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Neural_Task</th>
-                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Protocol_Status</th>
-                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Impact_Metric</th>
+                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">ID Referencia</th>
+                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Tarea Neural</th>
+                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Estado Protocolo</th>
+                <th className="pb-8 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Métrica Impacto</th>
               </tr>
             </thead>
             <tbody>

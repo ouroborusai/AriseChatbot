@@ -23,10 +23,10 @@ import CompanySelector from './CompanySelector';
 
 const menuItems = [
   { name: 'Vista General', icon: LayoutDashboard, path: '/dashboard', premium: true },
+  { name: 'Bóveda', icon: User, path: '/vault', premium: false },
   { name: 'Mensajes', icon: MessageSquare, path: '/messages', premium: true },
-  { name: 'Bóveda (Vault)', icon: User, path: '/vault', premium: false },
   { name: 'CRM (Pagos)', icon: Users, path: '/crm', premium: true },
-  { name: 'Equipo (Units)', icon: Users, path: '/team', premium: true },
+  { name: 'Equipo', icon: Users, path: '/team', premium: true },
   { name: 'Inventario', icon: Package, path: '/inventory', premium: true },
   { name: 'Analítica', icon: BarChart3, path: '/billing', premium: true },
   { name: 'Empresa', icon: Settings, path: '/company', premium: true },
@@ -71,15 +71,15 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-full w-72 bg-white border-r border-slate-50 flex flex-col p-6 md:p-8 z-50 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
       <div className="flex items-center gap-4 mb-10 md:mb-12 px-2">
           <div className="w-12 h-12 relative rotate-3 transform hover:rotate-0 transition-all duration-500">
-             <div className="w-full h-full bg-green-500 rounded-2xl flex items-center justify-center shadow-lg shadow-green-100">
-                <svg viewBox="0 0 100 100" className="w-8 h-8 fill-none stroke-white" strokeWidth="10">
-                  <path d="M35 50 Q35 40 45 40 Q55 40 50 50 Q45 60 55 60 Q65 60 65 50 Q65 40 55 40 Q45 40 50 50 Q55 60 45 60 Q35 60 35 50" stroke="white" strokeWidth="8" strokeLinecap="round" />
-                </svg>
-             </div>
+             <img 
+               src="/brand/official.png" 
+               alt="LOOP Logo" 
+               className="w-full h-full object-cover rounded-2xl shadow-lg shadow-green-100"
+             />
           </div>
           <div>
             <span className="font-black text-slate-800 tracking-tighter text-2xl leading-none block">LOOP</span>
-            <span className="text-green-600 text-[10px] font-black uppercase tracking-[0.3em] block mt-1">Intelligence</span>
+            <span className="text-green-600 text-[10px] font-black uppercase tracking-[0.3em] block mt-1">INTELIGENCIA</span>
           </div>
         </div>
 
@@ -126,7 +126,7 @@ export default function Sidebar() {
         {activeCompany?.plan_tier === 'free' && (
           <div className="mt-8 p-6 bg-gradient-to-br from-green-600 to-green-900 rounded-3xl shadow-xl shadow-green-100 relative overflow-hidden group">
              <div className="relative z-10">
-               <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Plan Pro LOOP</p>
+               <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">PLAN PRO LOOP</p>
                <p className="text-white text-xs font-black leading-tight mb-4">Desbloquea Dashboard, Mensajes y más.</p>
                <button 
                  onClick={handleUpgrade}

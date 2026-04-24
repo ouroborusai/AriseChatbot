@@ -30,11 +30,11 @@ export default function MobileNav() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/60 backdrop-blur-xl px-4 py-3 flex justify-between items-center border-b border-slate-100 shadow-sm">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 relative rotate-3 transform hover:rotate-0 transition-transform">
-             <div className="w-full h-full bg-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-100">
-                <svg viewBox="0 0 100 100" className="w-6 h-6 fill-none stroke-white" strokeWidth="10">
-                  <path d="M35 50 Q35 40 45 40 Q55 40 50 50 Q45 60 55 60 Q65 60 65 50 Q65 40 55 40 Q45 40 50 50 Q55 60 45 60 Q35 60 35 50" stroke="white" strokeWidth="8" strokeLinecap="round" />
-                </svg>
-             </div>
+             <img 
+               src="/brand/official.png" 
+               alt="LOOP Logo" 
+               className="w-full h-full object-cover rounded-xl shadow-lg shadow-green-100"
+             />
           </div>
           <span className="font-black text-slate-900 tracking-tighter text-base uppercase">LOOP</span>
         </div>

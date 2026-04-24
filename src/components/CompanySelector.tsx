@@ -69,7 +69,7 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
                <input 
                 autoFocus
                 type="text" 
-                placeholder="FILTRAR_LOOP..."
+                placeholder="FILTRAR LOOP..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Buscar empresa"
@@ -125,7 +125,7 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
              <input 
               autoFocus
               type="text" 
-              placeholder="FILTRAR_NODOS..."
+              placeholder="FILTRAR NODOS..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Filtrar lista de empresas"
