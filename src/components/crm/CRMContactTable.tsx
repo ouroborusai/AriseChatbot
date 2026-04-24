@@ -45,7 +45,7 @@ export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateSegment
               ))
             ) : (
               contacts.map((contact) => (
-                <tr key={contact.id} className="group hover:bg-[#f7f9fb] transition-all cursor-pointer">
+                <tr key={contact.id} className="group hover:bg-slate-50 transition-all cursor-pointer">
                   <td className="py-6 md:py-8" onClick={() => onOpenChat(contact)}>
                     <div className="flex items-center gap-4 md:gap-6">
                       <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-900 text-white rounded-[16px] flex items-center justify-center font-black text-xs shadow-md shadow-slate-200 group-hover:bg-primary group-hover:shadow-lg transition-all">

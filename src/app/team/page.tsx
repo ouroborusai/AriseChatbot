@@ -64,7 +64,7 @@ export default function TeamPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 bg-white rounded-[32px] shadow-arise border-none overflow-hidden">
-          <div className="p-10 bg-[#f7f9fb] flex justify-between items-center">
+          <div className="p-10 bg-slate-50 flex justify-between items-center">
             <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Organization_Member_Matrix</h2>
           </div>
           <div className="divide-y-0">
@@ -72,9 +72,9 @@ export default function TeamPage() {
               <div className="p-20 text-center animate-pulse text-slate-300 font-black uppercase tracking-widest text-[10px]">Syncing_Personnel_Nodes...</div>
             ) : employees.length > 0 ? (
               employees.map((emp) => (
-                <div key={emp.id} className="p-10 flex items-center justify-between hover:bg-[#f7f9fb] transition-all group cursor-pointer">
+                <div key={emp.id} className="p-10 flex items-center justify-between hover:bg-slate-50 transition-all group cursor-pointer">
                   <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-[#f2f4f6] rounded-[24px] flex items-center justify-center font-black text-primary text-xs shadow-sm group-hover:bg-primary group-hover:text-white transition-all">
+                    <div className="w-16 h-16 bg-slate-100 rounded-[24px] flex items-center justify-center font-black text-primary text-xs shadow-sm group-hover:bg-primary group-hover:text-white transition-all">
                       {emp.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                     </div>
                     <div>

@@ -1,190 +1,241 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Shield, Bell, Layout, Heart, CreditCard, AlertCircle, Fingerprint, ChevronRight } from 'lucide-react';
+import { 
+  ArrowRight, Sparkles, Shield, Bell, Layout, Heart, 
+  FileText, Database, ClipboardList, Image as ImageIcon, 
+  Zap, RefreshCw, PlayCircle, Send, ArrowLeft
+} from 'lucide-react';
 
 export default function LandingPage() {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#000000] flex flex-col font-sans selection:bg-[#06b6d4] selection:text-white relative overflow-hidden font-inter text-white">
-      {/* High-Performance Neural Gradient - Now syncing with Pure Black */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#000000] via-[#083344]/30 to-[#000000] opacity-50" />
-      <div className="absolute inset-0 z-0 opacity-20 bg-[radial-gradient(#06b6d4_1px,transparent_1px)] [background-size:40px_40px]" />
-
-      {/* Atmospheric Glows - Electric Sky Official Palette */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#06b6d4]/15 rounded-full blur-[160px] animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#0891b2]/10 rounded-full blur-[160px] animate-pulse" style={{ animationDelay: '2s' }} />
-
-      <header className="relative z-20 w-full p-10 flex justify-between items-center max-w-[1600px] mx-auto">
-        <div className="flex items-center gap-5 group cursor-pointer">
-          <div className="w-16 h-16 relative group-hover:scale-110 transition-all duration-700">
-             <img 
-               src="/ourobot-logo.png" 
-               alt="OUROBOT Logo" 
-               className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(6,182,212,0.5)]"
-             />
+    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-green-100 selection:text-green-900 relative overflow-x-hidden">
+      
+      {/* Decoración de Fondo (Sutil) */}
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-green-50 rounded-full blur-[120px] -z-10 translate-x-1/2 -translate-y-1/2 opacity-70"></div>
+      
+      {/* Navegación Glassmorphism Claro */}
+      <nav className={`fixed w-full z-50 transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-100 py-4 shadow-sm' : 'bg-transparent py-8'}`}>
+        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+          <div className="flex items-center gap-4 group cursor-pointer">
+            {/* Logo SVG (Versión para fondo claro) */}
+            <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center shadow-lg shadow-green-100 group-hover:rotate-6 transition-transform">
+              <svg viewBox="0 0 100 100" className="w-8 h-8 fill-none stroke-white" strokeWidth="8">
+                <path d="M50 75 L30 90 L35 70 C15 65 10 45 30 30 C50 15 85 45 50 75 Z" fill="white" stroke="none" />
+                <path d="M35 50 Q35 40 45 40 Q55 40 50 50 Q45 60 55 60 Q65 60 65 50 Q65 40 55 40 Q45 40 50 50 Q55 60 45 60 Q35 60 35 50" stroke="#22c55e" strokeWidth="5" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-2xl font-black tracking-tighter leading-none italic text-slate-900">LOOP</span>
+              <span className="text-[8px] font-black text-green-600 uppercase tracking-[0.4em] mt-1">Inteligencia de Negocios</span>
+            </div>
           </div>
-          <div className="flex flex-col text-left">
-            <span className="text-3xl font-black text-white italic uppercase tracking-[-0.05em] leading-none">LOOP</span>
-            <span className="text-[9px] font-black text-[#06b6d4] uppercase tracking-[0.4em] mt-1 italic">Neural_Business_OS</span>
+          
+          <div className="hidden md:flex space-x-10 font-bold text-slate-400 uppercase tracking-widest text-[10px]">
+            <a href="#data" className="hover:text-green-600 transition-colors">Data_Engine</a>
+            <a href="#features" className="hover:text-green-600 transition-colors">Módulos</a>
+            <a href="#security" className="hover:text-green-600 transition-colors">Seguridad</a>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Link href="/auth/login" className="hidden sm:block font-bold text-slate-400 hover:text-slate-900 text-[10px] uppercase tracking-widest transition">Login</Link>
+            <button className="bg-slate-900 text-white px-7 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-green-600 hover:scale-105 transition-all shadow-xl active:scale-95">
+              Comenzar
+            </button>
           </div>
         </div>
-        <Link 
-          href="/auth/login"
-          className="flex items-center gap-3 px-10 py-5 bg-white/5 hover:bg-white/10 border border-white/5 backdrop-blur-2xl rounded-2xl text-[11px] font-black text-white uppercase tracking-[0.4em] transition-all shadow-2xl hover:shadow-[#06b6d4]/20"
-        >
-          Acceso_Empresarial
-          <ArrowRight size={16} className="text-[#06b6d4]" />
-        </Link>
-      </header>
+      </nav>
 
-      <main className="flex-1 relative z-10 flex flex-col items-center justify-center px-4 max-w-[1600px] mx-auto w-full mt-12 lg:mt-16 pb-20">
-        <div className="w-full flex flex-col lg:flex-row items-center lg:justify-between gap-12 lg:gap-20 mb-24">
-          {/* The OUROBOT Pure Infinity Official Core (Left) */}
-          <div className="relative group cursor-pointer flex-shrink-0 lg:ml-10">
-            <div className="absolute inset-0 bg-[#06b6d4]/20 blur-[100px] rounded-full animate-pulse group-hover:bg-[#0891b2]/40 transition-all duration-1000" />
-            
-            <div className="relative w-64 h-64 md:w-[450px] md:h-[450px] flex items-center justify-center group-hover:scale-105 transition-all duration-1000">
-               <img 
-                 src="/ourobot-logo.png" 
-                 alt="OUROBOT Official Logo" 
-                 className="relative z-10 w-full h-full object-contain"
-               />
+      {/* Hero Section */}
+      <section className="pt-48 pb-24 px-6 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-20">
+          <div className="lg:w-7/12 text-center lg:text-left relative z-10">
+            <div className="inline-flex items-center gap-2 py-2 px-5 rounded-full bg-slate-900 text-white text-[10px] font-black mb-8 uppercase tracking-[0.2em]">
+              <span className="flex h-2 w-2 rounded-full bg-green-400 animate-ping"></span>
+              Nuevo: Neural Engine v2.5
             </div>
-          </div>
-
-          {/* Text Content (Right) */}
-          <div className="flex flex-col items-center text-center lg:items-start lg:text-left flex-1 max-w-3xl">
-            {/* Badge Hero */}
-            <div className="flex items-center gap-4 mb-10 bg-white/[0.02] backdrop-blur-3xl px-8 py-3 rounded-full border border-white/5 shadow-2xl group cursor-pointer hover:bg-[#06b6d4]/10 transition-all w-fit">
-               <Heart size={16} className="text-[#06b6d4] fill-[#06b6d4] animate-pulse" />
-               <p className="text-white text-[11px] font-black uppercase tracking-[0.7em]">Loop_Neural_Intelligence_v10.0</p>
-            </div>
-            
-            <h1 className="text-5xl md:text-[85px] font-black text-white tracking-tight leading-none mb-8 uppercase italic">
-              Tu Empresa en<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#06b6d4] via-[#22d3ee] to-[#0891b2] filter drop-shadow-[0_30px_60px_rgba(6,182,212,0.4)]">
-                un Mensaje
+            <h1 className="text-6xl md:text-8xl font-black leading-[0.95] mb-8 tracking-tighter text-slate-900 italic">
+              Tus datos, <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 via-green-500 to-green-600 filter drop-shadow-[0_10px_20px_rgba(34,197,94,0.1)]">
+                en un mensaje.
               </span>
             </h1>
-            
-            <p className="text-lg md:text-xl text-slate-400 font-medium max-w-2xl mb-12 tracking-normal leading-relaxed">
-              Automatiza tu agenda, gestiona logística industrial y controla tu contabilidad desde WhatsApp con el poder de **LOOP**.
+            <p className="text-xl text-slate-500 mb-12 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium">
+              Sincroniza tus documentos con el cerebro de **LOOP** y accede a toda tu gestión empresarial desde WhatsApp. Inteligencia de negocios, en el chat de siempre.
             </p>
+            <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-5">
+              <button className="bg-slate-900 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-2xl shadow-slate-200 flex items-center justify-center gap-3 group">
+                Dashboard Central <Layout size={20} className="group-hover:rotate-12 transition-transform text-green-400" />
+              </button>
+              <button className="bg-white border-2 border-slate-100 px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-green-500 transition-all flex items-center justify-center gap-3">
+                Ver Demo <PlayCircle size={20} className="text-slate-400" />
+              </button>
+            </div>
+          </div>
 
-            <div className="flex flex-col sm:flex-row items-center lg:items-start gap-6">
-              <a 
-                href="https://wa.me/56990062213?text=Hola%20LOOP!%20Cierra%20el%20ciclo%20de%20mis%20tareas"
-                className="w-full sm:w-auto h-16 md:h-20 px-10 md:px-12 bg-[#06b6d4] text-white rounded-full font-black text-[12px] md:text-[13px] uppercase tracking-[0.3em] md:tracking-[0.5em] shadow-[0_20px_50px_-10px_rgba(6,182,212,0.5)] hover:scale-[1.05] active:scale-95 transition-all flex items-center justify-center gap-4 md:gap-6 group"
-              >
-                Sincronizar con WhatsApp
-                <ArrowRight size={24} className="group-hover:translate-x-3 transition-transform" />
-              </a>
-              <Link 
-                href="/auth/login"
-                className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-500 hover:text-white transition-colors h-16 md:h-20 flex items-center"
-              >
-                Dashboard_Central
-              </Link>
+          {/* WhatsApp Mockup Animado (Modo Claro) */}
+          <div className="lg:w-5/12 w-full">
+            <div className="relative mx-auto w-[320px] sm:w-[350px] animate-bounce-slow">
+              <div className="bg-slate-900 rounded-[3.5rem] p-3 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-slate-800">
+                <div className="bg-[#e5ddd5] rounded-[3rem] overflow-hidden h-[600px] flex flex-col relative">
+                  {/* WhatsApp Header */}
+                  <div className="bg-[#075e54] p-5 pt-12 flex items-center gap-3 text-white">
+                    <ArrowLeft size={20} className="opacity-70" />
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                      <Zap size={24} className="text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">LOOP Assistant</p>
+                      <p className="text-[10px] opacity-70 italic">escribiendo...</p>
+                    </div>
+                  </div>
+                  {/* Chat Area */}
+                  <div className="flex-1 p-4 space-y-4 overflow-y-auto" style={{backgroundImage: "url('https://i.pinimg.com/originals/ab/ab/60/abab60f38a38575003666f2c7a38b55e.png')", backgroundSize: "cover", opacity: 0.9}}>
+                    <div className="flex justify-end">
+                      <div className="bg-[#dcf8c6] p-3 text-[13px] max-w-[85%] rounded-l-xl rounded-tr-xl shadow-sm">
+                        ¿Cuál es el saldo de la factura #204?
+                        <p className="text-[9px] text-slate-500 text-right mt-1 font-bold">19:45 ✓✓</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-start">
+                      <div className="bg-white p-3 text-[13px] max-w-[85%] rounded-r-xl rounded-tl-xl border-l-4 border-green-500 shadow-sm">
+                        <p className="text-green-600 font-black text-[10px] mb-1 tracking-widest uppercase">Neural System</p>
+                        Factura #204 analizada. El saldo actual es de **$450.000 CLP**. Vence en 2 días.
+                        <p className="text-[9px] text-slate-400 text-right mt-1">19:46</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Input Mockup */}
+                  <div className="p-3 bg-[#f0f0f0] flex items-center gap-2">
+                    <div className="flex-1 bg-white rounded-full px-4 py-2 text-slate-400 text-xs italic">Escribe un comando...</div>
+                    <div className="w-10 h-10 bg-[#128c7e] rounded-full flex items-center justify-center text-white shadow-md">
+                      <Send size={18} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Badge Flotante */}
+              <div className="absolute -right-8 top-20 bg-white p-4 rounded-2xl shadow-2xl border border-slate-50 flex items-center gap-3 animate-pulse">
+                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-green-600">
+                  <Shield size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Seguridad</p>
+                  <p className="text-xs font-bold text-slate-900">AES-256 Activo</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl mb-32 text-left">
-          <FeatureCard 
-            icon={Bell} 
-            title="Auto-Respuesta IA" 
-            desc="Sincronización total de citas y recordatorios mediante lenguaje natural. LOOP nunca olvida." 
-            accent="bg-[#06b6d4]/10"
-          />
-          <FeatureCard 
-            icon={Layout} 
-            title="Logística MMC" 
-            desc="Módulo especializado para talleres: reportes técnicos, actas de retiro e inventario en tiempo real." 
-            accent="bg-[#0891b2]/10"
-          />
-          <FeatureCard 
-            icon={Shield} 
-            title="Bóveda Segura" 
-            desc="Seguridad de grado militar para tus documentos comerciales. Tus datos están bajo control total." 
-            accent="bg-white/5"
-          />
+      {/* Marcas (Sutil) */}
+      <section className="py-12 border-y border-slate-50">
+          <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-12 opacity-30 grayscale">
+              <span className="text-xl font-black italic tracking-tighter">TECHCORP</span>
+              <span className="text-xl font-black italic tracking-tighter">DATAFLOW</span>
+              <span className="text-xl font-black italic tracking-tighter">INVENTLY</span>
+              <span className="text-xl font-black italic tracking-tighter">SMARTLOG</span>
+          </div>
+      </section>
+
+      {/* Data Engine Section */}
+      <section id="data" className="py-32 bg-slate-50/50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center gap-20">
+            <div className="md:w-1/2">
+              <div className="grid grid-cols-2 gap-6">
+                <DataCard icon={FileText} title="PDFs" desc="Manuales y contratos." color="text-blue-500" />
+                <DataCard icon={Database} title="Excel" desc="Inventarios y stock." color="text-green-500" delay="mt-8" />
+                <DataCard icon={ClipboardList} title="Texto" desc="Notas y FAQs." color="text-orange-500" delay="-mt-4" />
+                <DataCard icon={ImageIcon} title="OCR" desc="Escaneo de fotos." color="text-purple-500" delay="mt-4" />
+              </div>
+            </div>
+            <div className="md:w-1/2">
+              <h2 className="text-5xl font-black leading-[0.95] mb-8 tracking-tighter italic text-slate-900">
+                Tú cargas el cerebro, <br /><span className="text-green-600">nosotros la memoria.</span>
+              </h2>
+              <p className="text-lg text-slate-500 mb-10 leading-relaxed font-medium">
+                Nuestro panel centraliza tu conocimiento. Arrastra archivos y deja que el **LOOP Engine** los procese. En segundos, estarán disponibles en tu WhatsApp.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-green-500/30 transition-all">
+                  <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
+                    <Zap size={24} className="text-green-600" />
+                  </div>
+                  <span className="font-bold text-sm uppercase tracking-widest italic text-slate-700">Procesamiento Neural Inmediato</span>
+                </div>
+                <div className="flex items-center gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-green-500/30 transition-all">
+                  <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center">
+                    <RefreshCw size={24} className="text-slate-400" />
+                  </div>
+                  <span className="font-bold text-sm uppercase tracking-widest italic text-slate-400">Actualización Sincronizada</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        {/* Pricing Section */}
-        <section id="pricing" className="w-full max-w-6xl mx-auto">
-          <div className="mb-16">
-            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic mb-6">Planes LOOP</h2>
-            <div className="w-24 h-[4px] bg-[#06b6d4] mx-auto rounded-full" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[40px] p-10 lg:p-12 text-left hover:border-[#06b6d4]/30 transition-all duration-700">
-              <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.5em] mb-8">Uso Personal</h4>
-              <h3 className="text-6xl font-black text-white mb-4 italic uppercase">Free</h3>
-              <p className="text-slate-400 text-lg mb-12 font-medium leading-relaxed">Asistente personal inteligente para agendar tu vida diaria.</p>
-              <ul className="space-y-6 mb-16">
-                <PricingItem text="Agenda Neural 24/7" />
-                <PricingItem text="Mensajes de Voz" />
-                <PricingItem text="Caché de Datos 7 días" />
-              </ul>
-              <button className="w-full h-16 bg-white/5 text-white rounded-full font-black uppercase text-[11px] tracking-widest hover:bg-white hover:text-black transition-all">Empezar_Ahora</button>
-            </div>
-
-            <div className="bg-[#06b6d4] text-[#020617] rounded-[40px] p-10 lg:p-12 text-left shadow-[0_30px_60px_-15px_rgba(6,182,212,0.4)] relative overflow-hidden group hover:scale-[1.02] transition-all duration-700">
-              <div className="absolute top-0 right-0 p-10">
-                <Sparkles size={48} className="text-white opacity-20 animate-pulse" />
+      {/* CTA Final */}
+      <section className="py-32 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="bg-slate-900 rounded-[4rem] p-16 md:p-24 relative overflow-hidden shadow-2xl">
+            <div className="absolute inset-0 bg-green-500/5 opacity-50" />
+            <div className="relative z-10">
+              <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter italic">
+                Entra en el <span className="text-green-500">Loop.</span>
+              </h2>
+              <p className="text-slate-400 text-xl mb-12 max-w-2xl mx-auto font-medium">
+                No pierdas más tiempo buscando información. Pregúntale a LOOP y sigue con tu día.
+              </p>
+              <div className="max-w-md mx-auto bg-white/10 backdrop-blur-md p-2 rounded-3xl border border-white/10 flex flex-col sm:flex-row gap-2">
+                <input 
+                  type="email" 
+                  placeholder="tu@empresa.com" 
+                  className="flex-1 bg-transparent px-6 py-4 rounded-2xl text-white focus:outline-none font-bold text-sm"
+                />
+                <button className="bg-green-500 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-green-400 transition-all active:scale-95 shadow-lg shadow-green-500/20">
+                  Empezar Gratis
+                </button>
               </div>
-              <h4 className="text-[11px] font-black text-white/60 uppercase tracking-[0.5em] mb-8">Enterprise_Pro</h4>
-              <div className="flex items-baseline gap-2 mb-4">
-                <h3 className="text-6xl font-black italic uppercase">$49k</h3>
-                <span className="text-[12px] font-black uppercase opacity-60">/ mes</span>
-              </div>
-              <p className="text-[#020617] text-lg mb-12 font-bold leading-relaxed text-balance italic">Poder total para Taller MMC y empresas industriales.</p>
-              <ul className="space-y-6 mb-16">
-                <PricingItem text="Módulo Logística Completo" isDark />
-                <PricingItem text="Reportes PDF Oficiales" isDark />
-                <PricingItem text="Inventario & Activos" isDark />
-                <PricingItem text="Soporte Prioritario" isDark />
-              </ul>
-              <button className="w-full h-16 bg-[#020617] text-white rounded-full font-black uppercase text-[11px] tracking-widest shadow-2xl hover:scale-105 transition-all">Activar_Enterprise</button>
+              <p className="text-slate-500 text-[9px] uppercase font-bold tracking-[0.3em] mt-8">Registro en 30 segundos · Sin tarjeta</p>
             </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
 
-      <footer className="relative z-10 p-12 text-center mt-auto border-t border-white/5 bg-white/[0.02] backdrop-blur-md">
-         <div className="flex items-center justify-center gap-6 mb-8 opacity-20">
+      <footer className="py-16 border-t border-slate-50 text-center bg-slate-50/30">
+        <div className="flex items-center justify-center gap-6 mb-8 opacity-20">
             <Shield size={16} />
-            <Bell size={16} />
+            <Zap size={16} />
             <Sparkles size={16} />
-         </div>
-         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">© 2026 LOOP_Systems. Powered by Loop Neural Cluster.</p>
+        </div>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
+          © 2026 LOOP_SYSTEMS. Powered by Ouroborus Neural Engine.
+        </p>
       </footer>
+
     </div>
   );
 }
 
-function FeatureCard({ icon: Icon, title, desc, accent }: any) {
+function DataCard({ icon: Icon, title, desc, color, delay }: any) {
   return (
-    <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-[40px] p-10 shadow-xl hover:shadow-2xl transition-all duration-700 hover:-translate-y-2 text-left flex flex-col items-start group">
-      <div className={`w-16 h-16 ${accent || 'bg-white/5'} group-hover:bg-[#06b6d4] rounded-2xl flex items-center justify-center mb-8 transition-all shadow-sm group-hover:shadow-[0_15px_35px_rgba(6,182,212,0.3)] group-hover:-rotate-6`}>
-        <Icon size={28} className="text-[#06b6d4] group-hover:text-white transition-all" />
-      </div>
-      <h3 className="text-white text-base font-black uppercase tracking-widest mb-4 italic leading-none">{title}</h3>
-      <p className="text-slate-400 text-sm leading-relaxed font-medium">{desc}</p>
+    <div className={`bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-md hover:border-green-500/30 transform hover:-translate-y-2 transition-all duration-500 ${delay}`}>
+      <Icon className={`w-10 h-10 ${color} mb-4`} />
+      <h4 className="font-black text-sm uppercase mb-2 italic tracking-widest text-slate-900">{title}</h4>
+      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{desc}</p>
     </div>
-  );
-}
-
-function PricingItem({ text, isDark }: { text: string, isDark?: boolean }) {
-  return (
-    <li className="flex items-center gap-3">
-      <div className={`w-5 h-5 rounded-full flex items-center justify-center ${isDark ? 'bg-[#020617]/20 text-[#020617]' : 'bg-[#06b6d4]/10 text-[#06b6d4]'}`}>
-        <ArrowRight size={10} />
-      </div>
-      <span className={`text-[11px] font-black uppercase tracking-widest ${isDark ? 'text-[#020617]' : 'text-slate-400'}`}>{text}</span>
-    </li>
   );
 }

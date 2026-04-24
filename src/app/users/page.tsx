@@ -65,7 +65,7 @@ export default function UsersManagement() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 bg-white rounded-[32px] shadow-arise border-none overflow-hidden">
-          <div className="p-10 bg-[#f7f9fb] flex justify-between items-center">
+          <div className="p-10 bg-slate-50 flex justify-between items-center">
             <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Identity_Vault_Registry</h2>
             <span className="text-[8px] font-black bg-white text-slate-400 px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm">Nodes: {users.length}</span>
           </div>
@@ -73,7 +73,7 @@ export default function UsersManagement() {
             {loading ? (
               <div className="p-20 text-center animate-pulse text-slate-300 font-black uppercase tracking-widest text-[10px]">Accessing_Identity_Vault...</div>
             ) : users.map(user => (
-              <div key={user.id} className="p-10 flex items-center justify-between hover:bg-[#f7f9fb] transition-all group cursor-pointer border-none">
+              <div key={user.id} className="p-10 flex items-center justify-between hover:bg-slate-50 transition-all group cursor-pointer border-none">
                 <div className="flex items-center gap-6">
                   <div className="w-16 h-16 bg-slate-900 text-white rounded-[24px] flex items-center justify-center font-black text-sm shadow-xl italic">
                     {user.email?.[0].toUpperCase() || '?'}
@@ -127,7 +127,7 @@ export default function UsersManagement() {
             </div>
           </div>
 
-          <div className="bg-[#f7f9fb] p-8 rounded-[32px] border-none shadow-sm relative overflow-hidden group">
+          <div className="bg-slate-50 p-8 rounded-[32px] border-none shadow-sm relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-20" />
             <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-loose italic">
               * Access authorizations are audited by the Arise v9.0 Neural Shield. All terminal operations are logged via operative telemetry.

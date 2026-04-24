@@ -1,123 +1,49 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
-import { 
-  ChevronDown, 
-  Search, 
+import React, { useState, useRef } from 'react';
+import {
+  ChevronDown,
+  Search,
   Check,
   Building2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import { useCompanyList, CompanyListItem } from '@/hooks/useCompanyList';
 
 interface CompanySelectorProps {
   className?: string;
   variant?: 'sidebar' | 'header';
 }
 
-interface CompanyListItem {
-  id: string;
-  name: string;
-  role: string;
-  plan_tier: string;
-}
-
 export default function CompanySelector({ className = '', variant = 'sidebar' }: CompanySelectorProps) {
-  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
-  const [filteredCompanies, setFilteredCompanies] = useState<CompanyListItem[]>([]);
   const { activeCompany, setActiveCompany } = useActiveCompany();
   const { user, loading: authLoading } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const isFetched = useRef(false);
 
-  useEffect(() => {
-    async function fetchCompanies() {
-      if (!user || isFetched.current) return;
-      
-      try {
-        console.time('PORTFOLIO_LOAD');
-        // Identificación robusta: Verificar si el usuario es Admin Global
-        const { data: adminCheck } = await supabase
-          .from('user_company_access')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .limit(1);
+  const {
+    companies,
+    filteredCompanies,
+    isLoading,
+    searchQuery,
+    setSearchQuery
+  } = useCompanyList();
 
-        const isMaster = adminCheck && adminCheck.length > 0;
-        console.log('Contexto de Acceso:', isMaster ? 'MASTER (Global Portfolio)' : 'STANDARD (Filtered View)');
-
-        if (isMaster) {
-          const { data: all } = await supabase
-            .from('vw_company_subscriptions')
-            .select('id, name, plan_tier')
-            .order('name', { ascending: true });
-
-          if (all) {
-            const list: CompanyListItem[] = [
-              { id: 'global', name: '🌍 VISTA GLOBAL (Consolidado)', role: 'admin', plan_tier: 'enterprise' },
-              ...all.map((c: { id: string; name: string; plan_tier: string }) => ({ id: c.id, name: c.name, role: 'admin', plan_tier: c.plan_tier }))
-            ];
-            setCompanies(list);
-            setFilteredCompanies(list);
-            isFetched.current = true;
-          }
-        } else {
-          const { data: access } = await supabase
-            .from('user_company_access')
-            .select('company_id, role, companies(name, plan_tier)')
-            .eq('user_id', user.id);
-
-          if (access) {
-            const list: CompanyListItem[] = access.map((a) => {
-              const companiesData = Array.isArray(a.companies) ? a.companies[0] : a.companies;
-              return {
-                id: a.company_id,
-                name: (companiesData as { name?: string; plan_tier?: string })?.name || 'Empresa',
-                role: a.role,
-                plan_tier: (companiesData as { name?: string; plan_tier?: string })?.plan_tier || 'free'
-              };
-            }).sort((a, b) => a.name.localeCompare(b.name));
-
-            setCompanies(list);
-            setFilteredCompanies(list);
-            isFetched.current = true;
-          }
-        }
-        console.timeEnd('PORTFOLIO_LOAD');
-      } catch (err) {
-        console.error('CRITICAL_SELECTOR_ERROR:', err);
-      }
+  // Auto-selección industrial v9.2
+  React.useEffect(() => {
+    if (companies.length > 0 && !activeCompany && !isLoading) {
+      const defaultCompany = companies[0];
+      setActiveCompany(defaultCompany);
     }
-
-    if (!authLoading && user) {
-      fetchCompanies();
-    }
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    const filtered = companies.filter(c => 
-      c.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredCompanies(filtered);
-  }, [searchQuery, companies]);
+  }, [companies, activeCompany, isLoading, setActiveCompany]);
 
   const handleCompanyChange = (company: CompanyListItem) => {
     setActiveCompany(company);
     localStorage.setItem('arise_active_company', company.id);
     setIsDropdownOpen(false);
-    window.location.reload();
+    // Invalidar caché en lugar de reload completo
+    window.dispatchEvent(new CustomEvent('arise:company-changed', { detail: { companyId: company.id } }));
   };
 
   if (variant === 'header') {
@@ -125,6 +51,8 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
       <div className={`relative ${className}`} ref={dropdownRef}>
         <button 
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          aria-label="Seleccionar contexto operativo"
+          aria-expanded={isDropdownOpen}
           className="flex items-center gap-2 bg-slate-100/50 hover:bg-slate-200/50 transition-all rounded-full py-2 px-4 shadow-sm"
         >
           <Building2 size={14} className="text-primary" />
@@ -141,9 +69,10 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
                <input 
                 autoFocus
                 type="text" 
-                placeholder="Filtrar..."
+                placeholder="FILTRAR_LOOP..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Buscar empresa"
                 className="w-full bg-slate-50 border-none rounded-xl py-2 pl-9 pr-4 text-[11px] font-bold text-slate-700 outline-none focus:ring-4 focus:ring-primary/5 transition-all"
                />
             </div>
@@ -181,6 +110,8 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4 px-2 tracking-[0.2em]">Contexto Operativo</label>
       <button 
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        aria-label="Seleccionar empresa activa"
+        aria-expanded={isDropdownOpen}
         className="w-full flex items-center justify-between gap-3 bg-white hover:bg-slate-50 transition-all rounded-2xl p-4 text-[11px] font-black text-slate-700 outline-none shadow-sm"
       >
         <span className="truncate pr-2">{activeCompany?.name || 'Cargando...'}</span>
@@ -194,9 +125,10 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
              <input 
               autoFocus
               type="text" 
-              placeholder="Filtrar por nombre..."
+              placeholder="FILTRAR_NODOS..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Filtrar lista de empresas"
               className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-9 pr-4 text-[11px] font-bold text-slate-700 outline-none focus:ring-4 focus:ring-primary/5 transition-all"
              />
           </div>

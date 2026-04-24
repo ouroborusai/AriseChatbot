@@ -230,25 +230,49 @@ export function debugParse(content: string): void {
 /**
  * PARSER PARA UI (Diamond v9.0 resilient)
  * Divide el mensaje en partes de texto y bloques de botones, manejando múltiples separadores ---
+ *
+ * Estrategia: El último --- separa el cuerpo del bloque de botones
+ * Esto permite que el texto de la IA contenga --- sin romper el parseo
  */
 export function parseUIMessageContent(content: string): ParsedMessageContent {
-  const segments = content.split('---').map(s => s.trim());
   const textParts: string[] = [];
   const buttonParts: string[][] = [];
 
-  segments.forEach((segment, index) => {
-    // Si contiene |, es un bloque de botones
-    if (segment.includes('|')) {
-      const buttons = segment.split('|').map(b => b.replace(/\[\[[^\[\]]+\]\]/g, '').trim()).filter(b => b.length > 0);
-      if (buttons.length > 0) {
-        buttonParts.push(buttons);
-      } else {
-        textParts.push(segment);
-      }
+  // Encontrar el último --- que marca el inicio de los botones
+  const lastSeparatorIndex = content.lastIndexOf('---');
+
+  if (lastSeparatorIndex === -1) {
+    // Sin separadores, todo es texto
+    return { textParts: [content.trim()], buttonParts: [] };
+  }
+
+  // Todo antes del último --- es texto (puede contener --- internos)
+  const bodyContent = content.substring(0, lastSeparatorIndex).trim();
+  textParts.push(bodyContent);
+
+  // Todo después del último --- son potenciales botones
+  const buttonsContent = content.substring(lastSeparatorIndex + 3).trim();
+
+  if (buttonsContent.includes('|')) {
+    // Múltiples botones separados por |
+    const buttons = buttonsContent
+      .split('|')
+      .map(b => b.replace(/\[\[[^\[\]]+\]\]/g, '').trim())
+      .filter(b => b.length > 0);
+
+    if (buttons.length > 0) {
+      buttonParts.push(buttons);
     } else {
-      textParts.push(segment);
+      // Si no hay botones válidos, el segmento se trata como texto
+      textParts.push(buttonsContent);
     }
-  });
+  } else if (buttonsContent.length > 0) {
+    // Un solo botón sin separador |
+    const cleanButton = buttonsContent.replace(/\[\[[^\[\]]+\]\]/g, '').trim();
+    if (cleanButton.length > 0) {
+      buttonParts.push([cleanButton]);
+    }
+  }
 
   return { textParts, buttonParts };
 }

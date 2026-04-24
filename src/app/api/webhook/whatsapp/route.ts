@@ -7,12 +7,17 @@ import { ACTION_PREFIXES } from '@/lib/neural-engine/constants';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const supabaseKey = (process.env.ARISE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)?.trim();
 
-const supabase = createClient(supabaseUrl!, supabaseKey!);
+if (!supabaseUrl || !supabaseKey) {
+  console.error('[WH_INIT] Missing Supabase credentials');
+  throw new Error('Missing Supabase credentials');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
 /**
- * INDUSTRIAL WHATSAPP NEURAL WEBHOOK v9.0 CORE
+ * INDUSTRIAL WHATSAPP NEURAL WEBHOOK v10.0 CORE - LOOP Intelligence
  * Arquitectura de Control de Flujo Estricto.
  */
 
@@ -88,12 +93,8 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (contactError) {
-      console.error(`[ID_RES_ERROR] Database error during contact lookup:`, contactError);
-      if (contactError.message?.includes('Invalid API key')) {
-        console.error(`[AUTH_CRITICAL] THE SERVICE_ROLE_KEY IS BEING REJECTED BY SUPABASE.`);
-      }
+      // Contact lookup error - continue to fallback resolution
     }
-    console.log(`[ID_RES] Contact lookup for ${sender}:`, contact);
 
     let companyId = contact?.company_id;
     let contactId = contact?.id;
@@ -101,17 +102,14 @@ export async function POST(req: Request) {
     // Si no hay contacto, resolver por el directorio interno o el Phone ID de la empresa
     if (!companyId) {
       const { data: staff } = await supabase.from('internal_directory').select('company_id').eq('phone', sender).maybeSingle();
-      console.log(`[ID_RES] Staff lookup:`, staff);
       if (staff) {
         companyId = staff.company_id;
       } else {
         const { data: comp } = await supabase.from('companies').select('id').contains('settings', { whatsapp: { phone_number_id: phoneNumberId } }).limit(1).maybeSingle();
-        console.log(`[ID_RES] Company by PhoneID lookup (${phoneNumberId}):`, comp);
         companyId = comp?.id;
       }
 
       if (!companyId) {
-        console.warn(`[ID_RES] FAILED to resolve company for ${sender}`);
         return NextResponse.json({ status: 'unauthorized_sender' }, { status: 401 });
       }
 
@@ -121,7 +119,6 @@ export async function POST(req: Request) {
     }
 
     if (!contactId || !companyId) {
-      console.warn(`[ID_RES] Final validation failed. contactId: ${contactId}, companyId: ${companyId}`);
       return NextResponse.json({ status: 'identity_resolution_failed' });
     }
 
@@ -148,10 +145,6 @@ export async function POST(req: Request) {
     let content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
     const isDocument = message.type === 'document';
 
-    // Si es una acción técnica, la anteponemos al contenido para que la IA/Lógica la reconozca
-    if (buttonId) {
-      console.log(`[ACTION_DETECTED] Button ID: ${buttonId}`);
-    }
 
     // Manejo de Documentos PDF
     if (isDocument) {
@@ -191,12 +184,11 @@ export async function POST(req: Request) {
           type: 'text',
           text: { body: feedbackMsg }
         })
-      }).catch(async (e) => {
-        console.error('[DOC_FEEDBACK_ERROR]', e.message);
+      }).catch(async () => {
         await supabase.from('audit_logs').insert({
           company_id: companyId,
           action: 'WHATSAPP_FEEDBACK_FAILURE',
-          new_data: { error: e.message, phone: sender }
+          new_data: { phone: sender }
         });
       });
 
@@ -205,7 +197,6 @@ export async function POST(req: Request) {
 
     // Ignorar otros tipos de multimedia no soportados
     if (!content && message.type !== 'text') {
-      console.log(`--- Ignorando mensaje no soportado (type: ${message.type}) ---`);
       return NextResponse.json({ status: 'unsupported_message_type' });
     }
 
@@ -243,7 +234,6 @@ export async function POST(req: Request) {
     const mappedAction = actionMap[buttonId?.toLowerCase() || ''] || actionMap[content?.toLowerCase().substring(0, 20) || ''];
 
     if (isTechnicalAction || content.toLowerCase().includes('informe de inventario') || mappedAction) {
-      console.log(`[ACTION_ROUTER] Processing action: ${buttonId || mappedAction || 'text_trigger'}`);
 
       const { token: whatsappToken, phoneId: waPhoneId } = await getWhatsAppConfig(companyId);
 
@@ -289,7 +279,6 @@ export async function POST(req: Request) {
 
         // Manejo para otras acciones mapeadas
         if (mappedAction && !buttonId?.includes('gen_report')) {
-          console.log(`[ACTION_ROUTER] Mapped action '${mappedAction}' from ${buttonId || content}. Passing to AI for execution.`);
           // La IA procesará esta acción en generateAndSendAIResponse
         }
       }
@@ -306,13 +295,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ status: 'success' });
 
   } catch (error: any) {
-    console.error('[WH_CRITICAL_ERROR]', error);
     await supabase.from('audit_logs').insert({
       action: 'WEBHOOK_POST_FAILURE',
       table_name: 'messages',
-      new_data: { error: error.message, stack: error.stack }
+      new_data: { error: error instanceof Error ? error.message : 'Unknown error' }
     });
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -326,17 +314,17 @@ export async function POST(req: Request) {
  */
 async function generateAndSendAIResponse(convId: string, companyId: string, to: string, content: string, profileName: string, phoneNumberId: string, currentMsgId?: string) {
   // 1. Recuperar Contexto Maestro
-  const { data: company } = await supabase.from('companies').select('settings, name').eq('id', companyId).single();
+  const { data: company, error: companyError } = await supabase.from('companies').select('settings, name').eq('id', companyId).single();
   const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', companyId).eq('is_active', true).limit(1).maybeSingle();
   const { data: history } = await supabase.from('messages').select('sender_type, content').eq('conversation_id', convId).order('created_at', { ascending: false }).limit(10);
 
   // Validación crítica: company debe existir
-  if (!company) {
-    console.error(`[GENERATE_RESPONSE] Company ${companyId} not found`);
+  if (companyError || !company) {
+    console.error(`[GENERATE_RESPONSE] Company ${companyId} not found:`, companyError?.message);
     return;
   }
 
-  const systemPrompt = p?.system_prompt || "Eres Arise Director AI. Responde breve y ejecutivo.";
+  const systemPrompt = p?.system_prompt || "Eres LOOP Director AI. Responde de forma ejecutiva y eficiente.";
   const { token: whatsappToken } = await getWhatsAppConfig(companyId);
 
   // 2. Formatear Historial (Filtrado por ID)

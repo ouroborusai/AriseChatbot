@@ -61,12 +61,12 @@ export function ChatNeuralSlideOver({
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-[#f7f9fb] hover:bg-rose-50 rounded-xl md:rounded-2xl transition-all text-slate-400 hover:text-rose-500">
+          <button onClick={onClose} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-slate-50 hover:bg-rose-50 rounded-xl md:rounded-2xl transition-all text-slate-400 hover:text-rose-500">
             <X className="w-4 h-4 md:w-5 md:h-5" />
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 md:space-y-10 bg-[#f7f9fb]/50 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 md:space-y-10 bg-slate-50/50 custom-scrollbar">
           {chatMessages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full opacity-10">
               <MessageSquare size={80} strokeWidth={1} className="mb-6" />
@@ -84,7 +84,7 @@ export function ChatNeuralSlideOver({
                   isClient 
                     ? 'bg-white text-slate-700 rounded-tl-none ring-1 ring-slate-100' 
                     : isBot
-                      ? 'bg-[#191c1e] text-white rounded-tr-none'
+                      ? 'bg-slate-900 text-white rounded-tr-none'
                       : 'bg-primary text-white rounded-tr-none shadow-lg shadow-primary/20'
                 }`}>
                   {(isBot || isAgent) && (
@@ -136,7 +136,7 @@ export function ChatNeuralSlideOver({
                className={`flex items-center gap-3 md:gap-4 px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] transition-all \${
                  selectedContact?.convStatus === 'waiting_human'
                   ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-200 rotate-0'
-                  : 'bg-[#f2f4f6] text-slate-400 hover:bg-slate-200'
+                  : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                }`}
              >
                <Power className="w-4 h-4 md:w-5 md:h-5" />
@@ -152,12 +152,12 @@ export function ChatNeuralSlideOver({
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder={selectedContact?.convStatus === 'waiting_human' ? "Escribe como Agente Humano..." : "La IA responderá automáticamente..."}
-              className="w-full bg-[#f7f9fb] border-none rounded-[24px] md:rounded-[32px] p-6 md:p-8 pr-20 md:pr-24 text-[12px] md:text-[13px] font-bold text-slate-800 outline-none focus:bg-white focus:shadow-arise transition-all resize-none h-32 md:h-40"
+              className="w-full bg-slate-50 border-none rounded-[24px] md:rounded-[32px] p-6 md:p-8 pr-20 md:pr-24 text-[12px] md:text-[13px] font-bold text-slate-800 outline-none focus:bg-white transition-all resize-none h-32 md:h-40"
             />
             <button
               onClick={onSendMessage}
               disabled={!newMessage.trim() || isSending}
-              className="absolute right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-2xl shadow-primary/40 disabled:opacity-20 disabled:grayscale"
+              className="absolute right-4 bottom-4 md:right-6 md:bottom-6 w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-blue-600 to-blue-800 text-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-2xl shadow-blue-500/40 disabled:opacity-20 disabled:grayscale"
             >
               {isSending ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

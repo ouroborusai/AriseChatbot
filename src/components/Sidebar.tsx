@@ -1,25 +1,20 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { 
-  LayoutDashboard, 
+import {
+  LayoutDashboard,
   MessageSquare,
-  Users, 
-  Package, 
-  BarChart3, 
-  Code2, 
+  Users,
+  Package,
+  BarChart3,
+  Code2,
   Settings,
-  ChevronDown,
   Zap,
-  X,
-  Menu,
   LogOut,
   User,
-  Search,
-  Check,
   Lock
 } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
@@ -35,28 +30,20 @@ const menuItems = [
   { name: 'Inventario', icon: Package, path: '/inventory', premium: true },
   { name: 'Analítica', icon: BarChart3, path: '/billing', premium: true },
   { name: 'Empresa', icon: Settings, path: '/company', premium: true },
-  { name: 'OUROBOT Studio', icon: Code2, path: '/studio', premium: true },
+  { name: 'LOOP Studio', icon: Code2, path: '/studio', premium: true },
   { name: 'Configuración', icon: Settings, path: '/users', premium: false },
 ];
 
 export default function Sidebar() {
   const { activeCompany, setActiveCompany } = useActiveCompany();
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [filteredCompanies, setFilteredCompanies] = useState<any[]>([]);
   const { user: userData, loading: authLoading } = useAuth();
   const [userRole, setUserRole] = useState<string>('viewer');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
+
   const pathname = usePathname();
   const router = useRouter();
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Removido sync asíncrono redundante - consumiendo AuthContext
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.refresh();
     window.location.href = '/auth/login';
   };
 
@@ -80,21 +67,19 @@ export default function Sidebar() {
     }
   };
 
-  const shouldShowSelector = true; // Selector siempre visible en v6.23
-
   return (
     <aside className="fixed left-0 top-0 h-full w-72 bg-white border-r border-slate-50 flex flex-col p-6 md:p-8 z-50 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
       <div className="flex items-center gap-4 mb-10 md:mb-12 px-2">
           <div className="w-12 h-12 relative rotate-3 transform hover:rotate-0 transition-all duration-500">
-             <img 
-               src="/ourobot-logo.png" 
-               alt="OUROBOT Logo" 
-               className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)] scale-125"
-             />
+             <div className="w-full h-full bg-green-500 rounded-2xl flex items-center justify-center shadow-lg shadow-green-100">
+                <svg viewBox="0 0 100 100" className="w-8 h-8 fill-none stroke-white" strokeWidth="10">
+                  <path d="M35 50 Q35 40 45 40 Q55 40 50 50 Q45 60 55 60 Q65 60 65 50 Q65 40 55 40 Q45 40 50 50 Q55 60 45 60 Q35 60 35 50" stroke="white" strokeWidth="8" strokeLinecap="round" />
+                </svg>
+             </div>
           </div>
           <div>
-            <span className="font-black text-slate-800 tracking-tighter text-2xl leading-none block">OUROBOT</span>
-            <span className="text-primary text-[10px] font-black uppercase tracking-[0.3em] block mt-1">Intelligence</span>
+            <span className="font-black text-slate-800 tracking-tighter text-2xl leading-none block">LOOP</span>
+            <span className="text-green-600 text-[10px] font-black uppercase tracking-[0.3em] block mt-1">Intelligence</span>
           </div>
         </div>
 
@@ -137,44 +122,44 @@ export default function Sidebar() {
             );
           })}
           
-          {/* BANNER UPGRADE PRO */}
-          {activeCompany?.plan_tier === 'free' && (
-            <div className="mt-8 p-6 bg-gradient-to-br from-primary to-[#003da1] rounded-3xl shadow-xl shadow-primary/20 relative overflow-hidden group">
-               <div className="relative z-10">
-                 <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Plan Pro OUROBOT</p>
-                 <p className="text-white text-xs font-black leading-tight mb-4">Desbloquea Dashboard, Mensajes y más.</p>
-                 <button 
-                   onClick={handleUpgrade}
-                   className="w-full py-2.5 bg-white text-primary text-[10px] font-black uppercase tracking-wider rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg"
-                 >
-                    Actualizar Ahora
-                 </button>
-               </div>
-               <Zap className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 -rotate-12 group-hover:rotate-0 transition-transform duration-700" />
-            </div>
-          )}
-        </nav>
-
-        <div className="mt-auto pt-8 border-t border-slate-50">
-          <div className="flex items-center gap-4 px-2 mb-6">
-            <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm relative shrink-0">
-               <User size={20} />
-               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-4 border-white" />
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-[11px] font-black text-slate-800 leading-none truncate">{userData?.email?.split('@')[0] || 'Operador OUROBOT'}</p>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate mt-1">
-                {userRole === 'admin' ? 'Administrador Global' : userRole.toUpperCase()}
-              </p>
-            </div>
+        {/* BANNER UPGRADE PRO */}
+        {activeCompany?.plan_tier === 'free' && (
+          <div className="mt-8 p-6 bg-gradient-to-br from-green-600 to-green-900 rounded-3xl shadow-xl shadow-green-100 relative overflow-hidden group">
+             <div className="relative z-10">
+               <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Plan Pro LOOP</p>
+               <p className="text-white text-xs font-black leading-tight mb-4">Desbloquea Dashboard, Mensajes y más.</p>
+               <button 
+                 onClick={handleUpgrade}
+                 className="w-full py-2.5 bg-white text-green-700 text-[10px] font-black uppercase tracking-wider rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+               >
+                  Actualizar Ahora
+               </button>
+             </div>
+             <Zap className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 -rotate-12 group-hover:rotate-0 transition-transform duration-700" />
           </div>
-          <button onClick={handleSignOut}
-            className="w-full flex items-center justify-center gap-2 py-3.5 bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-500 rounded-[18px] text-[10px] font-black uppercase tracking-[0.2em] transition-all group shadow-sm hover:shadow-red-100/50"
-          >
-            <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
-            <span>Cerrar Sesión</span>
-          </button>
+        )}
+      </nav>
+
+      <div className="mt-auto pt-8 border-t border-slate-50">
+        <div className="flex items-center gap-4 px-2 mb-6">
+          <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm relative shrink-0">
+             <User size={20} />
+             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-4 border-white" />
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-[11px] font-black text-slate-800 leading-none truncate">{userData?.email?.split('@')[0] || 'Operador LOOP'}</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate mt-1">
+              {userRole === 'admin' ? 'Administrador Global' : userRole.toUpperCase()}
+            </p>
+          </div>
         </div>
+        <button onClick={handleSignOut}
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-500 rounded-[18px] text-[10px] font-black uppercase tracking-[0.2em] transition-all group shadow-sm hover:shadow-red-100/50"
+        >
+          <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
       </aside>
   );
 }

@@ -99,6 +99,11 @@ export interface NeuralAction {
   sku?: string;
   name?: string;
   to?: string;
+  result?: Record<string, unknown>;
+  metadata?: {
+    timestamp: string;
+    executedBy: string;
+  };
 }
 
 // ════════════════════════════════════════════════════════════════════════════

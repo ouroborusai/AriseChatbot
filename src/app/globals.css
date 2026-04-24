@@ -1,85 +1,98 @@
 @import "tailwindcss";
 
 @theme {
-  /* LOOP Diamond Elite Architecture v10.0 (Industrial Edition) */
-  --color-primary: #06b6d4;         /* LOOP Cyan Core */
-  --color-accent: #0891b2;          /* Electric Cyan Spark */
-  --color-bg-base: #000000;         /* Deep Space Canvas */
-  --color-neural-dark: #000000;     /* Absolute Black */
-  --color-neural-low: #083344;      /* Deep Cyan Low */
+  /* LOOP Diamond Architecture v10.0 - LIGHT MODE */
+  --color-primary: #16a34a;         /* LOOP Green Core */
+  --color-primary-rgb: 22, 163, 74; /* RGB for transparency usage */
+  --color-accent: #22c55e;          /* Vibrant Emerald Spark */
+  --color-bg-base: #ffffff;         /* Pure White Canvas */
+  --color-neural-dark: #0f172a;     /* Slate Dark Text */
+  --color-neural-low: #f8fafc;      /* Slate Low Background */
   
   --font-sans: "Inter", "system-ui", sans-serif;
   
   --radius-xl: 40px;
   --radius-lg: 24px;
   
-  /* Shadows: Ultra-diffuse for the elevation effect */
-  --shadow-loop: 0 4px 24px -6px rgba(6, 182, 212, 0.2), 0 1px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-loop-hover: 0 30px 80px -20px rgba(6, 182, 212, 0.3);
+  /* Shadows: Soft and deep for light mode elevation */
+  --shadow-loop: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 1px 4px -2px rgba(0, 0, 0, 0.02);
+  --shadow-loop-hover: 0 30px 60px -15px rgba(22, 163, 74, 0.15);
   
-  /* Glassmorphism Tokens v9.0 */
+  /* Glassmorphism Tokens v9.0 - Optimized for White */
   --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(226, 232, 240, 0.5);
   --glass-blur: blur(20px);
   
-  /* Micro-Glow Effects */
-  --glow-primary: 0 0 25px rgba(19, 91, 236, 0.3);
-  --glow-emerald: 0 0 25px rgba(78, 222, 163, 0.3);
+  /* Micro-Glow Effects - Soft Green */
+  --glow-primary: 0 0 25px rgba(22, 163, 74, 0.1);
+  --glow-emerald: 0 0 25px rgba(34, 197, 94, 0.2);
 }
 
 @layer base {
   body {
-    background: radial-gradient(circle at top right, #000000, #083344);
-    color: #ffffff;
+    background: #ffffff;
+    color: #0f172a;
     font-family: var(--font-sans);
-    letter-spacing: -0.015em;
+    letter-spacing: -0.01em;
     min-height: 100vh;
   }
 }
 
 @layer components {
-  /* LOOP ELITE CONTAINERS (No-Line Protocol) */
+  /* OUROBOT ELITE CONTAINERS */
   .loop-card {
-    @apply bg-white/[0.02] rounded-[40px] shadow-loop transition-all duration-500 border border-white/5;
-    backdrop-filter: var(--glass-blur);
+    @apply bg-white rounded-[40px] shadow-loop transition-all duration-500 border border-slate-100;
   }
   
   .loop-card:hover {
-    @apply shadow-loop-hover -translate-y-2 bg-white/[0.05];
+    @apply shadow-loop-hover -translate-y-2 border-green-500/10;
   }
 
   /* BUTTONS: THE NEURAL CORE LOOK */
   .btn-loop {
-    @apply bg-primary text-[#020617] px-8 py-3.5 rounded-[18px] font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-accent hover:scale-[1.03] active:scale-95 shadow-lg shadow-primary/20;
+    @apply bg-slate-900 text-white px-8 py-3.5 rounded-[18px] font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-primary hover:scale-[1.03] active:scale-95 shadow-lg shadow-slate-200;
   }
 
   .btn-loop-outline {
-    @apply border-2 border-white/10 text-primary px-8 py-3.5 rounded-[18px] font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-primary/5 hover:border-primary/20;
+    @apply border-2 border-slate-100 text-slate-400 px-8 py-3.5 rounded-[18px] font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-slate-50 hover:text-slate-900;
   }
 
   /* INPUTS */
   .loop-input {
-    @apply bg-white/5 border-none rounded-2xl px-6 py-4 text-xs font-bold text-white outline-none ring-primary/5 focus:ring-4 focus:bg-white/10 transition-all placeholder:text-white/20;
+    @apply bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-xs font-bold text-slate-900 outline-none ring-primary/5 focus:ring-4 focus:bg-white focus:border-primary/30 transition-all placeholder:text-slate-400;
   }
 
   /* STATUS BADGES WITH ELITE GLOW */
   .badge-loop-success {
-    @apply bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-[var(--glow-emerald)];
+    @apply bg-green-50 text-green-600 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-green-100;
   }
 
   .badge-loop-danger {
-    @apply bg-red-500/10 text-red-400 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-red-500/20;
+    @apply bg-red-50 text-red-600 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-100;
   }
 
   /* SKELETON SCREENS (Neural Shimmer) */
+  .loop-input:focus {
+    @apply border-green-500/50 shadow-[0_0_20px_rgba(22,163,74,0.15)] bg-white;
+  }
+
+  @keyframes bounce-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+
+  .animate-bounce-slow {
+    animation: bounce-slow 6s ease-in-out infinite;
+  }
+
   .loop-skeleton {
-    @apply bg-white/5 rounded-xl relative overflow-hidden;
+    @apply bg-slate-50 rounded-xl relative overflow-hidden;
   }
 
   .loop-skeleton::after {
     content: "";
     @apply absolute inset-0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
     animation: shimmer 1.5s infinite;
   }
 }
@@ -89,31 +102,10 @@
   100% { transform: translateX(100%); }
 }
 
-@keyframes shrink {
-  from { width: 100%; }
-  to { width: 0%; }
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
 /* Custom Scrollbar for FinTech look */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-primary/20 rounded-full hover:bg-primary/40 transition-all;
+  @apply bg-slate-200 rounded-full hover:bg-green-200 transition-all;
 }

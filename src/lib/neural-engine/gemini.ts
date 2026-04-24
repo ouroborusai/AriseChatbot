@@ -40,7 +40,14 @@ export async function generateGeminiResponse(
       if (vaultKeys) keys = vaultKeys.map((k: any) => k.api_key);
     }
 
-    const apiKey = keys[Math.floor(Math.random() * keys.length)] || process.env.GEMINI_API_KEY || "";
+    // Selección criptográficamente segura de API Key
+    let apiKey = process.env.GEMINI_API_KEY || "";
+    if (keys.length > 0) {
+      const randomBuffer = new Uint32Array(1);
+      crypto.getRandomValues(randomBuffer);
+      const secureIndex = randomBuffer[0] % keys.length;
+      apiKey = keys[secureIndex];
+    }
 
     if (!apiKey) {
       return { text: "", error: "No Gemini API Key available" };
@@ -60,19 +67,17 @@ export async function generateGeminiResponse(
     const data = await res.json();
 
     if (!res.ok) {
-      console.error('[GEMINI_LIB_ERROR]', data);
       await supabase.from('audit_logs').insert({
         company_id: companyId,
         action: 'GEMINI_API_FAILURE',
-        new_data: { error: data, model: GEMINI_MODEL }
+        new_data: { error: data }
       });
-      return { text: "", error: data };
+      return { text: '', error: data };
     }
 
     const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || SYSTEM_STRINGS.FALLBACK_RESPONSE;
     return { text: aiText };
   } catch (error: any) {
-    console.error('[GEMINI_LIB_CRITICAL]', error);
-    return { text: "", error: error.message };
+    return { text: '', error: error.message };
   }
 }

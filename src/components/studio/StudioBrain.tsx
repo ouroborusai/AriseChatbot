@@ -20,7 +20,7 @@ export function StudioBrain({ systemPrompt, setSystemPrompt, saving, onSave, tel
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 items-start animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="lg:col-span-3 space-y-10">
         <section className="loop-card p-0 overflow-hidden bg-white border-none shadow-arise">
-          <div className="bg-[#f2f4f6] px-6 md:px-8 py-4 md:py-6 flex justify-between items-center">
+          <div className="bg-slate-100 px-6 md:px-8 py-4 md:py-6 flex justify-between items-center">
             <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
                 <Terminal size={12} className="text-primary fill-primary/20" />
                 Master Instruction (Cognitive DNA)
@@ -34,11 +34,11 @@ export function StudioBrain({ systemPrompt, setSystemPrompt, saving, onSave, tel
               placeholder="IDENTITY_PROTOCOL_v9.0..."
             />
           </div>
-          <div className="px-6 md:px-10 py-6 md:py-8 bg-[#f2f4f6] flex justify-end">
+          <div className="px-6 md:px-10 py-6 md:py-8 bg-slate-100 flex justify-end">
             <button 
               onClick={onSave}
               disabled={saving}
-              className="bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white px-6 md:px-10 py-3 md:py-4 rounded-xl text-[9px] font-black uppercase tracking-[0.3em] flex items-center gap-4 shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50"
+              className="bg-gradient-to-br from-blue-600 to-blue-800 text-white px-6 md:px-10 py-3 md:py-4 rounded-xl text-[9px] font-black uppercase tracking-[0.3em] flex items-center gap-4 shadow-xl shadow-blue-500/20 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50"
             >
               {saving ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
               Synchronize Neural DNA
@@ -71,7 +71,7 @@ export function StudioBrain({ systemPrompt, setSystemPrompt, saving, onSave, tel
                   <p className="text-3xl font-black text-slate-900 tracking-tighter">{(telemetry.tokens / 1000).toFixed(1)}K</p>
                 </div>
             </div>
-            <div className="w-full h-1.5 bg-[#f2f4f6] rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <div className="w-[85%] h-full bg-gradient-to-r from-primary to-accent animate-pulse shadow-[0_0_10px_rgba(0,69,189,0.3)]" />
             </div>
           </div>

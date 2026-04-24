@@ -10,8 +10,8 @@ import LayoutWrapper from "@/components/LayoutWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "OUROBOT | Tu Empresa en un Mensaje",
-  description: "Automatización Neural Inteligente para tu Negocio vía WhatsApp",
+  title: 'LOOP | Inteligencia de Negocios en tu WhatsApp',
+  description: 'Sincroniza tus documentos con el cerebro de LOOP y accede a toda tu gestión empresarial desde WhatsApp.',
   manifest: "/manifest.json",
   icons: {
     icon: '/ourobot-logo.png',
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#22c55e",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -38,8 +38,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-[#000000] antialiased`}>
+    <html lang="es">
+      <body className={`${inter.className} min-h-screen bg-white antialiased`}>
         <ToastProvider>
           <AuthProvider>
             <ActiveCompanyProvider>

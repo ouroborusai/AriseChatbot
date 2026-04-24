@@ -24,18 +24,18 @@ export function MetricSmall({
 }: MetricSmallProps) {
   if (loading) return <div className={`loop-card p-6 md:p-10 bg-white border-none shadow-arise animate-pulse h-32 md:h-40 ${className}`} />;
   
-  const bgClass = active 
-    ? 'bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white shadow-[0_20px_40px_-5px_rgba(19,91,236,0.3)]' 
-    : warning 
+  const bgClass = active
+    ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-[0_20px_40px_-5px_rgba(37,99,235,0.3)]'
+    : warning
       ? 'bg-rose-500/10 text-rose-600 border border-rose-100 shadow-xl shadow-rose-100'
       : 'bg-white text-slate-900 hover:bg-slate-50/50 border-none shadow-arise';
 
   const titleClass = active ? 'text-white/70' : 'text-slate-400';
-  const iconBgClass = active 
-    ? 'bg-white/20 text-white' 
-    : warning 
-      ? 'bg-rose-500/10 text-rose-600' 
-      : 'bg-[#f7f9fb] text-slate-300 group-hover:text-primary group-hover:bg-primary/5';
+  const iconBgClass = active
+    ? 'bg-white/20 text-white'
+    : warning
+      ? 'bg-rose-500/10 text-rose-600'
+      : 'bg-slate-50 text-slate-300 group-hover:text-primary group-hover:bg-primary/5';
 
   return (
     <div className={`loop-card p-6 md:p-8 transition-all duration-500 group relative overflow-hidden ${bgClass} ${className}`}>

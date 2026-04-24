@@ -24,17 +24,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Single point of entry for Auth Session
     async function initAuth() {
-      console.log('INIT AUTH: Centralizing session signal...');
       try {
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         if (error) throw error;
-        
+
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
-      } catch (err) {
-        console.error('AUTH_SYNC_ERROR:', err);
+      } catch {
+        // Auth error manejado silenciosamente
       } finally {
         setLoading(false);
       }

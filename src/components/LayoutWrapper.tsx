@@ -34,7 +34,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   // Prevent sidebar flash while checking session
   if (hasSession === null && !isAuthPage) {
-    return <div className="min-h-screen bg-[#f7f9fb]" />;
+    return <div className="min-h-screen bg-slate-50" />;
   }
 
   return (

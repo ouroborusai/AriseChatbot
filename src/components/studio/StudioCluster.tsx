@@ -39,7 +39,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
            <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter leading-none">{apiKeys.length}/{apiKeys.length}</h2>
            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">Active Neural Nodes</p>
         </div>
-        <div className="loop-card p-6 md:p-8 bg-[#f2f4f6] border-none shadow-none">
+        <div className="loop-card p-6 md:p-8 bg-slate-100 border-none shadow-none">
            <div className="flex items-center justify-between mb-4 md:mb-6">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">WhatsApp Bridge</p>
               <Zap size={14} className="text-primary fill-primary/20" />
@@ -73,7 +73,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
               return (
                 <div key={k.id} className="loop-card p-5 bg-white border-none shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
                   <div className="flex items-center gap-6">
-                    <div className="w-10 h-10 bg-[#f7f9fb] rounded-xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
+                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
                       <Cpu size={14} />
                     </div>
                     <div>

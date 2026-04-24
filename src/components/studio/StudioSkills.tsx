@@ -18,15 +18,15 @@ export function StudioSkills({ templates }: StudioSkillsProps) {
         {templates.map(t => (
             <div key={t.id} className="loop-card p-8 bg-white border-none shadow-arise relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer rounded-[32px]">
                <div className="flex items-center justify-between mb-8">
-                  <div className="w-12 h-12 bg-[#f7f9fb] rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
+                  <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-primary transition-all">
                     <FileCode size={20} />
                   </div>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] bg-[#f2f4f6] px-3 py-1.5 rounded-lg">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1.5 rounded-lg">
                     {t.category}
                   </span>
                 </div>
                 <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.1em] leading-tight mb-3 group-hover:text-primary transition-colors">{t.name}</p>
-                <div className="w-full h-1 bg-[#f2f4f6] mt-4 rounded-full overflow-hidden">
+                <div className="w-full h-1 bg-slate-100 mt-4 rounded-full overflow-hidden">
                   <div className="w-1/3 h-full bg-primary/20" />
                 </div>
             </div>

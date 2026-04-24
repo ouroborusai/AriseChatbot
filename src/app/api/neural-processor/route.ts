@@ -78,7 +78,6 @@ export async function POST(req: Request) {
       }
 
       lastError = error;
-      console.warn(`[NEURAL_PROCESSOR] Attempt ${attempt}/3: Message ${messageId} not found yet...`);
 
       // Backoff exponencial: 1s → 2s → 4s
       const delay = Math.pow(2, attempt - 1) * 1000;
@@ -86,10 +85,6 @@ export async function POST(req: Request) {
     }
 
     if (!message) {
-      console.error(
-        `[NEURAL_PROCESSOR] Failed to find message ${messageId} after 3 attempts. Error:`,
-        lastError
-      );
       return NextResponse.json(
         { error: 'Message not found after retries' },
         { status: 404 }
@@ -128,26 +123,31 @@ export async function POST(req: Request) {
     // 3. Ejecutar cada bloque detectado
     for (const block of actionBlocks) {
       try {
-        // Limpieza robusta de JSON
-        let cleanJson = block
-          .replace(/^\[\[/, '')     // Remover apertura [[
-          .replace(/\]\]$/, '')     // Remover cierre ]]
-          .trim();
+        // Limpieza robusta de JSON v9.1
+        // Extraer contenido entre [[ y ]] preservando estructura JSON interna
+        const match = block.match(/^\[\[([\s\S]*?)\]\]$/);
+        if (!match) {
+          throw new Error('Invalid action block format');
+        }
 
-        // Normalizar escapes y caracteres de control
-        cleanJson = cleanJson
-          .replace(/\\"/g, '"')     // Unescape quotes
-          .replace(/\\n/g, ' ')     // Newlines → espacios
-          .replace(/\\r/g, '')      // Carriage returns → eliminar
+        let cleanJson = match[1]
+          .trim()
+          // Normalizar caracteres de control problemáticos
+          .replace(/\r\n/g, ' ')    // CRLF → espacio
+          .replace(/\r/g, '')       // CR → eliminar
+          .replace(/\n/g, ' ')      // LF → espacio
           .replace(/\s+/g, ' ')     // Múltiples espacios → uno solo
           .trim();
 
-        console.log(`[NEURAL_PROCESSOR] Clean JSON: ${cleanJson}`);
-
-        const actionData = JSON.parse(cleanJson);
+        // Parse con fallback para strings escapados
+        let actionData: any;
+        try {
+          actionData = JSON.parse(cleanJson);
+        } catch {
+          const escapedFix = cleanJson.replace(/\\'/g, "'").replace(/`/g, "'");
+          actionData = JSON.parse(escapedFix);
+        }
         const actionType = actionData.action || '';
-
-        console.log(`[NEURAL_PROCESSOR] Processing action: ${actionType}`);
 
         let actionResults: NeuralAction[] = [];
 
@@ -159,23 +159,15 @@ export async function POST(req: Request) {
         } else if (actionType === 'pdf_generate') {
           actionResults = await handlePdfAction(supabase, actionData, companyId, messageId);
         } else {
-          console.warn(`[NEURAL_PROCESSOR] Unsupported action type: ${actionType}`);
           actionResults = [{ action: 'unknown', status: 'failed', error: `Unsupported action type: ${actionType}` }];
         }
 
         results.push(...actionResults);
-      } catch (parseError) {
-        const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
-        console.error(
-          `[NEURAL_PROCESSOR] JSON Parse Error for block: ${block}`
-        );
-        console.error(
-          `[NEURAL_PROCESSOR] Error details: ${errorMessage}`
-        );
+      } catch {
         results.push({
           action: 'unknown',
           status: 'failed',
-          error: `JSON parse failed: ${errorMessage}`,
+          error: 'JSON parse failed',
         });
       }
     }
@@ -186,9 +178,7 @@ export async function POST(req: Request) {
     };
 
     return NextResponse.json(response);
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[NEURAL_PROCESSOR] Critical Error:', error);
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

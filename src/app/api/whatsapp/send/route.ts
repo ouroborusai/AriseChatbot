@@ -9,7 +9,7 @@ import {
 } from '@/lib/whatsapp-parser';
 
 /**
- * ARISE WHATSAPP SEND API v9.0
+ * LOOP WHATSAPP SEND API v10.0
  * Envía mensajes interactivos con tipos TypeScript estrictos
  */
 export async function POST(req: Request) {
@@ -38,7 +38,6 @@ export async function POST(req: Request) {
       : (contact?.companies as any);
 
     if (contactError || !company?.settings?.whatsapp) {
-      console.error('[WhatsApp Send] Contacto o configuración no encontrada');
       return NextResponse.json(
         { error: 'Configuración de WhatsApp no encontrada' },
         { status: 404 }
@@ -61,14 +60,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Validar contenido antes de enviar
+    // Validar contenido antes de enviar
     const validation = validateMessage(content);
-    if (!validation.valid) {
-      console.warn('[WhatsApp Send] Validación fallida:', validation.errors);
-    }
-
-    // 4. Debug parse (solo en desarrollo)
-    if (process.env.NODE_ENV === 'development') {
+    if (!validation.valid && process.env.NODE_ENV === 'development') {
       debugParse(content);
     }
 
@@ -91,7 +85,6 @@ export async function POST(req: Request) {
     const result: WhatsAppApiResponse = await response.json();
 
     if (result.error) {
-      console.error('[WhatsApp Send] Error de API:', result.error);
       throw new Error(result.error.message);
     }
 
@@ -117,7 +110,6 @@ export async function POST(req: Request) {
     });
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-    console.error('[WhatsApp Send] Error:', err);
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

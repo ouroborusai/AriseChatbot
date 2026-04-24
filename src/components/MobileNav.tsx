@@ -27,20 +27,20 @@ export default function MobileNav() {
   return (
     <>
       {/* MOBILE HEADER (Neural Context) */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/40 backdrop-blur-xl px-4 py-3 flex justify-between items-center border-b border-white/5 shadow-sm">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/60 backdrop-blur-xl px-4 py-3 flex justify-between items-center border-b border-slate-100 shadow-sm">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 relative rotate-3 transform hover:rotate-0 transition-transform">
-             <img 
-               src="/ourobot-logo.png" 
-               alt="OUROBOT Logo" 
-               className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.2)]"
-             />
+             <div className="w-full h-full bg-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-100">
+                <svg viewBox="0 0 100 100" className="w-6 h-6 fill-none stroke-white" strokeWidth="10">
+                  <path d="M35 50 Q35 40 45 40 Q55 40 50 50 Q45 60 55 60 Q65 60 65 50 Q65 40 55 40 Q45 40 50 50 Q55 60 45 60 Q35 60 35 50" stroke="white" strokeWidth="8" strokeLinecap="round" />
+                </svg>
+             </div>
           </div>
-          <span className="font-black text-slate-900 tracking-tighter text-base uppercase">OUROBOT</span>
+          <span className="font-black text-slate-900 tracking-tighter text-base uppercase">LOOP</span>
         </div>
         <div className="flex items-center gap-2">
            <CompanySelector variant="header" className="scale-90 origin-right" />
-           <Link href="/users" className="w-9 h-9 bg-white/50 rounded-xl flex items-center justify-center text-slate-400 border border-white/20 shadow-sm">
+           <Link href="/users" className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 border border-slate-100 shadow-sm">
              <Settings size={18} />
            </Link>
         </div>
@@ -48,7 +48,7 @@ export default function MobileNav() {
 
       {/* BOTTOM FLOATING NAV BAR */}
       <nav className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm">
-        <div className="bg-slate-900/90 backdrop-blur-xl rounded-[28px] p-2 flex items-center justify-around shadow-[0_20px_50px_rgba(0,0,0,0.3)] ring-1 ring-white/10">
+        <div className="bg-slate-900/95 backdrop-blur-xl rounded-[28px] p-2 flex items-center justify-around shadow-2xl shadow-slate-200 ring-1 ring-white/10">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -56,7 +56,7 @@ export default function MobileNav() {
                 key={item.href} 
                 href={item.href}
                 className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl transition-all duration-300 ${
-                  isActive ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+                  isActive ? 'text-green-400' : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
                 <div className={`${isActive ? 'scale-110' : 'scale-100'} transition-transform`}>
@@ -66,7 +66,7 @@ export default function MobileNav() {
                   {item.label}
                 </span>
                 {isActive && (
-                  <div className="w-1 h-1 bg-primary rounded-full absolute bottom-2" />
+                  <div className="w-1.5 h-1.5 bg-green-400 rounded-full absolute bottom-1 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
                 )}
               </Link>
             );

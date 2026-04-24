@@ -50,9 +50,6 @@ export default function MessagesPage() {
     if (!activeCompany) return;
     if (!silent) setLoading(true);
 
-    const startTime = performance.now();
-    console.log(`[Telemetry] Iniciando carga de conversaciones para Nodo: ${activeCompany.name}`);
-
     try {
       let query = supabase
         .from('conversations')
@@ -62,8 +59,6 @@ export default function MessagesPage() {
       // Filtro Multi-tenant Industrial (Bypass para SuperAdmin)
       if (activeCompany.id !== 'global') {
         query = query.eq('company_id', activeCompany.id);
-      } else {
-        console.log('[SuperAdmin] Modo Global Detectado: Aplicando percepción omnicanal.');
       }
 
       const { data, error } = await query;
@@ -89,11 +84,9 @@ export default function MessagesPage() {
         });
 
         setConversations(sorted);
-        const duration = (performance.now() - startTime).toFixed(2);
-        console.log(`[Telemetry] Carga finalizada en ${duration}ms. Nodos: ${sorted.length}`);
       }
-    } catch (err) {
-      console.error('[CRITICAL] Error en fetchConversations:', err);
+    } catch {
+      // Error manejado silenciosamente
     } finally {
       if (!silent) setLoading(false);
     }
@@ -154,7 +147,9 @@ export default function MessagesPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messageId: payload.new.id, companyId: selectedConv.company_id }),
-          }).catch(e => console.error('[Neural] Processor Trigger Failed:', e));
+          }).catch(() => {
+            // Neural processor trigger failure - silent fail
+          });
         }
 
         setMessages(prev => {
@@ -183,14 +178,25 @@ export default function MessagesPage() {
 
   const selectConversation = async (conv: Conversation) => {
     const newStatus = conv.status === 'new' ? 'open' : conv.status;
+
+    // Actualizar estado primero para UX responsiva
     setSelectedConv({ ...conv, status: newStatus });
+
+    // Fetchear mensajes en paralelo con actualización de estado
     await fetchMessages(conv.id);
 
+    // Solo actualizar DB si el status era 'new'
     if (conv.status === 'new') {
-      await supabase
+      const { error } = await supabase
         .from('conversations')
         .update({ status: 'open' })
         .eq('id', conv.id);
+
+      if (error) {
+        console.error('[selectConversation] Failed to update status:', error);
+        // Revertir estado local si falló la actualización
+        setSelectedConv({ ...conv, status: conv.status });
+      }
       fetchConversations(true);
     }
   };
@@ -225,13 +231,13 @@ export default function MessagesPage() {
         }),
       });
       fetchConversations(true);
-    } catch (error) {
-      console.error('Error sending message:', error);
+    } catch {
+      // Message send failure - silent fail
     }
   };
 
   return (
-    <div className="flex h-screen bg-[#FDFCFB] text-[#1A1A1A] font-sans selection:bg-[#EAE1DF]">
+    <div className="flex h-screen bg-white text-[#1A1A1A] font-sans selection:bg-green-100">
       <ConversationList
         conversations={conversations}
         selectedConv={selectedConv}
@@ -242,12 +248,12 @@ export default function MessagesPage() {
         activeCompanyId={activeCompany?.id}
       />
 
-      <div className="flex flex-col flex-1 bg-white relative overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white relative overflow-hidden border-l border-slate-100">
         {selectedConv ? (
           <>
             <ChatHeader selectedConv={selectedConv} onToggleHandoff={toggleHandoff} />
 
-            <div className="flex-1 overflow-y-auto p-12 space-y-8 bg-[#F7F9FB] relative">
+            <div className="flex-1 overflow-y-auto p-12 space-y-8 bg-slate-50/50 relative">
               <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
 
               <div className="relative space-y-8 max-w-4xl mx-auto">
@@ -268,8 +274,8 @@ export default function MessagesPage() {
           <div className="flex-1 flex flex-col items-center justify-center text-slate-300 bg-slate-50 relative overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
             <div className="relative z-10 flex flex-col items-center">
-              <div className="w-24 h-24 bg-white rounded-[40px] flex items-center justify-center mb-8 shadow-2xl animate-bounce">
-                <MessageSquare className="w-10 h-10 text-primary" />
+              <div className="w-24 h-24 bg-white rounded-[40px] flex items-center justify-center mb-8 shadow-xl animate-bounce border border-slate-100">
+                <MessageSquare className="w-10 h-10 text-green-600" />
               </div>
               <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">
                 Selector de Frecuencia

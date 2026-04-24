@@ -84,7 +84,7 @@ export default function CompanyPage() {
             </div>
           </div>
 
-          <div className="bg-[#f7f9fb] p-10 rounded-[32px] border-none shadow-sm relative group overflow-hidden">
+          <div className="bg-slate-50 p-10 rounded-[32px] border-none shadow-sm relative group overflow-hidden">
              <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-30" />
              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] mb-10 flex items-center justify-between">
                Operational_Metadata

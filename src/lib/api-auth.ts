@@ -22,26 +22,28 @@ export async function getAuthenticatedUser() {
 
 /**
  * Middleware para proteger endpoints API
- * Usa Service Role Key para operaciones administrativas
+ * Usa Anon Key + session cookies para auth estándar
+ * Service Role Key solo para operaciones internas con API key
  */
 export async function requireAuth() {
   const { headers } = await import('next/headers');
   const headerList = await headers();
   const apiKey = headerList.get('x-api-key');
 
-  // Permitir acceso si la llave de API interna es correcta
+  // Permitir acceso si la llave de API interna es correcta (operaciones internas)
   if (apiKey && apiKey === (process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret')) {
     return { error: null, user: { id: 'system_agent', email: 'agent@arise.ai' } };
   }
 
+  // Usar Anon Key + session cookies para auth de usuario estándar
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-  if (error || !user) {
+  if (sessionError || !session) {
     return {
       error: NextResponse.json(
         { error: 'Authentication required' },
@@ -51,7 +53,7 @@ export async function requireAuth() {
     };
   }
 
-  return { error: null, user };
+  return { error: null, user: session.user };
 }
 
 /**

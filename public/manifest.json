@@ -1,14 +1,14 @@
 {
-  "name": "OUROBOT | Tu Empresa en un Mensaje",
-  "short_name": "OUROBOT",
-  "description": "Automatización Neural Inteligente para tu Negocio vía WhatsApp",
+  "name": "LOOP | Inteligencia de Negocios",
+  "short_name": "LOOP",
+  "description": "Inteligencia de Negocios en tu WhatsApp",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
   "icons": [
     {
-      "src": "/brand/official.png",
+      "src": "/ourobot-logo.png",
       "sizes": "1024x1024",
       "type": "image/png"
     }

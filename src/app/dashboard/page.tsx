@@ -1,26 +1,19 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  Sparkles, 
-  Wallet, 
-  Search, 
-  Bell, 
-  ChevronRight,
-  MoreVertical,
+import {
+  TrendingUp,
+  Sparkles,
+  Wallet,
+  Search,
+  Bell,
   Activity,
   AlertCircle,
   MessageCircle,
-  RefreshCw,
   Box,
   Users,
-  ShieldCheck,
-  LineChart
+  ShieldCheck
 } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useRouter } from 'next/navigation';
@@ -43,12 +36,11 @@ export default function Dashboard() {
     lowStock: 0,
     revenue: '$68,490'
   });
-  
+
   const [chartData, setChartData] = useState<any[]>([]);
   const [recentSignals, setRecentSignals] = useState<any[]>([]);
   const [neuralLogs, setNeuralLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const pathname = usePathname();
 
   useEffect(() => {
     async function checkAuthAndFetch() {
@@ -140,31 +132,31 @@ export default function Dashboard() {
     if (!isContextLoading) {
       checkAuthAndFetch();
     }
-  }, [pathname, activeCompany, isContextLoading]);
+  }, [activeCompany, isContextLoading]);
 
   return (
     <div className="flex flex-col w-full max-w-full py-4 md:py-10 animate-in fade-in duration-500 overflow-x-hidden">
       <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-8 mb-12">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic">Dashboard</h1>
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Dashboard</h1>
           <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
-            <TrendingUp size={10} className="text-primary" />
-            Operational Intelligence / REVENUE_PULSE_7.0
+            <TrendingUp size={10} className="text-green-600" />
+            Operational Intelligence / REVENUE_PULSE_9.0
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6">
           <div className="relative flex-1 group">
             <input 
               type="text" 
-              placeholder="SISTEMA_DE_INTELIGENCIA_..." 
-              className="w-full lg:w-96 pl-12 pr-6 py-4 bg-white/40 text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-[24px] outline-none focus:bg-white focus:shadow-xl transition-all backdrop-blur-xl border border-white/20"
+              placeholder="SEARCH_NEURAL_NODES..." 
+              className="w-full lg:w-96 pl-12 pr-6 py-4 bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-[24px] outline-none focus:bg-white focus:ring-4 focus:ring-green-500/10 focus:border-green-500/20 transition-all border border-slate-100"
             />
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
           </div>
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/60 backdrop-blur-md border border-white/20 shadow-lg hover:-translate-y-1 transition-all rounded-2xl flex items-center justify-center text-slate-500 relative shrink-0">
+            <div className="w-14 h-14 bg-white border border-slate-100 shadow-lg hover:-translate-y-1 transition-all rounded-2xl flex items-center justify-center text-slate-500 relative shrink-0">
               <Bell size={20} />
-              <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-accent rounded-full animate-pulse" />
+              <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
             </div>
           </div>
         </div>
@@ -183,26 +175,26 @@ export default function Dashboard() {
             <h2 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em]">Neural Signal Velocity</h2>
             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">24H Real-time activity pulse</p>
           </div>
-          <div className="w-full h-[320px] bg-gradient-to-b from-white to-[#f7f9fb]/50">
+          <div className="w-full h-[320px] bg-gradient-to-b from-white to-slate-50/50">
             <ResponsiveContainer width="100%" height={320}>
               <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorSignals" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#135bec" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#135bec" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} horizontal={false} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#191c1e', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '9px', fontWeight: '900' }}
+                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #f1f5f9', color: '#0f172a', fontSize: '9px', fontWeight: '900' }}
                 />
-                <Area type="monotone" dataKey="value" stroke="#135bec" strokeWidth={3} fillOpacity={1} fill="url(#colorSignals)" />
+                <Area type="monotone" dataKey="value" stroke="#16a34a" strokeWidth={3} fillOpacity={1} fill="url(#colorSignals)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </section>
 
-        <div className="loop-card p-10 bg-white/40">
+        <div className="loop-card p-10 bg-slate-50/30">
           <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-900 mb-10">System Status</h3>
           <div className="space-y-8">
             {loading ? (
@@ -212,7 +204,7 @@ export default function Dashboard() {
               return (
                 <div key={i} className="flex items-center justify-between group cursor-pointer">
                   <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center transition-all shadow-sm group-hover:shadow-md border border-slate-50">
                       <Icon size={18} className={signal.color} />
                     </div>
                     <div>
@@ -245,16 +237,16 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {neuralLogs.map((log, i) => (
-                <tr key={i} className="group hover:bg-white transition-all cursor-pointer rounded-xl">
+                <tr key={i} className="group hover:bg-slate-50 transition-all cursor-pointer rounded-xl">
                   <td className="py-8 pl-4 pr-2 text-[11px] font-mono text-slate-400 rounded-l-xl">{log.id}</td>
                   <td className="py-8 px-2">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-slate-50/50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg transition-all"><Box size={14}/></div>
+                      <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-green-600 group-hover:text-white group-hover:shadow-lg transition-all"><Box size={14}/></div>
                       <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{log.task}</span>
                     </div>
                   </td>
                   <td className="py-8 px-2 text-center">
-                    <span className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest border border-emerald-100/50 shadow-sm">
+                    <span className="bg-green-50 text-green-600 px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest border border-green-100 shadow-sm">
                       {log.status}
                     </span>
                   </td>
@@ -270,18 +262,18 @@ export default function Dashboard() {
 }
 
 function MetricCard({ title, value, drift, icon: Icon, primary, negative, loading }: any) {
-  if (loading) return <div className="loop-card p-10 min-h-[200px] border-none" />;
+  if (loading) return <div className="loop-card p-10 min-h-[200px] border-none animate-pulse bg-slate-50" />;
 
   return (
-    <div className={`loop-card p-8 border-none shadow-arise ${primary ? 'bg-gradient-to-br from-[#135bec] to-[#0045bd] text-white shadow-[0_20px_40px_-5px_rgba(19,91,236,0.3)]' : 'text-slate-900 hover:bg-white/90'}`}>
+    <div className={`loop-card p-8 border-none shadow-sm ${primary ? 'bg-gradient-to-br from-green-600 to-green-800 text-white shadow-2xl shadow-green-100' : 'text-slate-900 hover:bg-white border border-slate-100'}`}>
       <div className="flex justify-between items-start mb-10">
         <p className={`text-[9px] font-black uppercase tracking-[0.3em] ${primary ? 'text-white/70' : 'text-slate-400'}`}>{title}</p>
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${primary ? 'bg-white/20' : 'bg-[#f7f9fb] text-slate-300'}`}>
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${primary ? 'bg-white/20' : 'bg-slate-50 text-slate-400'}`}>
           <Icon size={24} />
         </div>
       </div>
       <h2 className="text-4xl font-black mb-3 tracking-tighter leading-none">{value}</h2>
-      <div className={`inline-flex px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest ${primary ? 'bg-white/20 text-white' : (negative ? 'bg-rose-500/10 text-rose-600' : 'bg-emerald-500/10 text-emerald-600')}`}>
+      <div className={`inline-flex px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest ${primary ? 'bg-white/20 text-white' : (negative ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-green-50 text-green-600 border border-green-100')}`}>
         {drift}
       </div>
     </div>
