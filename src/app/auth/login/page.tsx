@@ -83,7 +83,7 @@ export default function LoginPage() {
           
           <div className="mb-12 text-center">
             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] mb-12">PROTOCOLO DE ACCESO</h2>
-            <p className="text-[10px] font-black text-slate-400 mt-3 uppercase tracking-[0.3em]">Credentials required for neural uplink</p>
+            <p className="text-[10px] font-black text-slate-400 mt-3 uppercase tracking-[0.3em]">Credenciales requeridas para el acceso</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-10">
@@ -134,11 +134,11 @@ export default function LoginPage() {
               {loading ? (
                 <div className="flex items-center gap-4 text-white">
                    <Loader2 size={24} className="animate-spin" />
-                   <span>SYNCING_NODE...</span>
+                   <span>SINCRONIZANDO...</span>
                 </div>
               ) : (
                 <>
-                  <span>INITIATE_UPLINK</span>
+                  <span>INICIAR SESIÓN</span>
                   <ArrowRight size={20} />
                 </>
               )}
@@ -149,10 +149,10 @@ export default function LoginPage() {
         <div className="mt-16 flex justify-between items-center px-6">
           <div className="flex items-center gap-3">
              <Globe size={10} className="text-slate-300" />
-             <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.3em]">Quantum_Encryption: 256B</p>
+             <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.3em]">Encriptación: AES-256</p>
           </div>
           <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.3em]">
-            © 2026 LOOP_Intelligence
+            © 2026 LOOP Inteligencia
           </p>
         </div>
       </div>

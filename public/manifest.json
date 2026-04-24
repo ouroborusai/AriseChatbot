@@ -8,7 +8,7 @@
   "theme_color": "#16a34a",
   "icons": [
     {
-      "src": "/ourobot-logo.png",
+      "src": "/brand/official.png",
       "sizes": "1024x1024",
       "type": "image/png"
     }

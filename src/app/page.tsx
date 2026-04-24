@@ -222,7 +222,7 @@ export default function LandingPage() {
             <Sparkles size={16} />
         </div>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
-          © 2026 LOOP_SYSTEMS. Powered by Ouroborus Neural Engine.
+          © 2026 Sistemas LOOP. Impulsado por Motor Neural LOOP.
         </p>
       </footer>
 
