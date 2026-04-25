@@ -99,34 +99,29 @@ export default function InventoryPage() {
       <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-[#0f172a]/5 blur-[64px] rounded-full -z-10" />
 
       {/* HEADER SECTION - ASLAS STYLE (Optimized Scales) */}
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6 px-2">
-        <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter leading-none uppercase">
-              Control de <span className="text-[#22c55e]">Stock</span>
-            </h1>
-            {typeof window !== 'undefined' && localStorage.getItem('arise_active_company') === 'global' && (
-              <span className="bg-[#22c55e]/10 text-[#22c55e] text-[6px] font-black px-1.5 py-0.5 rounded-md tracking-[0.15em] uppercase border border-[#22c55e]/20">Global</span>
-            )}
-          </div>
-          <p className="text-slate-400 text-[6px] font-black uppercase tracking-[0.3em] mt-2.5 flex items-center gap-2">
-            <Package size={8} className="text-[#22c55e]" />
-            CATÁLOGO MAESTRO DE REPUESTOS / PROTOCOLO LOOP
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 mb-10 px-2 relative z-10 animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div className="relative">
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-none uppercase">
+            Control de <span className="text-[#22c55e]">Stock</span>
+          </h1>
+          <p className="text-slate-400 text-[7px] font-black uppercase tracking-[0.4em] mt-3.5 flex items-center gap-2.5">
+            <Package size={10} className="text-[#22c55e]" />
+            CATÁLOGO MAESTRO DE REPUESTOS / v2.5
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
           <div className="relative group">
+            <Search size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#22c55e] transition-colors z-20" />
             <input 
               type="text" 
               placeholder="BUSCAR SKU / ITEM..." 
-              className="w-full lg:w-60 pl-9 pr-4 py-2 bg-white text-[7.5px] font-black uppercase tracking-widest text-slate-900 rounded-lg outline-none border border-slate-100 focus:border-[#22c55e]/30 transition-all relative z-10 placeholder:text-slate-200"
+              className="w-full lg:w-72 pl-11 pr-4 py-3 bg-white text-[8px] font-black uppercase tracking-widest text-slate-900 rounded-xl outline-none border border-slate-100 focus:border-[#22c55e]/30 transition-all shadow-sm placeholder:text-slate-200"
             />
-            <Search size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 z-20" />
           </div>
           
-          <button className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] shadow-lg hover:bg-[#22c55e] transition-all active:scale-95">
-            <Plus size={12} />
+          <button className="flex items-center justify-center gap-3 bg-[#0f172a] text-white px-6 py-3 rounded-xl text-[8px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-[#22c55e] transition-all active:scale-95 group">
+            <Plus size={14} className="group-hover:rotate-90 transition-transform" />
             <span>Nuevo Item</span>
           </button>
         </div>

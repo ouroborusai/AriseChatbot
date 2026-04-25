@@ -37,7 +37,7 @@ const menuItems = [
   { name: 'Analítica', icon: BarChart3, path: '/billing', premium: true },
   { name: 'Empresa', icon: Building2, path: '/company', premium: true },
   { name: 'LOOP Studio', icon: Code2, path: '/studio', premium: true },
-  { name: 'Seguridad y Roles', icon: ShieldCheck, path: '/users', premium: false },
+  { name: 'Control de Acceso Neural', icon: ShieldCheck, path: '/users', premium: false },
 ];
 
 export default function Sidebar() {

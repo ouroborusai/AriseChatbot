@@ -101,7 +101,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
                           <span className="bg-slate-50 text-slate-300 px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border border-slate-100">ESPERA</span>
                         )}
                       </div>
-                      <p className="text-[9px] font-mono text-slate-400 mt-1 tracking-tight">{k.key_value.substring(0, 24)}...</p>
+                      <p className="text-[9px] font-mono text-slate-400 mt-1 tracking-tight">{k.key_value?.substring(0, 24) || 'NULL_NODE'}...</p>
                     </div>
                   </div>
                   

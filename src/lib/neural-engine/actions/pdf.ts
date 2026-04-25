@@ -29,28 +29,40 @@ export async function handlePdfAction(
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30000);
 
-        fetch(`${appUrl}/api/pdf`, {
-          method: 'POST',
-          signal: controller.signal,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            targetPhone: phone,
-            whatsappToken,
-            phoneNumberId,
-            reportType: actionData.type || 'balance',
-            companyId: companyId,
-          }),
-        })
-          .catch(err => {
-            if (err.name === 'AbortError') {
-              console.error('[PDF_ACTION_TIMEOUT] 30s exceeded');
-            } else {
-              console.error('[PDF_ACTION_ERROR]', err);
-            }
-          })
-          .finally(() => clearTimeout(timeout));
+        try {
+          const response = await fetch(`${appUrl}/api/pdf`, {
+            method: 'POST',
+            signal: controller.signal,
+            headers: { 
+              'Content-Type': 'application/json',
+              'x-api-key': process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret'
+            },
+            body: JSON.stringify({
+              targetPhone: phone,
+              whatsappToken,
+              phoneNumberId,
+              reportType: actionData.report_type || actionData.parameters?.report_type || actionData.type || actionData.parameters?.type || 'inventory',
+              companyId: companyId,
+            }),
+          });
 
-        results.push({ action: 'pdf_generate', status: 'triggered', to: phone });
+          const resData = await response.json();
+          clearTimeout(timeout);
+
+          results.push({ 
+            action: 'pdf_generate', 
+            status: response.ok ? 'success' : 'failed', 
+            to: phone,
+            details: resData.fileName || resData.error
+          });
+        } catch (err: any) {
+          results.push({ 
+            action: 'pdf_generate', 
+            status: 'error', 
+            to: phone, 
+            error: err.name === 'AbortError' ? 'Timeout (30s)' : err.message 
+          });
+        }
       }
     }
   }

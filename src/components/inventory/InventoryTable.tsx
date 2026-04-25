@@ -8,16 +8,16 @@ interface InventoryTableProps {
 
 export function InventoryTable({ loading, items }: InventoryTableProps) {
   return (
-    <div className="bg-white border border-slate-100 shadow-sm overflow-hidden rounded-2xl relative">
+    <div className="bg-white border border-slate-100 shadow-xl overflow-hidden rounded-[2rem] relative animate-in fade-in zoom-in-95 duration-700">
       <div className="overflow-x-auto">
-        <table className="w-full text-left min-w-[800px]">
+        <table className="w-full text-left min-w-[800px] border-separate border-spacing-0">
           <thead>
-            <tr className="border-b border-slate-50">
-              <th className="px-6 py-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.4em]">Identidad / SKU</th>
-              <th className="hidden lg:table-cell px-6 py-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.4em]">Especificación</th>
-              <th className="px-6 py-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.4em] text-center">Volumen</th>
-              <th className="hidden md:table-cell px-6 py-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.4em]">Estado Neural</th>
-              <th className="px-6 py-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.4em] text-right">Acciones</th>
+            <tr className="bg-slate-50/50">
+              <th className="px-6 py-5 text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] border-b border-slate-100">Identidad / SKU</th>
+              <th className="hidden lg:table-cell px-6 py-5 text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] border-b border-slate-100">Especificación</th>
+              <th className="px-6 py-5 text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] text-center border-b border-slate-100">Volumen</th>
+              <th className="hidden md:table-cell px-6 py-5 text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] border-b border-slate-100">Estado Neural</th>
+              <th className="px-6 py-5 text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] text-right border-b border-slate-100">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -33,16 +33,17 @@ export function InventoryTable({ loading, items }: InventoryTableProps) {
               ))
             ) : items.length > 0 ? (
               items.map((item) => (
-                <tr key={item.id} className="group hover:bg-slate-50/50 transition-all cursor-pointer">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="hidden sm:flex w-9 h-9 bg-slate-50 text-slate-400 rounded-lg items-center justify-center group-hover:bg-[#22c55e] group-hover:text-white border border-slate-100 group-hover:border-transparent transition-all shadow-sm">
-                        <Boxes size={14} />
+                <tr key={item.id} className="group hover:bg-slate-50/50 transition-all cursor-pointer relative">
+                  <td className="px-6 py-5 border-b border-slate-50 relative overflow-hidden">
+                    <div className="absolute left-0 w-1.5 h-0 bg-[#22c55e] group-hover:h-full transition-all duration-700" />
+                    <div className="flex items-center gap-4 relative z-10">
+                      <div className="hidden sm:flex w-11 h-11 bg-white text-slate-900 rounded-xl items-center justify-center group-hover:bg-[#22c55e] group-hover:text-white border border-slate-100 group-hover:border-transparent transition-all duration-500 shadow-sm">
+                        <Boxes size={18} />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight group-hover:text-[#22c55e] transition-colors">{item.name}</p>
-                          <div className={`px-1.5 py-0.5 rounded text-[6px] font-black tracking-widest uppercase border ${
+                        <div className="flex items-center gap-3 mb-1">
+                          <p className="text-[12px] font-black text-slate-900 uppercase tracking-tight group-hover:text-[#22c55e] transition-colors duration-500">{item.name}</p>
+                          <div className={`px-2 py-0.5 rounded-md text-[7px] font-black tracking-widest uppercase border shadow-sm ${
                             item.current_stock === 0 ? 'bg-rose-50 text-rose-500 border-rose-100' : 
                             item.current_stock < (item.min_stock_alert || 5) ? 'bg-amber-50 text-amber-500 border-amber-100' : 
                             'bg-emerald-50 text-emerald-500 border-emerald-100'
@@ -52,25 +53,25 @@ export function InventoryTable({ loading, items }: InventoryTableProps) {
                              'ÓPTIMO'}
                           </div>
                         </div>
-                        <p className="text-[7px] font-black text-slate-300 uppercase tracking-widest">{item.sku || 'SIN SKU'}</p>
+                        <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">{item.sku || 'NODO_UNNAMED'}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="hidden lg:table-cell px-6 py-4 text-[8px] font-black text-slate-400 uppercase tracking-widest italic">{item.category || 'CARGA GENERAL'}</td>
-                  <td className="px-6 py-4 text-base font-black text-slate-900 text-center tracking-tighter">
+                  <td className="hidden lg:table-cell px-6 py-5 border-b border-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest italic">{item.category || 'CARGA GENERAL'}</td>
+                  <td className="px-6 py-5 border-b border-slate-50 text-xl font-black text-slate-900 text-center tracking-tighter">
                     {item.current_stock} 
-                    <span className="text-[8px] text-slate-300 font-black ml-1 uppercase tracking-widest">{item.unit || 'uds'}</span>
+                    <span className="text-[9px] text-slate-300 font-black ml-1.5 uppercase tracking-widest">{item.unit || 'uds'}</span>
                   </td>
-                  <td className="hidden md:table-cell px-6 py-4">
-                    <div className="flex items-center gap-2">
-                       <span className={`text-[7px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest border shadow-sm ${item.current_stock <= (item.min_stock_alert || 0) ? 'bg-rose-50 text-rose-500 border-rose-100' : 'bg-emerald-50 text-emerald-500 border-emerald-100'}`}>
+                  <td className="hidden md:table-cell px-6 py-5 border-b border-slate-50">
+                    <div className="flex items-center gap-3">
+                       <span className={`text-[8px] font-black px-4 py-2 rounded-xl uppercase tracking-[0.2em] border shadow-sm ${item.current_stock <= (item.min_stock_alert || 0) ? 'bg-rose-50 text-rose-500 border-rose-100' : 'bg-emerald-50 text-emerald-500 border-emerald-100'}`}>
                          {item.current_stock <= (item.min_stock_alert || 0) ? 'INTERRUPCIÓN' : 'FLUJO NOMINAL'}
                        </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="w-8 h-8 flex ml-auto items-center justify-center bg-white border border-slate-100 text-slate-300 rounded-lg hover:border-[#22c55e] hover:text-[#22c55e] transition-all group/btn">
-                      <ArrowUpRight size={14} />
+                  <td className="px-6 py-5 border-b border-slate-50 text-right">
+                    <button className="w-10 h-10 flex ml-auto items-center justify-center bg-white border border-slate-100 text-slate-300 rounded-xl hover:bg-[#0f172a] hover:text-white hover:border-transparent transition-all shadow-sm active:scale-90 group/btn">
+                      <ArrowUpRight size={16} />
                     </button>
                   </td>
                 </tr>

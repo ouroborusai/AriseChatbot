@@ -40,11 +40,21 @@ export default function UsersManagement() {
       const activeCompanyId = localStorage.getItem('arise_active_company');
       
       const [uRes, cRes] = await Promise.all([
-        supabase.from('profiles').select('id, email, role, created_at'),
+        supabase
+          .from('profiles')
+          .select('id, email, created_at, user_company_access!inner(role)')
+          .eq('user_company_access.company_id', activeCompanyId),
         supabase.from('companies').select('id, name')
       ]);
       
-      setUsers(uRes.data || []);
+      const mappedUsers = (uRes.data || []).map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        role: u.user_company_access?.[0]?.role || 'Operador',
+        created_at: u.created_at
+      }));
+
+      setUsers(mappedUsers);
       setCompanies(cRes.data || []);
       setLoading(false);
     }
@@ -62,7 +72,7 @@ export default function UsersManagement() {
       <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 mb-10 px-2 relative z-10">
         <div className="animate-in fade-in slide-in-from-left-8 duration-1000">
           <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-none uppercase">
-            Seguridad y <span className="text-[#22c55e]">Roles</span>
+            Gestión de <span className="text-[#22c55e]">Acceso</span>
           </h1>
           <p className="text-slate-400 text-[7px] font-black uppercase tracking-[0.4em] mt-3.5 flex items-center gap-2.5">
             <Lock size={10} className="text-[#22c55e]" />
