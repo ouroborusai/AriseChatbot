@@ -19,82 +19,72 @@ import { CRMStats } from '@/components/crm/CRMStats';
 import { CRMContactTable } from '@/components/crm/CRMContactTable';
 import { ChatNeuralSlideOver } from '@/components/crm/ChatNeuralSlideOver';
 import Image from 'next/image';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import useSWR from 'swr';
 
 const PAGE_SIZE = 10;
 
 export default function CRMPage() {
-  const [contacts, setContacts] = useState<any[]>([]);
+  const { activeCompany, isLoading: isContextLoading } = useActiveCompany();
   const [searchTerm, setSearchTerm] = useState('');
-  const [stats, setStats] = useState({ total: 0, activeChats: 0 });
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
 
-  const fetchCRMData = async (currentPage: number) => {
-    setLoading(true);
-    const storedCompanyId = typeof window !== 'undefined' ? localStorage.getItem('arise_active_company') : null;
+  const activeCompanyId = activeCompany?.id;
 
-    if (!storedCompanyId || storedCompanyId === 'null' || storedCompanyId === 'undefined') {
-      setLoading(false);
-      return;
-    }
-
-    const { data: companyData, error: companyError } = await supabase
-      .from('companies')
-      .select('id')
-      .eq('id', storedCompanyId)
-      .single();
-
-    if (companyError || !companyData) {
-      localStorage.removeItem('arise_active_company');
-      setLoading(false);
-      return;
-    }
-
-    const companyId = companyData.id;
-    setActiveCompanyId(companyId);
+  const fetchCRMData = async (companyId: string, currentPage: number) => {
     const isGlobal = companyId === 'global';
 
-    try {
-      let countQuery = supabase.from('contacts').select('*', { count: 'exact', head: true });
-      if (!isGlobal) countQuery = countQuery.eq('company_id', companyId);
-      const { count } = await countQuery;
-      setTotalCount(count || 0);
+    let countQuery = supabase.from('contacts').select('*', { count: 'estimated', head: true });
+    if (!isGlobal) countQuery = countQuery.eq('company_id', companyId);
 
-      let contactQuery = supabase
-        .from('contacts')
-        .select('*, companies(name)');
+    let contactQuery = supabase
+      .from('contacts')
+      .select('*, companies(name)');
 
-      if (!isGlobal) contactQuery = contactQuery.eq('company_id', companyId);
+    if (!isGlobal) contactQuery = contactQuery.eq('company_id', companyId);
+    
+    let chatsQuery = supabase.from('conversations').select('*', { count: 'estimated', head: true }).eq('status', 'open');
+    if (!isGlobal) chatsQuery = chatsQuery.eq('company_id', companyId);
 
-      const { data: contactData, error: contactError } = await contactQuery
+    const [
+      { count },
+      { data: contactData, error: contactError },
+      chatsResult
+    ] = await Promise.all([
+      countQuery,
+      contactQuery
         .order('created_at', { ascending: false })
-        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1),
+      chatsQuery
+    ]);
 
-      if (contactError) throw contactError;
+    if (contactError) throw contactError;
 
-      let activeCount = 0;
-      try {
-        let chatsQuery = supabase.from('conversations').select('*', { count: 'exact', head: true }).eq('status', 'open');
-        if (!isGlobal) chatsQuery = chatsQuery.eq('company_id', companyId);
-        const { count: c } = await chatsQuery;
-        activeCount = c || 0;
-      } catch (e) {}
-
-      if (contactData) setContacts(contactData);
-      setStats({ total: count || 0, activeChats: activeCount });
-    } catch (err) {
-      console.error('CRM NODE ERROR:', err);
-    } finally {
-      setLoading(false);
-    }
+    return {
+      totalCount: count || 0,
+      contacts: contactData || [],
+      activeChats: chatsResult?.count || 0
+    };
   };
+
+  const { data, error, mutate, isLoading: isSwrLoading } = useSWR(
+    !isContextLoading && activeCompanyId ? `crm_${activeCompanyId}_${page}` : null,
+    () => fetchCRMData(activeCompanyId!, page),
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    }
+  );
+
+  const loading = isContextLoading || isSwrLoading || !data;
+  const contacts = data?.contacts || [];
+  const totalCount = data?.totalCount || 0;
+  const stats = { total: totalCount, activeChats: data?.activeChats || 0 };
 
   const fetchMessages = async (contactId: string) => {
     if (!activeCompanyId) return null;
@@ -191,10 +181,6 @@ export default function CRMPage() {
   };
 
   useEffect(() => {
-    fetchCRMData(page);
-  }, [page]);
-
-  useEffect(() => {
     return () => {
       supabase.removeAllChannels();
     };
@@ -202,7 +188,13 @@ export default function CRMPage() {
 
   const handleUpdateSegment = async (id: string, newCategory: string) => {
     const { error } = await supabase.from('contacts').update({ category: newCategory }).eq('id', id);
-    if (!error) setContacts(prev => prev.map(c => c.id === id ? { ...c, category: newCategory } : c));
+    if (!error) {
+      mutate({
+        ...data!,
+        contacts: contacts.map(c => c.id === id ? { ...c, category: newCategory } : c)
+      }, false);
+    }
+
   };
 
   const filteredContacts = contacts.filter(c => 
@@ -225,8 +217,8 @@ export default function CRMPage() {
              <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
              <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Gestión de Relaciones</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none italic uppercase">
-            Centro de <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-500">Contactos</span>
+          <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
+            Centro de <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500">Contactos</span>
           </h1>
           <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
             <Users size={12} className="text-green-500" />
@@ -236,18 +228,18 @@ export default function CRMPage() {
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6 relative z-10">
           <div className="relative group">
-            <div className="absolute inset-0 bg-white/5 rounded-[24px] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-white rounded-[24px] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity shadow-sm" />
             <input 
               type="text" 
               placeholder="BUSCAR ENTIDAD / CLIENTE..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full lg:w-96 pl-14 pr-6 py-4.5 bg-white/5 text-[10px] font-black uppercase tracking-widest text-white rounded-[24px] outline-none border border-white/10 focus:border-green-500/30 focus:bg-white/10 transition-all relative z-10"
+              className="w-full lg:w-96 pl-14 pr-6 py-4.5 bg-white text-[10px] font-black uppercase tracking-widest text-slate-900 rounded-[24px] outline-none border border-slate-200 focus:border-green-500/50 focus:shadow-lg transition-all relative z-10 placeholder:text-slate-400"
             />
             <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 z-20" />
           </div>
           
-          <button className="flex items-center justify-center gap-4 bg-white text-slate-900 px-10 py-5 rounded-[24px] text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-green-500 hover:text-white transition-all active:scale-95">
+          <button className="flex items-center justify-center gap-4 bg-slate-900 text-white px-10 py-5 rounded-[24px] text-[10px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-green-500 hover:text-white transition-all active:scale-95">
             <UserPlus size={18} />
             <span>Añadir Entidad</span>
           </button>
@@ -270,20 +262,20 @@ export default function CRMPage() {
       </div>
 
       {/* PAGINATION */}
-      <div className="p-10 flex flex-col sm:flex-row justify-between items-center bg-white/5 backdrop-blur-xl mt-8 rounded-[40px] border border-white/5 border-dashed gap-10">
+      <div className="p-10 flex flex-col sm:flex-row justify-between items-center bg-white mt-8 rounded-[40px] border border-slate-100 shadow-sm gap-10">
         <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/5">
+           <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100">
               <Layers size={16} className="text-slate-500" />
            </div>
            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">
-              Página <span className="text-white">{page + 1}</span> // Registros <span className="text-green-500">{totalCount}</span>
+              Página <span className="text-slate-900">{page + 1}</span> // Registros <span className="text-green-500">{totalCount}</span>
            </p>
         </div>
         <div className="flex gap-5">
-          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="w-16 h-16 bg-white/5 border border-white/5 flex items-center justify-center text-slate-500 hover:text-green-500 disabled:opacity-20 transition-all rounded-2xl group shadow-2xl">
+          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="w-16 h-16 bg-white border border-slate-100 flex items-center justify-center text-slate-500 hover:text-green-500 disabled:opacity-30 transition-all rounded-2xl group shadow-sm hover:shadow-md hover:border-green-500/20">
             <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform"/>
           </button>
-          <button onClick={() => setPage(p => p + 1)} disabled={(page + 1) * PAGE_SIZE >= totalCount} className="w-16 h-16 bg-white/5 border border-white/5 flex items-center justify-center text-slate-500 hover:text-green-500 disabled:opacity-20 transition-all rounded-2xl group shadow-2xl">
+          <button onClick={() => setPage(p => p + 1)} disabled={(page + 1) * PAGE_SIZE >= totalCount} className="w-16 h-16 bg-white border border-slate-100 flex items-center justify-center text-slate-500 hover:text-green-500 disabled:opacity-30 transition-all rounded-2xl group shadow-sm hover:shadow-md hover:border-green-500/20">
             <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform"/>
           </button>
         </div>

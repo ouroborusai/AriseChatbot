@@ -5,7 +5,8 @@ import { sendWhatsAppMessage } from '@/lib/neural-engine/whatsapp';
 import { ACTION_PREFIXES } from '@/lib/neural-engine/constants';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-const supabaseKey = (process.env.ARISE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)?.trim();
+// Usar un nombre único para evitar colisiones con variables de entorno del sistema
+const supabaseKey = (process.env.ARISE_MASTER_SERVICE_KEY || process.env.ARISE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)?.trim();
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('[WH_INIT] Missing Supabase credentials');
@@ -13,6 +14,9 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+
+
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
@@ -102,6 +106,7 @@ export async function POST(req: Request) {
     // Si no hay contacto, resolver por el directorio interno o el Phone ID de la empresa
     if (!companyId) {
       const { data: staff } = await supabase.from('internal_directory').select('company_id').eq('phone', sender).maybeSingle();
+      
       if (staff) {
         companyId = staff.company_id;
       } else {
@@ -113,10 +118,12 @@ export async function POST(req: Request) {
         return NextResponse.json({ status: 'unauthorized_sender' }, { status: 401 });
       }
 
+
       // Crear contacto si no existe
       const { data: newContact } = await supabase.from('contacts').insert({ full_name: profileName, phone: sender, company_id: companyId }).select('id').single();
       contactId = newContact?.id;
     }
+
 
     if (!contactId || !companyId) {
       return NextResponse.json({ status: 'identity_resolution_failed' });
@@ -289,7 +296,7 @@ export async function POST(req: Request) {
     // Esto garantiza una sola respuesta y reduce el consumo de tokens.
     const { data: latestConv } = await supabase.from('conversations').select('status').eq('id', conv.id).single();
     if (latestConv?.status === 'open') {
-      await generateAndSendAIResponse(conv.id, companyId, sender, content, profileName, phoneNumberId, userMsg?.id);
+      // await generateAndSendAIResponse(conv.id, companyId, sender, content, profileName, phoneNumberId, userMsg?.id);
     }
 
     return NextResponse.json({ status: 'success' });
@@ -350,6 +357,7 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
 3. FORMATO DE SALIDA: Debes responder en ESTRICTO formato: [Respuesta Corta] --- [Opción 1] | [Opción 2] | [Opción 3] | [Opción 4]
    - SIEMPRE entrega entre 3 a 5 opciones interactivas para que el usuario pueda avanzar fluidamente.
    - Acciones Neurales: Si se requiere acción técnica, anexa [[ { "action": "..." } ]] al final.
+   - IMPORTANTE: Para campos de fecha como "due_at", usa SIEMPRE formato ISO 8601 (YYYY-MM-DDTHH:mm:ss). No uses nombres de días o formatos relativos.
 `;
 
   // 3. Generar respuesta vía Librería Neural
@@ -364,7 +372,10 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
     fetch(`${baseUrl}/api/neural-processor`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret'
+      },
       body: JSON.stringify({ messageId: botMsg.id, companyId: companyId })
     }).catch(e => console.error('[NEURAL_BRIDGE_ERROR]', e));
   }

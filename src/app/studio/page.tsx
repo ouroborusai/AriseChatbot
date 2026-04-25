@@ -17,6 +17,8 @@ import { StudioCluster } from '@/components/studio/StudioCluster';
 import { StudioBrain } from '@/components/studio/StudioBrain';
 import { StudioSkills } from '@/components/studio/StudioSkills';
 import Image from 'next/image';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import useSWR from 'swr';
 
 interface Template {
   id: string;
@@ -40,70 +42,82 @@ interface Telemetry {
 }
 
 export default function AIStudio() {
+  const { activeCompany, isLoading: isContextLoading } = useActiveCompany();
   const [activeTab, setActiveTab] = useState<'brain' | 'skills' | 'cluster'>('brain');
   const [systemPrompt, setSystemPrompt] = useState('');
-  const [templates, setTemplates] = useState<Template[]>([]);
   const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [templateSearch, setTemplateSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todas');
-  const [telemetry, setTelemetry] = useState({ tokens: 0, cost: 0, latency: 0 });
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [keyResults, setKeyResults] = useState<Record<string, { status: 'ok' | 'error' | 'testing', latency?: number }>>({});
 
-  useEffect(() => {
-    async function loadStudioData() {
-      const activeCompanyId = typeof window !== 'undefined' ? localStorage.getItem('arise_active_company') : null;
-      if (!activeCompanyId || activeCompanyId === 'null') {
-        setLoading(false);
-        return;
-      }
+  const activeCompanyId = activeCompany?.id;
 
-      try {
-        const { data: prompts } = await supabase
-          .from('ai_prompts')
-          .select('*')
-          .eq('company_id', activeCompanyId)
-          .order('created_at', { ascending: true });
+  const fetchStudioData = async (companyId: string) => {
+    const promptsQuery = supabase
+      .from('ai_prompts')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: true });
 
-        const { data: telemetryData } = await supabase
-          .from('ai_api_telemetry')
-          .select('tokens_input, tokens_output, cost_estimated, latency_ms')
-          .eq('company_id', activeCompanyId);
-        
-        const { data: keys } = await supabase
-          .from('gemini_api_keys')
-          .select('*')
-          .order('created_at', { ascending: true });
+    const telemetryQuery = supabase
+      .from('ai_api_telemetry')
+      .select('tokens_input, tokens_output, cost_estimated, latency_ms')
+      .eq('company_id', companyId);
+    
+    const keysQuery = supabase
+      .from('gemini_api_keys')
+      .select('*')
+      .order('created_at', { ascending: true });
 
-        if (keys) setApiKeys(keys);
+    const [
+      { data: prompts },
+      { data: telemetryData },
+      { data: keys }
+    ] = await Promise.all([
+      promptsQuery,
+      telemetryQuery,
+      keysQuery
+    ]);
 
-        if (prompts) {
-          const mainPrompt = prompts.find(p => p.category === 'General') || prompts[0];
-          if (mainPrompt) setSystemPrompt(mainPrompt.system_prompt || '');
-          setTemplates(prompts);
-          setFilteredTemplates(prompts);
-        }
-
-        if (telemetryData) {
-          const stats = telemetryData.reduce((acc, curr) => ({
-            tokens: acc.tokens + ((curr.tokens_input || 0) + (curr.tokens_output || 0)),
-            cost: acc.cost + (Number(curr.cost_estimated) || 0),
-            latency: acc.latency + (curr.latency_ms || 0)
-          }), { tokens: 0, cost: 0, latency: 0 });
-          
-          if (telemetryData.length > 0) stats.latency = Math.round(stats.latency / telemetryData.length);
-          setTelemetry(stats);
-        }
-      } catch (e) {
-        console.error("Studio Sync Error:", e);
-      } finally {
-        setLoading(false);
-      }
+    let stats = { tokens: 0, cost: 0, latency: 0 };
+    if (telemetryData) {
+      stats = telemetryData.reduce((acc, curr) => ({
+        tokens: acc.tokens + ((curr.tokens_input || 0) + (curr.tokens_output || 0)),
+        cost: acc.cost + (Number(curr.cost_estimated) || 0),
+        latency: acc.latency + (curr.latency_ms || 0)
+      }), { tokens: 0, cost: 0, latency: 0 });
+      
+      if (telemetryData.length > 0) stats.latency = Math.round(stats.latency / telemetryData.length);
     }
-    loadStudioData();
-  }, []);
+
+    return {
+      prompts: prompts || [],
+      telemetry: stats,
+      keys: keys || []
+    };
+  };
+
+  const { data, error, isLoading: isSwrLoading } = useSWR(
+    !isContextLoading && activeCompanyId ? `studio_${activeCompanyId}` : null,
+    () => fetchStudioData(activeCompanyId!),
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    }
+  );
+
+  const loading = isContextLoading || isSwrLoading || !data;
+  const templates = data?.prompts || [];
+  const telemetry = data?.telemetry || { tokens: 0, cost: 0, latency: 0 };
+  const apiKeys = data?.keys || [];
+
+  useEffect(() => {
+    if (templates.length > 0 && !systemPrompt) {
+      const mainPrompt = templates.find(p => p.category === 'General') || templates[0];
+      if (mainPrompt) setSystemPrompt(mainPrompt.system_prompt || '');
+    }
+  }, [templates]);
 
   useEffect(() => {
     let result = templates;
@@ -182,8 +196,8 @@ export default function AIStudio() {
              <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
              <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Laboratorio de IA</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none italic uppercase">
-            Neural <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-500">Studio</span>
+          <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
+            Neural <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500">Studio</span>
           </h1>
           <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
             <Cpu size={12} className="text-green-500" />

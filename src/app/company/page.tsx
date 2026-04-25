@@ -71,8 +71,8 @@ export default function CompanyPage() {
              <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
              <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Identidad Corporativa</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none italic uppercase">
-            Unidad <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-500">Operativa</span>
+          <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
+            Unidad <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500">Operativa</span>
           </h1>
           <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
             <Fingerprint size={12} className="text-green-500" />

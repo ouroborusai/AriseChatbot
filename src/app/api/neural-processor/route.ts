@@ -9,6 +9,9 @@ import { requireAuth, verifyCompanyAccess } from '@/lib/api-auth';
 import { handleInventoryAction } from '@/lib/neural-engine/actions/inventory';
 import { handleTaskAction } from '@/lib/neural-engine/actions/task';
 import { handlePdfAction } from '@/lib/neural-engine/actions/pdf';
+import { handleDirectoryAction } from '@/lib/neural-engine/actions/directory';
+import { handleCreditAction } from '@/lib/neural-engine/actions/credit';
+import { handlePaymentAction } from '@/lib/neural-engine/actions/payment';
 
 /**
  * NEURAL PROCESSOR v9.0 Industrial CORE
@@ -20,11 +23,24 @@ import { handlePdfAction } from '@/lib/neural-engine/actions/pdf';
  * - inventory_remove: Restar stock existente
  * - task_create: Crear tarea/recordatorio
  * - pdf_generate: Generar y enviar PDF por WhatsApp
+ * - directory_register: Registrar/actualizar contacto en directorio interno
+ * - credit_limit_set: Establecer límite de crédito de un cliente
  */
+// Clave interna para llamadas desde la Edge Function de Gemini
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret';
+
 export async function POST(req: Request) {
-  // Verificar autenticación
-  const authResult = await requireAuth();
-  if (authResult.error) return authResult.error;
+  // Autenticación dual: sesión de usuario O clave interna
+  const internalKey = req.headers.get('x-api-key');
+  const isInternalCall = internalKey === INTERNAL_API_KEY;
+
+  let userId = null;
+
+  if (!isInternalCall) {
+    const authResult = await requireAuth();
+    if (authResult.error) return authResult.error;
+    userId = authResult.user.id;
+  }
 
   // Validación crítica: Service Role Key
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -52,14 +68,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verificar acceso a la compañía
-    const hasAccess = await verifyCompanyAccess(authResult.user.id, companyId);
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'Access denied to this company' },
-        { status: 403 }
-      );
+    // Verificar acceso a la compañía (solo si no es llamada interna)
+    if (!isInternalCall && userId) {
+      const hasAccess = await verifyCompanyAccess(userId, companyId);
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: 'Access denied to this company' },
+          { status: 403 }
+        );
+      }
     }
+
 
     // 1. Obtener contenido del mensaje con retry por latencia de replicación
     let message: { content: string } | null = null;
@@ -111,8 +130,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'aborted_handoff_active' });
     }
 
-    // 3. Buscar bloques de acción [[ ... ]]
-    const actionBlocks = message.content.match(/\[\[([\s\S]*?)\]\]/g);
+    // 3. Buscar bloques de acción [[ ... ]] o bloques de código markdown ```json ... ```
+    const actionBlocks = message.content.match(/\[\[([\s\S]*?)\]\]/g) || 
+                        message.content.match(/```json([\s\S]*?)```/g);
 
     if (!actionBlocks || actionBlocks.length === 0) {
       return NextResponse.json({ status: 'no_actions_detected' });
@@ -123,46 +143,61 @@ export async function POST(req: Request) {
     // 3. Ejecutar cada bloque detectado
     for (const block of actionBlocks) {
       try {
-        // Limpieza robusta de JSON v9.1
-        // Extraer contenido entre [[ y ]] preservando estructura JSON interna
-        const match = block.match(/^\[\[([\s\S]*?)\]\]$/);
-        if (!match) {
-          throw new Error('Invalid action block format');
+        // Limpieza robusta de JSON v9.5 (Multi-formato)
+        let cleanJson = '';
+        
+        if (block.startsWith('[[')) {
+          const match = block.match(/^\[\[([\s\S]*?)\]\]$/);
+          cleanJson = match ? match[1].trim() : '';
+        } else if (block.startsWith('```json')) {
+          const match = block.match(/^```json([\s\S]*?)```$/);
+          cleanJson = match ? match[1].trim() : '';
         }
 
-        const cleanJson = match[1]
-          .trim()
-          // Normalizar caracteres de control problemáticos
-          .replace(/\r\n/g, ' ')    // CRLF → espacio
-          .replace(/\r/g, '')       // CR → eliminar
-          .replace(/\n/g, ' ')      // LF → espacio
-          .replace(/\s+/g, ' ')     // Múltiples espacios → uno solo
+        if (!cleanJson) throw new Error('Invalid block format');
+
+        cleanJson = cleanJson
+          .replace(/\r\n/g, ' ')
+          .replace(/\r/g, '')
+          .replace(/\n/g, ' ')
+          .replace(/\s+/g, ' ')
           .trim();
 
         // Parse con fallback para strings escapados
-        let actionData: any;
+        let parsedData: any;
         try {
-          actionData = JSON.parse(cleanJson);
+          parsedData = JSON.parse(cleanJson);
         } catch {
           const escapedFix = cleanJson.replace(/\\'/g, "'").replace(/`/g, "'");
-          actionData = JSON.parse(escapedFix);
+          parsedData = JSON.parse(escapedFix);
         }
-        const actionType = actionData.action || '';
+        
+        // Convertir a array si es un objeto único para procesamiento uniforme
+        const actionArray = Array.isArray(parsedData) ? parsedData : [parsedData];
 
-        let actionResults: NeuralAction[] = [];
+        for (const actionData of actionArray) {
+          const actionType = actionData.action || '';
+          let actionResults: NeuralAction[] = [];
 
-        // 1. Handlers por Dominio (Strategy Pattern)
-        if (actionType.startsWith('inventory_')) {
-          actionResults = await handleInventoryAction(supabase, actionData, companyId, messageId);
-        } else if (actionType.startsWith('task_') || actionType.startsWith('reminder_')) {
-          actionResults = await handleTaskAction(supabase, actionData, companyId, messageId);
-        } else if (actionType === 'pdf_generate') {
-          actionResults = await handlePdfAction(supabase, actionData, companyId, messageId);
-        } else {
-          actionResults = [{ action: 'unknown', status: 'failed', error: `Unsupported action type: ${actionType}` }];
+          // 1. Handlers por Dominio (Strategy Pattern)
+          if (actionType.startsWith('inventory_')) {
+            actionResults = await handleInventoryAction(supabase, actionData, companyId, messageId);
+          } else if (actionType.startsWith('task_') || actionType.startsWith('reminder_')) {
+            actionResults = await handleTaskAction(supabase, actionData, companyId, messageId);
+          } else if (actionType === 'pdf_generate') {
+            actionResults = await handlePdfAction(supabase, actionData, companyId, messageId);
+          } else if (actionType.startsWith('directory_') || actionType === 'register_client') {
+            actionResults = await handleDirectoryAction(supabase, actionData, companyId, messageId);
+          } else if (actionType === 'credit_limit_set') {
+            actionResults = await handleCreditAction(supabase, actionData, companyId, messageId);
+          } else if (actionType === 'payment_link_generate') {
+            actionResults = await handlePaymentAction(supabase, actionData, companyId, messageId);
+          } else {
+            actionResults = [{ action: 'unknown', status: 'failed', error: `Unsupported action type: ${actionType}` }];
+          }
+
+          results.push(...actionResults);
         }
-
-        results.push(...actionResults);
       } catch {
         results.push({
           action: 'unknown',

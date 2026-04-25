@@ -32,113 +32,99 @@ import {
 } from 'recharts';
 import Image from 'next/image';
 
+import useSWR from 'swr';
+
 export default function Dashboard() {
   const { activeCompany, isLoading: isContextLoading } = useActiveCompany();
   const router = useRouter();
-  const [stats, setStats] = useState({
-    contacts: 0,
-    activeChats: 0,
-    lowStock: 0,
-    revenue: '$68,490'
-  });
-
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [recentSignals, setRecentSignals] = useState<any[]>([]);
-  const [neuralLogs, setNeuralLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
   const BRAND_GREEN = "#22c55e";
 
+  const fetchDashboardData = async (companyId: string) => {
+    const isGlobal = companyId === 'global';
+    
+    let contactsQuery = supabase.from('contacts').select('*', { count: 'estimated', head: true });
+    if (!isGlobal) contactsQuery = contactsQuery.eq('company_id', companyId);
+
+    let chatsQuery = supabase.from('conversations').select('*', { count: 'estimated', head: true });
+    if (!isGlobal) chatsQuery = chatsQuery.eq('company_id', companyId);
+
+    let invQuery = supabase.from('inventory_items').select('name, current_stock, min_stock_alert');
+    if (!isGlobal) invQuery = invQuery.eq('company_id', companyId);
+    
+    // Execute queries concurrently to avoid waterfall
+    const [
+      { count: contactsCount },
+      chatsResult,
+      { data: inventory }
+    ] = await Promise.all([
+      contactsQuery,
+      chatsQuery,
+      invQuery
+    ]);
+
+    const chatCount = chatsResult?.count || 0;
+    const lowStockItems = inventory?.filter((i: any) => i.current_stock <= (i.min_stock_alert || 0)) || [];
+    
+    return {
+      stats: {
+        contacts: contactsCount || 0,
+        activeChats: chatCount,
+        lowStock: lowStockItems.length,
+        revenue: contactsCount ? (isGlobal ? '$1.2M' : '$68,490') : '$0'
+      },
+      chartData: [
+        { name: '08:00', value: 10 }, { name: '10:00', value: 25 }, { name: '12:00', value: 45 },
+        { name: '14:00', value: 30 }, { name: '16:00', value: 65 }, { name: '18:00', value: 80 }
+      ],
+      recentSignals: [
+        ...lowStockItems.slice(0, 2).map((i: any) => ({
+          title: `Alerta Stock Crítico`,
+          desc: `${i.name}`,
+          time: 'Ahora',
+          icon: AlertCircle,
+          color: 'text-red-500'
+        })),
+        { title: 'Nodo Industrial Activo', desc: `Sincronizado con RLS`, time: '1m ago', icon: ShieldCheck, color: 'text-emerald-500' },
+        { title: 'Caché Semántica', desc: 'Optimizada para Gemini 2.5', time: '12m ago', icon: MessageCircle, color: 'text-primary' }
+      ],
+      neuralLogs: [
+        { id: 'AX-V622', task: 'Validación Multi-Tenant', type: 'Seguridad', status: 'OK', val: 'Verified' },
+        { id: 'AX-LOG', task: 'Sincronización de Contexto', type: 'Sistema', status: 'OK', val: 'Synced' }
+      ]
+    };
+  };
+
+  const { data, error, isLoading: isSwrLoading } = useSWR(
+    !isContextLoading && activeCompany?.id ? `dashboard_${activeCompany.id}` : null,
+    () => fetchDashboardData(activeCompany!.id),
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // 1 minute deduplication
+    }
+  );
+
+  // Authentication check
   useEffect(() => {
-    async function checkAuthAndFetch() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/auth/login');
-        return;
-      }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) router.push('/auth/login');
+    });
+  }, [router]);
 
-      setLoading(true);
-      const activeCompanyId = activeCompany?.id;
-      
-      if (!activeCompanyId) {
-        setStats({ contacts: 0, activeChats: 0, lowStock: 0, revenue: '$0' });
-        setChartData([
-          { name: '00:00', value: 0 }, { name: '04:00', value: 0 }, { name: '08:00', value: 0 },
-          { name: '12:00', value: 0 }, { name: '16:00', value: 0 }, { name: '20:00', value: 0 },
-          { name: '23:59', value: 0 }
-        ]);
-        setRecentSignals([
-          { title: 'SISTEMA INICIALIZADO', desc: 'Esperando selección de empresa', time: 'AHORA', icon: Activity, color: 'text-primary' },
-          { title: 'RLS BLOQUEADO', desc: 'Seleccione una empresa para abrir el nodo', time: '1m', icon: ShieldCheck, color: 'text-amber-500' }
-        ]);
-        setNeuralLogs([
-          { id: 'SYS-ACCESS', task: 'Pendiente de Contexto', type: 'Sistema', status: 'WAIT', val: 'N/A' }
-        ]);
-        setLoading(false);
-        return;
-      }
+  const loading = isContextLoading || isSwrLoading || !data;
 
-      try {
-        const isGlobal = activeCompanyId === 'global';
-        
-        let contactsQuery = supabase.from('contacts').select('*', { count: 'exact', head: true });
-        if (!isGlobal) contactsQuery = contactsQuery.eq('company_id', activeCompanyId);
-        const { count: contactsCount } = await contactsQuery;
-
-        let chatCount = 0;
-        try {
-          let chatsQuery = supabase.from('conversations').select('*', { count: 'exact', head: true });
-          if (!isGlobal) chatsQuery = chatsQuery.eq('company_id', activeCompanyId);
-          const { count } = await chatsQuery;
-          chatCount = count || 0;
-        } catch (e) { console.warn('Conversations cache skip'); }
-
-        let invQuery = supabase.from('inventory_items').select('name, current_stock, min_stock_alert');
-        if (!isGlobal) invQuery = invQuery.eq('company_id', activeCompanyId);
-        const { data: inventory } = await invQuery;
-        
-        const lowStockItems = inventory?.filter((i: any) => i.current_stock <= (i.min_stock_alert || 0)) || [];
-        
-        setStats(prev => ({
-          ...prev,
-          contacts: contactsCount || 0,
-          activeChats: chatCount,
-          lowStock: lowStockItems.length,
-          revenue: contactsCount ? (isGlobal ? '$1.2M' : '$68,490') : '$0'
-        }));
-
-        setRecentSignals([
-          ...lowStockItems.slice(0, 2).map((i: any) => ({
-            title: `Alerta Stock Crítico`,
-            desc: `${i.name}`,
-            time: 'Ahora',
-            icon: AlertCircle,
-            color: 'text-red-500'
-          })),
-          { title: 'Nodo Industrial Activo', desc: `Sincronizado con RLS`, time: '1m ago', icon: ShieldCheck, color: 'text-emerald-500' },
-          { title: 'Caché Semántica', desc: 'Optimizada para Gemini 2.5', time: '12m ago', icon: MessageCircle, color: 'text-primary' }
-        ]);
-
-        setNeuralLogs([
-          { id: 'AX-V622', task: 'Validación Multi-Tenant', type: 'Seguridad', status: 'OK', val: 'Verified' },
-          { id: 'AX-LOG', task: 'Sincronización de Contexto', type: 'Sistema', status: 'OK', val: 'Synced' }
-        ]);
-
-        setChartData([
-          { name: '08:00', value: 10 }, { name: '10:00', value: 25 }, { name: '12:00', value: 45 },
-          { name: '14:00', value: 30 }, { name: '16:00', value: 65 }, { name: '18:00', value: 80 }
-        ]);
-
-      } catch (err) {
-        console.error('DASHBOARD ERROR:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    if (!isContextLoading) {
-      checkAuthAndFetch();
-    }
-  }, [activeCompany, isContextLoading, router]);
+  const stats = data?.stats || { contacts: 0, activeChats: 0, lowStock: 0, revenue: '$0' };
+  const chartData = data?.chartData || [
+    { name: '00:00', value: 0 }, { name: '04:00', value: 0 }, { name: '08:00', value: 0 },
+    { name: '12:00', value: 0 }, { name: '16:00', value: 0 }, { name: '20:00', value: 0 },
+    { name: '23:59', value: 0 }
+  ];
+  const recentSignals = data?.recentSignals || [
+    { title: 'SISTEMA INICIALIZADO', desc: 'Esperando selección de empresa', time: 'AHORA', icon: Activity, color: 'text-primary' },
+    { title: 'RLS BLOQUEADO', desc: 'Seleccione una empresa para abrir el nodo', time: '1m', icon: ShieldCheck, color: 'text-amber-500' }
+  ];
+  const neuralLogs = data?.neuralLogs || [
+    { id: 'SYS-ACCESS', task: 'Pendiente de Contexto', type: 'Sistema', status: 'WAIT', val: 'N/A' }
+  ];
 
   return (
     <div className="flex flex-col w-full max-w-full py-6 md:py-12 animate-in fade-in duration-700 overflow-x-hidden relative">
@@ -154,8 +140,8 @@ export default function Dashboard() {
              <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
              <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Consola de Comando</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none italic uppercase">
-            Panel de <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-500">Control</span>
+          <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
+            Panel de <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500">Control</span>
           </h1>
           <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
             <Activity size={12} className="text-green-500" />
@@ -165,26 +151,26 @@ export default function Dashboard() {
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6">
           <div className="relative group">
-            <div className="absolute inset-0 bg-white/5 rounded-[24px] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-white rounded-[24px] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity shadow-sm" />
             <input 
               type="text" 
               placeholder="COMANDO DE BÚSQUEDA..." 
-              className="w-full lg:w-96 pl-14 pr-6 py-4.5 bg-white/5 text-[10px] font-black uppercase tracking-widest text-white rounded-[24px] outline-none border border-white/10 focus:border-green-500/30 focus:bg-white/10 transition-all relative z-10"
+              className="w-full lg:w-96 pl-14 pr-6 py-4.5 bg-white text-[10px] font-black uppercase tracking-widest text-slate-900 rounded-[24px] outline-none border border-slate-200 focus:border-green-500/50 focus:shadow-lg transition-all relative z-10 placeholder:text-slate-400"
             />
             <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 z-20" />
           </div>
           
           <div className="flex items-center gap-5">
-             <button className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all relative group shadow-2xl">
+             <button className="w-14 h-14 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:shadow-lg transition-all relative group">
                 <Bell size={20} />
                 <div className="absolute top-4 right-4 w-2 h-2 bg-green-500 rounded-full shadow-[0_0_10px_#22c55e] group-hover:scale-125 transition-transform" />
              </button>
-             <div className="hidden sm:flex items-center gap-4 bg-white/5 border border-white/10 px-5 py-2.5 rounded-2xl">
-                <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 relative">
+             <div className="hidden sm:flex items-center gap-4 bg-white border border-slate-200 px-5 py-2.5 rounded-2xl shadow-sm">
+                <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-100 relative">
                    <Image src="/brand/official.png" alt="Profile" fill className="object-cover" />
                 </div>
                 <div className="flex flex-col">
-                   <span className="text-[9px] font-black text-white uppercase tracking-wider leading-none">Root User</span>
+                   <span className="text-[9px] font-black text-slate-900 uppercase tracking-wider leading-none">Root User</span>
                    <span className="text-[7px] font-bold text-green-500 uppercase tracking-widest mt-1">Nivel 5</span>
                 </div>
              </div>
@@ -204,15 +190,15 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-16 px-1">
         
         {/* Activity Chart */}
-        <div className="lg:col-span-2 loop-card p-0 overflow-hidden relative group">
+        <div className="lg:col-span-2 loop-card-light p-0 overflow-hidden relative group border-none">
           <div className="absolute top-0 right-0 p-8">
-             <div className="bg-green-500/10 border border-green-500/20 px-4 py-2 rounded-xl flex items-center gap-3">
+             <div className="bg-green-500/10 border border-green-500/20 px-4 py-2 rounded-xl flex items-center gap-3 bg-white/80 backdrop-blur-sm">
                 <span className="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse"></span>
-                <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Monitoreo en Tiempo Real</span>
+                <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Monitoreo en Tiempo Real</span>
              </div>
           </div>
           <div className="p-10 pb-0">
-            <h2 className="text-[11px] font-black text-white uppercase tracking-[0.4em] italic mb-2">Actividad del Sistema</h2>
+            <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.4em] italic mb-2">Actividad del Sistema</h2>
             <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-xs">
               Métricas de interacción neural procesadas por LOOP Core v2.5
             </p>
@@ -254,9 +240,9 @@ export default function Dashboard() {
         </div>
 
         {/* System Status Feed */}
-        <div className="loop-card p-10 flex flex-col h-full bg-slate-900/40 relative overflow-hidden group">
+        <div className="loop-card-light p-10 flex flex-col h-full relative overflow-hidden group border-none">
           <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 blur-3xl rounded-full" />
-          <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-white italic mb-12 flex items-center justify-between">
+          <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-900 italic mb-12 flex items-center justify-between">
             <span>Señales Recientes</span>
             <Layers size={14} className="text-slate-600" />
           </h3>
@@ -269,37 +255,37 @@ export default function Dashboard() {
               return (
                 <div key={i} className="flex items-center justify-between group/item cursor-pointer">
                   <div className="flex items-center gap-6">
-                    <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center transition-all border border-white/5 group-hover/item:border-green-500/30 group-hover/item:bg-white/10 shadow-xl">
+                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center transition-all border border-slate-100 group-hover/item:border-green-500/30 group-hover/item:bg-white shadow-sm group-hover/item:shadow-md">
                       <Icon size={20} className={signal.color || 'text-slate-400'} />
                     </div>
                     <div>
-                      <p className="text-[11px] font-black text-white uppercase tracking-tight mb-1 group-hover/item:text-green-500 transition-colors">{signal.title}</p>
+                      <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight mb-1 group-hover/item:text-green-600 transition-colors">{signal.title}</p>
                       <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">{signal.desc}</p>
                     </div>
                   </div>
-                  <ChevronRight size={14} className="text-slate-700 group-hover/item:text-white transition-all transform group-hover/item:translate-x-1" />
+                  <ChevronRight size={14} className="text-slate-400 group-hover/item:text-slate-900 transition-all transform group-hover/item:translate-x-1" />
                 </div>
               );
             })}
           </div>
 
-          <button className="mt-10 w-full py-4 bg-white/5 border border-white/5 rounded-2xl text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] hover:bg-white/10 hover:text-white transition-all">
+          <button className="mt-10 w-full py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[9px] font-black text-slate-500 uppercase tracking-[0.4em] hover:bg-white hover:border-slate-200 hover:text-slate-900 hover:shadow-sm transition-all">
              Ver Todos los Registros
           </button>
         </div>
       </div>
 
       {/* RECENT OPERATIONS TABLE */}
-      <div className="loop-card p-10 overflow-hidden relative">
+      <div className="loop-card-light p-10 overflow-hidden relative border-none">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
-            <h2 className="text-[11px] font-black text-white uppercase tracking-[0.4em] italic">Matriz de Operaciones</h2>
+            <h2 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.4em] italic">Matriz de Operaciones</h2>
             <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-2">Historial neural de la instancia actual</p>
           </div>
           <div className="flex items-center gap-4">
-             <div className="bg-white/5 px-6 py-3 rounded-xl border border-white/5 flex items-center gap-4">
+             <div className="bg-slate-50 px-6 py-3 rounded-xl border border-slate-100 flex items-center gap-4 shadow-sm">
                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Filtros Activos:</span>
-                <span className="bg-green-500 text-slate-900 px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest">TODO</span>
+                <span className="bg-green-500 text-white px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest">TODO</span>
              </div>
           </div>
         </div>
@@ -314,28 +300,28 @@ export default function Dashboard() {
                 <th className="pb-10 text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] text-right">Resultado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.03]">
+            <tbody className="divide-y divide-slate-100">
               {neuralLogs.map((log, i) => (
-                <tr key={i} className="group hover:bg-white/[0.02] transition-all cursor-pointer">
+                <tr key={i} className="group hover:bg-slate-50 transition-all cursor-pointer">
                   <td className="py-10 text-[11px] font-mono text-slate-500 tracking-widest">{log.id}</td>
                   <td className="py-10">
                     <div className="flex items-center gap-5">
-                      <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-600 group-hover:bg-green-500 group-hover:text-slate-900 transition-all shadow-xl"><Box size={16}/></div>
+                      <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500 group-hover:bg-green-500 group-hover:text-white transition-all shadow-sm group-hover:shadow-md"><Box size={16}/></div>
                       <div className="flex flex-col">
-                        <span className="text-[11px] font-black text-white uppercase tracking-tight">{log.task}</span>
-                        <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-1">{log.type}</span>
+                        <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{log.task}</span>
+                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1">{log.type}</span>
                       </div>
                     </div>
                   </td>
                   <td className="py-10 text-center">
-                    <span className="bg-green-500/10 text-green-500 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest border border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+                    <span className="bg-green-500/10 text-green-600 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest border border-green-500/20">
                       {log.status}
                     </span>
                   </td>
                   <td className="py-10 text-right">
                     <div className="flex items-center justify-end gap-3">
-                       <span className="text-[11px] font-black text-white uppercase italic tracking-tighter">{log.val}</span>
-                       <ArrowUpRight size={14} className="text-slate-800 group-hover:text-green-500 transition-colors" />
+                       <span className="text-[11px] font-black text-slate-900 uppercase italic tracking-tighter">{log.val}</span>
+                       <ArrowUpRight size={14} className="text-slate-400 group-hover:text-green-500 transition-colors" />
                     </div>
                   </td>
                 </tr>
@@ -349,24 +335,24 @@ export default function Dashboard() {
 }
 
 function MetricCard({ title, value, drift, icon: Icon, loading, negative, highlight }: any) {
-  if (loading) return <div className="loop-card p-12 min-h-[220px] animate-pulse bg-white/5 border-none" />;
+  if (loading) return <div className="loop-card-light p-12 min-h-[220px] animate-pulse bg-slate-50 border-none" />;
 
   return (
-    <div className={`loop-card p-10 border-none shadow-2xl relative overflow-hidden group hover:scale-[1.02] ${highlight ? 'bg-gradient-to-br from-green-600 to-green-900' : 'bg-slate-900/50'}`}>
+    <div className={`loop-card-light p-10 border-none relative overflow-hidden group hover:scale-[1.02] ${highlight ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl shadow-green-500/20' : 'bg-white'}`}>
       
       {/* Visual Accents */}
-      <div className={`absolute top-0 right-0 w-32 h-32 blur-[80px] rounded-full transition-all duration-700 ${highlight ? 'bg-white/20' : 'bg-green-500/10 group-hover:bg-green-500/20'}`} />
+      <div className={`absolute top-0 right-0 w-32 h-32 blur-[80px] rounded-full transition-all duration-700 ${highlight ? 'bg-white/20' : 'bg-green-500/5 group-hover:bg-green-500/10'}`} />
       
       <div className="flex justify-between items-start mb-12 relative z-10">
-        <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${highlight ? 'text-white/70' : 'text-slate-500 group-hover:text-slate-300 transition-colors'}`}>{title}</p>
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${highlight ? 'bg-white/10 text-white shadow-2xl' : 'bg-white/5 text-slate-500 group-hover:text-green-500 border border-white/5 group-hover:border-green-500/20'}`}>
+        <p className={`text-[10px] font-black uppercase tracking-[0.4em] ${highlight ? 'text-white/80' : 'text-slate-500 group-hover:text-slate-700 transition-colors'}`}>{title}</p>
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${highlight ? 'bg-white/20 text-white shadow-lg' : 'bg-slate-50 text-slate-400 group-hover:text-green-500 border border-slate-100 group-hover:border-green-500/20 group-hover:shadow-sm'}`}>
           <Icon size={24} />
         </div>
       </div>
 
       <div className="relative z-10">
-        <h2 className={`text-5xl font-black mb-4 tracking-tighter leading-none ${highlight ? 'text-white' : 'text-white'}`}>{value}</h2>
-        <div className={`inline-flex px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg ${highlight ? 'bg-white/20 text-white' : (negative ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-500 border border-green-500/20')}`}>
+        <h2 className={`text-5xl font-black mb-4 tracking-tighter leading-none ${highlight ? 'text-white' : 'text-slate-900'}`}>{value}</h2>
+        <div className={`inline-flex px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm ${highlight ? 'bg-white/20 text-white' : (negative ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-green-50 text-green-600 border border-green-100')}`}>
           {drift}
         </div>
       </div>
@@ -377,10 +363,10 @@ function MetricCard({ title, value, drift, icon: Icon, loading, negative, highli
 function SkeletonRow() {
   return (
     <div className="flex items-center gap-6">
-      <div className="w-14 h-14 bg-white/5 rounded-2xl animate-pulse" />
+      <div className="w-14 h-14 bg-slate-100 rounded-2xl animate-pulse" />
       <div className="space-y-3">
-        <div className="w-32 h-3 bg-white/5 rounded-full animate-pulse" />
-        <div className="w-20 h-2 bg-white/5 rounded-full animate-pulse opacity-50" />
+        <div className="w-32 h-3 bg-slate-100 rounded-full animate-pulse" />
+        <div className="w-20 h-2 bg-slate-100 rounded-full animate-pulse opacity-50" />
       </div>
     </div>
   );

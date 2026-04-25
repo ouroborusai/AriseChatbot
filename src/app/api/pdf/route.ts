@@ -5,6 +5,9 @@ import { templates } from '@/lib/pdf/templates';
 import { requireAuth } from '@/lib/api-auth';
 import { createClient } from '@supabase/supabase-js';
 
+// Clave interna para llamadas del neural-processor (sin sesión de usuario)
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret';
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -16,9 +19,14 @@ const supabase = createClient(
  */
 export async function POST(req: Request) {
   try {
-    // Verificar autenticación
-    const authResult = await requireAuth();
-    if (authResult.error) return authResult.error;
+    // Autenticación dual: sesión de usuario O clave interna del neural-processor
+    const internalKey = req.headers.get('x-api-key');
+    const isInternalCall = internalKey === INTERNAL_API_KEY;
+
+    if (!isInternalCall) {
+      const authResult = await requireAuth();
+      if (authResult.error) return authResult.error;
+    }
 
     const { targetPhone, whatsappToken, phoneNumberId, reportType, companyId } = await req.json();
 

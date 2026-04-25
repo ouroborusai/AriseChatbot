@@ -55,23 +55,31 @@ export async function handleInventoryAction(
     });
   }
 
-  // 2. INVENTORY_ADD / REMOVE
+  // 2. INVENTORY_ADD / REMOVE / LOG (SSOT Sync)
   if (
-    (actionData.action === 'inventory_add' || actionData.action === 'inventory_remove') &&
-    actionData.sku
+    (actionData.action === 'inventory_add' || 
+     actionData.action === 'inventory_remove' || 
+     actionData.action === 'inventory_log') &&
+    (actionData.sku || actionData.params?.item_id || actionData.item_id)
   ) {
+    const sku = actionData.sku || actionData.params?.item_id || actionData.item_id;
     const { data: item } = await supabase
       .from('inventory_items')
       .select('id')
-      .ilike('sku', actionData.sku)
+      .or(`sku.ilike.${sku},id.eq.${sku}`)
       .eq('company_id', companyId)
       .maybeSingle();
 
     if (!item) {
-      results.push({ action: actionData.action, status: 'item_not_found', sku: actionData.sku });
+      results.push({ action: actionData.action, status: 'item_not_found', sku });
     } else {
-      const quantity = parseFloat(actionData.quantity) || 1;
-      const type = actionData.action === 'inventory_add' ? 'in' : 'out';
+      const quantity = parseFloat(actionData.quantity || actionData.params?.quantity) || 1;
+      let type = 'in';
+      
+      if (actionData.action === 'inventory_remove') type = 'out';
+      if (actionData.action === 'inventory_log') {
+        type = actionData.params?.type || 'in';
+      }
 
       const { error: transactionError } = await supabase
         .from('inventory_transactions')
@@ -85,7 +93,7 @@ export async function handleInventoryAction(
       results.push({
         action: actionData.action,
         status: transactionError ? 'failed' : 'success',
-        sku: actionData.sku,
+        sku,
         error: transactionError?.message,
       });
     }

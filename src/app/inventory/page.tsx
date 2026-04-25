@@ -19,70 +19,74 @@ import { InventoryTable } from '@/components/inventory/InventoryTable';
 import { InventoryKardex } from '@/components/inventory/InventoryKardex';
 import { InventoryQuickActions } from '@/components/inventory/InventoryQuickActions';
 import Image from 'next/image';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import useSWR from 'swr';
 
 const PAGE_SIZE = 8;
 
 export default function InventoryPage() {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { activeCompany, isLoading: isContextLoading } = useActiveCompany();
   const [page, setPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  
+  const activeCompanyId = activeCompany?.id;
 
-  const fetchInventory = async (currentPage: number) => {
-    setLoading(true);
-    const activeCompanyId = typeof window !== 'undefined' ? localStorage.getItem('arise_active_company') : null;
+  const fetchInventory = async (companyId: string, currentPage: number) => {
+    const isGlobal = companyId === 'global';
     
-    if (!activeCompanyId || activeCompanyId === 'null' || activeCompanyId === 'undefined') {
-      setLoading(false);
-      return;
-    }
-
-    const isGlobal = activeCompanyId === 'global';
+    let countQuery = supabase
+      .from('inventory_items')
+      .select('*', { count: 'estimated', head: true });
     
-    try {
-      let countQuery = supabase
-        .from('inventory_items')
-        .select('*', { count: 'exact', head: true });
-      
-      if (!isGlobal) countQuery = countQuery.eq('company_id', activeCompanyId);
-      const { count } = await countQuery;
-      setTotalCount(count || 0);
+    if (!isGlobal) countQuery = countQuery.eq('company_id', companyId);
 
-      let dataQuery = supabase
-        .from('inventory_items')
-        .select('*');
-      
-      if (!isGlobal) dataQuery = dataQuery.eq('company_id', activeCompanyId);
-      
-      const { data, error } = await dataQuery
+    let dataQuery = supabase
+      .from('inventory_items')
+      .select('*');
+    
+    if (!isGlobal) dataQuery = dataQuery.eq('company_id', companyId);
+    
+    let transQuery = supabase
+      .from('inventory_transactions')
+      .select('*, inventory_items(name)');
+    
+    if (!isGlobal) transQuery = transQuery.eq('company_id', companyId);
+    
+    const [
+      { count },
+      { data, error },
+      { data: transData }
+    ] = await Promise.all([
+      countQuery,
+      dataQuery
         .order('current_stock', { ascending: true })
-        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
-
-      if (error) throw error;
-      if (data) setItems(data);
-
-      let transQuery = supabase
-        .from('inventory_transactions')
-        .select('*, inventory_items(name)');
-      
-      if (!isGlobal) transQuery = transQuery.eq('company_id', activeCompanyId);
-      
-      const { data: transData } = await transQuery
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1),
+      transQuery
         .order('created_at', { ascending: false })
-        .limit(5);
-      
-      if (transData) setTransactions(transData);
-    } catch (err) {
-      console.error('INVENTORY NODE ERROR:', err);
-    } finally {
-      setLoading(false);
-    }
+        .limit(5)
+    ]);
+
+    if (error) throw error;
+    
+    return {
+      totalCount: count || 0,
+      items: data || [],
+      transactions: transData || []
+    };
   };
 
-  useEffect(() => {
-    fetchInventory(page);
-  }, [page]);
+  const { data, error, isLoading: isSwrLoading } = useSWR(
+    !isContextLoading && activeCompanyId ? `inventory_${activeCompanyId}_${page}` : null,
+    () => fetchInventory(activeCompanyId!, page),
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    }
+  );
+
+  const loading = isContextLoading || isSwrLoading || !data;
+  const items = data?.items || [];
+  const transactions = data?.transactions || [];
+  const totalCount = data?.totalCount || 0;
 
   const hasCriticalStock = items.some(i => i.current_stock <= (i.min_stock_alert || 0));
   const criticalCount = items.filter(i => i.current_stock <= (i.min_stock_alert || 0)).length;
@@ -102,8 +106,8 @@ export default function InventoryPage() {
              <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Logística Industrial</span>
           </div>
           <div className="flex items-center gap-6">
-            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none italic uppercase">
-              Control de <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-500">Stock</span>
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
+              Control de <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500">Stock</span>
             </h1>
             {typeof window !== 'undefined' && localStorage.getItem('arise_active_company') === 'global' && (
               <span className="bg-green-500/10 text-green-500 text-[9px] font-black px-4 py-2 rounded-xl tracking-[0.2em] uppercase border border-green-500/20 shadow-lg">Global</span>

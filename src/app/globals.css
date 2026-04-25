@@ -48,6 +48,15 @@
     @apply shadow-loop-hover -translate-y-2 border-primary/20 bg-slate-900/80;
   }
 
+  /* LUMINOUS PURE CONTAINERS (Light) */
+  .loop-card-light {
+    @apply bg-white/80 backdrop-blur-xl rounded-[40px] shadow-[0_8px_30px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 border border-slate-200/80;
+  }
+  
+  .loop-card-light:hover {
+    @apply shadow-[0_15px_50px_-15px_rgba(34,197,94,0.15)] -translate-y-2 border-green-500/30 bg-white;
+  }
+
   /* BUTTONS: THE NEURAL CORE LOOK */
   .btn-loop {
     @apply bg-white text-slate-900 px-8 py-3.5 rounded-[18px] font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-primary hover:text-white hover:scale-[1.03] active:scale-95 shadow-xl shadow-green-500/10;

@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { MetricSmall } from '@/components/ui/MetricSmall';
 import Image from 'next/image';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import useSWR from 'swr';
 
 interface Employee {
   id: string;
@@ -26,29 +28,30 @@ interface Employee {
 }
 
 export default function TeamPage() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { activeCompany, isLoading: isContextLoading } = useActiveCompany();
+  const activeCompanyId = activeCompany?.id;
 
-  useEffect(() => {
-    async function fetchTeam() {
-      const activeCompanyId = localStorage.getItem('arise_active_company');
-      if (!activeCompanyId) {
-        setLoading(false);
-        return;
-      }
-      
-      const { data } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('company_id', activeCompanyId)
-        .order('full_name');
-      
-      if (data) setEmployees(data);
-      setLoading(false);
+  const fetchTeam = async (companyId: string) => {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('full_name');
+    
+    if (error) throw error;
+    return data || [];
+  };
+
+  const { data: employees, error, isLoading: isSwrLoading } = useSWR(
+    !isContextLoading && activeCompanyId ? `team_${activeCompanyId}` : null,
+    () => fetchTeam(activeCompanyId!),
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
     }
+  );
 
-    fetchTeam();
-  }, []);
+  const loading = isContextLoading || isSwrLoading || !employees;
 
   return (
     <div className="flex flex-col w-full max-w-full py-6 md:py-12 animate-in fade-in duration-700 overflow-x-hidden relative">
@@ -63,8 +66,8 @@ export default function TeamPage() {
              <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
              <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Gestión de Capital Humano</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none italic uppercase">
-            Unidades <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-500">Operativas</span>
+          <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
+            Unidades <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500">Operativas</span>
           </h1>
           <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
             <Users size={12} className="text-green-500" />

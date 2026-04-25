@@ -6,11 +6,24 @@ const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || ''
 });
 
+// Clave interna para llamadas del neural-processor
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret';
+
+
 export async function POST(req: Request) {
   try {
-    // Verificar autenticación
-    const authResult = await requireAuth();
-    if (authResult.error) return authResult.error;
+    // Autenticación dual: sesión de usuario O clave interna
+    const internalKey = req.headers.get('x-api-key');
+    const isInternalCall = internalKey === INTERNAL_API_KEY;
+
+    let userId = null;
+
+    if (!isInternalCall) {
+      const authResult = await requireAuth();
+      if (authResult.error) return authResult.error;
+      userId = authResult.user.id;
+    }
+
 
     const { companyId, companyName, userEmail } = await req.json();
 
@@ -34,14 +47,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
-    // Verificar acceso a la compañía
-    const hasAccess = await verifyCompanyAccess(authResult.user.id, companyId);
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'Access denied to this company' },
-        { status: 403 }
-      );
+    // Verificar acceso a la compañía (solo si no es llamada interna)
+    if (!isInternalCall && userId) {
+      const hasAccess = await verifyCompanyAccess(userId, companyId);
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: 'Access denied to this company' },
+          { status: 403 }
+        );
+      }
     }
+
 
     const preference = new Preference(client);
     

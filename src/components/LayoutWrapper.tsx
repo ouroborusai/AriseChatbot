@@ -48,7 +48,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       <MobileNav />
 
       {/* MASTER FULL-SCREEN CONTAINER - Fluid UI / Anti-Overflow */}
-      <main className="lg:ml-72 min-h-screen flex flex-col pt-20 lg:pt-0 pb-32 lg:pb-0 px-4 md:px-10 max-w-full overflow-x-hidden">
+      <main className="lg:ml-64 min-h-screen flex flex-col pt-20 lg:pt-0 pb-32 lg:pb-0 px-4 md:px-6 max-w-full overflow-x-hidden">
         {children}
       </main>
     </>

@@ -30,10 +30,10 @@ export default function MobileNav() {
   return (
     <>
       {/* MOBILE HEADER (Neural Context) */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#010409]/80 backdrop-blur-2xl px-6 py-4 flex justify-between items-center border-b border-white/5 shadow-2xl">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-2xl px-6 py-4 flex justify-between items-center border-b border-slate-100 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 relative rotate-3 group-hover:rotate-0 transition-transform">
-             <div className="absolute inset-0 bg-green-500/10 blur-lg rounded-full" />
+             <div className="absolute inset-0 bg-green-100 blur-lg rounded-full" />
              <Image 
                src="/brand/official.png" 
                alt="LOOP Logo" 
@@ -43,13 +43,13 @@ export default function MobileNav() {
              />
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-white tracking-tighter text-sm uppercase italic">LOOP</span>
+            <span className="font-black text-slate-900 tracking-tighter text-sm uppercase italic">LOOP</span>
             <span className="text-green-500 text-[8px] font-black uppercase tracking-[0.2em] leading-none">NEURAL_OS</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
            <CompanySelector variant="header" className="scale-90 origin-right" />
-           <Link href="/users" className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-500 border border-white/5 shadow-inner">
+           <Link href="/users" className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 border border-slate-200 shadow-sm hover:text-slate-900 transition-colors">
              <Settings size={18} />
            </Link>
         </div>
@@ -57,8 +57,8 @@ export default function MobileNav() {
 
       {/* BOTTOM FLOATING NAV BAR */}
       <nav className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-sm">
-        <div className="bg-[#020617]/90 backdrop-blur-3xl rounded-[32px] p-2.5 flex items-center justify-around shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-green-500/20 to-transparent" />
+        <div className="bg-white/90 backdrop-blur-3xl rounded-[32px] p-2.5 flex items-center justify-around shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-slate-200 relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-green-500/50 to-transparent" />
           
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -67,7 +67,7 @@ export default function MobileNav() {
                 key={item.href} 
                 href={item.href}
                 className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl transition-all duration-500 relative ${
-                  isActive ? 'text-green-500' : 'text-slate-600 hover:text-white'
+                  isActive ? 'text-green-500' : 'text-slate-400 hover:text-slate-900'
                 }`}
               >
                 <div className={`${isActive ? 'scale-110 -translate-y-1' : 'scale-100'} transition-all duration-500`}>

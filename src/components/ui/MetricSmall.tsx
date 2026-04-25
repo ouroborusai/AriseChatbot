@@ -28,23 +28,23 @@ export function MetricSmall({
   className = "" 
 }: MetricSmallProps) {
   if (loading) return (
-    <div className={`loop-card p-10 bg-white/5 border-white/5 animate-pulse h-40 ${className} relative overflow-hidden`}>
-       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent animate-shimmer" />
+    <div className={`loop-card p-10 bg-slate-50 border-none animate-pulse h-40 ${className} relative overflow-hidden`}>
+       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-200/50 to-transparent animate-shimmer" />
     </div>
   );
   
   const bgClass = active
-    ? 'bg-white text-slate-900 shadow-[0_30px_60px_rgba(255,255,255,0.1)] border-transparent'
+    ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-xl shadow-green-500/20 border-transparent'
     : warning
-      ? 'bg-red-500/5 text-red-500 border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.05)]'
-      : 'bg-white/5 text-white hover:bg-white/[0.08] border border-white/5 shadow-2xl';
+      ? 'bg-red-50 text-red-500 border-red-100 shadow-[0_0_40px_rgba(239,68,68,0.05)]'
+      : 'bg-white text-slate-900 hover:scale-[1.02] border border-slate-100 shadow-xl';
 
-  const titleClass = active ? 'text-slate-500' : 'text-slate-600';
+  const titleClass = active ? 'text-white/80' : 'text-slate-500';
   const iconBgClass = active
-    ? 'bg-slate-900 text-white'
+    ? 'bg-white/20 text-white shadow-lg'
     : warning
-      ? 'bg-red-500/10 text-red-500'
-      : 'bg-white/5 text-slate-700 group-hover:text-green-500 group-hover:bg-white/10 group-hover:border-green-500/20 border border-white/5';
+      ? 'bg-red-100 text-red-500'
+      : 'bg-slate-50 text-slate-400 group-hover:text-green-500 group-hover:bg-green-50/50 group-hover:border-green-500/20 border border-slate-100 shadow-sm';
 
   return (
     <div className={`loop-card p-8 transition-all duration-700 group relative overflow-hidden ${bgClass} ${className} rounded-[32px] md:rounded-[48px]`}>

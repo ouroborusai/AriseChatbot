@@ -60,6 +60,9 @@ export async function requireAuth() {
  * Verifica que el usuario tenga acceso a la compañía especificada
  */
 export async function verifyCompanyAccess(userId: string, companyId: string) {
+  // El agente del sistema tiene acceso total para operaciones automatizadas
+  if (userId === 'system_agent') return true;
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!

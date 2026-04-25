@@ -2,15 +2,14 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
 /**
- * MASTER NEURAL ENGINE v9.2 - Ouroborus AI
+ * MASTER NEURAL ENGINE v48 - Ouroborus AI (Industrial Sync)
  * Procesa pulsos de la DB y genera respuestas inteligentes con soporte para acciones neurales.
+ * Implementa Triple Algoritmo de Resiliencia: Reintentos -> Multi-Modelo -> Rotación de Llaves.
  */
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!, 
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
-
-const DIRECTOR_PHONE = "56990062213";
 
 async function sendWhatsApp(to: string, payload: any, token: string, phoneId: string) {
   return await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
@@ -19,6 +18,8 @@ async function sendWhatsApp(to: string, payload: any, token: string, phoneId: st
     body: JSON.stringify({ messaging_product: 'whatsapp', to, ...payload })
   });
 }
+
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 serve(async (req: Request) => {
   try {
@@ -30,11 +31,9 @@ serve(async (req: Request) => {
         return new Response(challenge, { status: 200 });
     }
 
-    // --- TRIGGER MODE (tr_neural_pulse) ---
     if (url.searchParams.get('source') === 'trigger' && body.messageId) {
-      console.log(`[Neural] Pulse received for message: ${body.messageId}`);
+      console.log(`[Neural] Pulse received: ${body.messageId}`);
       
-      // 1. Obtener mensaje y contexto de conversación
       const { data: msg, error: msgErr } = await supabase
         .from('messages')
         .select('*, conversations(*)')
@@ -43,79 +42,83 @@ serve(async (req: Request) => {
 
       if (msgErr || !msg) return new Response('Msg not found', { status: 404 });
 
-      const companyId = msg.conversations.company_id;
-      const convId = msg.conversation_id;
+      const conversation = Array.isArray(msg.conversations) ? msg.conversations[0] : msg.conversations;
+      const companyId = conversation?.company_id;
+      if (!companyId) return new Response('No company', { status: 400 });
 
-      // 2. Obtener Prompt y API Keys
-      const { data: p } = await supabase.from('ai_prompts').select('system_prompt').eq('company_id', companyId).eq('is_active', true).limit(1).maybeSingle();
-      const { data: history } = await supabase.from('messages').select('sender_type, content').eq('conversation_id', convId).order('created_at', { ascending: false }).limit(10);
-      
+      const [promptRes, historyRes, keysRes, directoryRes, companyRes, contactRes] = await Promise.all([
+        supabase.from('ai_prompts').select('system_prompt').eq('company_id', companyId).eq('is_active', true).maybeSingle(),
+        supabase.from('messages').select('sender_type, content').eq('conversation_id', msg.conversation_id).order('created_at', { ascending: false }).limit(10),
+        supabase.from('gemini_api_keys').select('api_key').eq('is_active', true),
+        supabase.from('internal_directory').select('phone, name, role').eq('company_id', companyId).limit(50),
+        supabase.from('companies').select('settings').eq('id', companyId).maybeSingle(),
+        conversation.contact_id ? supabase.from('contacts').select('phone').eq('id', conversation.contact_id).maybeSingle() : Promise.resolve({ data: null })
+      ]);
+
+      const systemPrompt = promptRes.data?.system_prompt || "Eres Arise Business OS v9.0.";
+      const history = (historyRes.data || []).reverse();
+      const directory = directoryRes.data || [];
+      const waSettings = companyRes.data?.settings?.whatsapp;
+
       let keys = (Deno.env.get('GEMINI_API_KEY') || "").split(',').map((k: string) => k.trim()).filter((k: string) => k.length > 0);
-      if (keys.length === 0) {
-        const { data: vaultKeys } = await supabase.from('gemini_api_keys').select('api_key').eq('is_active', true);
-        if (vaultKeys) keys = vaultKeys.map((k: any) => k.api_key);
-      }
+      if (keys.length === 0 && keysRes.data) keys = keysRes.data.map((k: any) => k.api_key);
+      if (keys.length === 0) throw new Error('No API Keys');
 
-      if (keys.length === 0) return new Response('No API Keys', { status: 500 });
-
-      // 3. Formatear historial para Gemini
-      const formattedHistory = (history || [])
-        .reverse()
-        .map((m: any) => `${m.sender_type === 'user' ? 'Usuario' : 'Arise'}: ${m.content}`)
-        .join('\n');
-
-      const systemPrompt = p?.system_prompt || "Eres Arise Business OS v9.0, el cerebro neural de la empresa.";
-      
+      const formattedHistory = history.map((m: any) => `${m.sender_type === 'user' ? 'User' : 'Bot'}: ${m.content}`).join('\n');
+      const directoryContext = directory.map(d => `- ${d.name} (${d.phone}): ${d.role}`).join('\n');
       const lastMsgLower = msg.content.trim().toLowerCase();
       const isReset = lastMsgLower === 'hola' || lastMsgLower === 'menú' || lastMsgLower === 'menu' || lastMsgLower === 'inicio';
 
-      const promptWithContext = `
-${systemPrompt}
-
-[HISTORIAL DE CONVERSACIÓN]
-${formattedHistory}
-
-[INSTRUCCIÓN FINAL]
-${isReset 
-  ? "ATENCIÓN: EL USUARIO ACABA DE ENVIAR UN SALUDO O COMANDO DE INICIO ('Hola', 'Menu', etc.). IGNORA cualquier flujo pendiente en el historial (como acciones a medio terminar, '[Saltar]', etc.) y REINICIA la conversación saludando y mostrando el [Menú Principal]." 
-  : "Genera una respuesta ejecutiva y breve."}
-Si necesitas realizar una acción (inventario, reporte, etc.), incluye el bloque [[ { "action": "..." } ]] al final.
-Para botones, usa el formato: [Texto de respuesta] --- [Botón 1] | [Botón 2]
-`;
+      const fullPrompt = `${systemPrompt}\n\n[DIRECTORY]\n${directoryContext}\n\n[HISTORY]\n${formattedHistory}\n\n[IDENTITY]\nTe llamas ARISE. Eres la inteligencia de Arise Business OS.\n\n[INSTRUCTION]\n${isReset ? "ATENCIÓN: REINICIA la conversación saludando y mostrando el [Menú Principal]." : "Responde de forma ejecutiva y breve."}\nUsa [[ { \"action\": \"...\" } ]] para acciones.\nPara botones usa: [Texto] --- [Botón 1] | [Botón 2]`;
 
       let aiResponse = null;
-      const apiKey = keys[Math.floor(Math.random() * keys.length)];
+      let lastErr = "";
+      const shuffledKeys = keys.sort(() => Math.random() - 0.5);
+      const models = ['gemini-2.5-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: promptWithContext }] }] })
-      });
-      
-      if (res.status === 200) {
-        const d = await res.json();
-        aiResponse = d.candidates?.[0]?.content?.parts?.[0]?.text;
+      // ELASTIC NEURAL LOOP: Attempts -> Models -> Keys
+      searchLoop: for (let attempt = 0; attempt < 2; attempt++) {
+        for (const model of models) {
+          for (const key of shuffledKeys) {
+            console.log(`[Neural] Trying ${model} with key ${key.substring(0, 5)}...`);
+            try {
+              const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
+              });
+              
+              if (res.ok) {
+                const d = await res.json();
+                aiResponse = d.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (aiResponse) break searchLoop;
+              } else {
+                lastErr = await res.text();
+                console.warn(`[Neural] ${model} failed: ${res.status}`);
+              }
+            } catch (err: any) {
+              lastErr = err.message;
+            }
+          }
+        }
+        console.log(`[Neural] Full cycle failed. Cooling down 5s...`);
+        await delay(5000);
       }
 
-      if (aiResponse) {
-        // 4. Persistir respuesta del Bot
-        const { data: botMsg } = await supabase.from('messages').insert({ 
-            conversation_id: convId, 
-            sender_type: 'bot', 
-            content: aiResponse.trim() 
-        }).select('id').single();
+      if (!aiResponse) throw new Error(`Neural Exhaustion. Last Err: ${lastErr}`);
 
-        // 5. Enviar a WhatsApp
-        const { data: comp } = await supabase.from('companies').select('settings').eq('id', companyId).single();
-        const { data: cont } = await supabase.from('contacts').select('phone').eq('id', msg.conversations.contact_id).single();
-        
-        const waToken = comp.settings.whatsapp.access_token;
-        const phoneId = comp.settings.whatsapp.phone_number_id;
+      // Persistencia y Salida
+      const { data: botMsg } = await supabase.from('messages').insert({ 
+        conversation_id: convId, 
+        sender_type: 'bot', 
+        content: aiResponse.trim() 
+      }).select('id').maybeSingle();
 
-        // Limpiar bloques de acción para el mensaje de texto
+      const targetPhone = contactRes.data?.phone;
+      if (waSettings?.access_token && waSettings?.phone_number_id && targetPhone) {
         const cleanAiText = aiResponse.replace(/\[\[[^\[\]]+\]\]/g, '').trim();
         const parts = cleanAiText.split('---');
-        const textPart = parts[0]?.trim();
+        const textPart = parts[0]?.trim() || "Procesado.";
         const buttonsPart = parts.length > 1 ? parts[1] : null;
 
         let payload: any = { type: 'text', text: { body: textPart } };
@@ -134,29 +137,25 @@ Para botones, usa el formato: [Texto de respuesta] --- [Botón 1] | [Botón 2]
             }
           };
         }
+        await sendWhatsApp(targetPhone, payload, waSettings.access_token, waSettings.phone_number_id);
+      }
 
-        await sendWhatsApp(cont.phone, payload, waToken, phoneId);
-
-        // 6. Bridge al Neural Processor (Si hay acciones)
-        if (aiResponse.includes('[[')) {
-          const appUrl = Deno.env.get('APP_URL') || "https://arise-business-os.vercel.app";
-          fetch(`${appUrl}/api/neural-processor`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json', 
-              'x-api-key': Deno.env.get('INTERNAL_API_KEY') || 'arise_internal_v9_secret' 
-            },
-            body: JSON.stringify({ messageId: botMsg?.id, companyId: companyId })
-          }).catch((e: Error) => console.error('[Neural Bridge] Failed:', e));
-        }
+      if (aiResponse.includes('[[') && botMsg) {
+        const appUrl = Deno.env.get('APP_URL') || "https://arise-business-os.vercel.app";
+        fetch(`${appUrl}/api/neural-processor`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'x-api-key': Deno.env.get('INTERNAL_API_KEY') || 'arise_internal_v9_secret' 
+          },
+          body: JSON.stringify({ messageId: botMsg.id, companyId: companyId })
+        }).catch(() => {});
       }
       return new Response('OK');
     }
-
-    return new Response('Not a trigger', { status: 400 });
+    return new Response('Ignored', { status: 400 });
   } catch (e: any) {
-    console.error(`[Neural] Fatal error: ${e.message}`);
-    return new Response('Fatal', { status: 500 });
+    console.error(`[Neural] FATAL: ${e.message}`);
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 });
-
