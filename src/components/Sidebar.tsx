@@ -31,13 +31,13 @@ const menuItems = [
   { name: 'Vista General', icon: LayoutDashboard, path: '/dashboard', premium: true },
   { name: 'Bóveda', icon: Lock, path: '/vault', premium: false },
   { name: 'Mensajes', icon: MessageSquare, path: '/messages', premium: true },
-  { name: 'CRM Operativo', icon: Users, path: '/crm', premium: true },
+  { name: 'CRM Neural', icon: Users, path: '/crm', premium: true },
   { name: 'Equipo Humano', icon: User, path: '/team', premium: true },
   { name: 'Inventario', icon: Package, path: '/inventory', premium: true },
   { name: 'Analítica', icon: BarChart3, path: '/billing', premium: true },
   { name: 'Empresa', icon: Building2, path: '/company', premium: true },
   { name: 'LOOP Studio', icon: Code2, path: '/studio', premium: true },
-  { name: 'Configuración', icon: Settings, path: '/users', premium: false },
+  { name: 'Seguridad y Roles', icon: ShieldCheck, path: '/users', premium: false },
 ];
 
 export default function Sidebar() {
