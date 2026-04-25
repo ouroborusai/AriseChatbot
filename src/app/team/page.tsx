@@ -14,7 +14,8 @@ import {
   Lock,
   Cpu,
   RefreshCcw,
-  MoreVertical
+  MoreVertical,
+  Search
 } from 'lucide-react';
 import { MetricSmall } from '@/components/ui/MetricSmall';
 import Image from 'next/image';

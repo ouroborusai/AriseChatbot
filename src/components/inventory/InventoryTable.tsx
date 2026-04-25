@@ -33,9 +33,9 @@ export function InventoryTable({ loading, items }: InventoryTableProps) {
               ))
             ) : items.length > 0 ? (
               items.map((item) => (
-                <tr key={item.id} className="group hover:bg-slate-50/50 transition-all cursor-pointer relative">
-                  <td className="px-6 py-5 border-b border-slate-50 relative overflow-hidden">
-                    <div className="absolute left-0 w-1.5 h-0 bg-[#22c55e] group-hover:h-full transition-all duration-700" />
+                <tr key={item.id} className="group hover:bg-slate-50 transition-all cursor-pointer relative">
+                  <td className="px-6 py-5 border-b border-slate-50 relative">
+                    <div className="absolute left-0 top-0 w-1 h-0 bg-[#22c55e] group-hover:h-full transition-all duration-300" />
                     <div className="flex items-center gap-4 relative z-10">
                       <div className="hidden sm:flex w-11 h-11 bg-white text-slate-900 rounded-xl items-center justify-center group-hover:bg-[#22c55e] group-hover:text-white border border-slate-100 group-hover:border-transparent transition-all duration-500 shadow-sm">
                         <Boxes size={18} />
