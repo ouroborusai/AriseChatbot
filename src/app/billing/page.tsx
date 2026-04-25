@@ -83,139 +83,127 @@ export default function BillingPage() {
   }, []);
 
   return (
-    <div className="flex flex-col w-full max-w-full py-6 md:py-12 animate-in fade-in duration-700 overflow-x-hidden relative">
+    <div className="flex flex-col w-full max-w-full py-4 md:py-8 animate-in fade-in duration-700 overflow-x-hidden relative">
       
-      {/* PREMIUM BACKGROUND ACCENTS */}
-      <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-green-500/5 blur-[120px] rounded-full -z-10" />
-      <div className="absolute bottom-0 left-0 w-[50%] h-[50%] bg-emerald-500/5 blur-[120px] rounded-full -z-10" />
+      {/* PERFORMANCE: OPTIMIZED BACKGROUND ACCENTS - ASLAS STYLE */}
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#22c55e]/5 blur-[64px] rounded-full -z-10" />
+      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-[#0f172a]/5 blur-[64px] rounded-full -z-10" />
 
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16 px-2">
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-             <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
-             <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Cumplimiento Financiero</span>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
-            Terminal de <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500">Facturación</span>
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6 px-2 relative z-10">
+        <div>
+          <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter leading-none uppercase">
+            Terminal de <span className="text-[#22c55e]">Facturación</span>
           </h1>
-          <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
-            <BarChart3 size={12} className="text-green-500" />
+          <p className="text-slate-400 text-[6px] font-black uppercase tracking-[0.3em] mt-2.5 flex items-center gap-2">
+            <BarChart3 size={8} className="text-[#22c55e]" />
             CONTROL OPERATIVO / v2.5
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto relative z-10">
-          <button className="flex items-center justify-center gap-6 bg-white/5 text-slate-500 border border-white/5 px-10 py-5 rounded-[22px] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-white/10 hover:text-white transition-all shadow-2xl">
-            <Download size={16} />
-            <span>Archivo de Auditoría</span>
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto relative z-10">
+          <button className="flex items-center justify-center gap-2 bg-white text-slate-300 border border-slate-100 px-4 py-2 rounded-lg text-[7.5px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+            <Download size={10} />
+            <span>Auditoría</span>
           </button>
-          <button className="flex items-center justify-center gap-6 bg-white text-slate-900 px-10 py-5 rounded-[22px] text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-green-500 hover:text-white transition-all active:scale-95 group">
+          <button className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-lg text-[7.5px] font-black uppercase tracking-widest shadow-lg hover:bg-[#22c55e] transition-all active:scale-95 group">
             <span>Reporte Neural</span>
-            <Zap size={16} className="group-hover:fill-current" />
+            <Zap size={10} />
           </button>
         </div>
       </header>
 
-      {/* METRICS SECTION */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-20 relative z-10">
+      {/* METRICS SECTION - COMPACT */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 relative z-10">
         <MetricSmall title="Volumen Bruto" value={`$${stats.total.toLocaleString()}`} drift="+8.4%" icon={DollarSign} loading={loading} />
         <MetricSmall title="Impuestos Estimados" value={`$${Math.round(stats.tax).toLocaleString()}`} drift="Sync SII" icon={ShieldCheck} loading={loading} />
         <MetricSmall title="Operaciones Seguras" value={stats.count} drift="Live" icon={FileText} loading={loading} />
         <MetricSmall title="Flujo de Ejecución" value={`${stats.efficiency.toFixed(1)}%`} drift={stats.efficiency > 90 ? 'OPTIMAL' : 'REVIEW'} icon={Activity} loading={loading} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 relative z-10">
-        {/* DOCUMENT REGISTRY LIST */}
-        <div className="lg:col-span-2 bg-white/5 rounded-[48px] border border-white/5 overflow-hidden shadow-2xl backdrop-blur-3xl">
-          <div className="p-10 md:p-12 bg-white/5 flex flex-col sm:flex-row justify-between items-center border-b border-white/5 gap-8">
-            <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-600 italic">Registro Maestro de Archivos</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+        {/* DOCUMENT REGISTRY LIST - COMPACT */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+          <div className="p-5 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center border-b border-slate-100 gap-4">
+            <h2 className="text-[7.5px] font-black uppercase tracking-[0.3em] text-slate-300">Registro Maestro de Archivos</h2>
             <div className="relative w-full sm:w-auto group">
-              <div className="absolute inset-0 bg-white/5 rounded-2xl blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity" />
-              <input type="text" placeholder="BUSCAR_FOLIO..." className="w-full sm:w-80 bg-white/5 text-[10px] font-black uppercase tracking-widest py-4.5 px-12 rounded-2xl outline-none border border-white/10 focus:border-green-500/30 focus:bg-white/10 transition-all text-white placeholder:text-slate-700 relative z-10" />
-              <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-700 z-20" />
+              <input type="text" placeholder="BUSCAR_FOLIO..." className="w-full sm:w-52 bg-white text-[7.5px] font-black uppercase tracking-widest py-2 px-8 rounded-lg outline-none border border-slate-100 focus:border-[#22c55e]/30 transition-all text-slate-900 placeholder:text-slate-200 relative z-10" />
+              <Search size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-200 z-20" />
             </div>
           </div>
           
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-slate-50">
             {loading ? (
               Array(6).fill(0).map((_, i) => <SkeletonRow key={i} />)
             ) : docs.length > 0 ? (
               docs.map((doc) => (
-                <div key={doc.id} className="p-10 md:p-12 flex items-center justify-between hover:bg-white/[0.03] transition-all group cursor-pointer relative overflow-hidden">
-                  <div className="absolute left-0 w-1 h-0 bg-green-500 group-hover:h-full transition-all duration-500" />
+                <div key={doc.id} className="p-3.5 md:p-5 flex items-center justify-between hover:bg-slate-50/30 transition-all group cursor-pointer relative overflow-hidden">
+                  <div className="absolute left-0 w-1 h-0 bg-[#22c55e] group-hover:h-full transition-all duration-500" />
                   
-                  <div className="flex items-center gap-8 relative z-10">
-                    <div className="w-16 h-16 bg-white/5 rounded-[26px] border border-white/10 flex items-center justify-center text-slate-700 group-hover:bg-white group-hover:text-slate-900 transition-all duration-500 shadow-2xl">
-                      <FileText className="w-7 h-7" />
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-9 h-9 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#22c55e] group-hover:text-white transition-all shadow-sm">
+                      <FileText className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <p className="text-[16px] font-black text-white uppercase italic tracking-tight group-hover:text-green-500 transition-colors duration-500">Folio #{doc.folio}</p>
-                      <div className="flex items-center gap-4 mt-3">
-                        <span className={`text-[8px] font-black px-4 py-1.5 rounded-lg uppercase tracking-widest border ${doc.status === 'paid' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
+                      <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight group-hover:text-[#22c55e] transition-colors">Folio #{doc.folio}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-[5.5px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest border ${doc.status === 'paid' ? 'bg-[#22c55e]/10 text-[#22c55e] border-[#22c55e]/10' : 'bg-red-50 text-red-500 border-red-100'}`}>
                           {doc.document_type || 'FACTURA'}
                         </span>
-                        <span className="text-[8px] font-black text-slate-700 uppercase tracking-widest italic opacity-40 group-hover:opacity-100 transition-opacity">NODE_ENCRYPTED_ID</span>
+                        <span className="text-[6px] font-black text-slate-200 uppercase tracking-widest">ENCRYPTED</span>
                       </div>
                     </div>
                   </div>
                   
                   <div className="text-right relative z-10">
-                    <p className="text-2xl font-black text-white italic tracking-tighter group-hover:text-green-500 transition-colors duration-500">${(doc.amount_total || 0).toLocaleString()}</p>
-                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] mt-3 italic">
+                    <p className="text-sm font-black text-slate-900 tracking-tighter group-hover:text-[#22c55e] transition-colors">${(doc.amount_total || 0).toLocaleString()}</p>
+                    <p className="text-[6px] font-black text-slate-300 uppercase tracking-widest mt-0.5">
                        {new Date(doc.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }).toUpperCase()} 
-                       <span className="mx-2 opacity-20">//</span> 
-                       {new Date(doc.created_at).getFullYear()}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-40 text-center flex flex-col items-center">
-                 <div className="w-32 h-32 bg-white/5 rounded-[48px] border border-white/5 flex items-center justify-center mb-12 text-slate-800 shadow-inner">
-                    <FileText size={56} strokeWidth={1} />
+              <div className="p-24 text-center flex flex-col items-center">
+                 <div className="w-20 h-20 bg-slate-50 rounded-[32px] border border-slate-100 flex items-center justify-center mb-8 text-slate-100 shadow-inner">
+                    <FileText size={32} strokeWidth={1} />
                  </div>
-                 <h3 className="text-xs font-black text-white uppercase tracking-[0.6em] mb-6 italic">Bóveda Vacía</h3>
-                 <p className="max-w-xs text-center text-slate-600 text-[10px] font-black uppercase tracking-[0.4em] leading-loose mb-12 italic">No se detectaron documentos de alta integridad en el nodo actual. Pulse el generador para iniciar el flujo.</p>
-                 <button className="bg-white text-slate-900 px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] hover:bg-green-500 hover:text-white transition-all shadow-2xl active:scale-95">Inicializar Bóveda</button>
+                 <h3 className="text-[8px] font-black text-slate-300 uppercase tracking-[0.4em] mb-4">Bóveda Vacía</h3>
+                 <p className="max-w-xs text-center text-slate-300 text-[7px] font-black uppercase tracking-[0.2em] leading-relaxed mb-8 italic">No se detectaron documentos de alta integridad en el nodo actual.</p>
+                 <button className="bg-slate-50 text-slate-400 px-5 py-2.5 rounded-xl text-[7px] font-black uppercase tracking-[0.3em] hover:bg-[#22c55e] hover:text-white transition-all active:scale-95 border border-slate-100">Inicializar Bóveda</button>
               </div>
             )}
           </div>
         </div>
 
-        {/* COMPLIANCE SIDEBAR */}
-        <div className="flex flex-col gap-12">
-          <div className="loop-card bg-[#010409] border border-white/5 p-12 flex flex-col justify-between overflow-hidden relative rounded-[48px] shadow-2xl group min-h-[500px]">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-green-500/5 blur-[180px] rounded-full -mr-48 -mt-48 transition-transform group-hover:scale-150 duration-1000" />
-            
+        {/* COMPLIANCE SIDEBAR - COMPACT */}
+        <div className="flex flex-col gap-6">
+          <div className="bg-[#0f172a] p-6 flex flex-col justify-between overflow-hidden relative rounded-2xl shadow-xl group min-h-[300px]">
             <div className="relative z-10">
-              <div className="w-20 h-20 bg-white/5 backdrop-blur-3xl rounded-[32px] flex items-center justify-center text-green-500 mb-12 shadow-2xl border border-white/5 group-hover:bg-green-500 group-hover:text-slate-900 transition-all duration-500">
-                 <ShieldCheck size={40} />
+              <div className="w-10 h-10 bg-white/5 backdrop-blur-3xl rounded-lg flex items-center justify-center text-white mb-6 border border-white/10 group-hover:bg-[#22c55e] transition-all shadow-lg">
+                 <ShieldCheck size={20} />
               </div>
-              <h2 className="text-[11px] font-black uppercase tracking-[0.6em] text-green-500 mb-8 italic">Cumplimiento Neural v2.5</h2>
-              <p className="text-slate-500 text-[11px] leading-loose font-black uppercase tracking-[0.3em] italic">
-                EL MOTOR LOOP HA VALIDADO CON ÉXITO EL 100% DE LOS PARÁMETROS FISCALES. 
-                SINCRONIZACIÓN EN TIEMPO REAL CON EL PROTOCOLO DEL SII ACTIVA. 
-                SISTEMA BLINDADO.
+              <h2 className="text-[8px] font-black uppercase tracking-[0.5em] text-[#22c55e] mb-4">Cumplimiento Neural v2.5</h2>
+              <p className="text-white/40 text-[8px] leading-relaxed font-black uppercase tracking-tight">
+                VALIDACIÓN DE PARÁMETROS FISCALES COMPLETADA. SINCRONIZACIÓN ACTIVA.
               </p>
             </div>
             
-            <div className="relative z-10 mt-16 bg-white/5 p-10 rounded-[40px] border border-white/5 backdrop-blur-3xl shadow-2xl group-hover:border-green-500/20 transition-all duration-500">
-              <div className="flex justify-between items-end mb-8">
-                <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em] italic">Salud Auditoría</span>
-                <span className="text-2xl font-black text-white tracking-[0.2em] italic">OPTIMAL</span>
+            <div className="relative z-10 mt-8 bg-white/5 p-6 rounded-xl border border-white/5 backdrop-blur-3xl shadow-sm">
+              <div className="flex justify-between items-end mb-4">
+                <span className="text-[7px] font-black text-white/30 uppercase tracking-[0.3em]">Salud Auditoría</span>
+                <span className="text-base font-black text-white">OPTIMAL</span>
               </div>
-              <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                  <div className="h-full w-full bg-gradient-to-r from-green-500 via-emerald-400 to-green-300 shadow-[0_0_25px_rgba(34,197,94,0.3)] animate-pulse rounded-full" />
+              <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                  <div className="h-full w-full bg-[#22c55e] animate-pulse rounded-full" />
               </div>
             </div>
           </div>
 
-          <div className="loop-card bg-white/5 p-10 rounded-[40px] border border-white/5 shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500 opacity-20" />
-            <div className="flex items-start gap-5">
-               <Lock size={16} className="text-slate-800 mt-1" />
-               <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.4em] leading-loose italic">
-                 * TODA TRANSACCIÓN FINANCIERA SE REGISTRA EN LA BÓVEDA DE ALTA INTEGRIDAD LOOP OS. EL PROTOCOLO DIAMOND v10.0 ASEGURA LA NO REPUDIACIÓN DE DATOS.
+          <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden group">
+            <div className="flex items-start gap-3">
+               <Lock size={10} className="text-slate-100 mt-0.5" />
+               <p className="text-[7px] font-black text-slate-200 uppercase tracking-tight leading-relaxed italic">
+                 * TODA TRANSACCIÓN SE REGISTRA EN LA BÓVEDA LOOP.
                </p>
             </div>
           </div>
@@ -225,18 +213,17 @@ export default function BillingPage() {
   );
 }
 
-
 function SkeletonRow() {
   return (
-    <div className="p-10 md:p-12 flex items-center justify-between">
-      <div className="flex items-center gap-8">
-        <div className="w-16 h-16 bg-white/5 animate-pulse rounded-[26px]" />
-        <div className="space-y-4">
-          <div className="w-48 h-5 bg-white/5 animate-pulse rounded-lg" />
-          <div className="w-32 h-3 bg-white/5 animate-pulse rounded-md" />
+    <div className="p-8 flex items-center justify-between">
+      <div className="flex items-center gap-6">
+        <div className="w-12 h-12 bg-slate-50 animate-pulse rounded-xl" />
+        <div className="space-y-3">
+          <div className="w-32 h-4 bg-slate-50 animate-pulse rounded-md" />
+          <div className="w-20 h-2 bg-slate-50 animate-pulse rounded-sm" />
         </div>
       </div>
-      <div className="w-32 h-10 bg-white/5 animate-pulse rounded-2xl" />
+      <div className="w-24 h-8 bg-slate-50 animate-pulse rounded-xl" />
     </div>
   );
 }

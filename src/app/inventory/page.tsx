@@ -92,53 +92,48 @@ export default function InventoryPage() {
   const criticalCount = items.filter(i => i.current_stock <= (i.min_stock_alert || 0)).length;
 
   return (
-    <div className="flex flex-col w-full max-w-full py-6 md:py-12 animate-in fade-in duration-700 overflow-x-hidden relative">
+    <div className="flex flex-col w-full max-w-full py-4 md:py-8 animate-in fade-in duration-300 overflow-x-hidden relative">
       
-      {/* PREMIUM BACKGROUND ACCENTS */}
-      <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-green-500/5 blur-[120px] rounded-full -z-10" />
-      <div className="absolute bottom-0 left-0 w-[50%] h-[50%] bg-emerald-500/5 blur-[120px] rounded-full -z-10" />
+      {/* PERFORMANCE: OPTIMIZED BACKGROUND ACCENTS - ASLAS STYLE */}
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#22c55e]/5 blur-[64px] rounded-full -z-10" />
+      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-[#0f172a]/5 blur-[64px] rounded-full -z-10" />
 
-      {/* HEADER SECTION - DIAMOND v10.0 */}
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16 px-2">
+      {/* HEADER SECTION - ASLAS STYLE (Optimized Scales) */}
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6 px-2">
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-             <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
-             <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Logística Industrial</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
-              Control de <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500">Stock</span>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter leading-none uppercase">
+              Control de <span className="text-[#22c55e]">Stock</span>
             </h1>
             {typeof window !== 'undefined' && localStorage.getItem('arise_active_company') === 'global' && (
-              <span className="bg-green-500/10 text-green-500 text-[9px] font-black px-4 py-2 rounded-xl tracking-[0.2em] uppercase border border-green-500/20 shadow-lg">Global</span>
+              <span className="bg-[#22c55e]/10 text-[#22c55e] text-[6px] font-black px-1.5 py-0.5 rounded-md tracking-[0.15em] uppercase border border-[#22c55e]/20">Global</span>
             )}
           </div>
-          <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
-            <Package size={12} className="text-green-500" />
+          <p className="text-slate-400 text-[6px] font-black uppercase tracking-[0.3em] mt-2.5 flex items-center gap-2">
+            <Package size={8} className="text-[#22c55e]" />
             CATÁLOGO MAESTRO DE REPUESTOS / PROTOCOLO LOOP
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6 relative z-10">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10">
           <div className="relative group">
-            <div className="absolute inset-0 bg-white/5 rounded-[24px] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
             <input 
               type="text" 
               placeholder="BUSCAR SKU / ITEM..." 
-              className="w-full lg:w-96 pl-14 pr-6 py-4.5 bg-white/5 text-[10px] font-black uppercase tracking-widest text-white rounded-[24px] outline-none border border-white/10 focus:border-green-500/30 focus:bg-white/10 transition-all relative z-10"
+              className="w-full lg:w-60 pl-9 pr-4 py-2 bg-white text-[7.5px] font-black uppercase tracking-widest text-slate-900 rounded-lg outline-none border border-slate-100 focus:border-[#22c55e]/30 transition-all relative z-10 placeholder:text-slate-200"
             />
-            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 z-20" />
+            <Search size={10} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 z-20" />
           </div>
           
-          <button className="flex items-center justify-center gap-4 bg-white text-slate-900 px-10 py-5 rounded-[24px] text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-green-500 hover:text-white transition-all active:scale-95">
-            <Plus size={18} />
+          <button className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] shadow-lg hover:bg-[#22c55e] transition-all active:scale-95">
+            <Plus size={12} />
             <span>Nuevo Item</span>
           </button>
         </div>
       </header>
 
       {/* STATS SECTION */}
-      <div className="mb-12 px-1">
+      <div className="mb-10 px-1">
         <InventoryStats 
           totalCount={totalCount} 
           criticalCount={criticalCount} 
@@ -152,28 +147,28 @@ export default function InventoryPage() {
         <InventoryTable loading={loading} items={items} />
       </div>
 
-      {/* PAGINATION */}
-      <div className="p-10 flex flex-col sm:flex-row justify-between items-center bg-white/5 backdrop-blur-xl mt-8 rounded-[40px] border border-white/5 border-dashed gap-10">
-        <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/5">
-              <Layers size={16} className="text-slate-500" />
+      {/* PAGINATION - COMPACT */}
+      <div className="p-3.5 flex flex-col sm:flex-row justify-between items-center bg-white mt-4 rounded-2xl border border-slate-50 shadow-sm gap-4">
+        <div className="flex items-center gap-2">
+           <div className="w-6 h-6 bg-slate-50 rounded flex items-center justify-center border border-slate-100">
+              <Layers size={10} className="text-slate-300" />
            </div>
-           <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">
-              Página <span className="text-white">{page + 1}</span> // Catálogo Maestro <span className="text-green-500">{totalCount}</span> Unidades
+           <p className="text-[7.5px] font-black text-slate-400 uppercase tracking-[0.2em]">
+              Página <span className="text-slate-900">{page + 1}</span> // <span className="text-[#22c55e]">{totalCount}</span> Unidades
            </p>
         </div>
-        <div className="flex gap-5">
-          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="w-16 h-16 bg-white/5 border border-white/5 flex items-center justify-center text-slate-500 hover:text-green-500 disabled:opacity-20 transition-all rounded-2xl group shadow-2xl">
-            <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform"/>
+        <div className="flex gap-2">
+          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="w-9 h-9 bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-[#22c55e] disabled:opacity-20 transition-all rounded-lg group shadow-sm">
+            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform"/>
           </button>
-          <button onClick={() => setPage(p => p + 1)} disabled={(page + 1) * PAGE_SIZE >= totalCount} className="w-16 h-16 bg-white/5 border border-white/5 flex items-center justify-center text-slate-500 hover:text-green-500 disabled:opacity-20 transition-all rounded-2xl group shadow-2xl">
-            <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform"/>
+          <button onClick={() => setPage(p => p + 1)} disabled={(page + 1) * PAGE_SIZE >= totalCount} className="w-9 h-9 bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-[#22c55e] disabled:opacity-20 transition-all rounded-lg group shadow-sm">
+            <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform"/>
           </button>
         </div>
       </div>
 
-      {/* SECONDARY PANELS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-16 px-1">
+      {/* SECONDARY PANELS - COMPACT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12 px-1">
         <div className="lg:col-span-2">
            <InventoryKardex transactions={transactions} />
         </div>

@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@theme {
+  /* LOOP Diamond Architecture v10.0 - UNIFIED DARK MODE PALETTE */
+  --color-primary: #22c55e;         /* LOOP Green Core (Vibrant/Neon) */
+  --color-primary-rgb: 34, 197, 94; 
+  --color-accent: #10b981;          /* Emerald Spark */
+  --color-bg-base: #020617;         /* Deep Midnight */
+  --color-neural-dark: #f8fafc;     /* Slate White Text for Dark Mode */
+  --color-neural-low: #0f172a;      /* Deep Slate for cards */
+  
+  --font-sans: "Inter", "system-ui", sans-serif;
+  
+  --radius-xl: 40px;
+  --radius-lg: 24px;
+  
+  /* Shadows: Optimized for Dark Mode Glow */
+  --shadow-loop: 0 4px 20px -2px rgba(34, 197, 94, 0.1);
+  --shadow-loop-hover: 0 30px 60px -15px rgba(34, 197, 94, 0.3);
+  
+  /* Glassmorphism Tokens v10.0 - Optimized for Dark */
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(24px);
+  
+  /* Micro-Glow Effects - Vibrant Green */
+  --glow-primary: 0 0 30px rgba(34, 197, 94, 0.2);
+  --glow-emerald: 0 0 40px rgba(16, 185, 129, 0.3);
+}
+
+@layer base {
+  body {
+    background: #020617;
+    color: #f8fafc;
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* OUROBOT ELITE CONTAINERS (Dark) */
+  .loop-card {
+    @apply bg-slate-900/50 backdrop-blur-xl rounded-[40px] shadow-loop transition-all duration-500 border border-white/5;
+  }
+  
+  .loop-card:hover {
+    @apply shadow-loop-hover -translate-y-2 border-primary/20 bg-slate-900/80;
+  }
+
+  /* LUMINOUS PURE CONTAINERS (Light) */
+  .loop-card-light {
+    @apply bg-white/80 backdrop-blur-xl rounded-[40px] shadow-[0_8px_30px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 border border-slate-200/80;
+  }
+  
+  .loop-card-light:hover {
+    @apply shadow-[0_15px_50px_-15px_rgba(34,197,94,0.15)] -translate-y-2 border-green-500/30 bg-white;
+  }
+
+  /* BUTTONS: THE NEURAL CORE LOOK */
+  .btn-loop {
+    @apply bg-white text-slate-900 px-8 py-3.5 rounded-[18px] font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-primary hover:text-white hover:scale-[1.03] active:scale-95 shadow-xl shadow-green-500/10;
+  }
+
+  .btn-loop-outline {
+    @apply border-2 border-white/10 text-slate-400 px-8 py-3.5 rounded-[18px] font-black text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-white/5 hover:text-white hover:border-white/20;
+  }
+
+  /* INPUTS */
+  .loop-input {
+    @apply bg-slate-900 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold text-white outline-none ring-primary/5 focus:ring-4 focus:bg-slate-800 focus:border-primary/30 transition-all placeholder:text-slate-500;
+  }
+
+  /* STATUS BADGES WITH ELITE GLOW */
+  .badge-loop-success {
+    @apply bg-green-500/10 text-green-400 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-green-500/20;
+  }
+
+  .badge-loop-danger {
+    @apply bg-red-500/10 text-red-400 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-500/20;
+  }
+
+  /* FOCUS STATES */
+  .loop-input:focus {
+    @apply border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.15)] bg-slate-800;
+  }
+
+  @keyframes bounce-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+
+  .animate-bounce-slow {
+    animation: bounce-slow 6s ease-in-out infinite;
+  }
+
+  .loop-skeleton {
+    @apply bg-slate-800 rounded-xl relative overflow-hidden;
+  }
+
+  .loop-skeleton::after {
+    content: "";
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Custom Scrollbar for FinTech look */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-800 rounded-full hover:bg-green-500/30 transition-all;
+}
+::-webkit-scrollbar-track {
+  @apply bg-[#020617];
+}

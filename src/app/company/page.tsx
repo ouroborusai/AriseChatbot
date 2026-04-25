@@ -37,6 +37,19 @@ export default function CompanyPage() {
         return;
       }
       
+      if (activeCompanyId === 'global') {
+        setCompany({
+          id: 'global',
+          legal_name: 'VISTA GLOBAL CONSOLIDADA',
+          rut: 'N/A - MULTI-NODE',
+          segment: 'ENTORNO_MAESTRO',
+          created_at: new Date().toISOString(),
+          metadata: { mode: "GLOBAL", nodes: "ALL", security: "ROOT_ACCESS" }
+        });
+        setLoading(false);
+        return;
+      }
+
       const { data } = await supabase
         .from('companies')
         .select('*')
@@ -50,140 +63,125 @@ export default function CompanyPage() {
   }, []);
 
   if (loading) return (
-    <div className="flex items-center justify-center h-screen bg-[#020617]">
+    <div className="flex items-center justify-center h-screen bg-white">
        <div className="text-center">
-          <Activity size={64} className="text-green-500 animate-pulse mx-auto mb-10 opacity-20" />
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[1em] animate-pulse">Sincronizando_Unidad_Corporativa</p>
+          <Activity size={48} className="text-[#22c55e] animate-pulse mx-auto mb-8 opacity-20" />
+          <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.5em] animate-pulse">Sincronizando_Unidad_Corporativa</p>
        </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col w-full max-w-full py-6 md:py-12 animate-in fade-in duration-700 overflow-x-hidden relative">
+    <div className="flex flex-col w-full max-w-full py-4 md:py-8 animate-in fade-in duration-700 overflow-x-hidden relative">
       
-      {/* PREMIUM BACKGROUND ACCENTS - OPTIMIZED */}
-      <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-green-500/5 blur-[80px] rounded-full -z-10" />
-      <div className="absolute bottom-0 left-0 w-[50%] h-[50%] bg-emerald-500/5 blur-[80px] rounded-full -z-10" />
+      {/* PERFORMANCE: OPTIMIZED BACKGROUND ACCENTS - ASLAS STYLE */}
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#22c55e]/5 blur-[64px] rounded-full -z-10" />
+      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-[#0f172a]/5 blur-[64px] rounded-full -z-10" />
 
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16 px-2">
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-             <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
-             <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Identidad Corporativa</span>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
-            Unidad <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500">Operativa</span>
+      {/* HEADER SECTION - ASLAS STYLE (Optimized Scales) */}
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 mb-8 px-2 relative z-10">
+        <div>
+          <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter leading-none uppercase">
+            Unidad <span className="text-[#22c55e]">Operativa</span>
           </h1>
-          <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
-            <Fingerprint size={12} className="text-green-500" />
+          <p className="text-slate-400 text-[6px] font-black uppercase tracking-[0.3em] mt-2.5 flex items-center gap-2">
+            <Fingerprint size={8} className="text-[#22c55e]" />
             CONFIGURACIÓN DE GOBERNANZA / v2.5
           </p>
         </div>
 
-        <button className="flex items-center justify-center gap-6 bg-white text-slate-900 px-10 py-5 rounded-[22px] text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-green-500 hover:text-white transition-all active:scale-95 group relative z-10">
+        <button className="flex items-center justify-center gap-3 bg-[#0f172a] text-white px-5 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest shadow-sm hover:bg-[#22c55e] transition-all active:scale-95 group relative z-10">
           <span>Actualizar Credenciales</span>
-          <Lock size={16} className="group-hover:rotate-12 transition-transform" />
+          <Lock size={12} />
         </button>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 relative z-10">
-        {/* MAIN IDENTITY CARD */}
-        <div className="lg:col-span-2 space-y-12">
-          <div className="loop-card bg-white/5 border-white/5 shadow-xl p-12 md:p-16 relative overflow-hidden group rounded-[48px]">
-            <div className="absolute top-0 right-0 p-16 opacity-5 pointer-events-none rotate-12 transition-transform group-hover:rotate-45 duration-1000">
-               <Globe className="text-white" size={240} strokeWidth={1} />
-            </div>
-            
-            <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-green-500 mb-16 flex items-center gap-4 italic">
-              <Building2 size={16} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+        {/* MAIN IDENTITY CARD - COMPACT */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white border border-slate-100 shadow-sm p-6 md:p-8 relative overflow-hidden group rounded-2xl">
+            <h2 className="text-[8px] font-black uppercase tracking-[0.4em] text-[#22c55e] mb-6 flex items-center gap-2">
+              <Building2 size={12} />
               Perfil de Entidad Legal
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-20 gap-y-16 relative z-10">
-              <div className="space-y-4">
-                <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">Nomenclatura del Negocio</p>
-                <p className="text-2xl md:text-4xl font-black text-white tracking-tighter uppercase italic">{company?.legal_name || 'INITIALIZING...'}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 relative z-10">
+              <div className="space-y-1">
+                <p className="text-[6.5px] font-black text-slate-300 uppercase tracking-widest">Nomenclatura</p>
+                <p className="text-lg font-black text-slate-900 tracking-tighter uppercase">{company?.legal_name || 'INITIALIZING...'}</p>
               </div>
-              <div className="space-y-4">
-                <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">Identidad Tributaria RUT</p>
-                <p className="text-2xl md:text-4xl font-black text-white tracking-tighter font-mono">{company?.rut || 'NO_DECLARED'}</p>
+              <div className="space-y-1">
+                <p className="text-[6.5px] font-black text-slate-300 uppercase tracking-widest">Identidad Tributaria</p>
+                <p className="text-lg font-black text-slate-900 tracking-tighter font-mono">{company?.rut || 'NO_DECLARED'}</p>
               </div>
-              <div className="space-y-6">
-                <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">Segmento de Matriz Industrial</p>
-                <div className="inline-flex px-6 py-3 bg-green-500/10 text-green-500 rounded-2xl text-[10px] font-black uppercase tracking-widest gap-4 items-center border border-green-500/20 shadow-xl">
-                  <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_12px_#22c55e]" />
+              <div className="space-y-3">
+                <p className="text-[6.5px] font-black text-slate-300 uppercase tracking-widest">Segmento Industrial</p>
+                <div className="inline-flex px-2 py-1 bg-slate-50 text-[#22c55e] rounded-lg text-[7px] font-black uppercase tracking-widest gap-2 items-center border border-slate-100">
+                  <div className="w-1 h-1 rounded-full bg-[#22c55e]" />
                   {company?.segment || 'ESTÁNDAR_INDUSTRIAL'}
                 </div>
               </div>
-              <div className="space-y-4">
-                <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">Timestamp de Despliegue</p>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] italic">
-                  {company?.created_at ? new Date(company.created_at).toLocaleString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : 'WAITING_SYNC'}
+              <div className="space-y-1">
+                <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em]">Despliegue</p>
+                <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.1em]">
+                  {company?.created_at ? new Date(company.created_at).toLocaleString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : 'WAITING_SYNC'}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* OPERATIONAL METADATA */}
-          <div className="loop-card bg-[#010409] p-12 rounded-[48px] border border-white/5 shadow-2xl relative group overflow-hidden">
-             <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500 opacity-20" />
-             <h3 className="text-[11px] font-black text-slate-600 uppercase tracking-[0.5em] mb-12 flex items-center justify-between">
+          {/* OPERATIONAL METADATA - COMPACT */}
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm relative group overflow-hidden">
+             <h3 className="text-[8px] font-black text-slate-300 uppercase tracking-[0.4em] mb-4 flex items-center justify-between">
                Metadatos de Configuración
-               <Zap size={14} className="text-green-500 opacity-40" />
+               <Zap size={10} className="text-[#22c55e]" />
              </h3>
-             <div className="bg-black/60 p-10 rounded-3xl border border-white/5 relative group/code shadow-inner">
-               <div className="absolute top-6 right-6 flex gap-2">
-                 <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/30" />
-                 <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/30" />
-                 <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/30" />
-               </div>
-               <pre className="text-[12px] leading-loose text-green-500/60 font-mono overflow-x-auto scrollbar-hide selection:bg-green-500/20">
+             <div className="bg-white p-4 rounded-xl border border-slate-100 relative group/code shadow-inner">
+               <pre className="text-[8px] leading-relaxed text-slate-400 font-mono overflow-x-auto scrollbar-hide">
                  {JSON.stringify(company?.metadata || { status: "ACTIVE", core: "LOOP_v2.5", security: "AES-256" }, null, 3)}
                </pre>
              </div>
           </div>
         </div>
 
-        {/* SIDEBAR WIDGETS */}
-        <div className="flex flex-col gap-12">
-          {/* INTEGRITY SCORE */}
-          <div className="loop-card bg-white/5 rounded-[48px] border border-white/10 shadow-xl p-12 flex flex-col overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 blur-[80px] rounded-full -mr-32 -mt-32 transition-transform group-hover:scale-150 duration-1000" />
+        {/* SIDEBAR WIDGETS - COMPACT */}
+        <div className="flex flex-col gap-6">
+          {/* INTEGRITY SCORE - COMPACT */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col overflow-hidden relative group">
             <div className="relative z-10">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.5em] text-white mb-6 flex items-center gap-4 italic">
-                <ShieldCheck size={16} className="text-green-500" />
+              <h3 className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-900 mb-4 flex items-center gap-2">
+                <ShieldCheck size={12} className="text-[#22c55e]" />
                 Seguridad de Enlace
               </h3>
-              <p className="text-[10px] font-black text-slate-500 mb-10 leading-loose uppercase tracking-[0.2em] italic">Protocolo Diamond v10.0 Blindado. Nodos de identidad verificados en tiempo real.</p>
+              <p className="text-[6.5px] font-black text-slate-300 mb-6 leading-relaxed uppercase tracking-widest">Protocolo Diamond v10.1 Blindado.</p>
               
-              <div className="space-y-8">
-                <div className="flex justify-between items-end mb-4">
-                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Puntaje de Integridad</span>
-                  <span className="text-2xl font-black text-green-500 italic">98.4%</span>
+              <div className="space-y-3">
+                <div className="flex justify-between items-end mb-1">
+                  <span className="text-[6.5px] font-black text-slate-300 uppercase tracking-widest">Puntaje de Integridad</span>
+                  <span className="text-base font-black text-[#22c55e]">98.4%</span>
                 </div>
-                 <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                    <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 w-[98%] shadow-[0_0_10px_#22c55e22] rounded-full" />
+                 <div className="h-1 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100 p-0.5">
+                    <div className="h-full bg-[#22c55e] w-[98%] rounded-full" />
                  </div>
               </div>
             </div>
           </div>
 
-          {/* TRUST CERTIFICATIONS */}
-          <div className="loop-card bg-white/5 rounded-[48px] border border-white/5 shadow-xl p-12 overflow-hidden relative group">
-            <h3 className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-700 mb-12 italic">Certificaciones de Confianza</h3>
-            <ul className="space-y-8 relative z-10">
+          {/* TRUST CERTIFICATIONS - COMPACT */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 overflow-hidden relative group">
+            <h3 className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-200 mb-6">Certificaciones</h3>
+            <ul className="space-y-3 relative z-10">
                {[
-                 { key: 'SII_Sync', label: 'SII_Compliance_v2.5', icon: CheckCircle2, color: 'text-green-500' },
-                 { key: 'Global_Payroll', label: 'Global_Payroll_Secure', icon: Layers, color: 'text-blue-500' },
-                 { key: 'Neural_Trust', label: 'Neural_Trust_Diamond', icon: Cpu, color: 'text-emerald-500' }
+                 { key: 'SII_Sync', label: 'SII_Compliance', icon: CheckCircle2, color: 'text-[#22c55e]' },
+                 { key: 'Global_Payroll', label: 'Global_Payroll', icon: Layers, color: 'text-[#0f172a]' },
+                 { key: 'Neural_Trust', label: 'Neural_Trust', icon: Cpu, color: 'text-[#22c55e]' }
                ].map(item => (
-                 <li key={item.key} className="flex items-center gap-6 group/item cursor-pointer">
-                   <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-700 group-hover/item:bg-white group-hover/item:text-slate-900 transition-all shadow-xl group-hover/item:scale-110">
-                     <item.icon size={18} />
+                 <li key={item.key} className="flex items-center gap-3 group/item cursor-pointer">
+                   <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-50 flex items-center justify-center text-slate-200 group-hover/item:bg-[#22c55e] group-hover/item:text-white transition-all">
+                     <item.icon size={12} />
                    </div>
                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover/item:text-white transition-colors">{item.label}</p>
-                      <p className="text-[8px] font-black text-slate-700 uppercase tracking-widest mt-1">Status: Verified</p>
+                      <p className="text-[7px] font-black text-slate-300 uppercase tracking-widest group-hover/item:text-slate-900 transition-colors">{item.label}</p>
                    </div>
                  </li>
                ))}

@@ -360,9 +360,39 @@ INSTRUCCIONES DE ALTA PRIORIDAD:
    - IMPORTANTE: Para campos de fecha como "due_at", usa SIEMPRE formato ISO 8601 (YYYY-MM-DDTHH:mm:ss). No uses nombres de días o formatos relativos.
 `;
 
-  // 3. Generar respuesta vía Librería Neural
-  const { text: aiText, error: aiError } = await generateGeminiResponse(promptWithContext, companyId);
+  // 3. Generar respuesta vía Librería Neural con Bucle de Auto-Sanación (Diamond v10.1)
+  let aiText = '';
+  let aiError = null;
+  let attempts = 0;
+  const maxAttempts = 2;
+  let currentPrompt = promptWithContext;
+
+  while (attempts < maxAttempts) {
+    const response = await generateGeminiResponse(currentPrompt, companyId);
+    aiText = response.text || '';
+    aiError = response.error;
+
+    if (aiError || !aiText) break;
+
+    // Validación Intercepción Técnica v61
+    const hasV61Format = aiText.includes('---') && aiText.includes('|');
+    if (hasV61Format) {
+      break; // Salir del bucle, formato correcto
+    }
+
+    // Auto-corrección invisible (Re-prompt)
+    attempts++;
+    console.log(`[AUTO-HEALING] Intento ${attempts}: Gemini omitió formato v61. Forzando re-prompt.`);
+    currentPrompt = `${promptWithContext}\n\n[ERROR CRÍTICO SISTEMA]\nTu respuesta anterior omitió el formato interactivo obligatorio. Es CRÍTICO para el sistema. REESCRIBE tu respuesta e incluye estrictamente '--- Título | Opción 1 | Opción 2' al final.`;
+  }
+
   if (aiError || !aiText) return;
+
+  // Fallback Determinista (Plan Z) si falla todos los intentos
+  if (!aiText.includes('---') || !aiText.includes('|')) {
+    console.error(`[FALLBACK_ACTIVATED] Gemini falló ${maxAttempts} veces en formato v61. Inyectando menú de emergencia.`);
+    aiText = `${aiText.replace(/\[\[[^\[\]]+\]\]/g, '').trim()} --- Menú de Emergencia | Menú Principal | Contactar Soporte`;
+  }
 
   // 4. Persistir respuesta
   const { data: botMsg } = await supabase.from('messages').insert({ conversation_id: convId, sender_type: 'bot', content: aiText }).select('id').single();

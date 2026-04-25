@@ -118,12 +118,22 @@ export async function handleInventoryAction(
     const { data: items, error: scanError } = await query;
 
     if (items && items.length > 0) {
-      const stockList = items.map(i => `- ${i.name} [${i.sku}]: ${i.current_stock} ${i.unit}`).join('\n');
-      const content = `[SYSTEM_RESULT] Inventario detectado:\n${stockList}`;
+      const stockList = items.map(i => {
+        const stock = parseFloat(i.current_stock);
+        let statusEmoji = '🟢';
+        if (stock < 10) statusEmoji = '🔴';
+        else if (stock < 50) statusEmoji = '🟡';
+        return `${statusEmoji} ${i.name} (${stock} ${i.unit})`;
+      }).join('\n');
+
+      const interactiveOptions = items.map(i => `${i.name}`).join(' | ');
+      const content = `[SYSTEM_RESULT] He detectado ${items.length} productos en tu inventario actual:\n\n${stockList}\n\n¿Deseas gestionar alguno en particular? --- Ver Productos | ${interactiveOptions}`;
       
       // Insertar resultado para que la IA lo vea y responda
+      const { data: conv } = await supabase.from('messages').select('conversation_id').eq('id', messageId).single();
+      
       await supabase.from('messages').insert({
-        conversation_id: (await supabase.from('messages').select('conversation_id').eq('id', messageId).single()).data?.conversation_id,
+        conversation_id: conv?.conversation_id,
         sender_type: 'system',
         content: content
       });

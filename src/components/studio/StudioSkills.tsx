@@ -13,42 +13,39 @@ interface StudioSkillsProps {
 
 export function StudioSkills({ templates }: StudioSkillsProps) {
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-700">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {templates.map(t => (
-            <div key={t.id} className="loop-card p-10 bg-white/5 border-white/5 shadow-2xl relative overflow-hidden group hover:bg-white/[0.08] hover:border-white/10 transition-all cursor-pointer rounded-[40px]">
-               {/* GLOW DETAIL */}
-               <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-               
-               <div className="flex items-center justify-between mb-10 relative z-10">
-                  <div className="w-14 h-14 bg-white/5 rounded-[22px] flex items-center justify-center text-slate-600 group-hover:bg-green-500 group-hover:text-slate-900 transition-all border border-white/5 group-hover:border-transparent shadow-xl">
-                    <FileCode size={24} />
+            <div key={t.id} className="bg-white border border-slate-100 p-6 shadow-sm relative overflow-hidden group hover:border-[#22c55e]/30 transition-all cursor-pointer rounded-2xl">
+               <div className="flex items-center justify-between mb-6 relative z-10">
+                  <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-[#22c55e] group-hover:text-white transition-all border border-slate-100 group-hover:border-transparent">
+                    <FileCode size={18} />
                   </div>
-                  <span className="text-[8px] font-black text-green-500 uppercase tracking-[0.2em] bg-green-500/10 px-4 py-2 rounded-xl border border-green-500/20 shadow-lg">
+                  <span className="text-[7px] font-black text-[#22c55e] uppercase tracking-widest bg-[#22c55e]/10 px-2.5 py-1 rounded-md border border-[#22c55e]/10">
                     {t.category}
                   </span>
                 </div>
                 
                 <div className="relative z-10">
-                   <p className="text-[12px] font-black text-white uppercase tracking-tight leading-tight mb-4 group-hover:text-green-500 transition-colors italic">{t.name}</p>
-                   <div className="flex items-center justify-between mt-8">
-                      <div className="flex items-center gap-3 text-slate-700">
-                         <Layers size={14} />
-                         <span className="text-[8px] font-black uppercase tracking-widest">Skill_Node</span>
+                   <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-tight mb-3 group-hover:text-[#22c55e] transition-colors">{t.name}</p>
+                   <div className="flex items-center justify-between mt-6">
+                      <div className="flex items-center gap-2 text-slate-400">
+                         <Layers size={12} />
+                         <span className="text-[7px] font-black uppercase tracking-widest">Skill_Node</span>
                       </div>
-                      <ArrowUpRight size={18} className="text-slate-700 group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                      <ArrowUpRight size={14} className="text-slate-300 group-hover:text-[#22c55e] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
                    </div>
                 </div>
                 
-                <div className="w-full h-1.5 bg-white/5 mt-8 rounded-full overflow-hidden border border-white/5 relative z-10">
-                  <div className="w-1/3 h-full bg-gradient-to-r from-green-500 to-transparent opacity-40" />
+                <div className="w-full h-1 bg-slate-50 mt-6 rounded-full overflow-hidden border border-slate-100 relative z-10">
+                  <div className="w-1/3 h-full bg-[#22c55e]/40" />
                 </div>
             </div>
         ))}
         {templates.length === 0 && (
-          <div className="col-span-full py-40 text-center bg-white/5 backdrop-blur-3xl rounded-[48px] border border-dashed border-white/10">
-            <Cpu size={48} className="mx-auto text-slate-800 mb-8 opacity-20" />
-            <p className="text-[11px] font-black text-slate-600 uppercase tracking-[0.6em] italic">No secondary skills discovered in node</p>
+          <div className="col-span-full py-24 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+            <Cpu size={32} className="mx-auto text-slate-200 mb-6" />
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">No secondary skills discovered in node</p>
           </div>
         )}
       </div>

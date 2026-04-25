@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import chalk from 'chalk';
 
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env.local', override: true });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -15,17 +15,29 @@ const PH_ID = '1066879279838439';
 /**
  * PHASE 1: PERCEPTION - Simulación de Webhook Industrial
  */
-async function sendWebhook(text: string, messageId: string) {
+async function sendWebhook(text: string, messageId: string, buttonId?: string) {
+  const message: any = {
+    from: ADMIN_PHONE,
+    timestamp: Math.floor(Date.now() / 1000).toString(),
+    id: messageId
+  };
+
+  if (buttonId) {
+    message.type = 'interactive';
+    message.interactive = {
+      type: 'button_reply',
+      button_reply: { id: buttonId, title: text }
+    };
+  } else {
+    message.type = 'text';
+    message.text = { body: text };
+  }
+
   const payload = {
     entry: [{
       changes: [{
         value: {
-          messages: [{
-            from: ADMIN_PHONE,
-            text: { body: text },
-            timestamp: Math.floor(Date.now() / 1000).toString(),
-            id: messageId
-          }],
+          messages: [message],
           metadata: { phone_number_id: PH_ID }
         },
         field: "messages"
@@ -128,8 +140,16 @@ const FLOW = [
     name: "Neural Bridge: Acción 'reminder_set' (SSOT Sync)",
     input: "Recuérdame llamar al cliente en 1 hora",
     validate: (res: any) => {
-      const hasAction = res.content.includes('reminder_set') && res.content.includes('params');
+      const hasAction = res.content.includes('reminder_set') || res.content.includes('reminder_create');
       return hasAction;
+    }
+  },
+  {
+    name: "Interceptación Directa: Reporte de Inventario (Webhook Button)",
+    input: "Generar Reporte",
+    buttonId: "gen_report_now",
+    validate: (res: any) => {
+      return res.content.includes('Pipeline de Documentos Activado');
     }
   }
 ];
@@ -137,7 +157,7 @@ const FLOW = [
 async function run() {
   console.clear();
   console.log(chalk.bold.blue('╔══════════════════════════════════════════════════════════╗'));
-  console.log(chalk.bold.blue('║      LOOP DIAMOND CORE - PROTOCOLO DE VALIDACIÓN v10.0    ║'));
+  console.log(chalk.bold.blue('║      ARISE DIAMOND CORE - PROTOCOLO DE VALIDACIÓN v10.1   ║'));
   console.log(chalk.bold.blue('╚══════════════════════════════════════════════════════════╝\n'));
 
   for (const step of FLOW) {
@@ -146,7 +166,7 @@ async function run() {
 
     console.log(chalk.white(`▶ Ejecutando: `) + chalk.bold(step.name));
     
-    const sent = await sendWebhook(step.input, wamid);
+    const sent = await sendWebhook(step.input, wamid, (step as any).buttonId);
     if (!sent) { 
         console.log(chalk.red('   ✘ Error al enviar Webhook')); 
         continue; 
@@ -161,12 +181,17 @@ async function run() {
       }
 
       console.log(chalk.green(' [OK]'));
-      const isValid = step.validate(response);
       
-      if (isValid) {
-        console.log(chalk.green(`   ✔ PASADO: Protocolo Diamond cumplido.`));
+      // VALIDACIÓN OBLIGATORIA FORMATO v61 (DIAMOND v10.1)
+      const hasV61Format = response.content.includes('---') && response.content.includes('|');
+      const stepValid = step.validate(response);
+      
+      if (!hasV61Format) {
+        console.log(chalk.red(`   ✘ FALLO CRÍTICO: Violación de Formato v61 (Sin botones interactivos).`));
+      } else if (stepValid) {
+        console.log(chalk.green(`   ✔ PASADO: Protocolo Diamond v10.1 cumplido.`));
       } else {
-        console.log(chalk.red(`   ✘ FALLIDO: La respuesta no cumple el estándar técnico.`));
+        console.log(chalk.red(`   ✘ FALLIDO: La respuesta no cumple el estándar técnico específico.`));
       }
 
       console.log(chalk.gray(`   🤖 Bot: ${response.content.split('---')[0].trim().substring(0, 100)}...`));

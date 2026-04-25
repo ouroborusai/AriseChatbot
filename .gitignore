@@ -44,3 +44,8 @@ next-env.d.ts
 /raw_data
 /scratch
 /supabase/.temp
+
+# Auth & sensitive
+cookies.txt
+auth.json
+.notebooklm-mcp/

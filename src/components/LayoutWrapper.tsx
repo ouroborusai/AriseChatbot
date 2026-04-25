@@ -7,34 +7,26 @@ import Sidebar from "./Sidebar";
 import MobileNav from "./MobileNav";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [hasSession, setHasSession] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      setHasSession(!!session);
-    }
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setHasSession(!!session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { session, loading } = useAuth();
+  const hasSession = !!session;
 
   const isAuthPage = pathname?.startsWith('/auth') || pathname === '/';
 
-  if (isAuthPage || hasSession === false) {
+  if (isAuthPage || (hasSession === false && !loading)) {
     return <>{children}</>;
   }
 
   // Prevent sidebar flash while checking session
-  if (hasSession === null && !isAuthPage) {
-    return <div className="min-h-screen bg-[#020617]" />;
+  if (loading && !isAuthPage) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+         <div className="w-8 h-8 border-2 border-[#22c55e]/20 border-t-[#22c55e] rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (

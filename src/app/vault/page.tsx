@@ -33,6 +33,7 @@ export default function ClientVaultPage() {
   const [uploading, setUploading] = useState(false);
 
   const BRAND_GREEN = "#22c55e";
+  const ACCENT_NAVY = "#0f172a";
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,185 +62,168 @@ export default function ClientVaultPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white p-6 md:p-12 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-white text-slate-900 p-6 md:p-8 font-sans relative overflow-hidden">
       
-      {/* PREMIUM GLOWS - DIAMOND v10.0 PURITY */}
+      {/* PERFORMANCE: OPTIMIZED BACKGROUND WITH MESH GRADIENT - ASLAS STYLE */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-         <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-green-500/10 blur-[180px] rounded-full" />
-         <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-emerald-500/5 blur-[180px] rounded-full" />
+         <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#22c55e]/5 blur-[80px] rounded-full" />
+         <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#0f172a]/5 blur-[80px] rounded-full" />
          <Image 
           src="/brand/auth-bg.png" 
           alt="Background Texture" 
           fill
           priority
-          className="object-cover opacity-10 mix-blend-overlay fixed" 
+          className="object-cover opacity-5 mix-blend-overlay fixed" 
          />
       </div>
 
-      <div className="max-w-6xl mx-auto py-12 relative z-10">
+      <div className="max-w-6xl mx-auto py-8 relative z-10">
         
-        {/* HEADER SECTION */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-24 gap-10">
+        {/* HEADER SECTION - OPTIMIZED SCALES */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
           <div className="animate-in fade-in slide-in-from-left-8 duration-1000">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.5em] text-green-500 italic">Protocolo de Bóveda Neural</span>
-            </div>
-            <h1 className="text-4xl md:text-8xl font-black italic uppercase tracking-tighter leading-none text-white">
-               Bóveda <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-500">LOOP</span>
+            <h1 className="text-xl md:text-2xl font-black uppercase tracking-tighter leading-none text-slate-900">
+               Bóveda <span className="text-[#22c55e]">LOOP</span>
             </h1>
+            <p className="text-slate-400 text-[6px] font-black uppercase tracking-[0.3em] mt-2.5 flex items-center gap-2">
+              <ShieldCheck size={8} className="text-[#22c55e]" />
+              SISTEMA DE ARCHIVO DE ALTA INTEGRIDAD
+            </p>
           </div>
           
-          <div className="flex items-center gap-8 animate-in fade-in slide-in-from-right-8 duration-1000">
-             <div className="flex items-center gap-5 bg-white/5 border border-white/10 px-8 py-4 rounded-3xl backdrop-blur-3xl shadow-2xl">
-                <div className="relative">
-                   <ShieldCheck size={24} className="text-green-500" />
-                   <div className="absolute inset-0 bg-green-500/20 blur-lg rounded-full" />
-                </div>
+          <div className="flex items-center gap-4 animate-in fade-in slide-in-from-right-8 duration-1000">
+             <div className="flex items-center gap-3 bg-white border border-slate-100 px-3.5 py-1.5 rounded-xl shadow-sm">
+                <ShieldCheck size={12} className="text-[#22c55e]" />
                 <div className="flex flex-col">
-                   <span className="text-[10px] font-black text-white uppercase tracking-wider leading-none">Status: Blindado</span>
-                   <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1.5">Encriptación de Grado Militar</span>
+                   <span className="text-[7px] font-black text-slate-900 uppercase tracking-wider leading-none">Blindado</span>
+                   <span className="text-[5px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">AES-256</span>
                 </div>
              </div>
           </div>
         </div>
 
         {!isRegistered ? (
-          /* REGISTRATION / ACCESS FORM - INDUSTRIAL DARK REDESIGN */
-          <div className="animate-in fade-in zoom-in-95 duration-1000 flex justify-center">
-            <div className="w-full max-w-[600px] bg-[#0f172a]/60 backdrop-blur-3xl rounded-[64px] p-16 md:p-20 shadow-[0_50px_150px_-20px_rgba(0,0,0,1)] relative overflow-hidden border border-white/10 group">
+          /* REGISTRATION / ACCESS FORM - ASLAS LIGHT STYLE */
+          <div className="animate-in fade-in zoom-in-95 duration-1000 flex justify-center mt-12">
+            <div className="w-full max-w-[420px] bg-white rounded-[32px] p-10 md:p-12 shadow-xl border border-slate-50 relative overflow-hidden">
                
-               {/* Decorative Gradient Line */}
-               <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-green-500/30 to-transparent" />
-
-               <div className="mb-16 text-center relative z-10">
-                  <div className="w-28 h-28 bg-white/5 rounded-[48px] flex items-center justify-center mx-auto mb-10 border border-white/10 relative group/icon overflow-hidden shadow-2xl">
-                     <div className="absolute inset-0 bg-green-500/20 scale-0 group-hover/icon:scale-110 transition-transform duration-700" />
-                     <Fingerprint size={56} className="text-white group-hover/icon:text-green-500 transition-colors duration-500 relative z-10" />
+               <div className="mb-8 text-center relative z-10">
+                  <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-slate-100 shadow-sm">
+                     <Fingerprint size={28} className="text-[#0f172a]" />
                   </div>
-                  <h2 className="text-4xl font-black uppercase tracking-tighter mb-4 italic text-white">Verificación</h2>
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] italic leading-relaxed">
-                    Sincronización de Identidad Operativa <br /> Nodo v2.5
+                  <h2 className="text-xl font-black uppercase tracking-tighter mb-1 text-slate-900">Verificación</h2>
+                  <p className="text-slate-400 text-[7px] font-black uppercase tracking-[0.4em] leading-relaxed">
+                    Sincronización de Identidad <br /> Nodo v2.5
                   </p>
                </div>
 
-               <form onSubmit={handleRegister} className="space-y-8 relative z-10">
-                  <div className="relative group bg-white/5 border border-white/5 rounded-[28px] flex items-center overflow-hidden h-24 focus-within:bg-white/10 focus-within:border-green-500/30 transition-all shadow-2xl">
-                     <div className="w-32 pl-8 flex items-center border-r border-white/5">
-                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest leading-none">RUT_TERM</span>
-                     </div>
-                     <input 
-                        required
-                        placeholder="12.345.678-9"
-                        value={rut}
-                        onChange={(e) => setRut(e.target.value)}
-                        className="flex-1 bg-transparent border-none px-10 h-full text-3xl font-black text-white tracking-tighter outline-none placeholder:text-slate-800 italic uppercase"
-                     />
-                  </div>
-                  
-                  <button 
-                    disabled={loading}
-                    className="w-full h-24 bg-white text-slate-900 rounded-[32px] font-black uppercase tracking-[0.5em] text-[12px] shadow-[0_20px_50px_rgba(255,255,255,0.05)] hover:bg-green-500 hover:text-white hover:scale-[1.02] active:scale-95 transition-all duration-500 disabled:opacity-50 flex items-center justify-center gap-8 group/btn"
-                  >
-                    {loading ? <Loader2 size={28} className="animate-spin" /> : 
-                       <>
-                        <span>Activar Bóveda</span> 
-                        <Terminal size={24} className="group-hover/btn:translate-x-2 transition-transform" />
-                       </>
-                    }
-                  </button>
+               <form onSubmit={handleRegister} className="space-y-4 relative z-10">
+                  <div className="relative group bg-slate-50 border border-slate-100 rounded-xl flex items-center overflow-hidden h-12 focus-within:bg-white focus-within:border-[#22c55e]/30 transition-all shadow-sm">
+                      <div className="w-16 pl-4 flex items-center border-r border-slate-100 shrink-0">
+                         <span className="text-[6px] font-black text-slate-400 uppercase tracking-widest">RUT_TERM</span>
+                      </div>
+                      <input 
+                         required
+                         placeholder="12.345.678-9"
+                         value={rut}
+                         onChange={(e) => setRut(e.target.value)}
+                         className="flex-1 bg-transparent border-none px-4 h-full text-sm font-black text-slate-900 tracking-widest outline-none placeholder:text-slate-200 uppercase"
+                      />
+                   </div>
+                   
+                   <button 
+                     disabled={loading}
+                     className="w-full h-12 bg-[#0f172a] text-white rounded-xl font-black uppercase tracking-[0.3em] text-[8px] hover:bg-[#22c55e] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3 group/btn"
+                   >
+                     {loading ? <Loader2 size={16} className="animate-spin" /> : 
+                        <>
+                         <span>Activar Bóveda</span> 
+                         <Terminal size={12} className="group-hover/btn:translate-x-1 transition-transform" />
+                        </>
+                     }
+                   </button>
                </form>
-
-               <div className="mt-16 pt-12 border-t border-white/5 text-center relative z-10">
-                  <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.6em] italic opacity-50">LOOP OS · DIAMOND v10.0 · E2EE PROTECTED</p>
-               </div>
             </div>
           </div>
         ) : (
-          /* VAULT DASHBOARD - INDUSTRIAL DARK */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 animate-in slide-in-from-bottom-12 duration-1000">
+          /* VAULT DASHBOARD - ASLAS LIGHT STYLE */
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-300">
             
             {/* Sidebar Column */}
-            <div className="lg:col-span-1 space-y-10">
-              <div className="loop-card p-12 bg-white/5 backdrop-blur-3xl border-white/5 relative overflow-hidden group rounded-[48px] shadow-2xl">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-green-500/5 blur-[100px] rounded-full -mr-24 -mt-24 transition-transform group-hover:scale-150 duration-1000" />
-                <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.5em] mb-12 italic">Capacidad Neural</h3>
-                <div className="flex items-end gap-4 mb-8 relative z-10">
-                  <span className="text-7xl font-black italic tracking-tighter text-white">85%</span>
-                  <div className="flex flex-col mb-3">
-                    <span className="text-[12px] font-black text-green-500 uppercase tracking-widest leading-none italic">Sincronizado</span>
-                    <div className="w-12 h-1 bg-green-500 mt-2 shadow-[0_0_10px_#22c55e]" />
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white p-5 border border-slate-100 relative overflow-hidden group rounded-2xl shadow-sm">
+                <h3 className="text-[7px] font-black text-slate-300 uppercase tracking-[0.4em] mb-4">Capacidad Neural</h3>
+                <div className="flex items-end gap-2 mb-3 relative z-10">
+                  <span className="text-3xl font-black tracking-tighter text-slate-900">85%</span>
+                  <div className="flex flex-col mb-1">
+                    <span className="text-[7px] font-black text-[#22c55e] uppercase tracking-widest leading-none">Sincronizado</span>
                   </div>
                 </div>
-                <div className="w-full bg-white/5 h-4 rounded-full overflow-hidden p-1 border border-white/5 relative z-10">
-                  <div className="bg-gradient-to-r from-green-600 via-green-500 to-emerald-400 h-full rounded-full w-[85%] shadow-[0_0_20px_rgba(34,197,94,0.5)] animate-pulse" />
+                <div className="w-full bg-slate-50 h-1.5 rounded-full overflow-hidden p-0.5 border border-slate-100 relative z-10">
+                  <div className="bg-[#22c55e] h-full rounded-full w-[85%] animate-pulse" />
                 </div>
-                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.3em] mt-8 italic leading-relaxed">
-                  Matriz de Memoria Optimizada <br /> para Gemini 2.5 Flash-Lite
-                </p>
               </div>
 
-              <div className="loop-card p-12 bg-[#010409] border border-white/5 group cursor-pointer hover:bg-white/[0.03] transition-all duration-500 rounded-[48px] shadow-2xl relative overflow-hidden">
-                <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 border border-white/10 group-hover:bg-green-500 group-hover:text-slate-900 group-hover:border-transparent transition-all duration-500 shadow-2xl">
-                  <Cpu size={28} />
+              <div className="bg-white p-5 border border-slate-100 group cursor-pointer hover:border-[#22c55e]/20 transition-all rounded-2xl shadow-sm relative overflow-hidden">
+                <div className="w-9 h-9 bg-slate-50 rounded-lg flex items-center justify-center mb-3 border border-slate-50 group-hover:bg-[#22c55e] group-hover:text-white transition-all">
+                  <Cpu size={16} />
                 </div>
-                <h4 className="font-black uppercase text-lg tracking-tighter italic mb-4 text-white">Procesamiento Neural</h4>
-                <p className="text-[11px] text-slate-500 leading-loose font-bold uppercase tracking-widest mb-12">Sus archivos están siendo vectorizados en tiempo real para consultas de alta velocidad.</p>
-                <div className="h-[1px] w-full bg-white/5 mb-10" />
-                <button className="text-[10px] font-black uppercase text-green-500 tracking-[0.4em] flex items-center gap-5 group-hover:gap-8 transition-all italic">
-                  Comandos de IA <ChevronRight size={20} />
+                <h4 className="font-black uppercase text-[10px] tracking-tight mb-1.5 text-slate-900">Procesamiento Neural</h4>
+                <p className="text-[7px] text-slate-400 leading-relaxed font-bold uppercase tracking-tight mb-5">Archivos vectorizados para consultas de alta velocidad.</p>
+                <div className="h-[1px] w-full bg-slate-50 mb-3" />
+                <button className="text-[6.5px] font-black uppercase text-[#22c55e] tracking-[0.3em] flex items-center gap-3">
+                  Comandos de IA <ChevronRight size={12} />
                 </button>
               </div>
             </div>
 
             {/* Main File Management Column */}
-            <div className="lg:col-span-2 space-y-10">
-              <div className="loop-card p-14 bg-white/5 backdrop-blur-3xl border-white/5 rounded-[56px] shadow-2xl relative overflow-hidden">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-20 gap-10">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white p-6 border border-slate-100 rounded-2xl shadow-sm relative overflow-hidden">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-6">
                   <div>
-                     <h3 className="text-4xl font-black uppercase italic text-white tracking-tighter">Bóveda Digital</h3>
-                     <div className="flex items-center gap-3 mt-3">
-                        <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" />
-                        <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest italic">Archivo Maestro de Alta Integridad</p>
+                     <h3 className="text-lg font-black uppercase text-slate-900 tracking-tighter">Bóveda Digital</h3>
+                     <div className="flex items-center gap-2 mt-0.5">
+                        <div className="w-1 h-1 rounded-full bg-[#22c55e] animate-pulse" />
+                        <p className="text-[7px] font-bold text-slate-300 uppercase tracking-widest">Archivo Maestro Integrado</p>
                      </div>
                   </div>
-                  <label className="cursor-pointer bg-white text-slate-900 px-10 py-5 rounded-[24px] text-[11px] font-black uppercase tracking-[0.4em] hover:bg-green-500 hover:text-white transition-all flex items-center gap-5 shadow-2xl active:scale-95 group/upload">
-                    {uploading ? <Loader2 className="animate-spin" size={20} /> : <Upload size={20} className="group-hover/upload:-translate-y-1 transition-transform" />}
+                  <label className="cursor-pointer bg-[#0f172a] text-white px-5 py-2.5 rounded-lg text-[7.5px] font-black uppercase tracking-[0.3em] hover:bg-[#22c55e] transition-all flex items-center gap-3 shadow-sm active:scale-95 group/upload">
+                    {uploading ? <Loader2 className="animate-spin" size={12} /> : <Upload size={12} />}
                     <span>{uploading ? "SINC_DATOS..." : "CARGAR_NODO"}</span>
                     <input type="file" className="hidden" onChange={handleFileUpload} />
                   </label>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-2.5">
                   {files.length === 0 ? (
-                    <div className="text-center py-32 border-2 border-dashed border-white/5 rounded-[48px] group hover:border-green-500/20 transition-all duration-500">
-                      <FileText className="mx-auto text-slate-900 group-hover:text-green-500/10 mb-8 transition-colors" size={72} strokeWidth={1} />
-                      <p className="text-slate-700 text-[11px] font-black uppercase tracking-[0.6em] italic">Sin activos registrados</p>
+                    <div className="text-center py-12 border border-dashed border-slate-100 rounded-xl group hover:border-[#22c55e]/20 transition-all">
+                      <FileText className="mx-auto text-slate-100 group-hover:text-[#22c55e]/10 mb-3" size={32} strokeWidth={1} />
+                      <p className="text-slate-200 text-[7px] font-black uppercase tracking-[0.5em]">Sin activos registrados</p>
                     </div>
                   ) : (
                     files.map(file => (
-                      <div key={file.id} className="flex items-center justify-between p-10 bg-[#010409]/40 rounded-[36px] border border-white/5 hover:bg-white/5 hover:border-green-500/20 transition-all duration-500 group shadow-xl">
-                        <div className="flex items-center gap-8">
-                          <div className="w-16 h-16 bg-white/5 rounded-[26px] flex items-center justify-center border border-white/10 group-hover:bg-green-500 group-hover:text-slate-900 group-hover:border-transparent transition-all duration-500 shadow-2xl">
-                            <FileText size={28} />
+                      <div key={file.id} className="flex items-center justify-between p-3.5 bg-slate-50/50 rounded-xl border border-slate-100 hover:bg-white hover:border-[#22c55e]/20 transition-all group shadow-sm">
+                        <div className="flex items-center gap-4">
+                          <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center border border-slate-100 group-hover:bg-[#22c55e] group-hover:text-white transition-all shadow-sm">
+                            <FileText size={16} />
                           </div>
                           <div>
-                            <p className="text-lg font-black text-white uppercase tracking-tight italic group-hover:text-green-500 transition-colors duration-500">{file.name}</p>
-                            <div className="flex items-center gap-4 mt-3">
-                               <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest italic">{file.date}</span>
-                               <span className="opacity-20 text-slate-800">//</span>
-                               <span className="text-[10px] font-black text-green-500 uppercase tracking-widest italic">{file.type}</span>
+                            <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight group-hover:text-[#22c55e] transition-colors">{file.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                               <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">{file.date}</span>
+                               <span className="opacity-10 text-slate-300">//</span>
+                               <span className="text-[6.5px] font-black text-[#22c55e] uppercase tracking-widest">{file.type}</span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-6">
-                           <div className="hidden md:flex items-center gap-3 bg-green-500/5 px-6 py-3 rounded-2xl border border-green-500/10 shadow-inner">
-                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" />
-                              <span className="text-[9px] font-black text-green-500 uppercase tracking-widest italic">INDEXED_OK</span>
+                        <div className="flex items-center gap-3">
+                           <div className="hidden md:flex items-center gap-2 bg-white px-2.5 py-1 rounded-md border border-slate-100 shadow-sm">
+                              <div className="w-1 h-1 rounded-full bg-[#22c55e]" />
+                              <span className="text-[6.5px] font-black text-[#22c55e] uppercase tracking-widest">INDEXED</span>
                            </div>
-                           <button className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-600 hover:text-white hover:bg-white/10 transition-all shadow-xl group/btn">
-                              <ChevronRight size={24} className="group-hover/btn:translate-x-1 transition-transform" />
+                           <button className="w-7 h-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all">
+                              <ChevronRight size={12} />
                            </button>
                         </div>
                       </div>
@@ -253,18 +237,18 @@ export default function ClientVaultPage() {
         )}
 
         {/* Security Footer */}
-        <div className="mt-32 flex flex-wrap justify-center gap-16 opacity-30 px-6">
-          <div className="flex items-center gap-4 group cursor-help">
-            <Lock size={16} className="text-green-500 group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-[0.5em] italic text-slate-600">AES-256 Protocol</span>
+        <div className="mt-20 flex flex-wrap justify-center gap-10 opacity-40 px-6 pb-12">
+          <div className="flex items-center gap-2.5 group cursor-help">
+            <Lock size={12} className="text-[#22c55e]" />
+            <span className="text-[7px] font-black uppercase tracking-[0.3em] text-slate-500">AES-256 Protocol</span>
           </div>
-          <div className="flex items-center gap-4 group cursor-help">
-            <Database size={16} className="text-emerald-500 group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-[0.5em] italic text-slate-600">Neural Vault Node</span>
+          <div className="flex items-center gap-2.5 group cursor-help">
+            <Database size={12} className="text-[#0f172a]" />
+            <span className="text-[7px] font-black uppercase tracking-[0.3em] text-slate-500">Neural Vault</span>
           </div>
-          <div className="flex items-center gap-4 group cursor-help">
-            <ShieldAlert size={16} className="text-green-400 group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-[0.5em] italic text-slate-600">RLS Isolated</span>
+          <div className="flex items-center gap-2.5 group cursor-help">
+            <ShieldAlert size={12} className="text-[#22c55e]" />
+            <span className="text-[7px] font-black uppercase tracking-[0.3em] text-slate-500">Isolated</span>
           </div>
         </div>
 

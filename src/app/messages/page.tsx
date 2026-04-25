@@ -39,6 +39,9 @@ export default function MessagesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
+  const BRAND_GREEN = "#22c55e";
+  const ACCENT_BLACK = "#0f172a";
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -223,33 +226,21 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-[#25D366]/30 overflow-hidden relative">
+    <div className="flex h-screen bg-white text-slate-900 font-sans selection:bg-[#22c55e]/20 overflow-hidden relative animate-in fade-in duration-300">
       
-      {/* VIBRANT MESH BACKGROUND (CONSISTENT WITH LANDING/LOGIN) */}
+      {/* PERFORMANCE: OPTIMIZED MESH BACKGROUND ACCENTS - ASLAS STYLE */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        {/* Mint/Cyan Mesh Background */}
-        <div 
-          className="absolute inset-0 opacity-40 mix-blend-multiply"
-          style={{
-            backgroundImage: 'url("/brand/vibrant-mesh.png")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
+        <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-[#22c55e]/5 blur-[64px] rounded-full animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-[60%] h-[60%] bg-slate-900/5 blur-[64px] rounded-full" />
         
-        {/* Grain Texture Layer */}
         <div 
-          className="absolute inset-0 opacity-30 mix-blend-overlay"
+          className="absolute inset-0 opacity-5 mix-blend-overlay"
           style={{
             backgroundImage: 'url("/brand/auth-bg.png")',
             backgroundSize: '400px',
             backgroundRepeat: 'repeat',
           }}
         />
-
-        {/* Dynamic Light Accents */}
-        <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-[#80cbc4]/20 blur-[100px] rounded-full animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-[60%] h-[60%] bg-[#4db6ac]/10 blur-[100px] rounded-full" />
       </div>
 
       <div className="flex flex-1 relative z-10 overflow-hidden">
@@ -263,16 +254,15 @@ export default function MessagesPage() {
           activeCompanyId={activeCompany?.id}
         />
 
-        <div className="flex flex-col flex-1 bg-white/40 backdrop-blur-md relative overflow-hidden border-l border-white shadow-2xl">
+        <div className="flex flex-col flex-1 bg-white/60 backdrop-blur-md relative overflow-hidden border-l border-slate-100 shadow-sm">
           {selectedConv ? (
             <>
               <ChatHeader selectedConv={selectedConv} onToggleHandoff={toggleHandoff} />
 
-              <div className="flex-1 overflow-y-auto p-6 lg:p-12 space-y-8 relative">
-                {/* SUBTLE DOT OVERLAY */}
-                <div className="absolute inset-0 bg-[radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+              <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 relative">
+                <div className="absolute inset-0 bg-[radial-gradient(rgba(46,58,140,0.02)_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
 
-                <div className="relative space-y-8 max-w-4xl mx-auto">
+                <div className="relative space-y-4 max-w-3xl mx-auto">
                   {messages.map((m, i) => (
                     <MessageBubble key={m.id} message={m} index={i} onSendMessage={sendMessage} />
                   ))}
@@ -287,41 +277,41 @@ export default function MessagesPage() {
               />
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(rgba(0,0,0,0.02)_1px,transparent_1px)] [background-size:40px_40px]" />
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-300 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(rgba(0,0,0,0.01)_1px,transparent_1px)] [background-size:32px_32px]" />
               
               <div className="relative z-10 flex flex-col items-center">
-                <div className="relative mb-10 group">
-                   <div className="absolute inset-0 bg-[#25D366]/20 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                   <div className="w-24 h-24 bg-white/60 border border-white rounded-[40px] flex items-center justify-center shadow-xl relative z-10 transform group-hover:scale-105 transition-all duration-700 backdrop-blur-xl">
+                <div className="relative mb-6 group">
+                   <div className="absolute inset-0 bg-[#22c55e]/10 blur-[40px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                   <div className="w-14 h-14 bg-white border border-slate-100 rounded-[22px] flex items-center justify-center shadow-sm relative z-10 transform group-hover:scale-105 transition-all duration-700">
                       <Image 
                         src="/brand/official.png" 
                         alt="LOOP" 
-                        width={48} 
-                        height={48} 
+                        width={28} 
+                        height={28} 
                         className="object-contain"
                       />
                    </div>
-                   <div className="absolute -top-3 -right-3 w-8 h-8 bg-[#25D366]/10 border border-[#25D366]/20 rounded-full flex items-center justify-center backdrop-blur-md">
-                      <Activity size={14} className="text-[#25D366] animate-pulse" />
+                   <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white border border-slate-100 rounded-full flex items-center justify-center shadow-sm">
+                      <Activity size={10} className="text-[#22c55e] animate-pulse" />
                    </div>
                 </div>
                 
-                <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-4 text-center italic">
-                  Consola <span className="text-[#25D366]">Neural.</span>
+                <h3 className="text-lg font-black text-slate-900 tracking-tighter mb-1.5 text-center">
+                  Consola <span className="text-[#22c55e]">Neural.</span>
                 </h3>
-                <p className="text-[10px] tracking-[0.5em] uppercase font-black text-slate-400 text-center">
+                <p className="text-[7px] tracking-[0.3em] uppercase font-black text-slate-400 text-center">
                   seleccione una frecuencia para sincronizar ...
                 </p>
                 
-                <div className="mt-16 flex items-center gap-10 opacity-40">
-                   <div className="flex flex-col items-center gap-2">
-                      <ShieldCheck size={16} className="text-slate-900" />
-                      <span className="text-[7px] font-black uppercase tracking-widest text-slate-900">E2EE Safe</span>
+                <div className="mt-12 flex items-center gap-8 opacity-30">
+                   <div className="flex flex-col items-center gap-1.5">
+                      <ShieldCheck size={14} className="text-slate-400" />
+                      <span className="text-[6px] font-black uppercase tracking-widest text-slate-400">E2EE Safe</span>
                    </div>
-                   <div className="flex flex-col items-center gap-2">
-                      <Cpu size={16} className="text-slate-900" />
-                      <span className="text-[7px] font-black uppercase tracking-widest text-slate-900">Logic v2.5</span>
+                   <div className="flex flex-col items-center gap-1.5">
+                      <Cpu size={14} className="text-slate-400" />
+                      <span className="text-[6px] font-black uppercase tracking-widest text-slate-400">Logic v2.5</span>
                    </div>
                 </div>
               </div>

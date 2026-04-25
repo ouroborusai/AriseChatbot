@@ -52,76 +52,73 @@ export default function UsersManagement() {
   }, []);
 
   return (
-    <div className="flex flex-col w-full max-w-full py-6 md:py-12 animate-in fade-in duration-700 overflow-x-hidden relative">
+    <div className="flex flex-col w-full max-w-full py-2 md:py-4 animate-in fade-in duration-700 overflow-x-hidden relative">
       
-      {/* PREMIUM BACKGROUND ACCENTS */}
-      <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-green-500/5 blur-[120px] rounded-full -z-10" />
-      <div className="absolute bottom-0 left-0 w-[50%] h-[50%] bg-emerald-500/5 blur-[120px] rounded-full -z-10" />
+      {/* PERFORMANCE: OPTIMIZED BACKGROUND ACCENTS - ASLAS STYLE */}
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#22c55e]/5 blur-[64px] rounded-full -z-10" />
+      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-[#0f172a]/5 blur-[64px] rounded-full -z-10" />
 
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16 px-2">
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-             <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
-             <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Protocolo de Identidad</span>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
-            Búnker de <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500">Acceso</span>
+      {/* HEADER SECTION - ASLAS STYLE (Optimized Scales) */}
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6 px-2 relative z-10">
+        <div>
+          <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter leading-none uppercase">
+            Búnker de <span className="text-[#22c55e]">Acceso</span>
           </h1>
-          <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
-            <Lock size={12} className="text-green-500" />
+          <p className="text-slate-400 text-[6px] font-black uppercase tracking-[0.3em] mt-2.5 flex items-center gap-2">
+            <Lock size={8} className="text-[#22c55e]" />
             SEGURIDAD E IDENTIDAD / v2.5
           </p>
         </div>
 
-        <button className="flex items-center justify-center gap-6 bg-white text-slate-900 px-10 py-5 rounded-[22px] text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-green-500 hover:text-white transition-all active:scale-95 group relative z-10">
+        <button className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2.5 rounded-xl text-[7.5px] font-black uppercase tracking-widest shadow-sm hover:bg-[#22c55e] transition-all active:scale-95 group">
           <span>Autorizar Operador</span>
-          <UserPlus size={16} className="group-hover:scale-110 transition-transform" />
+          <UserPlus size={12} />
         </button>
       </header>
 
-      {/* METRICS SECTION */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16 relative z-10">
+      {/* METRICS SECTION - COMPACT */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 relative z-10">
         <MetricSmall title="Operadores Activos" value={loading ? '..' : users.length} icon={User} />
         <MetricSmall title="Unidades Link" value={loading ? '..' : companies.length} icon={Building2} />
         <MetricSmall title="Estado Búnker" value="Industrial" icon={ShieldCheck} />
         <MetricSmall title="Integridad DNA" value="100%" icon={Zap} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 relative z-10">
-        {/* IDENTITY VAULT LIST */}
-        <div className="lg:col-span-2 bg-white/5 rounded-[48px] border border-white/5 overflow-hidden shadow-2xl backdrop-blur-3xl">
-          <div className="p-10 md:p-12 bg-white/5 flex justify-between items-center border-b border-white/5">
-            <h2 className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-600 italic">Registro de Bóveda</h2>
-            <span className="text-[9px] font-black bg-white/5 text-green-500 px-4 py-1.5 rounded-xl uppercase tracking-widest border border-green-500/20">OPERADORES_{users.length}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+        {/* IDENTITY VAULT LIST - COMPACT */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+          <div className="p-5 bg-slate-50/50 flex justify-between items-center border-b border-slate-100">
+            <h2 className="text-[7.5px] font-black uppercase tracking-[0.3em] text-slate-400">Registro de Bóveda</h2>
+            <span className="text-[6.5px] font-black bg-white text-[#22c55e] px-2.5 py-0.5 rounded-lg uppercase tracking-widest border border-[#22c55e]/20 shadow-sm">OPERADORES_{users.length}</span>
           </div>
           
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-slate-50">
             {loading ? (
-              <div className="p-40 text-center flex flex-col items-center">
-                 <Cpu size={48} className="text-green-500 animate-spin opacity-20 mb-10" />
-                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-[1em] animate-pulse">Neural_Sync_Active</p>
+              <div className="p-12 text-center flex flex-col items-center">
+                 <Cpu size={20} className="text-[#22c55e] animate-spin opacity-20 mb-3" />
+                 <p className="text-[6.5px] font-black text-slate-300 uppercase tracking-[0.4em] animate-pulse">Neural_Sync_Active</p>
               </div>
             ) : users.map(user => (
-              <div key={user.id} className="p-10 md:p-12 flex items-center justify-between hover:bg-white/[0.03] transition-all group cursor-pointer relative overflow-hidden">
-                <div className="absolute left-0 w-1 h-0 bg-green-500 group-hover:h-full transition-all duration-500" />
+              <div key={user.id} className="p-4 md:p-5 flex items-center justify-between hover:bg-slate-50/30 transition-all group cursor-pointer relative overflow-hidden">
+                <div className="absolute left-0 w-1 h-0 bg-[#22c55e] group-hover:h-full transition-all duration-500" />
                 
-                <div className="flex items-center gap-8 relative z-10">
-                  <div className="w-16 h-16 bg-white text-slate-900 rounded-[26px] flex items-center justify-center font-black text-sm shadow-2xl group-hover:bg-green-500 group-hover:text-white transition-all duration-500 italic">
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className="w-9 h-9 bg-white text-slate-900 rounded-lg border border-slate-100 flex items-center justify-center font-black text-[10px] shadow-sm group-hover:bg-[#22c55e] group-hover:text-white transition-all duration-500">
                     {user.email?.[0].toUpperCase() || '?'}
                   </div>
                   <div>
-                    <p className="text-[16px] font-black text-white uppercase italic tracking-tight group-hover:text-green-500 transition-colors duration-500">{user.email || 'N_A'}</p>
-                    <p className="text-[10px] font-mono text-slate-600 mt-2 uppercase tracking-widest opacity-60">NODE_ID: {user.id.substring(0, 12).toUpperCase()}</p>
+                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight group-hover:text-[#22c55e] transition-colors duration-500">{user.email || 'N_A'}</p>
+                    <p className="text-[6px] font-mono text-slate-300 mt-0.5 uppercase tracking-widest">NODE_ID: {user.id.substring(0, 12).toUpperCase()}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-12 relative z-10">
+                <div className="flex items-center gap-5 relative z-10">
                   <div className="text-right hidden sm:block">
-                    <p className="text-[9px] font-black text-slate-700 uppercase tracking-widest mb-1">Rol de Acceso</p>
-                    <p className="text-[11px] font-black text-green-500 uppercase tracking-widest bg-green-500/10 px-3 py-1 rounded-lg border border-green-500/20">{user.role}</p>
+                    <p className="text-[5px] font-black text-slate-300 uppercase tracking-widest mb-0.5">Rol de Acceso</p>
+                    <p className="text-[7px] font-black text-[#22c55e] uppercase tracking-widest bg-[#22c55e]/5 px-2 py-0.5 rounded-md border border-[#22c55e]/10">{user.role}</p>
                   </div>
-                  <button className="w-14 h-14 flex items-center justify-center bg-white/5 text-slate-700 hover:bg-white hover:text-slate-900 rounded-2xl border border-white/5 transition-all shadow-xl group-hover:scale-110">
-                    <Settings2 size={20} />
+                  <button className="w-7 h-7 flex items-center justify-center bg-white text-slate-300 hover:bg-slate-50 hover:text-slate-900 rounded-lg border border-slate-100 transition-all shadow-sm">
+                    <Settings2 size={12} />
                   </button>
                 </div>
               </div>
@@ -129,45 +126,45 @@ export default function UsersManagement() {
           </div>
         </div>
 
-        {/* AUTHORIZATION TERMINAL */}
-        <div className="flex flex-col gap-12">
-          <div className="loop-card bg-[#010409] rounded-[48px] border border-white/5 shadow-2xl p-12 flex flex-col overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 blur-[120px] rounded-full -mr-32 -mt-32 transition-transform group-hover:scale-150 duration-1000" />
+        {/* AUTHORIZATION TERMINAL - COMPACT */}
+        <div className="flex flex-col gap-6">
+          <div className="bg-[#0f172a] rounded-2xl border border-white/5 shadow-xl p-5 flex flex-col overflow-hidden relative group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-[80px] rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-1000" />
             
             <div className="relative z-10">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.5em] text-white mb-12 flex items-center gap-4 italic">
-                <Zap size={16} className="text-green-500" />
+              <h3 className="text-[8px] font-black uppercase tracking-[0.3em] text-white mb-5 flex items-center gap-2.5">
+                <Zap size={12} className="text-[#22c55e]" />
                 Terminal de Acceso
               </h3>
               
-              <div className="space-y-10">
-                <div className="space-y-4">
-                  <label className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] block ml-2">Enlace de Operador</label>
-                  <select className="w-full bg-white/5 border border-white/5 rounded-[22px] p-5 text-[11px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 focus:border-green-500/30 transition-all appearance-none cursor-pointer">
-                    {users.map(u => <option key={u.id} value={u.id} className="bg-[#010409]">{u.email || u.id.substring(0, 8)}</option>)}
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-[6px] font-black text-white/40 uppercase tracking-[0.2em] block ml-1">Enlace de Operador</label>
+                  <select className="w-full bg-white/5 border border-white/5 rounded-xl p-3 text-[8px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 transition-all appearance-none cursor-pointer">
+                    {users.map(u => <option key={u.id} value={u.id} className="bg-[#0f172a]">{u.email || u.id.substring(0, 8)}</option>)}
                   </select>
                 </div>
 
-                <div className="space-y-4">
-                  <label className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] block ml-2">Unidad Operativa</label>
-                  <select className="w-full bg-white/5 border border-white/5 rounded-[22px] p-5 text-[11px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 focus:border-green-500/30 transition-all appearance-none cursor-pointer">
-                    {companies.map(c => <option key={c.id} value={c.id} className="bg-[#010409]">{c.name}</option>)}
+                <div className="space-y-2">
+                  <label className="text-[6px] font-black text-white/40 uppercase tracking-[0.2em] block ml-1">Unidad Operativa</label>
+                  <select className="w-full bg-white/5 border border-white/5 rounded-xl p-3 text-[8px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 transition-all appearance-none cursor-pointer">
+                    {companies.map(c => <option key={c.id} value={c.id} className="bg-[#0f172a]">{c.name}</option>)}
                   </select>
                 </div>
 
-                <button className="w-full bg-green-500 text-slate-900 py-6 rounded-[24px] text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl shadow-green-500/20 hover:bg-white transition-all active:scale-95 mt-4">
-                  Otorgar Acceso Industrial
+                <button className="w-full bg-[#22c55e] text-white py-3.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-white hover:text-slate-900 transition-all active:scale-95 mt-1">
+                  Otorgar Acceso
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="loop-card bg-white/5 p-10 rounded-[40px] border border-white/5 shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500 opacity-20" />
-            <div className="flex items-start gap-4">
-               <Fingerprint size={16} className="text-slate-800 mt-1" />
-               <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] leading-loose italic">
-                 * Las autorizaciones de acceso son auditadas por el Escudo Neural LOOP v2.5. Todas las operaciones de terminal se registran vía telemetría operativa blindada.
+          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#22c55e] opacity-20" />
+            <div className="flex items-start gap-3">
+               <Fingerprint size={10} className="text-slate-100 mt-0.5" />
+               <p className="text-[6.5px] font-black text-slate-300 uppercase tracking-[0.2em] leading-relaxed">
+                 * Las autorizaciones son auditadas por el Escudo Neural v2.5.
                </p>
             </div>
           </div>

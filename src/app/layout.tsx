@@ -6,6 +6,8 @@ import { ActiveCompanyProvider } from "@/contexts/ActiveCompanyContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import LayoutWrapper from "@/components/LayoutWrapper";
+import ProgressBar from "@/components/ProgressBar";
+import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -43,6 +45,9 @@ export default function RootLayout({
         <ToastProvider>
           <AuthProvider>
             <ActiveCompanyProvider>
+              <Suspense fallback={null}>
+                <ProgressBar />
+              </Suspense>
               <LayoutWrapper>
                 {children}
               </LayoutWrapper>

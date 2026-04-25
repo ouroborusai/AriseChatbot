@@ -74,10 +74,12 @@ serve(async (req: Request) => {
       let aiResponse = null;
       let lastErr = "";
       const shuffledKeys = keys.sort(() => Math.random() - 0.5);
-      const models = ['gemini-2.5-flash-lite'];
+      const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+      
+      let currentPrompt = fullPrompt;
 
-      // ELASTIC NEURAL LOOP: Attempts -> Models -> Keys
-      searchLoop: for (let attempt = 0; attempt < 2; attempt++) {
+      // ELASTIC NEURAL LOOP v10.1 (Auto-healing & Validation)
+      searchLoop: for (let attempt = 0; attempt < 3; attempt++) {
         for (const model of models) {
           for (const key of shuffledKeys) {
             console.log(`[Neural] Trying ${model} with key ${key.substring(0, 5)}...`);
@@ -85,13 +87,25 @@ serve(async (req: Request) => {
               const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
+                  body: JSON.stringify({ contents: [{ parts: [{ text: currentPrompt }] }] })
               });
               
               if (res.ok) {
                 const d = await res.json();
-                aiResponse = d.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (aiResponse) break searchLoop;
+                const tempResponse = d.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (tempResponse) {
+                  // Intercepción Técnica v61
+                  const hasV61Format = tempResponse.includes('---') && tempResponse.includes('|');
+                  if (hasV61Format) {
+                    aiResponse = tempResponse;
+                    break searchLoop;
+                  } else {
+                    console.log(`[AUTO-HEALING] Intento ${attempt+1}: Gemini omitió formato v61. Forzando re-prompt.`);
+                    currentPrompt = `${fullPrompt}\n\n[ERROR CRÍTICO SISTEMA]\nTu respuesta anterior omitió el formato interactivo obligatorio. Es CRÍTICO para el sistema. REESCRIBE tu respuesta e incluye estrictamente '--- Título | Opción 1 | Opción 2' al final.`;
+                    continue searchLoop;
+                  }
+                }
               } else {
                 lastErr = await res.text();
                 console.warn(`[Neural] ${model} failed: ${res.status}`);
@@ -101,18 +115,25 @@ serve(async (req: Request) => {
             }
           }
         }
-        console.log(`[Neural] Full cycle failed. Cooling down 5s...`);
-        await delay(5000);
+        console.log(`[Neural] Full cycle failed. Cooling down 2s...`);
+        await delay(2000);
       }
 
-      if (!aiResponse) throw new Error(`Neural Exhaustion. Last Err: ${lastErr}`);
+      if (!aiResponse && currentPrompt !== fullPrompt) {
+        console.error(`[FALLBACK_ACTIVATED] Gemini falló en formato v61. Inyectando menú de emergencia.`);
+        aiResponse = `Respuesta procesada. --- Menú de Emergencia | Menú Principal | Contactar Soporte`;
+      } else if (!aiResponse) {
+        throw new Error(`Neural Exhaustion. Last Err: ${lastErr}`);
+      }
 
       // Persistencia y Salida
-      const { data: botMsg } = await supabase.from('messages').insert({ 
-        conversation_id: convId, 
+      const { data: botMsg, error: insertErr } = await supabase.from('messages').insert({ 
+        conversation_id: msg.conversation_id, 
         sender_type: 'bot', 
         content: aiResponse.trim() 
       }).select('id').maybeSingle();
+
+      if (insertErr) throw new Error(`Insert failed: ${insertErr.message}`);
 
       const targetPhone = contactRes.data?.phone;
       if (waSettings?.access_token && waSettings?.phone_number_id && targetPhone) {

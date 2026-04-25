@@ -1,4 +1,4 @@
-# 🏛️ ARISE BUSINESS OS v9.0
+# 🏛️ ARISE BUSINESS OS v10.1 (Diamond)
 
 **Next-Generation AI-Powered Business Intelligence Platform**
 
@@ -8,6 +8,7 @@
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
+[![Protocol](https://img.shields.io/badge/Protocol-v61_Interactive-orange)](https://github.com/arise/diamond)
 
 ---
 
@@ -26,7 +27,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         ARISE BUSINESS OS v9.0                          │
+│                         ARISE BUSINESS OS v10.1                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
 │  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐            │
@@ -140,7 +141,7 @@ ouroborus-ai/
 │       ├── document-processor/   # Procesa documentos subidos
 │       ├── whatsapp-responder/   # Respuestas automáticas
 │       ├── mercadopago-webhook/  # Webhook de pagos
-│       └── arise-neural-engine/  # Motor de IA alternativo
+│       └── arise-neural-engine/  # Motor de IA (Diamond v10.1)
 │
 ├── scripts/                      # Scripts de desarrollo y auditoría
 │   ├── code-audit.ts             # Auditoría de código estático
@@ -165,7 +166,7 @@ ouroborus-ai/
 Usuario ──► WhatsApp Cloud API ──► Webhook (Deno) ──► Supabase (Insert)
                                                               │
                                                               ▼
-Usuario ◄── WhatsApp Send API ◄── Gemini AI (v9.0) ◄── Supabase (Select)
+Usuario ◄── WhatsApp Send API ◄── Gemini 2.5 Flash-Lite ◄── Supabase (Select)
 ```
 
 **Pasos detallados:**
@@ -175,8 +176,8 @@ Usuario ◄── WhatsApp Send API ◄── Gemini AI (v9.0) ◄── Supabas
 3. **Identidad:** Resuelve `company_id` y `contact_id` (multi-tenant routing)
 4. **Contexto:** Obtiene prompt personalizado de `ai_prompts` table
 5. **Inferencia:** Llama a Gemini 2.5 Flash-Lite con contexto del usuario
-6. **Parseo:** Detecta formato `---` y `|` para botones/listas
-7. **Respuesta:** Envía mensaje interactivo por WhatsApp API
+6. **Parseo Diamond v61:** Detecta inteligentemente formato `---` y `|` para generar Listas y Botones dinámicos
+7. **Respuesta Interactiva:** Envía payload `list` o `button` por WhatsApp API
 8. **Acción:** Si hay bloques `[[...]]`, trigger a `/api/neural-processor`
 
 ### 2. Flujo de Acción Neural ([[...]])
@@ -298,8 +299,8 @@ supabase login
 supabase link --project-ref your-project-ref
 
 # Deploy de funciones
-supabase functions deploy whatsapp-webhook
-supabase functions deploy document-processor
+supabase functions deploy mercadopago-webhook
+supabase functions deploy arise-neural-engine
 supabase functions deploy mercadopago-webhook
 ```
 
@@ -404,8 +405,8 @@ chore: Cambios en build/config
 ## 📞 SOPORTE
 
 **Equipo:** Arise Intelligence  
-**Versión:** v9.0 Diamond Protocol  
-**Última actualización:** 2026-04-20
+**Versión:** v10.1 Diamond Protocol (Robust v61)  
+**Última actualización:** 2026-04-25
 
 ---
 
