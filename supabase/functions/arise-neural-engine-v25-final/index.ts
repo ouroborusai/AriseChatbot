@@ -74,7 +74,7 @@ serve(async (req: Request) => {
       let aiResponse = null;
       let lastErr = "";
       const shuffledKeys = keys.sort(() => Math.random() - 0.5);
-      const models = ['gemini-2.5-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+      const models = ['gemini-2.5-flash-lite'];
 
       // ELASTIC NEURAL LOOP: Attempts -> Models -> Keys
       searchLoop: for (let attempt = 0; attempt < 2; attempt++) {

@@ -100,27 +100,39 @@ export async function handleInventoryAction(
   }
 
   // 3. INVENTORY_SCAN
-  if (actionData.action === 'inventory_scan' && (actionData.sku || actionData.name)) {
-    // Sanitizar input para prevenir SQL injection
-    const safeSku = String(actionData.sku || '').replace(/[%_]/g, '');
-    const safeName = String(actionData.name || '').replace(/[%_]/g, '');
+  if (actionData.action === 'inventory_scan') {
+    // Flexibilidad Diamond: aceptamos query, item, name o sku
+    const searchTerm = String(actionData.query || actionData.item || actionData.name || actionData.sku || '').replace(/[%_]/g, '');
 
-    const { data: items } = await supabase
+    let query = supabase
       .from('inventory_items')
-      .select('id, name, sku, current_stock')
+      .select('name, sku, current_stock, unit')
       .eq('company_id', companyId)
-      .or(`sku.ilike.%${safeSku}%,name.ilike.%${safeName}%`)
+      .order('current_stock', { ascending: false })
       .limit(10);
 
+    if (searchTerm) {
+      query = query.or(`sku.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%`);
+    }
+
+    const { data: items, error: scanError } = await query;
+
     if (items && items.length > 0) {
-      // Feedback via WhatsApp (Reutilizando lógica del motor)
-      // Nota: Aquí se asume que el webhook ya maneja el feedback o el processor lo gatilla.
-      // Por brevedad, solo retornamos los resultados para el log.
+      const stockList = items.map(i => `- ${i.name} [${i.sku}]: ${i.current_stock} ${i.unit}`).join('\n');
+      const content = `[SYSTEM_RESULT] Inventario detectado:\n${stockList}`;
+      
+      // Insertar resultado para que la IA lo vea y responda
+      await supabase.from('messages').insert({
+        conversation_id: (await supabase.from('messages').select('conversation_id').eq('id', messageId).single()).data?.conversation_id,
+        sender_type: 'system',
+        content: content
+      });
+
       for (const item of items) {
         results.push({ action: 'inventory_scan', status: 'success', sku: item.sku, name: item.name, stock: item.current_stock });
       }
     } else {
-      results.push({ action: 'inventory_scan', status: 'not_found', query: actionData.sku || actionData.name });
+      results.push({ action: 'inventory_scan', status: 'not_found', error: scanError?.message });
     }
   }
 
