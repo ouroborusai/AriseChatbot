@@ -155,7 +155,7 @@ export default function Dashboard() {
              </button>
              <div className="hidden sm:flex items-center gap-3 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm">
                 <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-100 relative">
-                   <Image src="/brand/official.png" alt="Profile" fill className="object-cover" />
+                   <Image src="/brand/official.png" alt="Profile" fill sizes="32px" className="object-cover" />
                 </div>
                 <div className="flex flex-col">
                    <span className="text-[8px] font-black text-slate-900 uppercase tracking-wider leading-none">Root User</span>

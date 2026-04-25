@@ -51,6 +51,7 @@ export default function LandingPage() {
                   src="/brand/official.png" 
                   alt="LOOP Logo" 
                   fill
+                  sizes="40px"
                   className="object-cover"
                 />
               </div>
@@ -109,7 +110,7 @@ export default function LandingPage() {
               <div className="relative bg-white rounded-3xl border border-slate-100 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] overflow-hidden">
                   <div className="bg-[#f8fafc] p-6 border-b border-slate-100 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm relative overflow-hidden p-0">
-                      <Image src="/brand/official.png" alt="Logo" fill className="object-cover" />
+                      <Image src="/brand/official.png" alt="Logo" fill sizes="48px" className="object-cover" />
                     </div>
                     <div>
                       <p className="font-bold text-sm text-[#0f172a]">LOOP Neural Core</p>
