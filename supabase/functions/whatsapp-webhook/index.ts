@@ -97,7 +97,7 @@ serve(async (req: Request) => {
   try {
     const body = await req.json();
     
-    // --- MODO ASÍNCRONO v9.0 (Neural Pulse) ---
+    // --- MODO ASÍNCRONO Diamond v10.1 (Neural Pulse) ---
     if (isTriggerSource && body.messageId) {
        console.log(`[Neural_Brain] Iniciando inferencia para mensaje: ${body.messageId}`);
        // Recuperar mensaje y contexto

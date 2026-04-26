@@ -1,5 +1,5 @@
 /**
- * ARISE API TYPES v9.0
+ * ARISE API TYPES Diamond v10.1
  * Tipos TypeScript estrictos para endpoints de la API
  */
 

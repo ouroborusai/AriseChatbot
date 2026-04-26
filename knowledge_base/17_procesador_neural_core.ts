@@ -14,7 +14,7 @@ import { handleCreditAction } from '@/lib/neural-engine/actions/credit';
 import { handlePaymentAction } from '@/lib/neural-engine/actions/payment';
 
 /**
- * NEURAL PROCESSOR v9.0 Industrial CORE
+ * NEURAL PROCESSOR Diamond v10.1 Industrial CORE
  * Procesa bloques de acción [[ { "action": "..." } ]] en mensajes de la IA.
  *
  * Acciones soportadas:
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Conversation status not found' }, { status: 404 });
     }
 
-    // --- CLÁUSULA DE GUARDA v9.0 ---
+    // --- CLÁUSULA DE GUARDA Diamond v10.1 ---
     if (status !== 'open') {
       console.log(`[NEURAL_PROCESSOR] Handoff detected (Status: ${status}). Aborting actions for message ${messageId}`);
       return NextResponse.json({ status: 'aborted_handoff_active' });
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
     // 3. Ejecutar cada bloque detectado
     for (const block of actionBlocks) {
       try {
-        // Limpieza robusta de JSON v9.5 (Multi-formato)
+        // Limpieza robusta de JSON Diamond v10.1 (Multi-formato)
         let cleanJson = '';
         
         if (block.startsWith('[[')) {

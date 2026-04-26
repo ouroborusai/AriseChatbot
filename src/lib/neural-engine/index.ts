@@ -1,5 +1,5 @@
 /**
- * ARISE NEURAL ENGINE - EXPORTS v9.8
+ * ARISE NEURAL ENGINE - EXPORTS Diamond v10.1
  * Punto único de importación para el motor neural
  */
 

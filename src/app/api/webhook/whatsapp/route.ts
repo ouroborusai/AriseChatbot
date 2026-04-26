@@ -26,7 +26,7 @@ const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
  */
 
 /**
- * Helper: Obtiene configuración de WhatsApp centralizada (Diamond v9.7)
+ * Helper: Obtiene configuración de WhatsApp centralizada (Diamond v10.1)
  */
 async function getWhatsAppConfig(companyId: string) {
   const { data: companyData } = await supabase
@@ -147,7 +147,7 @@ export async function POST(req: Request) {
     if (!conv) return NextResponse.json({ status: 'conversation_failure' });
 
     // --- 4. PROCESAMIENTO DE CONTENIDO ---
-    // Soporte para Mensajes de Texto, Interactivos y Documentos (Diamond v9.7)
+    // Soporte para Mensajes de Texto, Interactivos y Documentos (Diamond v10.1)
     const buttonId = message.interactive?.button_reply?.id || message.interactive?.list_reply?.id;
     const content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
     const isDocument = message.type === 'document';
@@ -215,19 +215,19 @@ export async function POST(req: Request) {
       metadata: { whatsapp_message_id: waId, type: message.type }
     }).select('id').single();
 
-    // --- 5. CLÁUSULA DE GUARDA v9.1 (Doble Validación) ---
+    // --- 5. CLÁUSULA DE GUARDA Diamond v10.1 (Doble Validación) ---
     if (conv.status !== 'open') {
       console.log(`[HANDOFF] AI Interrupted for conv ${conv.id}. Status: ${conv.status}`);
       return NextResponse.json({ status: 'ai_silenced_handoff' });
     }
 
-    // --- 6. ACTION ROUTER v9.8 (Intelligent Execution) ---
+    // --- 6. ACTION ROUTER Diamond v10.1 (Intelligent Execution) ---
     const isTechnicalAction =
       buttonId?.startsWith(ACTION_PREFIXES.TECHNICAL) ||
       buttonId?.startsWith(ACTION_PREFIXES.LIST) ||
       buttonId?.startsWith(ACTION_PREFIXES.BUTTON);
 
-    // Mapeo de acciones técnicas (Diamond v9.8)
+    // Mapeo de acciones técnicas (Diamond Diamond v10.1)
     const actionMap: Record<string, string> = {
       [`${ACTION_PREFIXES.TECHNICAL}report_now`]: 'inventory_report',
       [`${ACTION_PREFIXES.LIST}inventario`]: 'inventory',
@@ -317,7 +317,7 @@ export async function POST(req: Request) {
 // Módulo de audio removido.
 
 /**
- * Genera y envía la respuesta de IA con Contexto Histórico (Diamond v9.8)
+ * Genera y envía la respuesta de IA con Contexto Histórico (Diamond Diamond v10.1)
  */
 async function generateAndSendAIResponse(convId: string, companyId: string, to: string, content: string, profileName: string, phoneNumberId: string, currentMsgId?: string) {
   // 1. Recuperar Contexto Maestro

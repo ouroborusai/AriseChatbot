@@ -22,10 +22,10 @@ interface CleanupRule {
 const CLEANUP_RULES: CleanupRule[] = [
   {
     name: 'Diamond Version Unification',
-    pattern: /Diamond\s*v?(?:7|8)\.\d+|v[78]\.\d+(?:\.\d+)?/gi,
-    replacement: 'Diamond v9.0',
-    description: 'Unifica versiones de protocolo a v9.0',
-    skipIfContains: ['arise-card', 'shadow-arise', 'arise_', 'Diamond v9']
+    pattern: /Diamond\s*v?(?:7|8|9)\.\d+|v[789]\.\d+(?:\.\d+)?/gi,
+    replacement: 'Diamond v10.1',
+    description: 'Unifica versiones de protocolo a v10.1 (Diamond)',
+    skipIfContains: ['arise-card', 'shadow-arise', 'arise_', 'Diamond v10.1']
   },
   {
     name: 'Facebook API Version Update',

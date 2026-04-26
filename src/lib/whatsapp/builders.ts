@@ -1,5 +1,5 @@
 /**
- * ARISE WHATSAPP BUILDERS v9.0
+ * ARISE WHATSAPP BUILDERS Diamond v10.1
  * Utilidades para construir mensajes de WhatsApp
  */
 

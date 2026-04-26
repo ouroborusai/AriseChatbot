@@ -35,7 +35,7 @@ const menuItems = [
   { name: 'Equipo Humano', icon: User, path: '/team', premium: true },
   { name: 'Inventario', icon: Package, path: '/inventory', premium: true },
   { name: 'Analítica', icon: BarChart3, path: '/billing', premium: true },
-  { name: 'Empresa', icon: Building2, path: '/company', premium: true },
+  { name: 'Empresas', icon: Building2, path: '/companies', premium: true },
   { name: 'LOOP Studio', icon: Code2, path: '/studio', premium: true },
   { name: 'Control de Acceso Neural', icon: ShieldCheck, path: '/users', premium: false },
 ];

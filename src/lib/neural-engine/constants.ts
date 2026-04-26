@@ -1,5 +1,5 @@
 /**
- * ARISE NEURAL ENGINE CONSTANTS v9.8
+ * ARISE NEURAL ENGINE CONSTANTS Diamond v10.1
  * Centralización de configuraciones y valores mágicos
  */
 

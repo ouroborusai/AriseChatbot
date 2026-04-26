@@ -1,6 +1,6 @@
 
 /**
- * ARISE PDF TEMPLATE ENGINE v9.0
+ * ARISE PDF TEMPLATE ENGINE Diamond v10.1
  * Pure HTML/CSS for high-precision PDF generation via Puppeteer.
  */
 
@@ -100,7 +100,7 @@ export const templates: Record<string, string> = {
       </div>
 
       <div class="footer" style="text-align: center; margin-top: 40px;">
-        Documento Certificado por <span class="diamond-accent">OuroborusAI - Arise Business OS v9.0</span>
+        Documento Certificado por <span class="diamond-accent">OuroborusAI - Arise Business OS Diamond v10.1</span>
       </div>
     </body>
     </html>
@@ -114,7 +114,7 @@ export const templates: Record<string, string> = {
       <div class="header">
         <div>
           <h1 class="title">BALANCE CONTABLE CONSOLIDADO</h1>
-          <div class="meta">Sistema de Inteligencia Financiera v9.0</div>
+          <div class="meta">Sistema de Inteligencia Financiera Diamond v10.1</div>
         </div>
         <div style="text-align: right">
           <div class="meta">CORTE AL: {{date}}</div>
@@ -183,7 +183,7 @@ export const templates: Record<string, string> = {
     <body>
       <div class="header">
         <h1 class="title">CUMPLIMIENTO TRIBUTARIO (F29)</h1>
-        <div class="meta">CERTIFICACIÓN ARISE ELITE v9.0</div>
+        <div class="meta">CERTIFICACIÓN ARISE ELITE Diamond v10.1</div>
       </div>
       <div class="glass-card">
         <h2 style="font-size: 14px;">Bitácora de Obligaciones</h2>
@@ -208,7 +208,7 @@ export const templates: Record<string, string> = {
       <div class="header">
         <div>
           <h1 class="title" style="font-size: 18px;">LIQUIDACIÓN DE SUELDO</h1>
-          <p class="meta" style="margin-top: 5px;">CERTIFICACIÓN LABORAL OUROBORUSAI v9.0</p>
+          <p class="meta" style="margin-top: 5px;">CERTIFICACIÓN LABORAL OUROBORUSAI Diamond v10.1</p>
         </div>
         <div style="text-align: right;">
           <p style="font-size: 11px; font-weight: 800; color: #0045bd; margin: 0;">{{company_name}}</p>
@@ -448,7 +448,7 @@ export const templates: Record<string, string> = {
       <div class="header">
         <div>
           <h1 class="title">DIAMOND EXECUTIVE DASHBOARD</h1>
-          <div class="meta">Ouroborus Neural Architecture | Arise Business OS v9.0</div>
+          <div class="meta">Ouroborus Neural Architecture | Arise Business OS Diamond v10.1</div>
         </div>
         <div style="text-align: right">
           <div class="meta">EMITIDO: {{date}}</div>
@@ -498,7 +498,7 @@ export const templates: Record<string, string> = {
         <div style="margin-bottom: 8px; font-size: 13px;">• {{name}}: <span class="diamond-accent">{{quantity}}</span></div>
         {{/each}}
       </div>
-      <div class="footer">Documento General v9.0</div>
+      <div class="footer">Documento General Diamond v10.1</div>
     </body>
     </html>
   `

@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
 /**
- * MASTER NEURAL ENGINE v9.2 - Ouroborus AI
+ * MASTER NEURAL ENGINE Diamond v10.1 - Ouroborus AI
  * Procesa pulsos de la DB y genera respuestas inteligentes con soporte para acciones neurales.
  */
 const supabase = createClient(

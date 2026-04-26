@@ -1,5 +1,5 @@
 /**
- * ARISE WHATSAPP MESSAGE PARSER v9.0
+ * ARISE WHATSAPP MESSAGE PARSER Diamond v10.1
  * Parser inteligente para respuestas de IA con formato interactivo
  *
  * Formato soportado:
@@ -24,18 +24,27 @@ export type { WhatsAppMessage, WhatsAppApiResponse, ParsedInteractiveContent };
  */
 export function parseInteractiveContent(content: string): ParsedInteractiveContent {
   const separator = '---';
+  
+  // --- CODE BODYGUARD: Cleanup Markdown Artifacts ---
+  // Eliminar bloques de código ```json ... ``` que la IA a veces incluye por error
+  let cleanContent = content.replace(/```json[\s\S]*?```/g, '').trim();
+  // Eliminar bloques de código genéricos ``` ... ```
+  cleanContent = cleanContent.replace(/```[\s\S]*?```/g, '').trim();
 
   // Si no hay separador, es texto plano
-  if (!content.includes(separator)) {
+  if (!cleanContent.includes(separator)) {
     return {
       hasInteractive: false,
-      bodyText: content,
+      bodyText: cleanContent,
       options: [],
     };
   }
 
-  const parts = content.split(separator).map(s => s.trim());
-  const bodyText = parts[0] || 'Seleccione una opción:';
+  const parts = cleanContent.split(separator).map(s => s.trim());
+  
+  // El texto del cuerpo es todo excepto la última parte (botones)
+  // Re-unimos las partes previas por si la IA usó --- dentro del mensaje
+  const bodyText = parts.slice(0, -1).join(' --- ').trim() || 'Seleccione una opción:';
 
   // La última parte después del --- contiene las opciones
   const optionsPart = parts[parts.length - 1];
@@ -50,11 +59,17 @@ export function parseInteractiveContent(content: string): ParsedInteractiveConte
     const actionPayload = actionMatch ? actionMatch[1] : null;
 
     // Limpiar el texto de la opción omitiendo los bloques de acción
-    const cleanTitle = opt.replace(/\[\[[^\[\]]+\]\]/g, '').trim();
+    let cleanTitle = opt.replace(/\[\[[^\[\]]+\]\]/g, '').trim();
+
+    // --- CODE BODYGUARD: WhatsApp Button Limit (24 chars) ---
+    if (cleanTitle.length > 24) {
+      console.warn(`[WHATSAPP_PARSER] Truncating option title from ${cleanTitle.length} to 24 chars: ${cleanTitle}`);
+      cleanTitle = cleanTitle.substring(0, 21) + '...';
+    }
 
     return {
       id: `opt_${index}_${Date.now()}`,
-      title: cleanTitle,
+      title: cleanTitle || `Opción ${index + 1}`,
       actionPayload: actionPayload || undefined,
     };
   });
@@ -84,7 +99,7 @@ function extractFooter(text: string): string | undefined {
 /**
  * Construye el mensaje de WhatsApp apropiado según la cantidad de opciones
  *
- * Reglas Diamond v9.0:
+ * Reglas Diamond Diamond v10.1:
  * - 1-3 opciones: Botones interactivos (mejor UX)
  * - 4+ opciones: Lista interactiva (más capacidad)
  */
@@ -128,7 +143,7 @@ export function buildWhatsAppMessage(
     ],
     'Ver Opciones',
     undefined,
-    parsed.footer || 'Arise Diamond v9.0'
+    parsed.footer || 'Arise Diamond Diamond v10.1'
   );
 }
 
@@ -203,7 +218,7 @@ export function debugParse(content: string): void {
   const parsed = parseInteractiveContent(content);
 
   console.log('═══════════════════════════════════════════════════════════');
-  console.log('🔍 DEBUG PARSE - ARISE v9.0');
+  console.log('🔍 DEBUG PARSE - ARISE Diamond v10.1');
   console.log('═══════════════════════════════════════════════════════════');
   console.log(`📝 Body Text: ${parsed.bodyText.substring(0, 50)}...`);
   console.log(`🔢 Opciones: ${parsed.options.length}`);
@@ -228,7 +243,7 @@ export function debugParse(content: string): void {
 }
 
 /**
- * PARSER PARA UI (Diamond v9.0 resilient)
+ * PARSER PARA UI (Diamond Diamond v10.1 resilient)
  * Divide el mensaje en partes de texto y bloques de botones, manejando múltiples separadores ---
  *
  * Estrategia: El último --- separa el cuerpo del bloque de botones

@@ -16,7 +16,7 @@ function createSupabaseClient() {
 }
 
 /**
- * GEMINI CLIENT v9.8
+ * GEMINI CLIENT Diamond v10.1
  * Maneja la comunicación con los modelos Generative Language de Google.
  */
 export async function generateGeminiResponse(

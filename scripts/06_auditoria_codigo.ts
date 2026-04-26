@@ -1,5 +1,5 @@
 /**
- * ARISE CODE AUDITOR v9.0
+ * ARISE CODE AUDITOR v10.1 (Diamond)
  * Herramienta de análisis estático para detectar inconsistencias en el código base
  *
  * Ejecución: npx tsx scripts/code-audit.ts
@@ -23,11 +23,11 @@ interface AuditPattern {
 // Patrones de inconsistencia a detectar
 const AUDIT_PATTERNS: Record<string, AuditPattern> = {
   versionInconsistency: {
-    // Detectar SOLO versiones v7.x y v8.x (v9.0 es la correcta)
-    pattern: /Diamond\s*v?(?:7|8)\.\d+|v[78]\.\d+(?:\.\d+)?/gi,
-    description: 'Versiones obsoletas del protocolo (debe ser v9.0)',
+    // Detectar versiones v7.x, v8.x y v9.x (v10.1 es la correcta)
+    pattern: /Diamond\s*v?(?:7|8|9)\.\d+|v[789]\.\d+(?:\.\d+)?/gi,
+    description: 'Versiones obsoletas del protocolo (debe ser v10.1)',
     severity: 'HIGH',
-    skipIfContains: ['arise-card', 'shadow-arise', 'arise_', 'graph.facebook.com', 'Diamond v9', 'Diamond v9.0']
+    skipIfContains: ['arise-card', 'shadow-arise', 'arise_', 'graph.facebook.com', 'Diamond v10', 'Diamond v10.1']
   },
   hardcodedLocalhost: {
     pattern: /http:\/\/localhost:\d+/g,
@@ -151,7 +151,7 @@ async function auditFile(filePath: string): Promise<Finding[]> {
 
 function printReport(findings: Finding[]) {
   console.log('\n' + '='.repeat(80));
-  console.log('🔍 ARISE CODE AUDITOR v9.0 - REPORTE DE AUDITORÍA');
+  console.log('🔍 ARISE CODE AUDITOR v10.1 - REPORTE DE AUDITORÍA');
   console.log('='.repeat(80));
 
   const bySeverity = {
@@ -216,7 +216,7 @@ function printReport(findings: Finding[]) {
 }
 
 async function main() {
-  console.log('🔍 ARISE CODE AUDITOR v9.0 - Escaneando código base...');
+  console.log('🔍 ARISE CODE AUDITOR v10.1 - Escaneando código base...');
 
   const startTime = Date.now();
   const rootDir = process.cwd();

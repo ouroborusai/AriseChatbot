@@ -1,5 +1,5 @@
 /**
- * ARISE WHATSAPP CONSTANTS v9.0
+ * ARISE WHATSAPP CONSTANTS Diamond v10.1
  * Límites y plantillas predefinidas para WhatsApp Business API
  */
 
@@ -41,7 +41,7 @@ export const TEMPLATES = {
   // Menu principal
   mainMenu: {
     header: 'Arise Business OS',
-    footer: 'Diamond v9.0',
+    footer: 'Diamond Diamond v10.1',
     button: 'Ver Opciones',
   },
 
@@ -81,7 +81,7 @@ export const TEMPLATES = {
   // Navegación Inventario
   inventoryNavigation: {
     header: 'Control Inventario',
-    footer: 'Diamond v9.0',
+    footer: 'Diamond Diamond v10.1',
     button: 'Ver Opciones',
     sections: [
       {

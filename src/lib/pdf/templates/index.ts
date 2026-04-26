@@ -1,5 +1,5 @@
 /**
- * ARISE PDF TEMPLATES v9.0 - EXPORTS
+ * ARISE PDF TEMPLATES Diamond v10.1 - EXPORTS
  * Exportaciones unificadas para templates PDF
  */
 

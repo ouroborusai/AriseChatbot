@@ -21,7 +21,7 @@ export function enrichText(text: string): string {
 }
 
 /**
- * WHATSAPP SENDER v9.8
+ * WHATSAPP SENDER Diamond v10.1
  * Maneja el envío de mensajes interactivos (Listas) y texto plano.
  */
 export async function sendWhatsAppMessage(params: {

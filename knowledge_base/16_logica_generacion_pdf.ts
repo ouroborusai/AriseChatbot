@@ -14,7 +14,7 @@ const supabase = createClient(
 );
 
 /**
- * ARISE PDF PIPELINE v9.0
+ * ARISE PDF PIPELINE Diamond v10.1
  * Handles high-precision document generation and WhatsApp delivery.
  */
 export async function POST(req: Request) {
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         else if (type.includes('dashboard') || type.includes('resumen')) templateSource = templates.dashboard;
     }
 
-    // 2. Data Acquisition (Diamond v9.0 Summary Cache)
+    // 2. Data Acquisition (Diamond Diamond v10.1 Summary Cache)
     const { data: companyData } = await supabase.from('companies').select('name').eq('id', companyId).single();
     
     let finalData: any = {
@@ -192,13 +192,13 @@ export async function POST(req: Request) {
             type: 'document',
             document: {
                 id: mediaId,
-                caption: `📄 *Aquí tienes tu reporte de ${reportType || 'Resumen'}*\n\nOuroborusAI - Arise Business OS v9.0 ha finalizado el procesamiento.`,
+                caption: `📄 *Aquí tienes tu reporte de ${reportType || 'Resumen'}*\n\nOuroborusAI - Arise Business OS Diamond v10.1 ha finalizado el procesamiento.`,
                 filename: fileName
             }
         })
     });
 
-    // --- 5. INTERACTIVE FOLLOW-UP LIST (Diamond v9.0 Scale) ---
+    // --- 5. INTERACTIVE FOLLOW-UP LIST (Diamond Diamond v10.1 Scale) ---
     await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: {

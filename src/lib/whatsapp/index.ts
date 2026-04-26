@@ -1,5 +1,5 @@
 /**
- * ARISE WHATSAPP MODULE v9.0
+ * ARISE WHATSAPP MODULE Diamond v10.1
  * Exportaciones unificadas para el módulo de WhatsApp
  */
 
