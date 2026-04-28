@@ -49,3 +49,6 @@ next-env.d.ts
 cookies.txt
 auth.json
 .notebooklm-mcp/
+
+.vercel
+.env*.local
