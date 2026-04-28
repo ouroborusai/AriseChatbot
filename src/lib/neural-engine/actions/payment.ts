@@ -15,13 +15,26 @@ export async function handlePaymentAction(
     if (msgInfo) {
       const { data: contactInfo } = await supabase.from('conversations').select('contacts(phone, email, first_name)').eq('id', msgInfo.conversation_id).single();
       const phone = (contactInfo as any)?.contacts?.phone;
-      const email = (contactInfo as any)?.contacts?.email || 'noreply@arise.ai';
+      const email = (contactInfo as any)?.contacts?.email;
       const name = (contactInfo as any)?.contacts?.first_name || 'Cliente Arise';
+
+      if (!email) {
+        results.push({
+          action: 'payment_link_generate',
+          status: 'failed',
+          error: 'Email de contacto no disponible. Requerido para MercadoPago.'
+        });
+        return results;
+      }
 
       if (phone) {
         const { data: companyData } = await supabase.from('companies').select('name').eq('id', companyId).single();
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
-        const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret';
+        const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+
+        if (!INTERNAL_API_KEY) {
+          throw new Error('INTERNAL_API_KEY no configurada en el servidor');
+        }
 
         try {
           const response = await fetch(`${appUrl}/api/checkout`, {

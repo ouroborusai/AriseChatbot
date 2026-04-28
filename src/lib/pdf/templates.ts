@@ -312,7 +312,7 @@ export const templates: Record<string, string> = {
     <body>
         <div class="container">
             <div class="header">
-                <h1>Taller de Sillas de Ruedas MMC SpA</h1>
+                <h1>{{company_name}}</h1>
                 <p>REPORTE MAESTRO DE INVENTARIO Y EXISTENCIAS</p>
             </div>
             <div class="report-meta">
@@ -346,7 +346,7 @@ export const templates: Record<string, string> = {
                 <p>Este reporte ha sido generado automáticamente por Arise Business OS v10.1. El stock reflejado incluye las últimas transacciones procesadas por el motor OuroborusAI.</p>
             </div>
             <div class="signature">
-                Control de Inventario<br>Taller de Sillas de Ruedas MMC SpA
+                Control de Inventario<br>{{company_name}}
             </div>
             <div class="footer">
                 <p>Juan Martínez #616, Iquique, Chile. - Tel: +56990062213</p>
@@ -362,7 +362,7 @@ export const templates: Record<string, string> = {
     <body>
         <div class="container">
             <div class="header">
-                <h1>Taller de Sillas de Ruedas MMC SpA</h1>
+                <h1>{{company_name}}</h1>
                 <p>INFORME TÉCNICO DE MANTENIMIENTO Y REPARACIÓN</p>
             </div>
             <div class="report-meta">
@@ -389,10 +389,10 @@ export const templates: Record<string, string> = {
                 <p>{{damage_description}}</p>
             </div>
             <div class="signature">
-                Manuel Cerda M.<br>Taller de Sillas de Ruedas MMC SpA
+                Manuel Cerda M.<br>{{company_name}}
             </div>
             <div class="footer">
-                <p>Taller de Sillas de Ruedas MMC SpA - Tel: +56990062213</p>
+                <p>{{company_name}} - Tel: +56990062213</p>
             </div>
         </div>
     </body>
@@ -405,7 +405,7 @@ export const templates: Record<string, string> = {
     <body>
         <div class="container">
             <div class="header">
-                <h1>Taller de Sillas de Ruedas MMC SpA</h1>
+                <h1>{{company_name}}</h1>
                 <p>ACTA DE RETIRO Y RECEPCIÓN DE EQUIPO</p>
             </div>
             <div class="report-meta">
@@ -430,7 +430,7 @@ export const templates: Record<string, string> = {
                 <p>El equipo se recibe para diagnóstico en taller central. Plazo estimado de evaluación: 48 horas.</p>
             </div>
             <div class="signature">
-                Firma Cliente / Técnico Responsable<br>Taller de Sillas de Ruedas MMC SpA
+                Firma Cliente / Técnico Responsable<br>{{company_name}}
             </div>
             <div class="footer">
                 <p>Juan Martínez #616, Iquique, Chile. - Tel: +56990062213</p>
