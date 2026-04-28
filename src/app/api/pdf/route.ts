@@ -6,7 +6,8 @@ import { requireAuth } from '@/lib/api-auth';
 import { createClient } from '@supabase/supabase-js';
 
 // Clave interna para llamadas del neural-processor (sin sesión de usuario)
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret';
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+if (!INTERNAL_API_KEY) throw new Error('[PDF_PIPELINE] INTERNAL_API_KEY env var is not set');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
     const { data: customTemplate } = await supabase
         .from('document_templates')
         .select('design_html')
-        .ilike('document_type', `%${type}%`)
+        .filter('document_type', 'ilike', `%${type}%`)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -163,7 +164,7 @@ export async function POST(req: Request) {
 
     // 4. WhatsApp Media Upload & Delivery
     const form = new FormData();
-    const blob = new Blob([pdfBuffer as unknown as BlobPart], { type: 'application/pdf' });
+    const blob = new Blob([Buffer.from(pdfBuffer)], { type: 'application/pdf' });
     form.append('file', blob, fileName);
     form.append('type', 'document');
     form.append('messaging_product', 'whatsapp');

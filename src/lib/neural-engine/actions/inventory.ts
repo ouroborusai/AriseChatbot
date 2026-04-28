@@ -130,10 +130,21 @@ export async function handleInventoryAction(
       const content = `[SYSTEM_RESULT] He detectado ${items.length} productos en tu inventario actual:\n\n${stockList}\n\n¿Deseas gestionar alguno en particular? --- Ver Productos | ${interactiveOptions}`;
       
       // Insertar resultado para que la IA lo vea y responda
-      const { data: conv } = await supabase.from('messages').select('conversation_id').eq('id', messageId).single();
-      
+      // Diamond v10.1: Verificar que la conversación exista antes de insertar (evita race condition)
+      const { data: conv, error: convLookupError } = await supabase
+        .from('messages')
+        .select('conversation_id')
+        .eq('id', messageId)
+        .single();
+
+      if (convLookupError || !conv?.conversation_id) {
+        console.error('[INVENTORY_SCAN] conversation_id not found for messageId:', messageId, convLookupError?.message);
+        results.push({ action: 'inventory_scan', status: 'error', error: 'Conversation not found, cannot insert system message' });
+        return results;
+      }
+
       await supabase.from('messages').insert({
-        conversation_id: conv?.conversation_id,
+        conversation_id: conv.conversation_id,
         sender_type: 'system',
         content: content
       });

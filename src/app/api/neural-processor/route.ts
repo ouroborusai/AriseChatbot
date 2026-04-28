@@ -27,7 +27,8 @@ import { handlePaymentAction } from '@/lib/neural-engine/actions/payment';
  * - credit_limit_set: Establecer límite de crédito de un cliente
  */
 // Clave interna para llamadas desde la Edge Function de Gemini
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret';
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+if (!INTERNAL_API_KEY) throw new Error('[NEURAL_PROCESSOR] INTERNAL_API_KEY env var is not set');
 
 export async function POST(req: Request) {
   // Autenticación dual: sesión de usuario O clave interna

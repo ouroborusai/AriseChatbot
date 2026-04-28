@@ -33,24 +33,40 @@ serve(async (req: Request) => {
         if (status === 'approved' && companyId) {
           // 2. ASCENDER A PLAN PRO
           console.log(`[SUBSCRIPTION] Activando Plan PRO para empresa: ${companyId}`);
-          
+
+          // Diamond v10.1: Fetch atómico — obtener settings actuales ANTES de actualizar
+          // Evita race condition con spread de async dentro de update()
+          const { data: currentCompany, error: fetchError } = await supabase
+            .from('companies')
+            .select('settings')
+            .eq('id', companyId)
+            .single();
+
+          if (fetchError || !currentCompany) {
+            throw new Error(`[SUBSCRIPTION] No se pudo obtener datos de empresa ${companyId}: ${fetchError?.message}`);
+          }
+
+          const mergedSettings = {
+            ...(currentCompany.settings || {}),
+            subscription: {
+              status: 'active',
+              last_payment_id: resourceId,
+              last_payment_date: new Date().toISOString(),
+              tier: 'pro'
+            }
+          };
+
           const { error } = await supabase
             .from('companies')
-            .update({ 
-               plan_tier: 'pro',
-               settings: {
-                 ... (await supabase.from('companies').select('settings').eq('id', companyId).single()).data?.settings,
-                 subscription: {
-                    status: 'active',
-                    last_payment_id: resourceId,
-                    last_payment_date: new Date().toISOString(),
-                    tier: 'pro'
-                 }
-               }
+            .update({
+              plan_tier: 'pro',
+              settings: mergedSettings
             })
             .eq('id', companyId);
 
           if (error) throw error;
+
+          console.log(`[SUBSCRIPTION] Plan PRO activado exitosamente para empresa: ${companyId}`);
         }
       }
     }

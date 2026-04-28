@@ -7,7 +7,8 @@ const client = new MercadoPagoConfig({
 });
 
 // Clave interna para llamadas del neural-processor
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret';
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+if (!INTERNAL_API_KEY) throw new Error('[CHECKOUT] INTERNAL_API_KEY env var is not set');
 
 
 export async function POST(req: Request) {
