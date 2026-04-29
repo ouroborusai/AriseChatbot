@@ -186,12 +186,12 @@ export async function POST(req: Request) {
 
     // 3. Document Generation (Internal, No Browser)
     const pdfBuffer = await renderToBuffer(
-      <AriseDocument 
-        reportType={type}
-        companyName={finalData.company_name}
-        date={finalData.date}
-        data={finalData}
-      />
+      React.createElement(AriseDocument, {
+        reportType: type,
+        companyName: finalData.company_name,
+        date: finalData.date,
+        data: finalData
+      })
     );
 
 
