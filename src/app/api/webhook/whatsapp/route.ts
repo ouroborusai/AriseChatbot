@@ -189,6 +189,9 @@ export async function POST(req: Request) {
     console.log("==========================================");
     console.log(`[ID_RES_START] Processing message from: ${sender} (${profileName})`);
     console.log(`[WH_INPUT] New message from ${sender} (${profileName})`);
+    const buttonId = message.interactive?.button_reply?.id || message.interactive?.list_reply?.id;
+    const content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
+    console.log(`[WH_DEBUG] buttonId: "${buttonId}", content: "${content}"`);
 
     // --- 1. IDEMPOTENCIA ---
     const { data: existingMsg } = await supabase
@@ -259,9 +262,7 @@ export async function POST(req: Request) {
     if (!conv) return NextResponse.json({ status: 'conversation_failure' });
 
     // --- 4. PROCESAMIENTO DE CONTENIDO ---
-    // Soporte para Mensajes de Texto, Interactivos y Documentos (Diamond v10.1)
-    const buttonId = message.interactive?.button_reply?.id || message.interactive?.list_reply?.id;
-    const content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
+    // buttonId y content ya fueron extraídos arriba para logs
     const isDocument = message.type === 'document';
 
 
@@ -360,7 +361,9 @@ export async function POST(req: Request) {
 
       if (whatsappToken && waPhoneId) {
         // Lógica para Reporte de Inventario (Existente)
-        if (buttonId === 'gen_report_now' || buttonId === 'lst_inventory_report' || content.toLowerCase().includes('informe de inventario')) {
+        console.log(`[WH_ROUTER] Checking for PDF trigger. buttonId: ${buttonId}, content: ${content}`);
+        if (buttonId === 'gen_report_now' || buttonId === 'lst_inventory_report' || content.toLowerCase().includes('reporte pdf') || content.toLowerCase().includes('informe de inventario')) {
+            console.log(`[WH_ROUTER] Triggering PDF for company ${companyId}`);
           // Timeout para PDF trigger
           const pdfController = new AbortController();
           const pdfTimeout = setTimeout(() => pdfController.abort(), 30000);
