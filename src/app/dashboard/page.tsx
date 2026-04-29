@@ -95,7 +95,7 @@ export default function Dashboard() {
 
   const { data, error, isLoading: isSwrLoading } = useSWR(
     !isContextLoading && activeCompany?.id ? `dashboard_${activeCompany.id}` : null,
-    () => fetchDashboardData(activeCompany!.id),
+    () => fetchDashboardData(activeCompany?.id || 'global'),
     {
       revalidateOnFocus: false,
       dedupingInterval: 60000,

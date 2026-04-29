@@ -76,8 +76,8 @@ export default function MessagesPage() {
         .select('*, contacts(full_name, phone)')
         .order('updated_at', { ascending: false });
 
-      if (activeCompany.id !== 'global') {
-        query = query.eq('company_id', activeCompany.id);
+      if (activeCompany?.id !== 'global') {
+        query = query.eq('company_id', activeCompany?.id);
       }
 
       const { data, error } = await query;
@@ -183,7 +183,7 @@ export default function MessagesPage() {
   useEffect(() => {
     if (activeCompany) {
       fetchConversations();
-      if (selectedConv && activeCompany.id !== 'global' && selectedConv.company_id !== activeCompany.id) {
+      if (selectedConv && activeCompany?.id !== 'global' && selectedConv.company_id !== activeCompany?.id) {
         setSelectedConv(null);
         setMessages([]);
       }

@@ -76,7 +76,7 @@ export default function InventoryPage() {
 
   const { data, error, isLoading: isSwrLoading } = useSWR(
     !isContextLoading && activeCompanyId ? `inventory_${activeCompanyId}_${page}` : null,
-    () => fetchInventory(activeCompanyId!, page),
+    () => fetchInventory(activeCompanyId || 'global', page),
     {
       revalidateOnFocus: false,
       dedupingInterval: 60000,

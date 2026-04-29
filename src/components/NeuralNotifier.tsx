@@ -47,7 +47,7 @@ export default function NeuralNotifier() {
             .eq('id', newMessage.conversation_id)
             .single();
 
-          if (conv?.company_id === activeCompany.id) {
+          if (conv?.company_id === activeCompany?.id) {
             console.log('[NEURAL_NOTIFY] Nuevo mensaje entrante detectado.');
             playNotificationSound();
             
