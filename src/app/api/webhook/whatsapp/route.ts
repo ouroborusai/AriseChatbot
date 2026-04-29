@@ -362,7 +362,14 @@ export async function POST(req: Request) {
       if (whatsappToken && waPhoneId) {
         // Lógica para Reporte de Inventario (Existente)
         console.log(`[WH_ROUTER] Checking for PDF trigger. buttonId: ${buttonId}, content: ${content}`);
-        if (buttonId === 'gen_report_now' || buttonId === 'lst_inventory_report' || content.toLowerCase().includes('reporte pdf') || content.toLowerCase().includes('informe de inventario')) {
+        if (
+          buttonId === 'gen_report_now' || 
+          buttonId === 'lst_inventory_report' || 
+          content.toLowerCase().includes('reporte pdf') || 
+          content.toLowerCase().includes('generar reporte') || 
+          content.toLowerCase().includes('crea un informe') ||
+          content.toLowerCase().includes('informe de inventario')
+        ) {
             console.log(`[WH_ROUTER] Triggering PDF for company ${companyId}`);
           // Timeout para PDF trigger
           const pdfController = new AbortController();
