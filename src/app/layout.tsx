@@ -34,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="antialiased selection:bg-[#22c55e]/30 selection:text-[#0f172a]">
+      <body className="antialiased selection:bg-primary/30 selection:text-neural-dark">
         <ActiveCompanyProvider>
           <MobileNavProvider>
             {children}

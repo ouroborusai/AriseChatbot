@@ -50,14 +50,15 @@ export async function POST(req: Request) {
       }
     }
 
-    const { targetPhone, whatsappToken, phoneNumberId, reportType, companyId } = await req.json();
-
+    const { targetPhone, whatsappToken, phoneNumberId, reportType, companyId, isPreGen } = await req.json();
+    
     const result = await executePDFPipeline({
       targetPhone,
       whatsappToken,
       phoneNumberId,
       reportType,
-      companyId
+      companyId,
+      isPreGen
     });
 
     return NextResponse.json(result);

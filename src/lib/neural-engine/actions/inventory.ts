@@ -1,160 +1,141 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { InventoryActionParams, NeuralActionResult } from '../interfaces/actions';
 
+/**
+ * INVENTORY HANDLER v10.4 Platinum
+ * Procesa acciones de inventario: create, add, remove, log, scan.
+ */
 export async function handleInventoryAction(
   supabase: SupabaseClient,
-  actionData: any,
+  actionData: InventoryActionParams,
   companyId: string,
   messageId: string
-) {
-  const results: any[] = [];
+): Promise<NeuralActionResult[]> {
+  const results: NeuralActionResult[] = [];
 
-  // 1. INVENTORY_CREATE
-  if (actionData.action === 'inventory_create' && actionData.name) {
-    // SKU único: timestamp + random para evitar colisiones
-    const sku = actionData.sku || `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    const currentStock = parseFloat(actionData.stock) || 0;
+  // Flexibilidad de Propiedades: Lógica polimórfica (acepta sku, item, name, item_name y product).
+  const targetSku = actionData.sku || actionData.params?.sku;
+  const targetName = actionData.name || actionData.item_name || actionData.item || actionData.product;
+  const targetQuantity = Number(actionData.quantity || actionData.stock || actionData.params?.quantity || 0);
 
-    const { data: newItem, error: insertError } = await supabase
-      .from('inventory_items')
-      .insert({
-        company_id: companyId,
-        name: actionData.name,
-        sku,
-        current_stock: currentStock,
-        category: actionData.category || 'Varios',
-        unit: actionData.unit || 'uds',
-      })
-      .select()
-      .single();
-
-    if (!insertError && newItem) {
-      await supabase.from('audit_logs').insert({
-        company_id: companyId,
-        action: 'NEURAL_INVENTORY_CREATE',
-        table_name: 'inventory_items',
-        record_id: newItem.id,
-        new_data: actionData
-      });
-
-      if (currentStock > 0) {
-        await supabase.from('inventory_transactions').insert({
-          company_id: companyId,
-          item_id: newItem.id,
-          quantity: currentStock,
-          type: 'in',
-        });
+  try {
+    if (actionData.action === 'inventory_create') {
+      if (!targetName && !targetSku) {
+        return [{ action: actionData.action, status: 'validation_failed', error: 'Falta nombre o SKU para crear el item.' }];
       }
-    }
-
-    results.push({
-      action: 'inventory_create',
-      status: insertError ? 'failed' : 'success',
-      name: actionData.name,
-      sku,
-      error: insertError?.message
-    });
-  }
-
-  // 2. INVENTORY_ADD / REMOVE / LOG (SSOT Sync)
-  if (
-    (actionData.action === 'inventory_add' || 
-     actionData.action === 'inventory_remove' || 
-     actionData.action === 'inventory_log') &&
-    (actionData.sku || actionData.params?.item_id || actionData.item_id)
-  ) {
-    const sku = actionData.sku || actionData.params?.item_id || actionData.item_id;
-    const { data: item } = await supabase
-      .from('inventory_items')
-      .select('id')
-      .or(`sku.ilike.${sku},id.eq.${sku}`)
-      .eq('company_id', companyId)
-      .maybeSingle();
-
-    if (!item) {
-      results.push({ action: actionData.action, status: 'item_not_found', sku });
-    } else {
-      const quantity = parseFloat(actionData.quantity || actionData.params?.quantity) || 1;
-      let type = 'in';
       
-      if (actionData.action === 'inventory_remove') type = 'out';
-      if (actionData.action === 'inventory_log') {
-        type = actionData.params?.type || 'in';
-      }
+      const finalSku = targetSku || `SKU-${Date.now().toString().slice(-6)}`;
+      const finalName = targetName || `NODO_UNNAMED_${finalSku}`;
 
-      const { error: transactionError } = await supabase
-        .from('inventory_transactions')
+      const { data, error } = await supabase
+        .from('inventory_items')
         .insert({
           company_id: companyId,
-          item_id: item.id,
-          quantity,
-          type,
-        });
+          sku: finalSku,
+          name: finalName,
+          current_stock: targetQuantity,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
 
       results.push({
         action: actionData.action,
-        status: transactionError ? 'failed' : 'success',
-        sku,
-        error: transactionError?.message,
+        status: 'success',
+        sku: data.sku,
+        name: data.name,
+        stock: data.current_stock
       });
-    }
-  }
 
-  // 3. INVENTORY_SCAN
-  if (actionData.action === 'inventory_scan') {
-    // Flexibilidad Diamond: aceptamos query, item, name o sku
-    const searchTerm = String(actionData.query || actionData.item || actionData.name || actionData.sku || '').replace(/[%_]/g, '');
+    } else if (['inventory_add', 'inventory_remove', 'inventory_log'].includes(actionData.action)) {
+      if (!targetSku && !targetName) {
+        return [{ action: actionData.action, status: 'validation_failed', error: 'Se requiere SKU o nombre visual para modificar inventario.' }];
+      }
 
-    let query = supabase
-      .from('inventory_items')
-      .select('name, sku, current_stock, unit')
-      .eq('company_id', companyId)
-      .order('current_stock', { ascending: false })
-      .limit(10);
-
-    if (searchTerm) {
-      query = query.or(`sku.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%`);
-    }
-
-    const { data: items, error: scanError } = await query;
-
-    if (items && items.length > 0) {
-      const stockList = items.map(i => {
-        const stock = parseFloat(i.current_stock);
-        let statusEmoji = '🟢';
-        if (stock < 10) statusEmoji = '🔴';
-        else if (stock < 50) statusEmoji = '🟡';
-        return `${statusEmoji} ${i.name} (${stock} ${i.unit})`;
-      }).join('\n');
-
-      const interactiveOptions = items.map(i => `${i.name}`).join(' | ');
-      const content = `[SYSTEM_RESULT] He detectado ${items.length} productos en tu inventario actual:\n\n${stockList}\n\n¿Deseas gestionar alguno en particular? --- Ver Productos | ${interactiveOptions}`;
+      // Búsqueda inteligente SKU primero, luego Nombre visual.
+      let query = supabase.from('inventory_items').select('*').eq('company_id', companyId);
       
-      // Insertar resultado para que la IA lo vea y responda
-      // Diamond v10.1: Verificar que la conversación exista antes de insertar (evita race condition)
-      const { data: conv, error: convLookupError } = await supabase
-        .from('messages')
-        .select('conversation_id')
-        .eq('id', messageId)
+      if (targetSku) {
+        query = query.eq('sku', targetSku);
+      } else if (targetName) {
+        query = query.ilike('name', `%${targetName}%`);
+      }
+
+      const { data: items, error: searchError } = await query.limit(1);
+
+      if (searchError) throw searchError;
+      
+      if (!items || items.length === 0) {
+        return [{ action: actionData.action, status: 'item_not_found', error: `No se encontró el nodo logístico ${targetSku || targetName}.` }];
+      }
+
+      const item = items[0];
+      let newStock = Number(item.current_stock);
+      const isOut = actionData.action === 'inventory_remove' || actionData.params?.type === 'out';
+
+      newStock = isOut ? newStock - targetQuantity : newStock + targetQuantity;
+
+      const { data: updated, error: updateError } = await supabase
+        .from('inventory_items')
+        .update({ current_stock: newStock })
+        .eq('id', item.id)
+        .select()
         .single();
 
-      if (convLookupError || !conv?.conversation_id) {
-        console.error('[INVENTORY_SCAN] conversation_id not found for messageId:', messageId, convLookupError?.message);
-        results.push({ action: 'inventory_scan', status: 'error', error: 'Conversation not found, cannot insert system message' });
-        return results;
+      if (updateError) throw updateError;
+
+      // Alerta de stock bajo proactiva.
+      if (updated.current_stock <= (updated.min_stock_alert || 5)) {
+        await supabase.from('audit_logs').insert({
+          company_id: companyId,
+          action: 'LOW_STOCK_ALERT',
+          new_data: { sku: updated.sku, stock: updated.current_stock }
+        });
       }
 
-      await supabase.from('messages').insert({
-        conversation_id: conv.conversation_id,
-        sender_type: 'system',
-        content: content
+      // Shadow PDF Trigger.
+      await supabase.from('audit_logs').insert({
+        company_id: companyId,
+        action: 'TRIGGER_REPORT_REFRESH',
+        new_data: { type: 'inventory' }
       });
 
-      for (const item of items) {
-        results.push({ action: 'inventory_scan', status: 'success', sku: item.sku, name: item.name, stock: item.current_stock });
-      }
-    } else {
-      results.push({ action: 'inventory_scan', status: 'not_found', error: scanError?.message });
+      results.push({
+        action: actionData.action,
+        status: 'success',
+        sku: updated.sku,
+        name: updated.name,
+        stock: updated.current_stock,
+        suggested_options: [
+            { id: 'inventory_view', title: '📦 Ver Stock' },
+            { id: 'pdf_inventory', title: '📊 Generar PDF' }
+        ]
+      });
+
+    } else if (actionData.action === 'inventory_scan') {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('sku, name, current_stock')
+        .eq('company_id', companyId)
+        .order('current_stock', { ascending: true })
+        .limit(10);
+
+      if (error) throw error;
+      
+      results.push({
+        action: actionData.action,
+        status: 'success',
+        instruction_for_ai: `Resumen de inventario: ${JSON.stringify(data)}`
+      });
     }
+  } catch (error: any) {
+    results.push({
+      action: actionData.action,
+      status: 'error',
+      error: error.message
+    });
   }
 
   return results;

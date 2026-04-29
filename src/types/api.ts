@@ -1,11 +1,7 @@
 /**
- * ARISE API TYPES Diamond v10.1
- * Tipos TypeScript estrictos para endpoints de la API
+ * ARISE API TYPES Diamond v10.1 [v10.4 Platinum Update]
+ * Tipos TypeScript estrictos para endpoints de la API.
  */
-
-// ════════════════════════════════════════════════════════════════════════════
-// WHATSAPP API
-// ════════════════════════════════════════════════════════════════════════════
 
 export interface WhatsAppSendRequest {
   contactId: string;
@@ -67,10 +63,6 @@ export interface WhatsAppMessage {
   };
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// NEURAL PROCESSOR API
-// ════════════════════════════════════════════════════════════════════════════
-
 export interface NeuralProcessorRequest {
   messageId: string;
   companyId: string;
@@ -86,100 +78,41 @@ export type NeuralActionType =
   | 'inventory_create'
   | 'inventory_add'
   | 'inventory_remove'
+  | 'inventory_log'
   | 'inventory_scan'
   | 'task_create'
   | 'reminder_create'
   | 'pdf_generate'
   | 'whatsapp_flow_init'
   | 'commerce_catalog_send'
+  | 'directory_register'
+  | 'register_client'
+  | 'credit_limit_set'
+  | 'payment_link_generate'
+  | 'offer_menus'
   | 'unknown';
 
+export interface SuggestedOption {
+  id: string;
+  title: string;
+  description?: string;
+}
+
 export interface NeuralAction {
-  action: NeuralActionType;
-  status: 'success' | 'failed' | 'item_not_found' | 'triggered' | 'pending_execution';
+  action: NeuralActionType | string;
+  status: 'success' | 'failed' | 'item_not_found' | 'triggered' | 'pending_execution' | 'validation_failed' | 'error';
   error?: string;
   sku?: string;
   name?: string;
   to?: string;
   result?: Record<string, unknown>;
+  instruction_for_ai?: string;
+  suggested_options?: SuggestedOption[];
   metadata?: {
     timestamp: string;
     executedBy: string;
   };
 }
-
-// ════════════════════════════════════════════════════════════════════════════
-// OCR PROCESSOR API
-// ════════════════════════════════════════════════════════════════════════════
-
-export interface OCRProcessorRequest {
-  filePath: string;
-  companyId: string;
-}
-
-export interface OCRProcessorResponse {
-  status: 'completed';
-  extraction: OCRExtraction;
-  transactions: OCRTransactionResult[];
-  error?: string;
-}
-
-export interface OCRExtraction {
-  vendor: string;
-  date: string;
-  total: number;
-  items: OCRItem[];
-}
-
-export interface OCRItem {
-  sku: string;
-  description: string;
-  quantity: number;
-  price: number;
-}
-
-export interface OCRTransactionResult {
-  sku: string;
-  status: 'success' | 'failed';
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// PDF GENERATOR API
-// ════════════════════════════════════════════════════════════════════════════
-
-export interface PDFGeneratorRequest {
-  targetPhone: string;
-  whatsappToken: string;
-  phoneNumberId: string;
-  reportType: string;
-  companyId: string;
-}
-
-export interface PDFGeneratorResponse {
-  success: true;
-  fileName: string;
-  error?: string;
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// CHECKOUT API (MercadoPago)
-// ════════════════════════════════════════════════════════════════════════════
-
-export interface CheckoutRequest {
-  companyId: string;
-  companyName: string;
-  userEmail: string;
-}
-
-export interface CheckoutResponse {
-  init_point: string;
-  preference_id: string;
-  error?: string;
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ERROR RESPONSES
-// ════════════════════════════════════════════════════════════════════════════
 
 export interface ApiError {
   error: string;

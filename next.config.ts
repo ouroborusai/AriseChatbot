@@ -9,10 +9,10 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  // Adding empty turbopack config to silence the error as suggested by Next.js
   experimental: {
-    // turbopack: {} // This might not be enough if Serwist injects webpack config
+    // turbopack: {}
   }
 };
+
 
 export default withSerwist(nextConfig);

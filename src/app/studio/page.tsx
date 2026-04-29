@@ -196,51 +196,51 @@ export default function AIStudio() {
   );
 
   return (
-    <div className="flex flex-col w-full max-w-full py-4 md:py-8 animate-in fade-in duration-300 overflow-x-hidden relative">
+    <div className="flex flex-col w-full max-w-full py-master-section animate-in fade-in duration-700 overflow-x-hidden relative">
       
       {/* PERFORMANCE: OPTIMIZED BACKGROUND ACCENTS - ASLAS STYLE */}
-      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#22c55e]/5 blur-[64px] rounded-full -z-10" />
-      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-[#0f172a]/5 blur-[64px] rounded-full -z-10" />
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-primary/5 blur-[64px] rounded-full -z-10" />
+      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-accent/5 blur-[64px] rounded-full -z-10" />
 
       {/* HEADER SECTION - ASLAS STYLE (Optimized Scales) */}
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6 px-2">
-        <div className="relative z-10">
-          <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter leading-none uppercase">
-            Neural <span className="text-[#22c55e]">Studio</span>
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-20 px-2 relative z-10 animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div className="relative">
+          <h1 className="text-h1-mobile md:text-h1 font-black text-neural-dark tracking-tighter leading-[0.9] uppercase">
+            Neural <br/><span className="text-primary">Studio</span>
           </h1>
-          <p className="text-slate-400 text-[6px] font-black uppercase tracking-[0.3em] mt-2.5 flex items-center gap-2">
-            <Cpu size={8} className="text-[#22c55e]" />
-            ADN MAESTRO / PROTOCOLO LOOP v2.5
+          <p className="text-slate-400 text-[8px] font-black uppercase tracking-[0.4em] mt-6 flex items-center gap-2.5">
+            <Cpu size={12} className="text-primary" />
+            ADN MAESTRO / v10.4 PLATINUM
           </p>
         </div>
 
-        <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-100 relative z-10 shadow-sm">
+        <div className="flex items-center bg-slate-50 p-1.5 rounded-xl border border-slate-100 relative z-10 shadow-sm">
           <button 
             onClick={() => setActiveTab('brain')}
-            className={`flex items-center gap-2 px-4 md:px-5 py-1.5 rounded-lg text-[7.5px] font-black uppercase tracking-widest transition-all ${activeTab === 'brain' ? 'bg-white text-slate-900 shadow-sm scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex items-center gap-3 px-6 md:px-8 py-2.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'brain' ? 'bg-white text-neural-dark shadow-sm scale-105 border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
           >
-            <BrainCircuit size={10} />
+            <BrainCircuit size={14} />
             <span>Cerebro</span>
           </button>
           <button 
             onClick={() => setActiveTab('skills')}
-            className={`flex items-center gap-2 px-4 md:px-5 py-1.5 rounded-lg text-[7.5px] font-black uppercase tracking-widest transition-all ${activeTab === 'skills' ? 'bg-white text-slate-900 shadow-sm scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex items-center gap-3 px-6 md:px-8 py-2.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'skills' ? 'bg-white text-neural-dark shadow-sm scale-105 border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
           >
-            <Layers size={10} />
+            <Layers size={14} />
             <span>Skills</span>
           </button>
           <button 
             onClick={() => setActiveTab('cluster')}
-            className={`flex items-center gap-2 px-4 md:px-5 py-1.5 rounded-lg text-[7.5px] font-black uppercase tracking-widest transition-all ${activeTab === 'cluster' ? 'bg-white text-slate-900 shadow-sm scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex items-center gap-3 px-6 md:px-8 py-2.5 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'cluster' ? 'bg-white text-neural-dark shadow-sm scale-105 border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
           >
-            <Network size={10} />
+            <Network size={14} />
             <span>Infra</span>
           </button>
         </div>
       </header>
 
       {/* DYNAMIC CONTENT AREA */}
-      <div className="animate-in slide-in-from-bottom-2 duration-300">
+      <div className="animate-in slide-in-from-bottom-4 duration-1000 relative z-10">
         {activeTab === 'cluster' ? (
           <StudioCluster 
             telemetry={telemetry} 
@@ -262,18 +262,18 @@ export default function AIStudio() {
       </div>
 
       {/* FOOTER METRICS - COMPACT */}
-      <div className="mt-12 pt-6 border-t border-slate-100 flex flex-wrap gap-8 opacity-40 px-2">
-         <div className="flex items-center gap-2">
-            <ShieldCheck size={10} className="text-slate-400" />
-            <span className="text-[6.5px] font-black uppercase tracking-widest">Protocolo Blindado</span>
+      <div className="mt-20 pt-10 border-t border-slate-100 flex flex-wrap gap-12 opacity-60 px-2 relative z-10">
+         <div className="flex items-center gap-3">
+            <ShieldCheck size={14} className="text-slate-400" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Protocolo Blindado v10.4</span>
          </div>
-         <div className="flex items-center gap-2">
-            <Zap size={10} className="text-[#22c55e]" />
-            <span className="text-[6.5px] font-black uppercase tracking-widest">Latencia Media: {telemetry.latency}ms</span>
+         <div className="flex items-center gap-3">
+            <Zap size={14} className="text-primary" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Latencia Media: {telemetry.latency}ms</span>
          </div>
-         <div className="flex items-center gap-2">
-            <Activity size={10} className="text-[#0f172a]" />
-            <span className="text-[6.5px] font-black uppercase tracking-widest">Uso de Tokens: {telemetry.tokens.toLocaleString()}</span>
+         <div className="flex items-center gap-3">
+            <Activity size={14} className="text-accent" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Uso de Tokens: {telemetry.tokens.toLocaleString()}</span>
          </div>
       </div>
     </div>

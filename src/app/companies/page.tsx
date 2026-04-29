@@ -47,21 +47,21 @@ export default function CompaniesManagementPage() {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-full py-4 md:py-8 animate-in fade-in duration-700 overflow-x-hidden relative">
+    <div className="flex flex-col w-full max-w-full py-master-section animate-in fade-in duration-700 overflow-x-hidden relative">
       
       {/* PERFORMANCE: OPTIMIZED BACKGROUND ACCENTS - ASLAS STYLE */}
-      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#22c55e]/5 blur-[64px] rounded-full -z-10" />
-      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-[#0f172a]/5 blur-[64px] rounded-full -z-10" />
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-primary/5 blur-[64px] rounded-full -z-10" />
+      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-accent/5 blur-[64px] rounded-full -z-10" />
 
       {/* HEADER SECTION - PREMIUM ASLAS STYLE */}
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 mb-10 px-2 relative z-10">
-        <div className="animate-in fade-in slide-in-from-left-8 duration-1000">
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-none uppercase">
-            Gobernanza de <span className="text-[#22c55e]">Empresas</span>
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-20 px-2 relative z-10 animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div className="relative">
+          <h1 className="text-h1-mobile md:text-h1 font-black text-neural-dark tracking-tighter leading-[0.9] uppercase">
+            Gobernanza de <br/><span className="text-primary">Empresas</span>
           </h1>
-          <p className="text-slate-400 text-[7px] font-black uppercase tracking-[0.4em] mt-3.5 flex items-center gap-2.5">
-            <Building2 size={10} className="text-[#22c55e]" />
-            DIRECTORIO MAESTRO DE NODOS / PROTOCOLO LOOP
+          <p className="text-slate-400 text-[8px] font-black uppercase tracking-[0.4em] mt-6 flex items-center gap-2.5">
+            <Building2 size={12} className="text-primary" />
+            DIRECTORIO MAESTRO DE NODOS / v10.4 PLATINUM
           </p>
         </div>
 
@@ -72,14 +72,14 @@ export default function CompaniesManagementPage() {
               placeholder="FILTRAR UNIDAD..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full lg:w-64 pl-10 pr-4 py-3 bg-white text-[8px] font-black uppercase tracking-widest text-slate-900 rounded-xl outline-none border border-slate-100 focus:border-[#22c55e]/30 transition-all relative z-10 placeholder:text-slate-300 shadow-sm"
+              className="w-full lg:w-72 pl-12 pr-6 py-4 bg-white text-[9px] font-black uppercase tracking-widest text-neural-dark rounded-md outline-none border border-slate-100 focus:border-primary/30 transition-all relative z-10 placeholder:text-slate-200 shadow-sm"
             />
-            <Search size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 z-20" />
+            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-200 z-20" />
           </div>
 
-          <button className="flex items-center justify-center gap-3 bg-[#0f172a] text-white px-6 py-3 rounded-xl text-[8px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-[#22c55e] transition-all active:scale-95 group">
+          <button className="flex items-center justify-center gap-4 bg-accent text-white px-8 py-4 rounded-sm text-[8px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-primary transition-all active:scale-95 group">
             <span>Nueva Entidad</span>
-            <Plus size={14} className="group-hover:rotate-90 transition-transform" />
+            <Plus size={16} className="group-hover:rotate-90 transition-transform" />
           </button>
         </div>
       </header>
@@ -93,13 +93,13 @@ export default function CompaniesManagementPage() {
       </div>
 
       {/* COMPANIES LIST - TABLE STYLE */}
-      <div className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm relative z-10 mx-1">
-        <div className="p-6 bg-slate-50/50 flex justify-between items-center border-b border-slate-100">
-          <div className="flex items-center gap-3">
-             <div className="w-1.5 h-1.5 bg-[#22c55e] rounded-full animate-pulse" />
-             <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">Directorio de Unidades Operativas</h2>
+      <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm relative z-10 mx-1">
+        <div className="p-8 bg-slate-50/50 flex justify-between items-center border-b border-slate-100">
+          <div className="flex items-center gap-4">
+             <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Directorio de Unidades Operativas</h2>
           </div>
-          <span className="text-[7px] font-black bg-white text-[#22c55e] px-3 py-1 rounded-lg uppercase tracking-widest border border-[#22c55e]/10 shadow-sm">
+          <span className="text-[8px] font-black bg-white text-primary px-4 py-1.5 rounded-sm uppercase tracking-widest border border-primary/10 shadow-sm">
              TOTAL_REGISTROS: {totalCount}
           </span>
         </div>
@@ -127,35 +127,35 @@ export default function CompaniesManagementPage() {
               ) : paginatedCompanies.length > 0 ? (
                 paginatedCompanies.map((c) => (
                   <tr key={c.id} className="hover:bg-slate-50/50 transition-all group cursor-pointer relative" onClick={() => handleManageCompany(c)}>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-white text-slate-900 rounded-xl border border-slate-100 flex items-center justify-center font-black text-[10px] shadow-sm group-hover:bg-[#22c55e] group-hover:text-white transition-all duration-500">
+                    <td className="px-8 py-8">
+                      <div className="flex items-center gap-6">
+                        <div className="w-12 h-12 bg-white text-neural-dark rounded-md border border-slate-100 flex items-center justify-center font-black text-[11px] shadow-sm group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500">
                           {c.name[0].toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight group-hover:text-[#22c55e] transition-colors">{c.name}</p>
-                          <p className="text-[7px] font-mono text-slate-300 uppercase tracking-widest mt-1 opacity-60">ID: {c.id.substring(0, 12).toUpperCase()}</p>
+                          <p className="text-[12px] font-black text-neural-dark uppercase tracking-tight group-hover:text-primary transition-colors">{c.name}</p>
+                          <p className="text-[8px] font-mono text-slate-300 uppercase tracking-widest mt-1.5 opacity-60">ID: {c.id.substring(0, 12).toUpperCase()}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-6">
-                      <span className={`text-[8px] font-black px-3 py-1 rounded-lg border uppercase tracking-widest shadow-sm ${
+                    <td className="px-8 py-8">
+                      <span className={`text-[8px] font-black px-4 py-1.5 rounded-sm border uppercase tracking-widest shadow-sm ${
                         c.plan_tier === 'enterprise' || c.plan_tier === 'pro' 
-                        ? 'bg-[#22c55e]/5 text-[#22c55e] border-[#22c55e]/10' 
+                        ? 'bg-primary/5 text-primary border-primary/10' 
                         : 'bg-slate-50 text-slate-400 border-slate-100'
                       }`}>
                         TIER_{c.plan_tier?.toUpperCase() || 'FREE'}
                       </span>
                     </td>
-                    <td className="px-8 py-6">
-                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <ShieldCheck size={12} className={c.role === 'admin' ? 'text-[#22c55e]' : 'text-slate-300'} />
+                    <td className="px-8 py-8">
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2.5">
+                        <ShieldCheck size={14} className={c.role === 'admin' ? 'text-primary' : 'text-slate-200'} />
                         {c.role?.toUpperCase() || 'VIEWER'}
                       </p>
                     </td>
-                    <td className="px-8 py-6 text-right">
-                      <button className="w-9 h-9 flex items-center justify-center bg-white text-slate-300 hover:bg-[#0f172a] hover:text-white rounded-xl border border-slate-100 transition-all shadow-sm active:scale-90 group/btn mx-auto lg:ml-auto lg:mr-0">
-                        <ExternalLink size={14} />
+                    <td className="px-8 py-8 text-right">
+                      <button className="w-11 h-11 flex items-center justify-center bg-white text-slate-300 hover:bg-accent hover:text-white rounded-md border border-slate-100 transition-all shadow-sm active:scale-90 group/btn mx-auto lg:ml-auto lg:mr-0">
+                        <ExternalLink size={16} />
                       </button>
                     </td>
                   </tr>
@@ -204,15 +204,15 @@ export default function CompaniesManagementPage() {
       </div>
 
       {/* FOOTER ADVISORY */}
-      <div className="mt-8 px-1">
-        <div className="bg-[#0f172a] p-6 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden group max-w-2xl">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#22c55e]/10 blur-3xl rounded-full -mr-16 -mt-16" />
-          <div className="flex items-start gap-4 relative z-10">
-             <Zap size={16} className="text-[#22c55e] mt-0.5" />
+      <div className="mt-12 px-1">
+        <div className="bg-accent p-8 rounded-xl border border-white/5 shadow-2xl relative overflow-hidden group max-w-2xl">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl rounded-full -mr-16 -mt-16" />
+          <div className="flex items-start gap-6 relative z-10">
+             <Zap size={20} className="text-primary mt-1" />
              <div>
-               <p className="text-[9px] font-black text-white uppercase tracking-[0.3em] mb-1">Centralización Neural</p>
-               <p className="text-[7.5px] font-black text-white/40 uppercase tracking-[0.2em] leading-relaxed">
-                 Al seleccionar una unidad, el contexto de Arise se re-sincronizará automáticamente con el Vault, Inventario y CRM de dicha entidad.
+               <p className="text-[10px] font-black text-white uppercase tracking-[0.4em] mb-2">Centralización Neural</p>
+               <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] leading-relaxed">
+                 AL SELECCIONAR UNA UNIDAD, EL CONTEXTO DE ARISE SE RE-SINCRONIZARÁ AUTOMÁTICAMENTE CON EL VAULT, INVENTARIO Y CRM DE DICHA ENTIDAD.
                </p>
              </div>
           </div>

@@ -10,25 +10,32 @@ export const ACTION_PREFIXES = {
 };
 
 /**
- * Normaliza y valida si el ID del botón corresponde a una acción de reporte.
+ * LM Protocol: Normaliza el tipo de reporte desde buttonId O desde el texto del mensaje.
  */
-export function getRequestedReportType(buttonId: string | undefined): string | null {
-  if (!buttonId) return null;
-  
-  const rawId = buttonId.toLowerCase();
-
-  if (rawId.includes('8columnas')) return '8-columnas';
-  if (rawId.includes('resultados')) return 'estado-resultados';
-  if (rawId.includes('inventario')) return 'inventory';
-  if (rawId.includes('ventas')) return 'ventas-mensual';
-  if (rawId.includes('remuneraciones')) return 'remuneraciones';
-
-  if (rawId.startsWith('pdf_')) {
-    return rawId.replace('pdf_', '').replace('_', '-');
+export function getRequestedReportType(buttonId: string | undefined, content?: string): string | null {
+  if (buttonId) {
+    const rawId = buttonId.toLowerCase();
+    if (rawId.includes('8columnas') || rawId.includes('8-columnas')) return '8-columnas';
+    if (rawId.includes('resultados')) return 'estado-resultados';
+    if (rawId.includes('inventario') || rawId.includes('inventory')) return 'inventory';
+    if (rawId.includes('ventas')) return 'ventas-mensual';
+    if (rawId.includes('remuneraciones')) return 'remuneraciones';
+    if (rawId.startsWith('pdf_')) return rawId.replace('pdf_', '').replace('_', '-');
   }
-  
+
+  // LM Protocol: Detección por texto libre
+  if (content) {
+    const text = content.toLowerCase();
+    if (text.includes('balance') || text.includes('8 columnas')) return '8-columnas';
+    if (text.includes('resultado') || text.includes('p&l')) return 'estado-resultados';
+    if (text.includes('inventario') || text.includes('stock')) return 'inventory';
+    if (text.includes('ventas')) return 'ventas-mensual';
+    if (text.includes('remuneraciones')) return 'remuneraciones';
+  }
+
   return null;
 }
+
 
 /**
  * Orquestador de ruteo con Telemetría Diamond v10.2
@@ -41,9 +48,9 @@ export async function handleActionRouting(params: {
   whatsappToken: string;
   phoneNumberId: string;
 }) {
-  const { buttonId, sender, companyId, whatsappToken, phoneNumberId } = params;
+  const { buttonId, content, sender, companyId, whatsappToken, phoneNumberId } = params;
   
-  const reportType = getRequestedReportType(buttonId);
+  const reportType = getRequestedReportType(buttonId, content);
   
   if (reportType) {
     await logEvent({
@@ -115,5 +122,46 @@ export async function handleActionRouting(params: {
     return true;
   }
 
+  // 3. COMANDOS DE ADMINISTRADOR (Diamond Shell v10.2)
+  if (content.startsWith('/')) {
+      const command = content.toLowerCase().split(' ')[0];
+      
+      await logEvent({ companyId, action: 'ADMIN_COMMAND_DETECTED', details: { command, sender } });
+
+      if (command === '/status') {
+          // Obtener conteo real de caché
+          const { count } = await supabase
+            .from('prepared_reports')
+            .select('*', { count: 'exact', head: true })
+            .eq('company_id', companyId);
+
+          await sendWhatsAppMessage({
+              to: sender,
+              text: `🏰 *Arise Diamond Shell v10.2 Platinum*\n\n✅ *Status:* Online\n🛰️ *Meta API:* Connected\n🗄️ *Database:* Synced\n🧠 *Neural Cluster:* 9+ Keys Active\n📑 *Shadow Cache:* ${count || 0} reportes listos\n🏢 *Company ID:* ${companyId.substring(0, 8)}...`,
+              phoneNumberId,
+              whatsappToken,
+              companyId
+          });
+          return true;
+      }
+
+      if (command === '/purge') {
+          const { count } = await supabase
+            .from('prepared_reports')
+            .delete({ count: 'exact' })
+            .eq('company_id', companyId);
+
+          await sendWhatsAppMessage({
+              to: sender,
+              text: `🧹 *Cache Purged:* Se han eliminado ${count || 0} reportes cacheados. El próximo clic generará un archivo 100% nuevo.`,
+              phoneNumberId,
+              whatsappToken,
+              companyId
+          });
+          return true;
+      }
+  }
+
   return false;
 }
+

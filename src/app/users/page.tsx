@@ -62,27 +62,27 @@ export default function UsersManagement() {
   }, []);
 
   return (
-    <div className="flex flex-col w-full max-w-full py-2 md:py-4 animate-in fade-in duration-700 overflow-x-hidden relative">
+    <div className="flex flex-col w-full max-w-full py-master-section animate-in fade-in duration-700 overflow-x-hidden relative">
       
       {/* PERFORMANCE: OPTIMIZED BACKGROUND ACCENTS - ASLAS STYLE */}
-      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#22c55e]/5 blur-[64px] rounded-full -z-10" />
-      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-[#0f172a]/5 blur-[64px] rounded-full -z-10" />
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-primary/5 blur-[64px] rounded-full -z-10" />
+      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-accent/5 blur-[64px] rounded-full -z-10" />
 
       {/* HEADER SECTION - PREMIUM ASLAS STYLE */}
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 mb-10 px-2 relative z-10">
-        <div className="animate-in fade-in slide-in-from-left-8 duration-1000">
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-none uppercase">
-            Gestión de <span className="text-[#22c55e]">Acceso</span>
+      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-20 px-2 relative z-10 animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div className="relative">
+          <h1 className="text-h1-mobile md:text-h1 font-black text-neural-dark tracking-tighter leading-[0.9] uppercase">
+            Gestión de <br/><span className="text-primary">Acceso</span>
           </h1>
-          <p className="text-slate-400 text-[7px] font-black uppercase tracking-[0.4em] mt-3.5 flex items-center gap-2.5">
-            <Lock size={10} className="text-[#22c55e]" />
-            CONTROL DE ACCESO NEURAL / PROTOCOLO LOOP
+          <p className="text-slate-400 text-[8px] font-black uppercase tracking-[0.4em] mt-6 flex items-center gap-2.5">
+            <Lock size={12} className="text-primary" />
+            CONTROL DE ACCESO NEURAL / v10.4 PLATINUM
           </p>
         </div>
 
-        <button className="flex items-center justify-center gap-3 bg-[#0f172a] text-white px-6 py-3 rounded-xl text-[8px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-[#22c55e] transition-all active:scale-95 group">
+        <button className="btn-loop flex items-center justify-center gap-4 bg-accent text-white px-8 py-3.5 text-[8px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-primary transition-all active:scale-95 group">
           <span>Autorizar Operador</span>
-          <UserPlus size={14} className="group-hover:rotate-12 transition-transform" />
+          <UserPlus size={16} className="group-hover:rotate-12 transition-transform" />
         </button>
       </header>
 
@@ -96,13 +96,13 @@ export default function UsersManagement() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10 px-1">
         {/* IDENTITY VAULT LIST - COMPACT & PREMIUM */}
-        <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
-          <div className="p-6 bg-slate-50/50 flex justify-between items-center border-b border-slate-100">
-            <div className="flex items-center gap-3">
-               <div className="w-1.5 h-1.5 bg-[#22c55e] rounded-full animate-pulse" />
-               <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">Directorio de Operadores</h2>
+        <div className="lg:col-span-8 bg-white border border-slate-100 overflow-hidden shadow-sm" style={{ borderRadius: 'var(--radius-xl)' }}>
+          <div className="p-8 bg-slate-50/50 flex justify-between items-center border-b border-slate-100">
+            <div className="flex items-center gap-4">
+               <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Directorio de Operadores</h2>
             </div>
-            <span className="text-[7px] font-black bg-white text-[#22c55e] px-3 py-1 rounded-lg uppercase tracking-widest border border-[#22c55e]/10 shadow-sm">
+            <span className="text-[8px] font-black bg-white text-primary px-4 py-1.5 uppercase tracking-widest border border-primary/10 shadow-sm" style={{ borderRadius: 'var(--radius-sm)' }}>
                NODOS_ACTIVOS: {users.length}
             </span>
           </div>
@@ -115,30 +115,30 @@ export default function UsersManagement() {
               </div>
             ) : users.length > 0 ? (
               users.map(user => (
-                <div key={user.id} className="p-5 md:p-6 flex items-center justify-between hover:bg-slate-50/50 transition-all group cursor-pointer relative overflow-hidden">
-                  <div className="absolute left-0 w-1.5 h-0 bg-[#22c55e] group-hover:h-full transition-all duration-700" />
+                <div key={user.id} className="p-6 md:p-8 flex items-center justify-between hover:bg-slate-50/50 transition-all group cursor-pointer relative overflow-hidden">
+                  <div className="absolute left-0 w-2 h-0 bg-primary group-hover:h-full transition-all duration-700" />
                   
-                  <div className="flex items-center gap-6 relative z-10">
-                    <div className="w-11 h-11 bg-white text-slate-900 rounded-xl border border-slate-100 flex items-center justify-center font-black text-xs shadow-sm group-hover:bg-[#22c55e] group-hover:text-white group-hover:border-transparent group-hover:scale-105 transition-all duration-500">
+                  <div className="flex items-center gap-8 relative z-10">
+                    <div className="w-12 h-12 bg-white text-neural-dark border border-slate-100 flex items-center justify-center font-black text-xs shadow-sm group-hover:bg-primary group-hover:text-white group-hover:border-transparent group-hover:scale-105 transition-all duration-500" style={{ borderRadius: 'var(--radius-md)' }}>
                       {user.email?.[0].toUpperCase() || '?'}
                     </div>
                     <div>
-                      <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight group-hover:text-[#22c55e] transition-colors duration-500">{user.email || 'N_A'}</p>
-                      <div className="flex items-center gap-3 mt-1.5">
-                         <span className="text-[7px] font-mono text-slate-300 uppercase tracking-widest">NODE_ID: {user.id.substring(0, 12).toUpperCase()}</span>
-                         <span className="w-1 h-1 bg-slate-100 rounded-full" />
-                         <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest">ACTIVO</span>
+                      <p className="text-[12px] font-black text-neural-dark uppercase tracking-tight group-hover:text-primary transition-colors duration-500">{user.email || 'N_A'}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                         <span className="text-[8px] font-mono text-slate-300 uppercase tracking-widest">NODE_ID: {user.id.substring(0, 12).toUpperCase()}</span>
+                         <span className="w-1.5 h-1.5 bg-slate-100 rounded-full" />
+                         <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">ACTIVO</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-6 relative z-10">
+                  <div className="flex items-center gap-8 relative z-10">
                     <div className="text-right hidden sm:block">
-                      <p className="text-[6px] font-black text-slate-300 uppercase tracking-widest mb-1.5 opacity-60">Permisos Operativos</p>
-                      <p className="text-[8px] font-black text-[#22c55e] uppercase tracking-widest bg-[#22c55e]/5 px-3 py-1 rounded-lg border border-[#22c55e]/10 shadow-sm">{user.role}</p>
+                      <p className="text-[7px] font-black text-slate-300 uppercase tracking-widest mb-1.5 opacity-60">Permisos Operativos</p>
+                      <p className="text-[9px] font-black text-primary uppercase tracking-widest bg-primary/5 px-4 py-1.5 border border-primary/10 shadow-sm" style={{ borderRadius: 'var(--radius-sm)' }}>{user.role}</p>
                     </div>
-                    <button className="w-9 h-9 flex items-center justify-center bg-white text-slate-300 hover:bg-[#0f172a] hover:text-white rounded-xl border border-slate-100 transition-all shadow-sm active:scale-90 group/btn">
-                      <Settings2 size={14} className="group-hover/btn:rotate-45 transition-transform" />
+                    <button className="w-11 h-11 flex items-center justify-center bg-white text-slate-300 hover:bg-accent hover:text-white border border-slate-100 transition-all shadow-sm active:scale-90 group/btn" style={{ borderRadius: 'var(--radius-md)' }}>
+                      <Settings2 size={16} className="group-hover/btn:rotate-45 transition-transform" />
                     </button>
                   </div>
                 </div>
@@ -154,47 +154,47 @@ export default function UsersManagement() {
 
         {/* SECURITY TERMINAL - COMPACT & DARK */}
         <div className="lg:col-span-4 flex flex-col gap-6">
-          <div className="bg-[#0f172a] rounded-3xl border border-white/5 shadow-2xl p-7 flex flex-col overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-[#22c55e]/10 blur-[100px] rounded-full -mr-24 -mt-24 animate-pulse" />
+          <div className="bg-accent border border-white/5 shadow-2xl p-8 flex flex-col overflow-hidden relative group" style={{ borderRadius: 'var(--radius-xl)' }}>
+            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-[100px] rounded-full -mr-24 -mt-24 animate-pulse" />
             
             <div className="relative z-10">
-              <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-white mb-8 flex items-center gap-3">
-                <ShieldCheck size={16} className="text-[#22c55e]" />
+              <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white mb-10 flex items-center gap-4">
+                <ShieldCheck size={18} className="text-primary" />
                 Terminal de Seguridad
               </h3>
               
-              <div className="space-y-6">
-                <div className="space-y-2.5">
-                  <label className="text-[7px] font-black text-white/30 uppercase tracking-[0.3em] block ml-1">Seleccionar Operador</label>
+              <div className="space-y-8">
+                <div className="space-y-3">
+                  <label className="text-[8px] font-black text-white/30 uppercase tracking-[0.3em] block ml-1">Seleccionar Operador</label>
                   <div className="relative">
-                    <select className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-[9px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 focus:border-[#22c55e]/30 transition-all appearance-none cursor-pointer pr-10">
-                      {users.map(u => <option key={u.id} value={u.id} className="bg-[#0f172a]">{u.email || u.id.substring(0, 8)}</option>)}
+                    <select className="w-full bg-white/5 border border-white/5 p-4 text-[10px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 focus:border-primary/30 transition-all appearance-none cursor-pointer pr-10" style={{ borderRadius: 'var(--radius-md)' }}>
+                      {users.map(u => <option key={u.id} value={u.id} className="bg-accent">{u.email || u.id.substring(0, 8)}</option>)}
                     </select>
-                    <ChevronRight size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 rotate-90" />
+                    <ChevronRight size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 rotate-90" />
                   </div>
                 </div>
 
-                <div className="space-y-2.5">
-                  <label className="text-[7px] font-black text-white/30 uppercase tracking-[0.3em] block ml-1">Vincular Unidad</label>
+                <div className="space-y-3">
+                  <label className="text-[8px] font-black text-white/30 uppercase tracking-[0.3em] block ml-1">Vincular Unidad</label>
                   <div className="relative">
-                    <select className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-[9px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 focus:border-[#22c55e]/30 transition-all appearance-none cursor-pointer pr-10">
-                      {companies.map(c => <option key={c.id} value={c.id} className="bg-[#0f172a]">{c.name}</option>)}
+                    <select className="w-full bg-white/5 border border-white/5 p-4 text-[10px] font-black uppercase tracking-widest text-white outline-none focus:bg-white/10 focus:border-primary/30 transition-all appearance-none cursor-pointer pr-10" style={{ borderRadius: 'var(--radius-md)' }}>
+                      {companies.map(c => <option key={c.id} value={c.id} className="bg-accent">{c.name}</option>)}
                     </select>
-                    <ChevronRight size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 rotate-90" />
+                    <ChevronRight size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 rotate-90" />
                   </div>
                 </div>
 
-                <button className="w-full bg-[#22c55e] text-white py-4 rounded-xl text-[9px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-white hover:text-[#0f172a] transition-all active:scale-95 mt-4 group/auth">
+                <button className="btn-loop w-full bg-primary text-white py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-white hover:text-accent transition-all active:scale-95 mt-4 group/auth">
                   <span className="flex items-center justify-center gap-3">
                     Conceder Autorización
-                    <Zap size={14} className="group-hover/auth:fill-current" />
+                    <Zap size={16} className="group-hover/auth:fill-current" />
                   </span>
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
+          <div className="bg-white p-6 border border-slate-100 shadow-sm relative overflow-hidden group" style={{ borderRadius: 'var(--radius-xl)' }}>
             <div className="absolute top-0 left-0 w-1.5 h-full bg-[#22c55e] opacity-20" />
             <div className="flex items-start gap-4">
                <Fingerprint size={16} className="text-slate-100 mt-0.5 group-hover:text-[#22c55e]/20 transition-colors" />

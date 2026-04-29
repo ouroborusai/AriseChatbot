@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { ICON_MAP, WHATSAPP_LIMITS, SYSTEM_STRINGS } from './constants';
+import { SuggestedOption } from '@/types/api';
 
 function createSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -120,7 +121,8 @@ export async function sendWhatsAppMessage(params: {
 
 /**
  * GENERATE AND SEND AI RESPONSE
- * Orquesta la llamada a Gemini y envía la respuesta a WhatsApp.
+ * Orquesta la llamada a Gemini, procesa acciones [[ ]] y cierra el ciclo con interactividad.
+ * Soporta simulationMode para testing sin WhatsApp.
  */
 export async function generateAndSendAIResponse(params: {
   content: string;
@@ -130,45 +132,132 @@ export async function generateAndSendAIResponse(params: {
   sender: string;
   phoneNumberId: string;
   whatsappToken: string;
-}) {
-  const { content, companyId, sender, phoneNumberId, whatsappToken } = params;
+  isSecondPass?: boolean;
+  accumulatedOptions?: SuggestedOption[];
+  simulationMode?: boolean;
+}): Promise<any> {
+  const { content, companyId, sender, phoneNumberId, whatsappToken, isSecondPass, accumulatedOptions = [], simulationMode = false } = params;
   const { generateGeminiResponse } = await import('./gemini');
+  const supabase = createSupabaseClient();
 
-  // 1. Definición del Prompt Industrial (Diamond v10.2)
   const systemPrompt = `
-Eres Arise Director AI. "Cierra el ciclo de tus tareas con Arise".
+REGLA DIAMANTE: CERO CÁLCULOS. Si el usuario pide reportes, balances o inventario, responde: "Generando tu reporte oficial..." No intentes procesar los montos tú mismo. 
+Identidad: Arise Director AI. Tu misión es "Cerrar el ciclo operativo con elegancia y precisión". Tono cálido, ejecutivo y proactivo (Concierge).
 
-REGLAS CRÍTICAS DIAMANTE:
-1. CERO CÁLCULOS: NUNCA intentes calcular montos, balances o estados financieros por texto. 
-2. CONTEXTO PRIMERO: Cuando el usuario pida reportes, balances, inventario o estados financieros, responde amablemente que puedes ayudarle a generar el reporte oficial y EMITE el comando: [[ { "action": "offer_menus" } ]].
-3. FORMATO: Tu respuesta DEBE ser empática y ejecutiva. Si detectas intención de ver números, SIEMPRE manda el comando offer_menus.
-4. No intentes 'adivinar' el tipo de reporte, deja que el usuario elija del menú que se le enviará.
+PROTOCOLOS PLATINUM v10.4:
+1. BRUTAL HONESTIDAD: Tienes prohibido inventar éxitos si el Status es validation_failed o item_not_found. Usa empatía concierge para solicitar datos faltantes.
+2. NEURAL LOOP (Doble Paso):
+   - Si Status es "success": Celebra brevemente el éxito.
+   - Si Status es "item_not_found" o "validation_failed": Sé empático, informa del error específico usando el campo 'error' del sistema.
+3. ACCIONES ESTRUCTURADAS: Usa [[ { "action": "..." } ]] exclusivamente para: task_create, inventory_add, inventory_remove, inventory_scan, pdf_generate.
+4. ESTÉTICA LUMINOUS: Comunicación vibrante, premium y proactiva.
 `;
 
-  const fullPrompt = `${systemPrompt}\n\nUsuario: ${content}\nID Empresa: ${companyId}`;
-
   try {
+    const fullPrompt = `${systemPrompt}\n\nUsuario: ${content}\nID Empresa: ${companyId}`;
     const aiRes = await generateGeminiResponse(fullPrompt, companyId);
     
     if (aiRes.error) throw new Error(aiRes.error);
 
-    await sendWhatsAppMessage({
-      to: sender,
-      text: aiRes.text,
-      phoneNumberId,
-      whatsappToken,
-      companyId
-    });
+    const actionBlocks = aiRes.text.match(/\[\[([\s\S]*?)\]\]/g);
+
+    if (actionBlocks && actionBlocks.length > 0 && !isSecondPass) {
+        console.log(`[NEURAL_LOOP] Acciones detectadas: ${actionBlocks.length}`);
+
+        const { handleTaskAction } = await import('./actions/task');
+        const { handleInventoryAction } = await import('./actions/inventory');
+
+        let currentResultString = "";
+        const currentOptions: SuggestedOption[] = [];
+
+        for (const block of actionBlocks) {
+            try {
+                const cleanJson = block.replace('[[', '').replace(']]', '').trim();
+                const actionData = JSON.parse(cleanJson);
+                console.log(`[NEURAL_LOOP] Ejecutando: ${actionData.action}`, actionData);
+                
+                let results;
+                if (actionData.action.startsWith('task_') || actionData.action.startsWith('reminder_')) {
+                    results = await handleTaskAction(supabase, actionData, companyId, 'system_call');
+                } else if (actionData.action.startsWith('inventory_')) {
+                    results = await handleInventoryAction(supabase, actionData, companyId, 'system_call');
+                }
+
+                console.log(`[NEURAL_LOOP] Resultado:`, results);
+
+                if (results && results.length > 0) {
+                    currentResultString += `Acción: ${actionData.action} | Status: ${results[0].status}. `;
+                    if (results[0].suggested_options) {
+                        console.log(`[NEURAL_LOOP] Botones detectados:`, results[0].suggested_options.length);
+                        currentOptions.push(...results[0].suggested_options);
+                    }
+                }
+            } catch (jsonErr) {
+                console.error('[NEURAL_LOOP_PARSE_ERROR]', jsonErr);
+            }
+        }
+
+        const systemResult = `[SYSTEM_RESULT] ${currentResultString}`;
+
+        // --- SHADOW PDF BACKGROUND REFRESH (v10.3) ---
+        if (currentResultString.includes('inventory_') && !simulationMode) {
+            import('@/lib/pdf/pipeline').then(({ executePDFPipeline }) => {
+                executePDFPipeline({ 
+                    companyId, 
+                    reportType: 'inventory_general', 
+                    isPreGen: true,
+                    targetPhone: sender, 
+                    whatsappToken, 
+                    phoneNumberId 
+                }).catch(e => console.error('[SHADOW_PDF_ERROR]', e));
+            });
+        }
+
+        return generateAndSendAIResponse({
+            ...params,
+            content: systemResult,
+            isSecondPass: true,
+            accumulatedOptions: currentOptions,
+            simulationMode
+        });
+    }
+
+    const cleanText = aiRes.text.replace(/\[\[([\s\S]*?)\]\]/g, '').trim();
+
+    // MODO SIMULACIÓN: Retornar resultado en lugar de enviar a WhatsApp
+    if (simulationMode) {
+        return {
+            text: cleanText,
+            options: accumulatedOptions,
+            status: 'success'
+        };
+    }
+
+    if (cleanText) {
+        await sendWhatsAppMessage({
+            to: sender,
+            text: cleanText,
+            phoneNumberId,
+            whatsappToken,
+            companyId,
+            options: accumulatedOptions.length > 0 ? accumulatedOptions : undefined
+        });
+    }
+
+    return { status: 'success', sent: true };
 
   } catch (err: any) {
     console.error('[AI_RESPONSE_ERROR]', err.message);
-    await sendWhatsAppMessage({
-      to: sender,
-      text: "Disculpa, estoy experimentando un breve retraso neuronal. Reintenta en un momento.",
-      phoneNumberId,
-      whatsappToken,
-      companyId
-    });
+    if (!simulationMode && !isSecondPass) {
+        await sendWhatsAppMessage({
+            to: sender,
+            text: "Disculpa, estoy experimentando un breve retraso neuronal. Reintenta en un momento.",
+            phoneNumberId,
+            whatsappToken,
+            companyId
+        });
+    }
+    return { status: 'error', error: err.message };
   }
 }
 

@@ -1,18 +1,28 @@
-# 🏛️ ARISE BUSINESS OS v10.1 (Diamond)
+# 🏛️ ARISE BUSINESS OS v10.2 (Diamond Platinum)
 
 **Next-Generation AI-Powered Business Intelligence Platform**
 
 > *"The Synthetic Architect" - OuroborusAI Intelligence Engine*
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.2-black?logo=next.js)](https://nextjs.org)
-[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
-[![Protocol](https://img.shields.io/badge/Protocol-v61_Interactive-orange)](https://github.com/arise/diamond)
+---
+
+## 🚀 NOVEDADES v10.2 PLATINUM (Industrialización)
+
+### 📊 Shadow PDF Pipeline
+- **Generación Nativa:** Se eliminó la dependencia de Puppeteer/Chromium en favor de `@react-pdf/renderer` para estabilidad total en Vercel Serverless.
+- **Protocolo Cero Cálculos:** Los reportes son 100% íntegros, mapeando directamente desde la columna `summary_data` de Supabase.
+- **Handshake Blindado:** Webhook calibrado para Meta con respuesta `text/plain` y persistencia garantizada vía `waitUntil()`.
+- **Diseño Luminous Pure:** Formateo financiero profesional ($ CLP) y estética LOOP Green (#22c55e).
+
+### 🌐 Endpoints de Producción (SSOT)
+- **Webhook WhatsApp:** `https://arise-chatbot-eight.vercel.app/api/webhook/whatsapp`
+- **Verify Token:** `arise_diamond_v10.1`
+- **Region:** `iad1` (Washington, D.C.)
 
 ---
 
 ## 📋 ÍNDICE
+
 
 1. [Arquitectura del Sistema](#arquitectura-del-sistema)
 2. [Stack Tecnológico](#stack-tecnológico)

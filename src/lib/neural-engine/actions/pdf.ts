@@ -37,7 +37,7 @@ export async function handlePdfAction(
             signal: controller.signal,
             headers: { 
               'Content-Type': 'application/json',
-              'x-api-key': process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret'
+              'x-api-key': process.env.INTERNAL_API_KEY || ''
             },
             body: JSON.stringify({
               targetPhone: phone,
@@ -45,6 +45,7 @@ export async function handlePdfAction(
               phoneNumberId,
               reportType: actionData.report_type || actionData.parameters?.report_type || actionData.type || actionData.parameters?.type || 'inventory',
               companyId: companyId,
+              isPreGen: false // LM Protocol: Si viene de la IA, enviar al usuario.
             }),
           });
 

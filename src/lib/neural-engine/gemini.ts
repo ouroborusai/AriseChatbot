@@ -67,12 +67,13 @@ export async function generateGeminiResponse(
     const data = await res.json();
 
     if (!res.ok) {
+      console.error('[GEMINI_API_ERROR_DETAIL]', JSON.stringify(data, null, 2));
       await supabase.from('audit_logs').insert({
         company_id: companyId,
         action: 'GEMINI_API_FAILURE',
         new_data: { error: data }
       });
-      return { text: '', error: data };
+      return { text: '', error: data.error?.message || JSON.stringify(data) };
     }
 
     const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || SYSTEM_STRINGS.FALLBACK_RESPONSE;

@@ -11,13 +11,19 @@ export async function getWhatsAppConfig(companyId: string) {
     .eq('id', companyId)
     .single();
 
-  if (error || !data?.settings) {
-    return { token: process.env.WHATSAPP_ACCESS_TOKEN, phoneId: process.env.WHATSAPP_PHONE_NUMBER_ID };
+  if (error || !data?.settings?.whatsapp) {
+    throw new Error(`[WHATSAPP_CONFIG_ERROR] No se encontró configuración válida para la empresa: ${companyId}`);
+  }
+
+  const { access_token, phone_number_id } = data.settings.whatsapp;
+
+  if (!access_token || !phone_number_id) {
+    throw new Error(`[WHATSAPP_CONFIG_ERROR] Credenciales incompletas en DB para la empresa: ${companyId}`);
   }
 
   return {
-    token: data.settings.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN,
-    phoneId: data.settings.whatsapp?.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID
+    token: access_token,
+    phoneId: phone_number_id
   };
 
 }
@@ -54,10 +60,11 @@ export async function resolveIdentity(sender: string) {
  * Guarda eventos de depuración en la tabla audit_logs
  */
 export async function logEvent(params: {
-  companyId: string;
+  companyId?: string;
   action: string;
   details?: any;
 }) {
+
   console.log(`[EVENT] ${params.action}`, params.details || '');
   await supabase.from('audit_logs').insert({
     company_id: params.companyId,
