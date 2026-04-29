@@ -5,19 +5,11 @@ import React from 'react';
 import { requireAuth } from '@/lib/api-auth';
 import { createClient } from '@supabase/supabase-js';
 
-// Clave interna para llamadas del neural-processor (sin sesión de usuario)
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
-if (!INTERNAL_API_KEY) throw new Error('[PDF_PIPELINE] INTERNAL_API_KEY env var is not set');
-
+// Configuración de Supabase (se inicializa una vez)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const supabaseKey = (process.env.ARISE_MASTER_SERVICE_KEY || process.env.ARISE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)?.trim();
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('[PDF_PIPELINE] Missing Supabase credentials');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 /**
  * ARISE PDF PIPELINE Diamond v10.1
@@ -25,6 +17,17 @@ const supabase = createClient(supabaseUrl, supabaseKey);
  */
 export async function POST(req: Request) {
   try {
+    const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+    
+    if (!INTERNAL_API_KEY) {
+      console.error('[PDF_PIPELINE] INTERNAL_API_KEY is missing');
+      return NextResponse.json({ error: 'System configuration error' }, { status: 500 });
+    }
+
+    if (!supabase) {
+      console.error('[PDF_PIPELINE] Supabase client not initialized');
+      return NextResponse.json({ error: 'Database connection error' }, { status: 500 });
+    }
     // Autenticación dual: sesión de usuario O clave interna del neural-processor
     const internalKey = req.headers.get('x-api-key');
     const serverKey = process.env.INTERNAL_API_KEY;
