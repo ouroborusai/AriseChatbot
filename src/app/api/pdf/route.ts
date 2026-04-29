@@ -22,11 +22,18 @@ export async function POST(req: Request) {
   try {
     // Autenticación dual: sesión de usuario O clave interna del neural-processor
     const internalKey = req.headers.get('x-api-key');
-    const isInternalCall = internalKey === INTERNAL_API_KEY;
+    const serverKey = process.env.INTERNAL_API_KEY;
+    const isInternalCall = internalKey === serverKey;
+
+    console.log(`[PDF_AUTH_DEBUG] Received: ${internalKey?.substring(0, 10)}..., ServerKey: ${serverKey?.substring(0, 10)}..., Match: ${isInternalCall}`);
 
     if (!isInternalCall) {
+      console.warn('[PDF_AUTH_FAILED] Key mismatch or missing. Falling back to requireAuth().');
       const authResult = await requireAuth();
-      if (authResult.error) return authResult.error;
+      if (authResult.error) {
+        console.error('[PDF_AUTH_CRITICAL] requireAuth() also failed.');
+        return authResult.error;
+      }
     }
 
     const { targetPhone, whatsappToken, phoneNumberId, reportType, companyId } = await req.json();
