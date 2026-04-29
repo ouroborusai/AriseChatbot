@@ -192,6 +192,18 @@ export async function POST(req: Request) {
     console.log(`[WH_INPUT] New message from ${sender} (${profileName})`);
     const buttonId = message.interactive?.button_reply?.id || message.interactive?.list_reply?.id;
     const content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
+    
+    // RADAR TOTAL: Registramos cada entrada para diagnóstico forense
+    await supabase.from('audit_logs').insert({
+      action: 'WH_DEBUG_RADAR',
+      new_data: { 
+        buttonId, 
+        content, 
+        type: message.type,
+        waId: message.id 
+      }
+    });
+
     console.log(`[WH_DEBUG] buttonId: "${buttonId}", content: "${content}"`);
 
     // --- 1. IDEMPOTENCIA ---
