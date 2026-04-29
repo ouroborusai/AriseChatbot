@@ -25,7 +25,9 @@ export async function handlePdfAction(
           return results;
         }
 
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 
+              (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 
+              (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'));
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30000);
 

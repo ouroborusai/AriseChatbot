@@ -378,7 +378,11 @@ export async function POST(req: Request) {
           const pdfController = new AbortController();
           const pdfTimeout = setTimeout(() => pdfController.abort(), 30000);
 
-          fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/pdf`, {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 
+                (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'));
+
+          fetch(`${baseUrl}/api/pdf`, {
               method: 'POST',
               signal: pdfController.signal,
               headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.INTERNAL_API_KEY || '' },
