@@ -382,8 +382,18 @@ export async function POST(req: Request) {
           // Definimos la promesa del pipeline de PDF
           const pdfPromise = (async () => {
             try {
+              // 1. Enviar feedback inmediato por WhatsApp
+              await sendWhatsAppMessage({
+                to: sender,
+                text: '🚀 *Pipeline de Documentos Activado*\n\nGenerando su informe industrial. Recibirá el archivo en unos segundos...',
+                phoneNumberId: waPhoneId,
+                whatsappToken,
+                companyId
+              });
+
+              // 2. Llamar al generador de PDF
               const pdfController = new AbortController();
-              const pdfTimeout = setTimeout(() => pdfController.abort(), 45000); // 45s de margen
+              const pdfTimeout = setTimeout(() => pdfController.abort(), 45000);
 
               const res = await fetch(`${baseUrl}/api/pdf`, {
                   method: 'POST',
@@ -417,13 +427,6 @@ export async function POST(req: Request) {
 
           // CLAVE: waitUntil mantiene vivo el proceso en Vercel
           waitUntil(pdfPromise);
-
-          // Feedback visual inmediato
-          await supabase.from('messages').insert({
-            conversation_id: conv.id,
-            sender_type: 'bot',
-            content: '🚀 *Pipeline de Documentos Activado*\n\nGenerando su informe industrial. Recibirá el archivo en unos segundos...'
-          });
 
           return NextResponse.json({ status: 'action_triggered' });
         }

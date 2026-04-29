@@ -19,6 +19,14 @@ export async function POST(req: Request) {
   try {
     const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
     
+    // Log de entrada para diagnóstico
+    if (supabase) {
+      await supabase.from('audit_logs').insert({
+        action: 'PDF_API_HIT',
+        new_data: { timestamp: new Date().toISOString() }
+      });
+    }
+    
     if (!INTERNAL_API_KEY) {
       console.error('[PDF_PIPELINE] INTERNAL_API_KEY is missing');
       return NextResponse.json({ error: 'System configuration error' }, { status: 500 });
