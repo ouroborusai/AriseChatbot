@@ -291,7 +291,8 @@ export async function POST(req: Request) {
       // Feedback inmediato al usuario
       const feedbackMsg = `📄 *Documento Recepcionado*\n\n*Archivo:* ${docName}\n*Estado:* Procesado y guardado en el historial.\n\n¿Qué deseas hacer con este documento?`;
 
-      await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+      const apiVersion = process.env.META_API_VERSION || 'v23.0';
+      await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${whatsappToken}`,

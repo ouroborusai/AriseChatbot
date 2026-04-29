@@ -91,7 +91,8 @@ export async function sendWhatsAppMessage(params: {
     }
   }
 
-  const res = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+  const apiVersion = process.env.META_API_VERSION || 'v23.0';
+  const res = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
     method: 'POST',
     headers: { 
       'Authorization': `Bearer ${whatsappToken}`, 

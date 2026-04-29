@@ -170,7 +170,8 @@ export async function POST(req: Request) {
     form.append('type', 'document');
     form.append('messaging_product', 'whatsapp');
 
-    const uploadRes = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/media`, {
+    const apiVersion = process.env.META_API_VERSION || 'v23.0';
+    const uploadRes = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/media`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${whatsappToken}` },
         body: form
@@ -181,7 +182,7 @@ export async function POST(req: Request) {
     
     const mediaId = uploadData.id;
 
-    await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+    await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${whatsappToken}`,
