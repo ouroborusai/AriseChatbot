@@ -12,6 +12,7 @@ import { handlePdfAction } from '@/lib/neural-engine/actions/pdf';
 import { handleDirectoryAction } from '@/lib/neural-engine/actions/directory';
 import { handleCreditAction } from '@/lib/neural-engine/actions/credit';
 import { handlePaymentAction } from '@/lib/neural-engine/actions/payment';
+import { handleOfferMenusAction } from '@/lib/neural-engine/actions/menus';
 
 /**
  * NEURAL PROCESSOR Diamond v10.1 Industrial CORE
@@ -193,6 +194,8 @@ export async function POST(req: Request) {
             actionResults = await handleCreditAction(supabase, actionData, companyId, messageId);
           } else if (actionType === 'payment_link_generate') {
             actionResults = await handlePaymentAction(supabase, actionData, companyId, messageId);
+          } else if (actionType === 'offer_menus') {
+            actionResults = await handleOfferMenusAction(supabase, actionData, companyId, messageId);
           } else if (actionType === 'whatsapp_flow_init') {
             // [v10.2] Inicialización de WhatsApp Flows dinámicos
             actionResults = [{ action: 'whatsapp_flow_init', status: 'pending_execution', result: actionData.params }];

@@ -1,6 +1,6 @@
 /**
- * ARISE PDF TEMPLATES Diamond v10.1 - EXPORTS
- * Exportaciones unificadas para templates PDF
+ * ARISE PDF TEMPLATES - Deprecated / Placeholder
+ * Este archivo ha sido desactivado para evitar referencias circulares en el build.
+ * Los estilos y layouts ahora residen directamente en AriseDocument.tsx
  */
-
-export { baseStyles, templates } from '../templates';
+export {};

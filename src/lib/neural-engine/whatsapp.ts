@@ -27,7 +27,7 @@ export function enrichText(text: string): string {
 export async function sendWhatsAppMessage(params: {
   to: string;
   text?: string;
-  options?: string[];
+  options?: (string | { id: string; title: string; description?: string })[];
   template?: {
     name: string;
     language: string;
@@ -63,15 +63,18 @@ export async function sendWhatsAppMessage(params: {
     if (options && options.length > 0) {
       // Modo Lista Interactiva
       const safeOptions = options.slice(0, WHATSAPP_LIMITS.MAX_OPTIONS);
-      const rows = safeOptions.map((o: string) => {
-        const enriched = enrichText(o);
-        const title = enriched.substring(0, WHATSAPP_LIMITS.MAX_TITLE_LENGTH);
+      const rows = safeOptions.map((o: any) => {
+        const isObject = typeof o === 'object';
+        const title = isObject ? o.title : enrichText(o);
+        const id = isObject ? o.id : `lst_${title.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)}`;
+        
         return {
-          id: `lst_${title.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)}`,
-          title,
-          description: o.length > WHATSAPP_LIMITS.MAX_TITLE_LENGTH ? o.substring(0, WHATSAPP_LIMITS.MAX_DESCRIPTION_LENGTH) : undefined
+          id,
+          title: title.substring(0, WHATSAPP_LIMITS.MAX_TITLE_LENGTH),
+          description: isObject && o.description ? o.description : (o.length > WHATSAPP_LIMITS.MAX_TITLE_LENGTH ? o.substring(0, WHATSAPP_LIMITS.MAX_DESCRIPTION_LENGTH) : undefined)
         };
       });
+
 
       payload.type = 'interactive';
       payload.interactive = {
@@ -114,3 +117,58 @@ export async function sendWhatsAppMessage(params: {
 
   return res;
 }
+
+/**
+ * GENERATE AND SEND AI RESPONSE
+ * Orquesta la llamada a Gemini y envía la respuesta a WhatsApp.
+ */
+export async function generateAndSendAIResponse(params: {
+  content: string;
+  companyId: string;
+  contactId: string | null;
+  conversationId: string;
+  sender: string;
+  phoneNumberId: string;
+  whatsappToken: string;
+}) {
+  const { content, companyId, sender, phoneNumberId, whatsappToken } = params;
+  const { generateGeminiResponse } = await import('./gemini');
+
+  // 1. Definición del Prompt Industrial (Diamond v10.2)
+  const systemPrompt = `
+Eres Arise Director AI. "Cierra el ciclo de tus tareas con Arise".
+
+REGLAS CRÍTICAS DIAMANTE:
+1. CERO CÁLCULOS: NUNCA intentes calcular montos, balances o estados financieros por texto. 
+2. CONTEXTO PRIMERO: Cuando el usuario pida reportes, balances, inventario o estados financieros, responde amablemente que puedes ayudarle a generar el reporte oficial y EMITE el comando: [[ { "action": "offer_menus" } ]].
+3. FORMATO: Tu respuesta DEBE ser empática y ejecutiva. Si detectas intención de ver números, SIEMPRE manda el comando offer_menus.
+4. No intentes 'adivinar' el tipo de reporte, deja que el usuario elija del menú que se le enviará.
+`;
+
+  const fullPrompt = `${systemPrompt}\n\nUsuario: ${content}\nID Empresa: ${companyId}`;
+
+  try {
+    const aiRes = await generateGeminiResponse(fullPrompt, companyId);
+    
+    if (aiRes.error) throw new Error(aiRes.error);
+
+    await sendWhatsAppMessage({
+      to: sender,
+      text: aiRes.text,
+      phoneNumberId,
+      whatsappToken,
+      companyId
+    });
+
+  } catch (err: any) {
+    console.error('[AI_RESPONSE_ERROR]', err.message);
+    await sendWhatsAppMessage({
+      to: sender,
+      text: "Disculpa, estoy experimentando un breve retraso neuronal. Reintenta en un momento.",
+      phoneNumberId,
+      whatsappToken,
+      companyId
+    });
+  }
+}
+

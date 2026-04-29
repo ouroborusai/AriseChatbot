@@ -1,38 +1,24 @@
-# 📘 Guía de Uso: NotebookLM MCP Server (Arise v9.0)
+# 📘 Guía de Uso: NotebookLM MCP Server (Arise v10.2)
 
-Este repositorio utiliza un servidor MCP para sincronizar la inteligencia del proyecto con **NotebookLM**. Sigue estas instrucciones para mantener el SSOT (Single Source of Truth) actualizado en tu nueva PC.
+Este repositorio utiliza un servidor MCP para sincronizar la inteligencia del proyecto con **NotebookLM**. 
 
-## 1. Instalación y Requisitos
-Asegúrate de tener instalado el MCP de NotebookLM en tu configuración de Claude Desktop o la herramienta que utilices.
+## 1. Fuentes de Verdad (SSOT)
+Para que la IA entienda el estado actual del proyecto, **DEBE** leer los siguientes archivos en orden:
+
+1.  `docs/ARISE_CORE_MANIFEST_v10.2.md`: Estructura general y Pipeline de PDF.
+2.  `docs/TRIGGERS_AND_AUTOMATION_v10.2.md`: Lógica de automatización y pre-generación.
+3.  `src/lib/pdf/pipeline.ts`: Implementación técnica real.
 
 ## 2. Autenticación (Paso Crítico)
-Las sesiones de NotebookLM expiran frecuentemente. Si ves errores de "Authentication expired", haz lo siguiente:
+Si ves errores de "Authentication expired":
+1.  Obtén la cookie de `batchexecute` desde Chrome DevTools.
+2.  Pégala en `cookies.txt`.
+3.  Ejecuta `notebooklm-mcp-auth --file cookies.txt` en la terminal.
 
-1.  **Ejecuta el comando en tu terminal:**
-    ```bash
-    notebooklm-mcp-auth --file
-    ```
-2.  **Extracción de Cookies:**
-    *   Abre Chrome e ingresa a [notebooklm.google.com](https://notebooklm.google.com).
-    *   Presiona `F12` (DevTools) -> Pestaña **Network**.
-    *   Filtra por `batchexecute`.
-    *   Haz clic en cualquier acción (abrir un cuaderno) para disparar la petición.
-    *   Busca el encabezado `cookie:` de la petición `batchexecute`.
-    *   Copia el **valor completo** del cookie.
-3.  **Guardar Tokens:**
-    *   El comando terminal te pedirá la ruta. Crea un archivo `cookies.txt`, pega el contenido y guarda.
-    *   Ingresa el nombre del archivo en la terminal.
-
-## 3. Comandos de Sincronización
-Una vez autenticado, puedes pedirle a la IA:
-*   *"Lista mis cuadernos"*
-*   *"Actualiza el SSOT de v9.0"*
-*   *"Limpia los cuadernos antiguos y deja solo el principal"*
-
-## 4. Cuaderno Principal
-El SSOT reside en el cuaderno:
+## 3. Cuaderno Principal
 **ID:** `b5cc3496-eb3d-4d12-9d77-b2ab9eccd79a`
-**Nombre:** `ARISE: CEREBRO NEURAL (Códigos y Estructura)`
+**Nombre:** `ARISE: CEREBRO NEURAL (Diamond v10.2)`
 
 ---
-**Nota:** Mantener este cuaderno limpio es vital para la estabilidad de la IA. No permitas que se acumulen versiones obsoletas (v7/v8).
+**Nota:** El proyecto ha sido limpiado de versiones obsoletas (v7/v8/v9). No utilices archivos en carpetas como `knowledge_base` o `raw_data` ya que han sido eliminados por redundancia.
+

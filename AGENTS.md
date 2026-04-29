@@ -19,3 +19,5 @@ Cuando el usuario mencione la frase clave, el agente DEBE ejecutar:
 - **Engine:** Ouroborus AI (Gemini 2.5 Flash-Lite).
 - **Responder:** Diamond v10.1 (Robust Interaction v61).
 - **Aislamiento:** Multi-tenancy vía `company_id` con RLS estricto.
+- **Protocolo PDF v10.2:** Prohibido el uso de Puppeteer/Chromium. Generación interna vía `@react-pdf/renderer`.
+- **Credenciales:** Prioridad absoluta a `ARISE_MASTER_SERVICE_KEY` para evitar colisiones de entorno.
