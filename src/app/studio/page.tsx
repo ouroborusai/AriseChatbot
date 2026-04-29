@@ -166,8 +166,7 @@ export default function AIStudio() {
 
   const savePrompt = async () => {
     setSaving(true);
-    const activeCompanyId = localStorage.getItem('arise_active_company');
-    if (activeCompanyId === 'global') {
+    if (!activeCompany || activeCompany.id === 'global') {
       alert('Seleccione una empresa específica para modificar el ADN Neural.');
       setSaving(false);
       return;
@@ -175,8 +174,8 @@ export default function AIStudio() {
 
     const { error } = await supabase
       .from('ai_prompts')
-      .upsert({ 
-        company_id: activeCompanyId,
+      .upsert({
+        company_id: activeCompany!.id,
         name: 'ADN Neural Maestro',
         category: 'General',
         system_prompt: systemPrompt,

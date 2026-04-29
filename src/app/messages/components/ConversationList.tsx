@@ -44,7 +44,7 @@ export function ConversationList({
   );
 
   return (
-    <div className="flex flex-col w-1/3 border-r border-slate-100 bg-slate-50/50 backdrop-blur-xl relative overflow-hidden">
+    <div className="flex flex-col w-full h-full bg-slate-50/50 backdrop-blur-xl relative overflow-hidden">
       
       {/* HEADER SECTION */}
       <div className="p-4 lg:p-6 space-y-4 relative z-10">

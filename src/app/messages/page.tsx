@@ -226,7 +226,7 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="flex h-screen bg-white text-slate-900 font-sans selection:bg-[#22c55e]/20 overflow-hidden relative animate-in fade-in duration-300">
+    <div className="flex flex-1 h-full bg-white text-slate-900 font-sans selection:bg-[#22c55e]/20 relative animate-in fade-in duration-300">
       
       {/* PERFORMANCE: OPTIMIZED MESH BACKGROUND ACCENTS - ASLAS STYLE */}
       <div className="absolute inset-0 z-0 pointer-events-none">
@@ -243,21 +243,31 @@ export default function MessagesPage() {
         />
       </div>
 
-      <div className="flex flex-1 relative z-10 overflow-hidden">
-        <ConversationList
-          conversations={conversations}
-          selectedConv={selectedConv}
-          onSelect={selectConversation}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          loading={loading}
-          activeCompanyId={activeCompany?.id}
-        />
+      <div className="flex flex-1 relative z-10 overflow-hidden w-full">
+        {/* Lado Izquierdo: Lista de Conversaciones */}
+        <div className={`${selectedConv ? 'hidden md:flex' : 'flex'} w-full md:w-[350px] lg:w-[400px] h-full flex-col border-r border-slate-100`}>
+          <ConversationList
+            conversations={conversations}
+            selectedConv={selectedConv}
+            onSelect={selectConversation}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            loading={loading}
+            activeCompanyId={activeCompany?.id}
+          />
+        </div>
 
-        <div className="flex flex-col flex-1 bg-white/60 backdrop-blur-md relative overflow-hidden border-l border-slate-100 shadow-sm">
+        {/* Lado Derecho: Chat Content */}
+        <div className={`${!selectedConv ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-white/60 backdrop-blur-md relative overflow-hidden shadow-sm h-full`}>
+
+
           {selectedConv ? (
             <>
-              <ChatHeader selectedConv={selectedConv} onToggleHandoff={toggleHandoff} />
+              <ChatHeader 
+                selectedConv={selectedConv} 
+                onToggleHandoff={toggleHandoff} 
+                onBack={() => setSelectedConv(null)}
+              />
 
               <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 relative">
                 <div className="absolute inset-0 bg-[radial-gradient(rgba(46,58,140,0.02)_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />

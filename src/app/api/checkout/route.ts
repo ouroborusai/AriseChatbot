@@ -84,7 +84,7 @@ export async function POST(req: Request) {
         pending: `${req.headers.get('origin')}/dashboard?status=pending`,
       },
       auto_return: 'approved',
-      notification_url: `https://zosravrfpfechanatucx.supabase.co/functions/v1/mercadopago-webhook`, // Usaremos una Edge Function para el webhook
+      notification_url: process.env.MERCADOPAGO_NOTIFICATION_URL || `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/mercadopago-webhook`,
     }
     });
 

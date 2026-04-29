@@ -56,9 +56,10 @@ export default function MobileNav() {
       </div>
 
       {/* BOTTOM FLOATING NAV BAR */}
-      <nav className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-sm">
-        <div className="bg-white/90 backdrop-blur-3xl rounded-[32px] p-2.5 flex items-center justify-around shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-slate-200 relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-green-500/50 to-transparent" />
+      <nav className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[94%] max-w-sm animate-in slide-in-from-bottom-8 duration-700">
+        <div className="bg-white/95 backdrop-blur-3xl rounded-[32px] p-2 flex items-center justify-around shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white relative overflow-hidden group">
+          {/* Luminous Glow Track */}
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#22c55e]/40 to-transparent" />
           
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -66,18 +67,24 @@ export default function MobileNav() {
               <Link 
                 key={item.href} 
                 href={item.href}
-                className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl transition-all duration-500 relative ${
-                  isActive ? 'text-green-500' : 'text-slate-400 hover:text-slate-900'
+                className={`flex flex-col items-center justify-center gap-1 p-3.5 rounded-[24px] transition-all duration-500 relative flex-1 ${
+                  isActive ? 'text-[#22c55e]' : 'text-slate-400'
                 }`}
               >
-                <div className={`${isActive ? 'scale-110 -translate-y-1' : 'scale-100'} transition-all duration-500`}>
-                  {item.icon}
+                <div className={`${isActive ? 'scale-110 -translate-y-1' : 'scale-100 opacity-60'} transition-all duration-700 ease-out`}>
+                   {React.cloneElement(item.icon as React.ReactElement, { 
+                     strokeWidth: isActive ? 2.5 : 1.5,
+                     size: 22 
+                   } as any)}
                 </div>
-                <span className={`text-[7px] font-black uppercase tracking-[0.2em] transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-30'}`}>
+                <span className={`text-[7px] font-black uppercase tracking-[0.25em] transition-all duration-500 ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90 h-0 overflow-hidden'}`}>
                   {item.label}
                 </span>
                 {isActive && (
-                  <div className="absolute -bottom-1 w-1.5 h-1.5 bg-green-500 rounded-full shadow-[0_0_12px_#22c55e] animate-pulse" />
+                  <div className="absolute inset-0 bg-[#22c55e]/5 rounded-[24px] z-0 animate-in fade-in zoom-in-95 duration-500" />
+                )}
+                {isActive && (
+                  <div className="absolute -bottom-0.5 w-1 h-1 bg-[#22c55e] rounded-full shadow-[0_0_15px_#22c55e]" />
                 )}
               </Link>
             );

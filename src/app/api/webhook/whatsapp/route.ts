@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { generateGeminiResponse } from '@/lib/neural-engine/gemini';
 import { sendWhatsAppMessage } from '@/lib/neural-engine/whatsapp';
 import { ACTION_PREFIXES } from '@/lib/neural-engine/constants';
+import { getRelevantKnowledge } from '@/lib/neural-engine/knowledge';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 // Usar un nombre único para evitar colisiones con variables de entorno del sistema
@@ -48,6 +49,93 @@ async function getWhatsAppConfig(companyId: string) {
 
   return { token, phoneId };
 }
+
+/**
+ * GENERATOR: Crea y envía respuesta de IA integrada con el Centro de Conocimiento
+ */
+async function generateAndSendAIResponse(params: {
+  content: string,
+  companyId: string,
+  contactId: string,
+  conversationId: string,
+  sender: string,
+  phoneNumberId: string,
+  whatsappToken: string
+}) {
+  const { content, companyId, contactId, conversationId, sender, phoneNumberId, whatsappToken } = params;
+
+  // 1. Obtener Conocimiento Relevante (FAQs)
+  const knowledgeContext = await getRelevantKnowledge(content, companyId);
+
+  // 2. Obtener Prompt del Sistema de la Empresa
+  const { data: promptData } = await supabase
+    .from('ai_prompts')
+    .select('system_prompt')
+    .eq('company_id', companyId)
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+
+  const basePrompt = promptData?.system_prompt || "Eres Arise, el sistema operativo de negocios inteligente de LOOP. Ayuda al usuario con sus tareas de forma profesional y eficiente.";
+
+  // 3. Construir Prompt Final
+  const finalPrompt = `
+${basePrompt}
+
+${knowledgeContext}
+
+HISTORIAL RECIENTE (Simulado):
+Usuario: ${content}
+
+INSTRUCCIÓN: Responde de forma breve y profesional.
+- Si crees que el usuario necesita tomar una decisión operativa o elegir un camino (ej: ver inventario, generar reporte), incluye al final una lista de 2 a 4 opciones cortas precedidas por '[OPTIONS]:'. 
+- Si es una conversación fluida, informativa o de cierre, NO incluyas opciones.
+
+Ejemplo con opciones: 
+Entendido. Tengo los datos listos. ¿Qué deseas hacer?
+[OPTIONS]: Ver Reporte, Enviar Email, Cancelar
+
+Ejemplo sin opciones:
+Perfecto, los cambios han sido guardados. Quedo a tu disposición.
+`;
+
+  // 4. Generar Respuesta Gemini
+  const aiResponse = await generateGeminiResponse(finalPrompt, companyId);
+  
+  if (aiResponse.error || !aiResponse.text) {
+    console.error('[AI_GEN_ERROR]', aiResponse.error);
+    return;
+  }
+
+  // 5. Procesar Opciones Contextuales
+  let cleanText = aiResponse.text;
+  let dynamicOptions: string[] | undefined = undefined;
+
+  if (cleanText.includes('[OPTIONS]:')) {
+    const parts = cleanText.split('[OPTIONS]:');
+    cleanText = parts[0].trim();
+    dynamicOptions = parts[1].split(',').map(o => o.trim()).filter(o => o.length > 0);
+  }
+
+  // 6. Persistir Mensaje del Bot
+  const { data: botMsg } = await supabase.from('messages').insert({
+    conversation_id: conversationId,
+    sender_type: 'bot',
+    content: cleanText,
+    metadata: { has_options: !!dynamicOptions }
+  }).select('id').single();
+
+  // 7. Enviar vía WhatsApp (Protocolo v62 Contextual)
+  await sendWhatsAppMessage({
+    to: sender,
+    text: cleanText,
+    options: dynamicOptions,
+    phoneNumberId,
+    whatsappToken,
+    companyId
+  });
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const mode = searchParams.get('hub.mode');
@@ -262,6 +350,10 @@ export async function POST(req: Request) {
                   reportType: 'inventory',
                   companyId: companyId
               })
+          }).then(async (res) => {
+              // Éxito: limpiar timeout inmediatamente
+              clearTimeout(pdfTimeout);
+              console.log('[PDF_TRIGGER] Success:', res.status);
           }).catch(async (e) => {
               if (e.name === 'AbortError') {
                 console.error('[PDF_TRIGGER] Timeout after 30s');
@@ -273,7 +365,10 @@ export async function POST(req: Request) {
                   action: 'PDF_TRIGGER_FAILURE',
                   new_data: { error: e.message, phone: sender }
               });
-          }).finally(() => clearTimeout(pdfTimeout));
+          }).finally(() => {
+              // Cleanup de seguridad por si acaso
+              clearTimeout(pdfTimeout);
+          });
 
           await supabase.from('messages').insert({
             conversation_id: conv.id,
@@ -289,6 +384,21 @@ export async function POST(req: Request) {
           // La IA procesará esta acción en generateAndSendAIResponse
         }
       }
+    }
+
+    // --- 7. FALLBACK TO AI RESPONDER (If no action triggered) ---
+    const { token: whatsappToken, phoneId: waPhoneId } = await getWhatsAppConfig(companyId);
+
+    if (whatsappToken && waPhoneId) {
+       await generateAndSendAIResponse({
+          content,
+          companyId,
+          contactId,
+          conversationId: conv.id,
+          sender,
+          phoneNumberId: waPhoneId,
+          whatsappToken
+       });
     }
 
     return NextResponse.json({ status: 'success' });

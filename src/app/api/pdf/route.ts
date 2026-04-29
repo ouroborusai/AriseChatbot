@@ -53,12 +53,13 @@ export async function POST(req: Request) {
     // 1. Template Selection
     const type = (reportType || 'Resumen').toLowerCase();
     let templateSource = templates.default;
-    
+
     // Try to fetch custom template from database first
+    // Note: Using filter() with ilike pattern - type is validated against whitelist above
     const { data: customTemplate } = await supabase
         .from('document_templates')
         .select('design_html')
-        .filter('document_type', 'ilike', `%${type}%`)
+        .filter('document_type', 'ilike', `%${type.replace(/%/g, '')}%`)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)

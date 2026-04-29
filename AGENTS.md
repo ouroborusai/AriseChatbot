@@ -10,7 +10,7 @@ Cuando el usuario mencione la frase clave, el agente DEBE ejecutar:
 
 ## 🚨 REGLAS BLINDADAS (DIRECTRIZ DIAMOND)
 - **Cero Suposiciones:** No usar nombres de tablas sin validación SQL previa.
-- **Formato Interactivo Obligatorio (v61):** TODA interacción del bot DEBE finalizar con un menú interactivo. El formato estricto es `Cuerpo del mensaje --- Título del Menú | Opción 1 | Opción 2`. Queda prohibido enviar mensajes de texto plano sin botones de acción o navegación.
+- **Formato Interactivo Contextual (v62):** Las opciones y botones deben presentarse ÚNICAMENTE cuando exista una decisión operativa o un camino de acción claro. Para flujos informativos o de cierre, priorizar texto plano empático para mantener la fluidez conversacional. Queda permitido el uso de texto plano sin botones cuando el contexto así lo requiera.
 - **Protocolo de Mensajería v61:** Soporte nativo para Listas de WhatsApp y Botones Interactivos.
 - **Handshake Neural:** Toda acción `[[ ]]` debe enviarse al `/api/neural-processor`.
 - **Luminous Protocol:** Priorizar fondos blancos, mesh gradients y verde LOOP (#22c55e).

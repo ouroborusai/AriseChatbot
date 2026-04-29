@@ -8,7 +8,10 @@
       "Bash(npm run *)",
       "Bash(npx tsc *)",
       "Bash(xargs wc *)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(dir /b \"C:\\\\Users\\\\s_pk_\\\\Desktop\\\\OuroborusAI\\\\src\\\\app\")",
+      "Bash(findstr /v \"node_modules\")",
+      "Bash(dir \"C:\\\\Users\\\\s_pk_\\\\Desktop\\\\OuroborusAI\\\\src\\\\app\")"
     ]
   },
   "disabledMcpjsonServers": [

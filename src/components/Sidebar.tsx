@@ -20,7 +20,8 @@ import {
   ShieldCheck,
   Cpu,
   Fingerprint,
-  Home
+  Home,
+  BookOpen
 } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +38,7 @@ const menuItems = [
   { name: 'Analítica', icon: BarChart3, path: '/billing', premium: true },
   { name: 'Empresas', icon: Building2, path: '/companies', premium: true },
   { name: 'LOOP Studio', icon: Code2, path: '/studio', premium: true },
+  { name: 'Conocimiento', icon: BookOpen, path: '/studio/knowledge', premium: true },
   { name: 'Control de Acceso Neural', icon: ShieldCheck, path: '/users', premium: false },
 ];
 
