@@ -202,7 +202,7 @@ export async function POST(req: Request) {
     });
 
     // --- 5. INTERACTIVE FOLLOW-UP LIST (Diamond Diamond v10.1 Scale) ---
-    await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+    await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${whatsappToken}`,
