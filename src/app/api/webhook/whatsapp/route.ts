@@ -336,6 +336,7 @@ export async function POST(req: Request) {
     }
 
     // --- 6. ACTION ROUTER Diamond v10.1 (Intelligent Execution) ---
+    const isPdfButton = buttonId?.startsWith('pdf_');
     const isTechnicalAction =
       buttonId?.startsWith(ACTION_PREFIXES.TECHNICAL) ||
       buttonId?.startsWith(ACTION_PREFIXES.LIST) ||
@@ -355,14 +356,14 @@ export async function POST(req: Request) {
 
     const mappedAction = actionMap[buttonId?.toLowerCase() || ''] || actionMap[content?.toLowerCase().substring(0, 20) || ''];
 
-    if (isTechnicalAction || content.toLowerCase().includes('informe de inventario') || mappedAction) {
+    if (isPdfButton || isTechnicalAction || content.toLowerCase().includes('informe de inventario') || mappedAction) {
 
       const { token: whatsappToken, phoneId: waPhoneId } = await getWhatsAppConfig(companyId);
 
       if (whatsappToken && waPhoneId) {
-        // Lógica para Reporte de Inventario (Existente)
         console.log(`[WH_ROUTER] Checking for PDF trigger. buttonId: ${buttonId}, content: ${content}`);
         if (
+          isPdfButton ||
           buttonId === 'gen_report_now' || 
           buttonId === 'lst_inventory_report' || 
           content.toLowerCase().includes('reporte pdf') || 
@@ -370,7 +371,9 @@ export async function POST(req: Request) {
           content.toLowerCase().includes('crea un informe') ||
           content.toLowerCase().includes('informe de inventario')
         ) {
-            console.log(`[WH_ROUTER] Triggering PDF for company ${companyId}`);
+            const requestedReportType = isPdfButton ? buttonId : 'inventory';
+            console.log(`[WH_ROUTER] Triggering PDF for company ${companyId} - Type: ${requestedReportType}`);
+            
           // Timeout para PDF trigger
           const pdfController = new AbortController();
           const pdfTimeout = setTimeout(() => pdfController.abort(), 30000);
@@ -383,7 +386,7 @@ export async function POST(req: Request) {
                   targetPhone: sender,
                   whatsappToken,
                   phoneNumberId: waPhoneId,
-                  reportType: 'inventory',
+                  reportType: requestedReportType,
                   companyId: companyId
               })
           }).then(async (res) => {
