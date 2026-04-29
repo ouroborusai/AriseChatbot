@@ -1,19 +1,9 @@
-
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-import { ActiveCompanyProvider } from "@/contexts/ActiveCompanyContext";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { ToastProvider } from "@/components/ui/Toast";
-import LayoutWrapper from "@/components/LayoutWrapper";
-import ProgressBar from "@/components/ProgressBar";
-import { Suspense } from "react";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'LOOP | Inteligencia de Negocios en tu WhatsApp',
-  description: 'Sincroniza tus documentos con el cerebro de LOOP y accede a toda tu gestión empresarial desde WhatsApp.',
+  title: "Arise Business OS",
+  description: "Neural Operating System for Industrial Growth",
   manifest: "/manifest.json",
   icons: {
     icon: '/brand/official.png',
@@ -21,7 +11,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "OUROBOT OS",
+    title: "ARISE OS",
     statusBarStyle: "black-translucent",
   },
 };
@@ -34,6 +24,9 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+import { ActiveCompanyProvider } from "@/contexts/ActiveCompanyContext";
+import { MobileNavProvider } from "@/contexts/MobileNavContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -41,19 +34,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${inter.className} min-h-screen bg-white antialiased`}>
-        <ToastProvider>
-          <AuthProvider>
-            <ActiveCompanyProvider>
-              <Suspense fallback={null}>
-                <ProgressBar />
-              </Suspense>
-              <LayoutWrapper>
-                {children}
-              </LayoutWrapper>
-            </ActiveCompanyProvider>
-          </AuthProvider>
-        </ToastProvider>
+      <body className="antialiased selection:bg-[#22c55e]/30 selection:text-[#0f172a]">
+        <ActiveCompanyProvider>
+          <MobileNavProvider>
+            {children}
+          </MobileNavProvider>
+        </ActiveCompanyProvider>
       </body>
     </html>
   );

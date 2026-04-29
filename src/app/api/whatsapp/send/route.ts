@@ -44,7 +44,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const { access_token, phone_number_id } = company.settings.whatsapp;
+    const { access_token, phone_number_id, catalog_id } = company.settings.whatsapp;
+    const apiVersion = process.env.META_API_VERSION || 'v23.0';
 
     // 2. Buscar conversación activa
     const { data: conv } = await supabase
@@ -67,11 +68,11 @@ export async function POST(req: Request) {
     }
 
     // 5. Construir mensaje con parser inteligente
-    const waPayload = buildWhatsAppMessage(contact.phone, content);
+    const waPayload = buildWhatsAppMessage(contact.phone, content, catalog_id);
 
     // 6. Enviar a WhatsApp API
     const response = await fetch(
-      `https://graph.facebook.com/v19.0/${phone_number_id}/messages`,
+      `https://graph.facebook.com/${apiVersion}/${phone_number_id}/messages`,
       {
         method: 'POST',
         headers: {
@@ -89,17 +90,25 @@ export async function POST(req: Request) {
     }
 
     // 7. Registrar mensaje del agente
+    let interactiveCount = 0;
+    if (waPayload.type === 'interactive') {
+      if (waPayload.interactive.type === 'button') {
+        interactiveCount = waPayload.interactive.action.buttons.length;
+      } else if (waPayload.interactive.type === 'list') {
+        interactiveCount = waPayload.interactive.action.sections.reduce((acc, s) => acc + s.rows.length, 0);
+      } else {
+        // Para catálogos o productos, el conteo es 1 o basado en los items
+        interactiveCount = 1;
+      }
+    }
+
     await supabase.from('messages').insert({
       conversation_id: conv.id,
       sender_type: 'bot',
       content: content,
       metadata: {
         message_type: waPayload.type,
-        interactive_count: waPayload.type === 'interactive'
-          ? waPayload.interactive.type === 'button'
-            ? waPayload.interactive.action.buttons.length
-            : waPayload.interactive.action.sections.reduce((acc, s) => acc + s.rows.length, 0)
-          : 0,
+        interactive_count: interactiveCount,
       },
     });
 

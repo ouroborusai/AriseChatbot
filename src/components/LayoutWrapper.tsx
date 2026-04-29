@@ -29,6 +29,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     );
   }
 
+
+  // MASTER FULL-SCREEN CONTAINER - Fluid UI / Anti-Overflow
   return (
     <>
       {/* SIDEBAR (Visible only on LG+) */}
@@ -36,14 +38,15 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         <Sidebar />
       </div>
       
-      {/* MOBILE NAVIGATION */}
-      <MobileNav />
+      {/* MOBILE NAVIGATION - Hidden in specific chat views to give space to input */}
+      {!isMessagesPage && <MobileNav />}
+      {isMessagesPage && !pathname.includes('/messages/') && <MobileNav />}
 
       {/* NEURAL NOTIFIER (Real-time sounds) */}
       <NeuralNotifier />
 
       {/* MASTER FULL-SCREEN CONTAINER - Fluid UI / Anti-Overflow */}
-      <main className={`lg:ml-64 min-h-screen flex flex-col pt-[72px] lg:pt-0 ${isMessagesPage ? 'pb-24 lg:pb-0 px-0' : 'pb-36 lg:pb-0 px-4'} md:px-8 max-w-full overflow-x-hidden transition-all duration-500`}>
+      <main className={`lg:ml-64 min-h-screen flex flex-col pt-[72px] lg:pt-0 ${isMessagesPage ? 'pb-0 lg:pb-0 px-0' : 'pb-32 lg:pb-0 px-4'} md:px-8 max-w-full overflow-x-hidden transition-all duration-500`}>
         <div className={`flex-1 w-full ${isMessagesPage ? 'max-w-full' : 'max-w-7xl'} mx-auto h-full flex flex-col`}>
           {children}
         </div>

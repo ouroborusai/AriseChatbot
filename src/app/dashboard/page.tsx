@@ -324,18 +324,18 @@ function MetricCard({ title, value, drift, icon: Icon, loading, negative, highli
   if (loading) return <div className="bg-slate-50 rounded-2xl p-4 min-h-[100px] animate-pulse border-none" />;
 
   return (
-    <div className={`p-4 border relative overflow-hidden group rounded-2xl transition-all duration-300 ${highlight ? 'bg-slate-900 text-white border-transparent shadow-lg shadow-slate-900/10' : 'bg-white border-slate-100 shadow-sm'}`}>
+    <div className={`p-3 sm:p-4 border relative overflow-hidden group rounded-[20px] sm:rounded-2xl transition-all duration-300 ${highlight ? 'bg-slate-900 text-white border-transparent shadow-lg shadow-slate-900/10' : 'bg-white border-slate-100 shadow-sm'}`}>
       
-      <div className="flex justify-between items-start mb-4 relative z-10">
-        <p className={`text-[6.5px] font-black uppercase tracking-[0.4em] ${highlight ? 'text-white/60' : 'text-slate-400'}`}>{title}</p>
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${highlight ? 'bg-white/10 text-white' : 'bg-slate-50 text-slate-300 group-hover:text-[#22c55e] group-hover:bg-[#22c55e]/5'}`}>
-          <Icon size={14} />
+      <div className="flex justify-between items-start mb-3 sm:mb-4 relative z-10">
+        <p className={`text-[6px] sm:text-[6.5px] font-black uppercase tracking-[0.4em] ${highlight ? 'text-white/60' : 'text-slate-400'}`}>{title}</p>
+        <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center transition-all ${highlight ? 'bg-white/10 text-white' : 'bg-slate-50 text-slate-300 group-hover:text-[#22c55e] group-hover:bg-[#22c55e]/5'}`}>
+          <Icon size={12} className="sm:size-14" />
         </div>
       </div>
 
       <div className="relative z-10">
-        <h2 className={`text-xl font-black mb-1.5 tracking-tighter leading-none ${highlight ? 'text-white' : 'text-slate-900'}`}>{value}</h2>
-        <div className={`inline-flex px-1.5 py-0.5 rounded-md text-[6px] font-black uppercase tracking-widest ${highlight ? 'bg-white/10 text-white' : (negative ? 'bg-rose-50 text-rose-500 border border-rose-100' : 'bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20')}`}>
+        <h2 className={`text-lg sm:text-xl font-black mb-1.5 tracking-tighter leading-none ${highlight ? 'text-white' : 'text-slate-900'}`}>{value}</h2>
+        <div className={`inline-flex px-1.5 py-0.5 rounded-md text-[5.5px] sm:text-[6px] font-black uppercase tracking-widest ${highlight ? 'bg-white/10 text-white' : (negative ? 'bg-rose-50 text-rose-500 border border-rose-100' : 'bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20')}`}>
           {drift}
         </div>
       </div>

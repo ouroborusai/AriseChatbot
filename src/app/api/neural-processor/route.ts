@@ -193,6 +193,12 @@ export async function POST(req: Request) {
             actionResults = await handleCreditAction(supabase, actionData, companyId, messageId);
           } else if (actionType === 'payment_link_generate') {
             actionResults = await handlePaymentAction(supabase, actionData, companyId, messageId);
+          } else if (actionType === 'whatsapp_flow_init') {
+            // [v10.2] Inicialización de WhatsApp Flows dinámicos
+            actionResults = [{ action: 'whatsapp_flow_init', status: 'pending_execution', result: actionData.params }];
+          } else if (actionType === 'commerce_catalog_send') {
+            // [v10.2] Envío de productos del catálogo de Meta
+            actionResults = [{ action: 'commerce_catalog_send', status: 'pending_execution', result: actionData.params }];
           } else {
             actionResults = [{ action: 'unknown', status: 'failed', error: `Unsupported action type: ${actionType}` }];
           }

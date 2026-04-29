@@ -1,4 +1,4 @@
-# 🏛️ CONSTITUCIÓN OPERATIVA ARISE v10.1 (Diamond)
+# 🏛️ CONSTITUCIÓN OPERATIVA ARISE v10.2 (Diamond)
 **Trigger de Sesión:** "Activa los poderes"
 **Estética Oficial:** Luminous Pure (LOOP Green #22c55e)
 

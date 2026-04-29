@@ -1,11 +1,14 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { MessageSquare, Sparkles, Cpu, Activity, Search, ShieldCheck } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { ConversationList, ChatHeader, MessageBubble, MessageInput } from './components';
 import Image from 'next/image';
+import { useMobileNav } from '@/contexts/MobileNavContext';
 
 interface Contact {
   full_name: string | null;
@@ -31,8 +34,21 @@ interface Message {
 
 export default function MessagesPage() {
   const { activeCompany } = useActiveCompany();
+  const { setIsVisible } = useMobileNav();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
+
+  useEffect(() => {
+    // Hide mobile nav when a conversation is selected on mobile
+    if (selectedConv) {
+      setIsVisible(false);
+    } else {
+      setIsVisible(true);
+    }
+    
+    // Cleanup to ensure nav is visible when leaving the page
+    return () => setIsVisible(true);
+  }, [selectedConv, setIsVisible]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);

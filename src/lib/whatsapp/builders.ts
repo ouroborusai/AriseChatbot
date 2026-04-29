@@ -9,6 +9,9 @@ import type {
   ListInteractive,
   DocumentMessage,
   InteractiveButton,
+  TemplateMessage,
+  CatalogMessage,
+  ProductMessage,
 } from './types';
 import { WHATSAPP_LIMITS } from './constants';
 
@@ -127,6 +130,77 @@ export function buildListMessage(
 }
 
 /**
+ * Construye un mensaje de catálogo interactivo
+ */
+export function buildCatalogMessage(
+  phone: string,
+  bodyText: string,
+  footer?: string,
+  thumbnailRetailerId?: string
+): CatalogMessage {
+  return {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: phone,
+    type: 'interactive',
+    interactive: {
+      type: 'catalog_message',
+      body: {
+        text: bodyText.substring(0, WHATSAPP_LIMITS.MAX_TEXT_BODY_LENGTH),
+      },
+      ...(footer && {
+        footer: {
+          text: footer.substring(0, WHATSAPP_LIMITS.MAX_FOOTER_LENGTH),
+        },
+      }),
+      action: {
+        name: 'catalog_message',
+        ...(thumbnailRetailerId && {
+          parameters: {
+            thumbnail_product_retailer_id: thumbnailRetailerId,
+          },
+        }),
+      },
+    },
+  };
+}
+
+/**
+ * Construye un mensaje de producto individual
+ */
+export function buildProductMessage(
+  phone: string,
+  catalogId: string,
+  productRetailerId: string,
+  bodyText?: string,
+  footer?: string
+): ProductMessage {
+  return {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: phone,
+    type: 'interactive',
+    interactive: {
+      type: 'product',
+      ...(bodyText && {
+        body: {
+          text: bodyText.substring(0, WHATSAPP_LIMITS.MAX_TEXT_BODY_LENGTH),
+        },
+      }),
+      ...(footer && {
+        footer: {
+          text: footer.substring(0, WHATSAPP_LIMITS.MAX_FOOTER_LENGTH),
+        },
+      }),
+      action: {
+        catalog_id: catalogId,
+        product_retailer_id: productRetailerId,
+      },
+    },
+  };
+}
+
+/**
  * Construye un mensaje de documento (PDF, etc) para WhatsApp
  */
 export function buildDocumentMessage(
@@ -144,6 +218,30 @@ export function buildDocumentMessage(
       link,
       filename,
       caption,
+    },
+  };
+}
+
+/**
+ * Construye un mensaje de plantilla (HSM) para iniciar conversaciones
+ */
+export function buildTemplateMessage(
+  phone: string,
+  templateName: string,
+  languageCode: string = 'es',
+  components?: TemplateMessage['template']['components']
+): TemplateMessage {
+  return {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: phone,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: {
+        code: languageCode,
+      },
+      ...(components && { components }),
     },
   };
 }

@@ -15,4 +15,7 @@ export {
   buildButtonMessage,
   buildListMessage,
   buildDocumentMessage,
+  buildCatalogMessage,
+  buildProductMessage,
+  buildTemplateMessage,
 } from './builders';

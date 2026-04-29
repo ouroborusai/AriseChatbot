@@ -89,14 +89,19 @@ Usuario: ${content}
 
 INSTRUCCIÓN: Responde de forma breve y profesional.
 - Si crees que el usuario necesita tomar una decisión operativa o elegir un camino (ej: ver inventario, generar reporte), incluye al final una lista de 2 a 4 opciones cortas precedidas por '[OPTIONS]:'. 
-- Si es una conversación fluida, informativa o de cierre, NO incluyas opciones.
+- Si es una notificación crítica o confirmación importante y deseas usar una plantilla pre-aprobada de Meta (para mayor confiabilidad), incluye al final '[TEMPLATE]: nombre_plantilla, var1, var2'.
+
+PLANTILLAS DISPONIBLES:
+- std_confirmation_v1 (Var1: Nombre): Para confirmar acciones exitosas.
+- std_alert_v1 (Var1: Item/Detalle): Para alertas de inventario o stock bajo.
+- std_marketing_v1 (Var1: Nombre): Para invitar al catálogo.
+
+Ejemplo con plantilla: 
+He registrado la entrada de stock correctamente. [TEMPLATE]: std_confirmation_v1, Carlos
 
 Ejemplo con opciones: 
 Entendido. Tengo los datos listos. ¿Qué deseas hacer?
 [OPTIONS]: Ver Reporte, Enviar Email, Cancelar
-
-Ejemplo sin opciones:
-Perfecto, los cambios han sido guardados. Quedo a tu disposición.
 `;
 
   // 4. Generar Respuesta Gemini
@@ -107,9 +112,10 @@ Perfecto, los cambios han sido guardados. Quedo a tu disposición.
     return;
   }
 
-  // 5. Procesar Opciones Contextuales
+  // 5. Procesar Opciones Contextuales y Plantillas
   let cleanText = aiResponse.text;
   let dynamicOptions: string[] | undefined = undefined;
+  let templateConfig: any = undefined;
 
   if (cleanText.includes('[OPTIONS]:')) {
     const parts = cleanText.split('[OPTIONS]:');
@@ -117,12 +123,29 @@ Perfecto, los cambios han sido guardados. Quedo a tu disposición.
     dynamicOptions = parts[1].split(',').map(o => o.trim()).filter(o => o.length > 0);
   }
 
+  if (cleanText.includes('[TEMPLATE]:')) {
+    const parts = cleanText.split('[TEMPLATE]:');
+    cleanText = parts[0].trim();
+    const templateData = parts[1].split(',').map(t => t.trim());
+    const templateName = templateData[0];
+    const variables = templateData.slice(1);
+    
+    templateConfig = {
+      name: templateName,
+      language: 'es',
+      variables: variables
+    };
+  }
+
   // 6. Persistir Mensaje del Bot
   const { data: botMsg } = await supabase.from('messages').insert({
     conversation_id: conversationId,
     sender_type: 'bot',
-    content: cleanText,
-    metadata: { has_options: !!dynamicOptions }
+    content: cleanText || (templateConfig ? `[Plantilla: ${templateConfig.name}]` : ''),
+    metadata: { 
+      has_options: !!dynamicOptions,
+      template_name: templateConfig?.name
+    }
   }).select('id').single();
 
   // 7. Enviar vía WhatsApp (Protocolo v62 Contextual)
@@ -130,6 +153,7 @@ Perfecto, los cambios han sido guardados. Quedo a tu disposición.
     to: sender,
     text: cleanText,
     options: dynamicOptions,
+    template: templateConfig,
     phoneNumberId,
     whatsappToken,
     companyId
@@ -319,6 +343,7 @@ export async function POST(req: Request) {
     const actionMap: Record<string, string> = {
       [`${ACTION_PREFIXES.TECHNICAL}report_now`]: 'inventory_report',
       [`${ACTION_PREFIXES.LIST}inventario`]: 'inventory',
+      [`${ACTION_PREFIXES.LIST}inventory_report`]: 'inventory_report',
       [`${ACTION_PREFIXES.LIST}finanzas`]: 'finance',
       [`${ACTION_PREFIXES.LIST}rrhh`]: 'hr',
       [`${ACTION_PREFIXES.BUTTON}inventario`]: 'inventory',
@@ -334,7 +359,7 @@ export async function POST(req: Request) {
 
       if (whatsappToken && waPhoneId) {
         // Lógica para Reporte de Inventario (Existente)
-        if (buttonId === 'gen_report_now' || content.toLowerCase().includes('informe de inventario')) {
+        if (buttonId === 'gen_report_now' || buttonId === 'lst_inventory_report' || content.toLowerCase().includes('informe de inventario')) {
           // Timeout para PDF trigger
           const pdfController = new AbortController();
           const pdfTimeout = setTimeout(() => pdfController.abort(), 30000);

@@ -26,42 +26,55 @@ export function enrichText(text: string): string {
  */
 export async function sendWhatsAppMessage(params: {
   to: string;
-  text: string;
+  text?: string;
   options?: string[];
+  template?: {
+    name: string;
+    language: string;
+    variables: string[];
+  };
   phoneNumberId: string;
   whatsappToken: string;
   companyId: string;
 }) {
   const supabase = createSupabaseClient();
-  const { to, text, options, phoneNumberId, whatsappToken, companyId } = params;
+  const { to, text, options, template, phoneNumberId, whatsappToken, companyId } = params;
 
-  const textPart = text.substring(0, WHATSAPP_LIMITS.MAX_BODY_LENGTH);
   let payload: any = {
     messaging_product: 'whatsapp',
     to,
-    type: 'text',
-    text: { body: textPart }
   };
 
-  if (options && options.length > 0) {
-    // 1. Preparar las filas de la lista (respetando límites de WhatsApp)
-    const safeOptions = options.slice(0, WHATSAPP_LIMITS.MAX_OPTIONS);
-    const rows = safeOptions.map((o: string) => {
-      const enriched = enrichText(o);
-      const title = enriched.substring(0, WHATSAPP_LIMITS.MAX_TITLE_LENGTH);
-      return {
-        id: `lst_${title.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)}`,
-        title,
-        description: o.length > WHATSAPP_LIMITS.MAX_TITLE_LENGTH ? o.substring(0, WHATSAPP_LIMITS.MAX_DESCRIPTION_LENGTH) : undefined
-      };
-    });
+  if (template) {
+    // Modo Plantilla (Diamond v10.2 Standard)
+    payload.type = 'template';
+    payload.template = {
+      name: template.name,
+      language: { code: template.language },
+      components: [
+        {
+          type: 'body',
+          parameters: template.variables.map(v => ({ type: 'text', text: v }))
+        }
+      ]
+    };
+  } else if (text) {
+    const textPart = text.substring(0, WHATSAPP_LIMITS.MAX_BODY_LENGTH);
+    if (options && options.length > 0) {
+      // Modo Lista Interactiva
+      const safeOptions = options.slice(0, WHATSAPP_LIMITS.MAX_OPTIONS);
+      const rows = safeOptions.map((o: string) => {
+        const enriched = enrichText(o);
+        const title = enriched.substring(0, WHATSAPP_LIMITS.MAX_TITLE_LENGTH);
+        return {
+          id: `lst_${title.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)}`,
+          title,
+          description: o.length > WHATSAPP_LIMITS.MAX_TITLE_LENGTH ? o.substring(0, WHATSAPP_LIMITS.MAX_DESCRIPTION_LENGTH) : undefined
+        };
+      });
 
-    // 2. Construir payload interactivo (Modo Lista Unificado)
-    payload = {
-      messaging_product: 'whatsapp', 
-      to, 
-      type: 'interactive',
-      interactive: {
+      payload.type = 'interactive';
+      payload.interactive = {
         type: 'list',
         header: { type: 'text', text: 'Loop Business OS' },
         body: { text: textPart },
@@ -70,8 +83,12 @@ export async function sendWhatsAppMessage(params: {
           button: '📋 Ver Opciones',
           sections: [{ title: 'Acciones Sugeridas', rows }]
         }
-      }
-    };
+      };
+    } else {
+      // Modo Texto Simple
+      payload.type = 'text';
+      payload.text = { body: textPart };
+    }
   }
 
   const res = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
@@ -86,18 +103,6 @@ export async function sendWhatsAppMessage(params: {
   if (!res.ok) {
     const errorData = await res.json();
     console.error('[WHATSAPP_LIB_ERROR]', errorData);
-
-    // Fallback: Texto plano en caso de error
-    await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${whatsappToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to,
-        type: 'text',
-        text: { body: `${textPart}\n\n(Opciones: ${options?.join(', ') || 'No disponibles'})` }
-      })
-    }).catch(e => console.error('[FALLBACK_LIB_ERROR]', e));
 
     await supabase.from('audit_logs').insert({
       company_id: companyId,

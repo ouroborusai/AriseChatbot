@@ -15,22 +15,26 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import CompanySelector from './CompanySelector';
 import Image from 'next/image';
+import { useMobileNav } from '@/contexts/MobileNavContext';
 
 export default function MobileNav() {
   const pathname = usePathname();
+  const { isVisible } = useMobileNav();
 
   const navItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Inicio', href: '/dashboard' },
     { icon: <MessageSquare size={20} />, label: 'Chats', href: '/messages' },
     { icon: <Users size={20} />, label: 'CRM', href: '/crm' },
     { icon: <Package size={20} />, label: 'Stock', href: '/inventory' },
-    { icon: <Code2 size={20} />, label: 'Studio', href: '/studio' },
+    { icon: <Zap size={20} />, label: 'Meta', href: '/meta' },
   ];
 
   return (
     <>
       {/* MOBILE HEADER (Neural Context) */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-2xl px-6 py-4 flex justify-between items-center border-b border-slate-100 shadow-sm">
+      <div className={`lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-2xl px-6 py-4 flex justify-between items-center border-b border-slate-100 shadow-sm transition-all duration-500 ease-in-out ${
+        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
+      }`}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 relative rotate-3 group-hover:rotate-0 transition-transform">
              <div className="absolute inset-0 bg-green-100 blur-lg rounded-full" />
@@ -56,7 +60,11 @@ export default function MobileNav() {
       </div>
 
       {/* BOTTOM FLOATING NAV BAR */}
-      <nav className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[94%] max-w-sm animate-in slide-in-from-bottom-8 duration-700">
+      <nav 
+        className={`lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[94%] max-w-sm transition-all duration-500 ease-in-out ${
+          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
+        }`}
+      >
         <div className="bg-white/95 backdrop-blur-3xl rounded-[32px] p-2 flex items-center justify-around shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white relative overflow-hidden group">
           {/* Luminous Glow Track */}
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#22c55e]/40 to-transparent" />

@@ -11,6 +11,8 @@ import {
   buildTextMessage,
   buildButtonMessage,
   buildListMessage,
+  buildCatalogMessage,
+  buildProductMessage,
   WHATSAPP_LIMITS,
   type WhatsAppMessage,
   type WhatsAppApiResponse,
@@ -99,19 +101,47 @@ function extractFooter(text: string): string | undefined {
 /**
  * Construye el mensaje de WhatsApp apropiado según la cantidad de opciones
  *
- * Reglas Diamond Diamond v10.1:
+ * Reglas Diamond v10.1:
+ * - Detección de [[CATALOG]] -> Catalog Message
+ * - Detección de [[PRODUCT:ID]] -> Product Message
  * - 1-3 opciones: Botones interactivos (mejor UX)
  * - 4+ opciones: Lista interactiva (más capacidad)
  */
 export function buildWhatsAppMessage(
   phone: string,
-  content: string
+  content: string,
+  catalogId?: string
 ): WhatsAppMessage {
+  // 1. Detectar comandos de catálogo/producto globales en el texto
+  if (content.includes('[[CATALOG]]')) {
+    const cleanBody = content.replace(/\[\[CATALOG\]\]/g, '').trim();
+    return buildCatalogMessage(phone, cleanBody || 'Explora nuestro catálogo oficial:');
+  }
+
+  const productMatch = content.match(/\[\[PRODUCT:([^\[\]]+)\]\]/);
+  if (productMatch && catalogId) {
+    const productId = productMatch[1];
+    const cleanBody = content.replace(/\[\[PRODUCT:[^\[\]]+\]\]/g, '').trim();
+    return buildProductMessage(phone, catalogId, productId, cleanBody);
+  }
+
   const parsed = parseInteractiveContent(content);
 
   // Si no hay opciones interactivas, enviar texto plano
   if (!parsed.hasInteractive || parsed.options.length === 0) {
     return buildTextMessage(phone, content);
+  }
+
+  // 2. Detectar comandos en las opciones
+  const catalogOption = parsed.options.find(opt => opt.actionPayload === 'CATALOG');
+  if (catalogOption) {
+    return buildCatalogMessage(phone, parsed.bodyText, parsed.footer);
+  }
+
+  const productOption = parsed.options.find(opt => opt.actionPayload?.startsWith('PRODUCT:'));
+  if (productOption && catalogId) {
+    const productId = productOption.actionPayload!.split(':')[1];
+    return buildProductMessage(phone, catalogId, productId, parsed.bodyText, parsed.footer);
   }
 
   // 1-3 opciones: Botones
@@ -137,13 +167,13 @@ export function buildWhatsAppMessage(
         rows: parsed.options.map(opt => ({
           id: opt.id,
           title: opt.title,
-          description: opt.actionPayload ? 'Acción disponible' : undefined,
+          description: opt.actionPayload ? `Acción: ${opt.actionPayload}` : undefined,
         })),
       },
     ],
     'Ver Opciones',
     undefined,
-    parsed.footer || 'Arise Diamond Diamond v10.1'
+    parsed.footer || 'Arise Diamond v10.1'
   );
 }
 

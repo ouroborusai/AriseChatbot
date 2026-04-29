@@ -90,11 +90,13 @@ export type NeuralActionType =
   | 'task_create'
   | 'reminder_create'
   | 'pdf_generate'
+  | 'whatsapp_flow_init'
+  | 'commerce_catalog_send'
   | 'unknown';
 
 export interface NeuralAction {
   action: NeuralActionType;
-  status: 'success' | 'failed' | 'item_not_found' | 'triggered';
+  status: 'success' | 'failed' | 'item_not_found' | 'triggered' | 'pending_execution';
   error?: string;
   sku?: string;
   name?: string;

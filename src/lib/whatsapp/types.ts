@@ -121,7 +121,75 @@ export interface ListInteractive {
 // UNION TYPE PARA TODOS LOS MENSAJES
 // ════════════════════════════════════════════════════════════════════════════
 
-export type WhatsAppMessage = TextMessage | ButtonInteractive | ListInteractive | DocumentMessage;
+export interface TemplateMessage {
+  messaging_product: 'whatsapp';
+  recipient_type: 'individual';
+  to: string;
+  type: 'template';
+  template: {
+    name: string;
+    language: {
+      code: string;
+    };
+    components?: Array<{
+      type: 'header' | 'body' | 'button';
+      parameters: Array<{
+        type: 'text' | 'image' | 'document' | 'video' | 'payload';
+        text?: string;
+        image?: { link: string };
+        document?: { link: string; filename?: string };
+        video?: { link: string };
+        payload?: string;
+      }>;
+      index?: number;
+      sub_type?: 'quick_reply' | 'url';
+    }>;
+  };
+}
+
+export interface CatalogMessage {
+  messaging_product: 'whatsapp';
+  recipient_type: 'individual';
+  to: string;
+  type: 'interactive';
+  interactive: {
+    type: 'catalog_message';
+    body: {
+      text: string;
+    };
+    footer?: {
+      text: string;
+    };
+    action: {
+      name: 'catalog_message';
+      parameters?: {
+        thumbnail_product_retailer_id?: string;
+      };
+    };
+  };
+}
+
+export interface ProductMessage {
+  messaging_product: 'whatsapp';
+  recipient_type: 'individual';
+  to: string;
+  type: 'interactive';
+  interactive: {
+    type: 'product';
+    body?: {
+      text: string;
+    };
+    footer?: {
+      text: string;
+    };
+    action: {
+      catalog_id: string;
+      product_retailer_id: string;
+    };
+  };
+}
+
+export type WhatsAppMessage = TextMessage | ButtonInteractive | ListInteractive | DocumentMessage | TemplateMessage | CatalogMessage | ProductMessage;
 
 // ════════════════════════════════════════════════════════════════════════════
 // PARSED CONTENT (para uso interno)
