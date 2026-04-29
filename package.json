@@ -15,16 +15,17 @@
     "cleanup": "npx tsx scripts/auto-cleanup.ts"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.5.1",
     "@serwist/next": "^9.5.7",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.3",
     "@types/three": "^0.184.0",
+    "@vercel/functions": "^3.4.4",
     "dotenv": "^17.4.2",
     "handlebars": "^4.7.9",
     "lucide-react": "^1.8.0",
     "mercadopago": "^2.12.0",
     "next": "16.2.4",
-    "puppeteer": "^24.41.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",

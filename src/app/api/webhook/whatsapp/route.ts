@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { generateGeminiResponse } from '@/lib/neural-engine/gemini';
 import { sendWhatsAppMessage } from '@/lib/neural-engine/whatsapp';
 import { ACTION_PREFIXES } from '@/lib/neural-engine/constants';
@@ -371,48 +372,53 @@ export async function POST(req: Request) {
           content.toLowerCase().includes('crea un informe') ||
           content.toLowerCase().includes('informe de inventario')
         ) {
-            const requestedReportType = isPdfButton ? buttonId : 'inventory';
-            console.log(`[WH_ROUTER] Triggering PDF for company ${companyId} - Type: ${requestedReportType}`);
+          const requestedReportType = isPdfButton ? buttonId : 'inventory';
+          console.log(`[WH_ROUTER] Triggering PDF for company ${companyId} - Type: ${requestedReportType}`);
             
-          // Timeout para PDF trigger
-          const pdfController = new AbortController();
-          const pdfTimeout = setTimeout(() => pdfController.abort(), 30000);
-
           const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
                 (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 
                 (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'));
 
-          fetch(`${baseUrl}/api/pdf`, {
-              method: 'POST',
-              signal: pdfController.signal,
-              headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.INTERNAL_API_KEY || '' },
-              body: JSON.stringify({
-                  targetPhone: sender,
-                  whatsappToken,
-                  phoneNumberId: waPhoneId,
-                  reportType: requestedReportType,
-                  companyId: companyId
-              })
-          }).then(async (res) => {
-              // Éxito: limpiar timeout inmediatamente
+          // Definimos la promesa del pipeline de PDF
+          const pdfPromise = (async () => {
+            try {
+              const pdfController = new AbortController();
+              const pdfTimeout = setTimeout(() => pdfController.abort(), 45000); // 45s de margen
+
+              const res = await fetch(`${baseUrl}/api/pdf`, {
+                  method: 'POST',
+                  signal: pdfController.signal,
+                  headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.INTERNAL_API_KEY || '' },
+                  body: JSON.stringify({
+                      targetPhone: sender,
+                      whatsappToken,
+                      phoneNumberId: waPhoneId,
+                      reportType: requestedReportType,
+                      companyId: companyId
+                  })
+              });
+              
               clearTimeout(pdfTimeout);
-              console.log('[PDF_TRIGGER] Success:', res.status);
-          }).catch(async (e) => {
-              if (e.name === 'AbortError') {
-                console.error('[PDF_TRIGGER] Timeout after 30s');
-              } else {
-                console.error('[PDF_TRIGGER_ERROR]', e.message);
+              console.log('[PDF_TRIGGER] Pipeline completed:', res.status);
+              
+              if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(`PDF Endpoint error: ${res.status} - ${errorText}`);
               }
+            } catch (e: any) {
+              console.error('[PDF_TRIGGER_ERROR]', e.message);
               await supabase.from('audit_logs').insert({
                   company_id: companyId,
                   action: 'PDF_TRIGGER_FAILURE',
-                  new_data: { error: e.message, phone: sender }
+                  new_data: { error: e.message, phone: sender, type: requestedReportType }
               });
-          }).finally(() => {
-              // Cleanup de seguridad por si acaso
-              clearTimeout(pdfTimeout);
-          });
+            }
+          })();
 
+          // CLAVE: waitUntil mantiene vivo el proceso en Vercel
+          waitUntil(pdfPromise);
+
+          // Feedback visual inmediato
           await supabase.from('messages').insert({
             conversation_id: conv.id,
             sender_type: 'bot',
