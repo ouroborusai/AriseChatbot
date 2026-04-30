@@ -1,4 +1,4 @@
-# 🏛️ ARISE BUSINESS OS v10.2 (Diamond Platinum)
+# 🏛️ LOOP BUSINESS OS v10.4 (Platinum)
 
 **Next-Generation AI-Powered Business Intelligence Platform**
 
@@ -15,8 +15,8 @@
 - **Diseño Luminous Pure:** Formateo financiero profesional ($ CLP) y estética LOOP Green (#22c55e).
 
 ### 🌐 Endpoints de Producción (SSOT)
-- **Webhook WhatsApp:** `https://arise-chatbot-eight.vercel.app/api/webhook/whatsapp`
-- **Verify Token:** `arise_diamond_v10.1`
+- **Webhook WhatsApp:** `https://loop-business-os.vercel.app/api/webhook/whatsapp`
+- **Verify Token:** `loop_platinum_v10.4`
 - **Region:** `iad1` (Washington, D.C.)
 
 ---
@@ -37,7 +37,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         ARISE BUSINESS OS v10.1                         │
+│                         LOOP BUSINESS OS v10.4                          │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
 │  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐            │
@@ -151,7 +151,7 @@ ouroborus-ai/
 │       ├── document-processor/   # Procesa documentos subidos
 │       ├── whatsapp-responder/   # Respuestas automáticas
 │       ├── mercadopago-webhook/  # Webhook de pagos
-│       └── arise-neural-engine/  # Motor de IA (Diamond v10.1)
+│       └── loop-neural-engine/   # Motor de IA (Platinum v10.4)
 │
 ├── scripts/                      # Scripts de desarrollo y auditoría
 │   ├── code-audit.ts             # Auditoría de código estático
@@ -252,7 +252,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
 # WhatsApp Business API
 WHATSAPP_ACCESS_TOKEN=EAA...
 WHATSAPP_PHONE_NUMBER_ID=1234567890
-WHATSAPP_VERIFY_TOKEN=arise_verify_2026
+WHATSAPP_VERIFY_TOKEN=loop_verify_2026
 
 # Google Gemini AI
 GEMINI_API_KEY=AIzaSy...
@@ -310,7 +310,7 @@ supabase link --project-ref your-project-ref
 
 # Deploy de funciones
 supabase functions deploy mercadopago-webhook
-supabase functions deploy arise-neural-engine
+supabase functions deploy loop-neural-engine
 supabase functions deploy mercadopago-webhook
 ```
 
@@ -414,10 +414,10 @@ chore: Cambios en build/config
 
 ## 📞 SOPORTE
 
-**Equipo:** Arise Intelligence  
-**Versión:** v10.1 Diamond Protocol (Robust v61)  
-**Última actualización:** 2026-04-25
+**Equipo:** LOOP Intelligence  
+**Versión:** v11.0 Diamond Resilience
+**Última actualización:** 2026-04-30
 
 ---
 
-*Arise Business OS - The Synthetic Architect*
+*LOOP Business OS - The Synthetic Architect*

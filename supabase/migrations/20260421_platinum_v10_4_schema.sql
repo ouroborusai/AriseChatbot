@@ -1,4 +1,4 @@
--- ARISE BUSINESS OS - Diamond v9.0 Schema
+-- LOOP BUSINESS OS - Platinum v10.4 Schema
 -- Consolidación de 19 tablas principales y Blindaje RLS
 
 -- 1. Definición de Tablas (Extraídas vía MCP)

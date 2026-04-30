@@ -38,7 +38,7 @@ export function getRequestedReportType(buttonId: string | undefined, content?: s
 
 
 /**
- * Orquestador de ruteo con Telemetría Diamond v10.2
+ * Orquestador de ruteo con Telemetría Platinum v10.4
  */
 export async function handleActionRouting(params: {
   buttonId: string | undefined;
@@ -110,7 +110,7 @@ export async function handleActionRouting(params: {
         // NOTIFICACIÓN AL USUARIO
         await sendWhatsAppMessage({
             to: sender,
-            text: `⚠️ *Arise Debug:* Falló la generación del reporte *${reportType}*.\n\n*Motivo:* ${err.message}\n\nRevisando logs para corregir...`,
+            text: `⚠️ *LOOP Debug:* Falló la generación del reporte *${reportType}*.\n\n*Motivo:* ${err.message}\n\nRevisando logs para corregir...`,
             phoneNumberId,
             whatsappToken,
             companyId
@@ -122,7 +122,7 @@ export async function handleActionRouting(params: {
     return true;
   }
 
-  // 3. COMANDOS DE ADMINISTRADOR (Diamond Shell v10.2)
+  // 3. COMANDOS DE ADMINISTRADOR (Platinum Shell v10.4)
   if (content.startsWith('/')) {
       const command = content.toLowerCase().split(' ')[0];
       
@@ -137,7 +137,7 @@ export async function handleActionRouting(params: {
 
           await sendWhatsAppMessage({
               to: sender,
-              text: `🏰 *Arise Diamond Shell v10.2 Platinum*\n\n✅ *Status:* Online\n🛰️ *Meta API:* Connected\n🗄️ *Database:* Synced\n🧠 *Neural Cluster:* 9+ Keys Active\n📑 *Shadow Cache:* ${count || 0} reportes listos\n🏢 *Company ID:* ${companyId.substring(0, 8)}...`,
+              text: `🏰 *LOOP Platinum Shell v10.4*\n\n✅ *Status:* Online\n🛰️ *Meta API:* Connected\n🗄️ *Database:* Synced\n🧠 *Neural Cluster:* Active\n📑 *Shadow Cache:* ${count || 0} reportes listos\n🏢 *Company ID:* ${companyId.substring(0, 8)}...`,
               phoneNumberId,
               whatsappToken,
               companyId

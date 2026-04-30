@@ -2,129 +2,106 @@ import { NextResponse } from 'next/server';
 import { supabase, resolveIdentity, getWhatsAppConfig, logEvent } from '@/lib/webhook/utils';
 import { handleActionRouting } from '@/lib/webhook/router';
 import { generateAndSendAIResponse } from '@/lib/neural-engine/whatsapp';
-import { handleOrderMessage } from '@/lib/webhook/handlers/order';
+import type { WhatsAppWebhookRequest } from '@/types/api';
 
-export const maxDuration = 60; // 60 segundos (Blindaje Diamond v10.2)
+/**
+ * WHATSAPP WEBHOOK ROUTE v11.9.1 (Diamond Resilience)
+ * Main entry point for Meta Graph API Webhooks.
+ * SSOT: Cero 'any', Aislamiento Tenant Inquebrantable.
+ */
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  let body: any;
-  let identity: any;
-  try {
-    body = await req.json();
-    const entry = body.entry?.[0];
-    const changes = entry?.changes?.[0]?.value;
-    if (!changes || !changes.messages) return NextResponse.json({ status: 'ignored' });
+    try {
+        const body = (await req.json()) as WhatsAppWebhookRequest;
+        const entry = body.entry?.[0];
+        const changes = entry?.changes?.[0]?.value;
 
-    const message = changes.messages[0];
-    const sender = message.from;
-    const buttonId = message.interactive?.button_reply?.id || message.interactive?.list_reply?.id;
-    const content = message.text?.body || message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
+        if (!changes || !changes.messages || changes.messages.length === 0) {
+            return NextResponse.json({ status: 'ignored' });
+        }
 
-    // LOG DE SEGURIDAD v10.4
-    await logEvent({ 
-        companyId: process.env.ARISE_MASTER_COMPANY_ID || 'ca69f43b-7b11-4dd3-abe8-8338580b2d84', 
-        action: 'RAW_MSG_CHECK', 
-        details: { type: message.type, hasOrder: !!message.order } 
-    });
+        const message = changes.messages[0];
+        const sender = message.from;
+        let content = '';
+        let buttonId: string | undefined = undefined;
 
-    // BYPASS PLATINUM v10.4: Detección reforzada
-    if (message.type === 'order' || message.order) {
-        console.log('[WH_ORDER] Detectado pedido de catálogo');
-        const success = await handleOrderMessage({
-            order: message.order,
+        if (message.type === 'text' && message.text) {
+            content = message.text.body;
+        } else if (message.type === 'interactive' && message.interactive) {
+            if (message.interactive.type === 'button_reply' && message.interactive.button_reply) {
+                buttonId = message.interactive.button_reply.id;
+                content = message.interactive.button_reply.id;
+            } else if (message.interactive.type === 'list_reply' && message.interactive.list_reply) {
+                buttonId = message.interactive.list_reply.id;
+                content = message.interactive.list_reply.title;
+            }
+        } else {
+            return NextResponse.json({ status: 'ignored_type' });
+        }
+
+        const identity = await resolveIdentity(sender);
+        const companyId = identity.company_id;
+        const contactId = identity.contact_id;
+        const conversationId = identity.conversation_id;
+
+        const config = await getWhatsAppConfig(companyId);
+
+        const isRouted = await handleActionRouting({
+            buttonId,
+            content,
             sender,
-            companyId: process.env.ARISE_MASTER_COMPANY_ID || 'ca69f43b-7b11-4dd3-abe8-8338580b2d84',
-            whatsappToken: process.env.WHATSAPP_ACCESS_TOKEN!,
-            phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!
+            companyId,
+            whatsappToken: config.token,
+            phoneNumberId: config.phoneId
         });
-        if (success) return NextResponse.json({ status: 'order_processed_fast' });
+
+        if (isRouted) {
+            return NextResponse.json({ status: 'routed' });
+        }
+
+        const { data: userMsg, error: insertError } = await supabase
+            .from('messages')
+            .insert({
+                conversation_id: conversationId,
+                sender_type: 'user',
+                content: content,
+                external_id: message.id,
+                created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (insertError || !userMsg) {
+            throw new Error('Error al registrar mensaje en DB');
+        }
+
+        await generateAndSendAIResponse({
+            content,
+            companyId,
+            contactId,
+            conversationId,
+            sender,
+            phoneNumberId: config.phoneId,
+            whatsappToken: config.token
+        });
+
+        return NextResponse.json({ status: 'success' });
+
+    } catch (error: unknown) {
+        const err = error as Error;
+        return NextResponse.json({ error: err.message }, { status: 500 });
     }
-
-    // 1. Identificación Relámpago (E2: Mover al inicio)
-    identity = await resolveIdentity(sender);
-
-    if (!identity) {
-      await logEvent({ companyId: process.env.ARISE_MASTER_COMPANY_ID || 'ca69f43b-7b11-4dd3-abe8-8338580b2d84', action: 'IDENTITY_NOT_FOUND', details: { sender } });
-      return NextResponse.json({ status: 'unknown_sender' });
-    }
-
-    await logEvent({
-      companyId: identity.company_id,
-      action: 'WEBHOOK_RECEIVED',
-      details: { sender, buttonId, content, fullPayload: body }
-    });
-
-    // 0. Registro en Base de Datos (Para activar Triggers)
-    const { data: savedMsg } = await supabase.from('messages').insert({
-        content,
-        sender,
-        type: message.type,
-        company_id: identity.company_id // Enlace explícito
-    }).select().single();
-
-    const { token: whatsappToken, phoneId: waPhoneId } = await getWhatsAppConfig(identity.company_id);
-
-    if (!whatsappToken || !waPhoneId) {
-      await logEvent({ companyId: identity.company_id, action: 'CONFIG_MISSING_ABORTING' });
-      return NextResponse.json({ error: 'Config error' }, { status: 500 });
-    }
-
-    // 2. Intento de Ruteo de Acción (PDF, etc)
-    const actionTriggered = await handleActionRouting({
-      buttonId,
-      content,
-      sender,
-      companyId: identity.company_id,
-      whatsappToken,
-      phoneNumberId: waPhoneId
-    });
-
-    if (actionTriggered) {
-      return NextResponse.json({ status: 'action_triggered' });
-    }
-
-    // 3. Fallback a IA (B1: Usar waitUntil para respuesta instantánea a Meta)
-    await logEvent({ companyId: identity.company_id, action: 'FALLBACK_TO_AI' });
-    
-    // Iniciar generación de IA en segundo plano
-    const aiPromise = generateAndSendAIResponse({
-      content,
-      companyId: identity.company_id,
-      contactId: identity.contact_id,
-      conversationId: identity.conversation_id,
-      sender,
-      phoneNumberId: waPhoneId,
-      whatsappToken
-    });
-
-    return NextResponse.json({ status: 'ai_responded' });
-
-  } catch (error: any) {
-    console.error('[WH_ERROR]', error.message);
-    const errorCompanyId = identity?.company_id || process.env.ARISE_MASTER_COMPANY_ID || 'ca69f43b-7b11-4dd3-abe8-8338580b2d84';
-    await generateAndSendAIResponse({
-      content: `⚠️ *LOOP Debug System 🟢*\n\nSe detectó un fallo crítico.\n*Error:* ${error.message}`,
-      companyId: errorCompanyId,
-      contactId: identity?.contact_id || 'error_logger',
-      conversationId: identity?.conversation_id || 'error_trace',
-      sender: body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from,
-      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
-      whatsappToken: process.env.WHATSAPP_ACCESS_TOKEN!
-    });
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
 }
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const mode = searchParams.get('hub.mode');
-  const token = searchParams.get('hub.verify_token');
-  const challenge = searchParams.get('hub.challenge');
+    const { searchParams } = new URL(req.url);
+    const mode = searchParams.get('hub.mode');
+    const token = searchParams.get('hub.verify_token');
+    const challenge = searchParams.get('hub.challenge');
 
-  if (mode && token) {
     if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-      return new Response(challenge, { status: 200 });
+        return new Response(challenge, { status: 200 });
     }
-  }
-  return new Response('Forbidden', { status: 403 });
+    return new Response('Forbidden', { status: 403 });
 }

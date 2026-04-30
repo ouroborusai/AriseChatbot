@@ -1,10 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import type {
   NeuralProcessorRequest,
   NeuralProcessorResponse,
-  NeuralAction,
-} from '@/types/api';
+  NeuralActionResult,
+} from '@/lib/neural-engine/interfaces/actions';
 import { requireAuth, verifyCompanyAccess } from '@/lib/api-auth';
 import { handleInventoryAction } from '@/lib/neural-engine/actions/inventory';
 import { handleTaskAction } from '@/lib/neural-engine/actions/task';
@@ -15,28 +15,20 @@ import { handlePaymentAction } from '@/lib/neural-engine/actions/payment';
 import { handleOfferMenusAction } from '@/lib/neural-engine/actions/menus';
 
 /**
- * NEURAL PROCESSOR Diamond v10.1 Industrial CORE
- * Procesa bloques de acción [[ { "action": "..." } ]] en mensajes de la IA.
- *
- * Acciones soportadas:
- * - inventory_create: Crear nuevo ítem de inventario
- * - inventory_add: Sumar stock existente
- * - inventory_remove: Restar stock existente
- * - task_create: Crear tarea/recordatorio
- * - pdf_generate: Generar y enviar PDF por WhatsApp
- * - directory_register: Registrar/actualizar contacto en directorio interno
- * - credit_limit_set: Establecer límite de crédito de un cliente
+ *  NEURAL PROCESSOR ORCHESTRATOR v11.9.1 (Diamond Resilience)
+ *  Enrutador puro para bloques de acción [[ { "action": "..." } ]].
+ *  Aislamiento Tenant Estricto y Cero 'any'.
  */
-// Clave interna para llamadas desde la Edge Function de Gemini
+
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 if (!INTERNAL_API_KEY) throw new Error('[NEURAL_PROCESSOR] INTERNAL_API_KEY env var is not set');
 
 export async function POST(req: Request) {
-  // Autenticación dual: sesión de usuario O clave interna
+  // Autenticación dual: sesión de usuario O clave interna master
   const internalKey = req.headers.get('x-api-key');
   const isInternalCall = internalKey === INTERNAL_API_KEY;
 
-  let userId = null;
+  let userId: string | null = null;
 
   if (!isInternalCall) {
     const authResult = await requireAuth();
@@ -44,7 +36,7 @@ export async function POST(req: Request) {
     userId = authResult.user.id;
   }
 
-  // Validación crítica: Service Role Key
+  // Validación de infraestructura crítica
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.ARISE_MASTER_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -56,13 +48,21 @@ export async function POST(req: Request) {
     );
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const body = await req.json();
-    const { messageId, companyId } = body as NeuralProcessorRequest;
+    const body = (await req.json()) as NeuralProcessorRequest;
+    
+    // 🛡️ PROPAGACIÓN COMPLETA DIAMOND (Corrección de campos muertos)
+    const { 
+      messageId, 
+      companyId, 
+      contact_id, 
+      conversation_id, 
+      phone_number, 
+      payload 
+    } = body;
 
-    // Validación de parámetros
     if (!messageId || !companyId) {
       return NextResponse.json(
         { error: 'Missing required parameters: messageId and companyId' },
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verificar acceso a la compañía (solo si no es llamada interna)
+    // 🛡️ Aislamiento Tenant: Verificar acceso (si no es interno)
     if (!isInternalCall && userId) {
       const hasAccess = await verifyCompanyAccess(userId, companyId);
       if (!hasAccess) {
@@ -81,149 +81,130 @@ export async function POST(req: Request) {
       }
     }
 
-
-    // 1. Obtener contenido del mensaje con retry por latencia de replicación
-    let message: { content: string } | null = null;
-    let lastError: Error | null = null;
+    // 1. Recuperación del mensaje con Reintento por Latencia de Replicación
+    let messageContent: string | null = null;
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       const { data, error } = await supabase
         .from('messages')
         .select('content')
         .eq('id', messageId)
+        .eq('company_id', companyId)
         .single();
 
       if (data) {
-        message = data;
+        messageContent = data.content;
         break;
       }
 
-      lastError = error;
-
-      // Backoff exponencial: 1s → 2s → 4s
       const delay = Math.pow(2, attempt - 1) * 1000;
       await new Promise(resolve => setTimeout(resolve, delay));
     }
 
-    if (!message) {
-      return NextResponse.json(
-        { error: 'Message not found after retries' },
-        { status: 404 }
-      );
+    if (!messageContent) {
+      return NextResponse.json({ error: 'Message content not resolved' }, { status: 404 });
     }
 
-    // 2. Obtener estado de la conversación para validar Handoff
-    const { data: msgConv, error: convError } = await supabase
+    // 2. Validación de Estado de Conversación (Anti-Handoff)
+    const { data: msgData, error: msgError } = await supabase
       .from('messages')
-      .select('conversation_id, conversations(status)')
+      .select('conversation_id, conversations!inner(status)')
       .eq('id', messageId)
+      .eq('company_id', companyId)
       .single();
 
-    const conversation = msgConv as any;
-    const status = conversation?.conversations?.status;
-
-    if (convError || !status) {
-      return NextResponse.json({ error: 'Conversation status not found' }, { status: 404 });
+    if (msgError || !msgData) {
+      return NextResponse.json({ error: 'Conversation mapping failed' }, { status: 404 });
     }
 
-    // --- CLÁUSULA DE GUARDA Diamond v10.1 ---
-    if (status !== 'open') {
-      console.log(`[NEURAL_PROCESSOR] Handoff detected (Status: ${status}). Aborting actions for message ${messageId}`);
-      return NextResponse.json({ status: 'aborted_handoff_active' });
+    const conversation = msgData.conversations as unknown as { status: string };
+    const convStatus = conversation.status;
+
+    if (convStatus !== 'open') {
+      console.log(`[NEURAL_PROCESSOR] Handoff activo (${convStatus}). Abortando acciones.`);
+      return NextResponse.json({ response: 'Handoff_Active', action_results: [] });
     }
 
-    // 3. Buscar bloques de acción [[ ... ]] o bloques de código markdown ```json ... ```
-    const actionBlocks = message.content.match(/\[\[([\s\S]*?)\]\]/g) || 
-                        message.content.match(/```json([\s\S]*?)```/g);
+    // 3. Extracción de bloques de acción (Protocolo Multi-formato)
+    const actionBlocks = messageContent.match(/\[\[([\s\S]*?)\]\]/g) || 
+                        messageContent.match(/```json([\s\S]*?)```/g);
 
     if (!actionBlocks || actionBlocks.length === 0) {
-      return NextResponse.json({ status: 'no_actions_detected' });
+      return NextResponse.json({ response: 'No_Actions_Detected', action_results: [] });
     }
 
-    const results: NeuralAction[] = [];
+    const results: NeuralActionResult[] = [];
 
-    // 3. Ejecutar cada bloque detectado
+    // 4. Orquestación y Delegación a Dominios
     for (const block of actionBlocks) {
       try {
-        // Limpieza robusta de JSON Diamond v10.1 (Multi-formato)
         let cleanJson = '';
-        
         if (block.startsWith('[[')) {
-          const match = block.match(/^\[\[([\s\S]*?)\]\]$/);
-          cleanJson = match ? match[1].trim() : '';
+          cleanJson = block.slice(2, -2).trim();
         } else if (block.startsWith('```json')) {
-          const match = block.match(/^```json([\s\S]*?)```$/);
-          cleanJson = match ? match[1].trim() : '';
+          cleanJson = block.slice(7, -3).trim();
         }
 
-        if (!cleanJson) throw new Error('Invalid block format');
+        if (!cleanJson) continue;
 
-        cleanJson = cleanJson
+        const sanitized = cleanJson
           .replace(/\r\n/g, ' ')
-          .replace(/\r/g, '')
           .replace(/\n/g, ' ')
           .replace(/\s+/g, ' ')
           .trim();
 
-        // Parse con fallback para strings escapados
-        let parsedData: any;
-        try {
-          parsedData = JSON.parse(cleanJson);
-        } catch {
-          const escapedFix = cleanJson.replace(/\\'/g, "'").replace(/`/g, "'");
-          parsedData = JSON.parse(escapedFix);
-        }
-        
-        // Convertir a array si es un objeto único para procesamiento uniforme
+        const parsedData = JSON.parse(sanitized);
         const actionArray = Array.isArray(parsedData) ? parsedData : [parsedData];
 
         for (const actionData of actionArray) {
-          const actionType = actionData.action || '';
-          let actionResults: NeuralAction[] = [];
+          // Inyección de contexto Diamond en el actionData
+          const extendedActionData = {
+            ...actionData,
+            company_id: companyId,
+            contact_id: actionData.contact_id || contact_id,
+            conversation_id: actionData.conversation_id || conversation_id,
+            phone_number: actionData.phone_number || phone_number,
+            meta_payload: payload
+          };
 
-          // 1. Handlers por Dominio (Strategy Pattern)
+          const actionType = actionData.action || '';
+          let actionResults: NeuralActionResult[] = [];
+
           if (actionType.startsWith('inventory_')) {
-            actionResults = await handleInventoryAction(supabase, actionData, companyId, messageId);
+            actionResults = await handleInventoryAction(supabase, extendedActionData, companyId, messageId);
           } else if (actionType.startsWith('task_') || actionType.startsWith('reminder_')) {
-            actionResults = await handleTaskAction(supabase, actionData, companyId, messageId);
-          } else if (actionType === 'pdf_generate') {
-            actionResults = await handlePdfAction(supabase, actionData, companyId, messageId);
+            actionResults = await handleTaskAction(supabase, extendedActionData, companyId, messageId);
+          } else if (actionType === 'pdf_generate' || actionType === 'pdf_send') {
+            actionResults = await handlePdfAction(supabase, extendedActionData, companyId, messageId);
           } else if (actionType.startsWith('directory_') || actionType === 'register_client') {
-            actionResults = await handleDirectoryAction(supabase, actionData, companyId, messageId);
+            actionResults = await handleDirectoryAction(supabase, extendedActionData, companyId, messageId);
           } else if (actionType === 'credit_limit_set') {
-            actionResults = await handleCreditAction(supabase, actionData, companyId, messageId);
-          } else if (actionType === 'payment_link_generate') {
-            actionResults = await handlePaymentAction(supabase, actionData, companyId, messageId);
+            actionResults = await handleCreditAction(supabase, extendedActionData, companyId, messageId);
+          } else if (actionType === 'payment_link_generate' || actionType === 'payment_link') {
+            actionResults = await handlePaymentAction(supabase, extendedActionData, companyId, messageId);
           } else if (actionType === 'offer_menus') {
-            actionResults = await handleOfferMenusAction(supabase, actionData, companyId, messageId);
-          } else if (actionType === 'whatsapp_flow_init') {
-            // [v10.2] Inicialización de WhatsApp Flows dinámicos
-            actionResults = [{ action: 'whatsapp_flow_init', status: 'pending_execution', result: actionData.params }];
-          } else if (actionType === 'commerce_catalog_send') {
-            // [v10.2] Envío de productos del catálogo de Meta
-            actionResults = [{ action: 'commerce_catalog_send', status: 'pending_execution', result: actionData.params }];
+            actionResults = await handleOfferMenusAction(supabase, extendedActionData, companyId, messageId);
+          } else if (actionType === 'whatsapp_flow_init' || actionType === 'commerce_catalog_send') {
+            actionResults = [{ action: actionType, status: 'pending_execution' }];
           } else {
-            actionResults = [{ action: 'unknown', status: 'failed', error: `Unsupported action type: ${actionType}` }];
+            actionResults = [{ action: 'unknown', status: 'error', error: `Unsupported_Action: ${actionType}` }];
           }
 
           results.push(...actionResults);
         }
-      } catch {
-        results.push({
-          action: 'unknown',
-          status: 'failed',
-          error: 'JSON parse failed',
-        });
+      } catch (err: unknown) {
+        const error = err as Error;
+        results.push({ action: 'parser_failure', status: 'error', error: error.message });
       }
     }
 
-    const response: NeuralProcessorResponse = {
-      status: 'completed',
-      results,
-    };
-
-    return NextResponse.json(response);
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({
+      response: 'Actions_Processed',
+      action_results: results,
+    } as NeuralProcessorResponse);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('[NEURAL_PROCESSOR] Fatal Failure:', err.message);
+    return NextResponse.json({ error: 'Internal server failure' }, { status: 500 });
   }
 }

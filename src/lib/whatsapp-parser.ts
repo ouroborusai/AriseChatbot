@@ -1,5 +1,5 @@
 /**
- * ARISE WHATSAPP MESSAGE PARSER Diamond v10.1
+ * LOOP WHATSAPP MESSAGE PARSER Diamond v11.8 (Diamond Resilience)
  * Parser inteligente para respuestas de IA con formato interactivo
  *
  * Formato soportado:
@@ -101,7 +101,7 @@ function extractFooter(text: string): string | undefined {
 /**
  * Construye el mensaje de WhatsApp apropiado según la cantidad de opciones
  *
- * Reglas Diamond v10.1:
+ * Reglas Diamond v11.8:
  * - Detección de [[CATALOG]] -> Catalog Message
  * - Detección de [[PRODUCT:ID]] -> Product Message
  * - 1-3 opciones: Botones interactivos (mejor UX)
@@ -173,7 +173,7 @@ export function buildWhatsAppMessage(
     ],
     'Ver Opciones',
     undefined,
-    parsed.footer || 'Arise Diamond v10.1'
+    parsed.footer || 'Diamond v11.8 Resilience'
   );
 }
 
@@ -248,7 +248,7 @@ export function debugParse(content: string): void {
   const parsed = parseInteractiveContent(content);
 
   console.log('═══════════════════════════════════════════════════════════');
-  console.log('🔍 DEBUG PARSE - ARISE Diamond v10.1');
+  console.log('🔍 DEBUG PARSE - LOOP Diamond v11.8');
   console.log('═══════════════════════════════════════════════════════════');
   console.log(`📝 Body Text: ${parsed.bodyText.substring(0, 50)}...`);
   console.log(`🔢 Opciones: ${parsed.options.length}`);
@@ -273,7 +273,7 @@ export function debugParse(content: string): void {
 }
 
 /**
- * PARSER PARA UI (Diamond Diamond v10.1 resilient)
+ * PARSER PARA UI (LOOP Diamond v11.8 resilient)
  * Divide el mensaje en partes de texto y bloques de botones, manejando múltiples separadores ---
  *
  * Estrategia: El último --- separa el cuerpo del bloque de botones

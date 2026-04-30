@@ -1,74 +1,130 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { PdfActionParams, NeuralActionResult } from '../interfaces/actions';
 
+/**
+ *  PDF GENERATOR HANDLER v11.9.1 (Diamond Resilience)
+ *  Orquestación de generación de reportes PDF y envío vía WhatsApp.
+ *  Cero 'any'. Aislamiento Tenant Blindado.
+ */
 export async function handlePdfAction(
   supabase: SupabaseClient,
-  actionData: any,
+  actionData: PdfActionParams,
   companyId: string,
   messageId: string
-) {
-  const results: any[] = [];
+): Promise<NeuralActionResult[]> {
+  const results: NeuralActionResult[] = [];
 
-  if (actionData.action === 'pdf_generate') {
-    const { data: msgInfo } = await supabase.from('messages').select('conversation_id').eq('id', messageId).single();
+  try {
+    if (actionData.action === 'pdf_generate' || actionData.action === 'pdf_send') {
+      // 1. Obtener contexto de contacto y teléfono con Aislamiento Tenant
+      const { data: msgInfo, error: msgError } = await supabase
+        .from('messages')
+        .select('conversation_id, conversations!inner(company_id, contacts(phone))')
+        .eq('id', messageId)
+        .eq('conversations.company_id', companyId) // 🛡️ AISLAMIENTO TENANT OBLIGATORIO
+        .single();
 
-    if (msgInfo) {
-      const { data: contactInfo } = await supabase.from('conversations').select('contacts(phone)').eq('id', msgInfo.conversation_id).single();
-      const phone = (contactInfo as any)?.contacts?.phone;
+      if (msgError || !msgInfo) {
+        throw new Error(`Context_Resolution_Failed: ${msgError?.message || 'Access denied'}`);
+      }
 
-      if (phone) {
-        const { data: companyData } = await supabase.from('companies').select('settings').eq('id', companyId).single();
-        const cleanEnvVar = (val?: string) => val?.replace(/["\r\n\\]/g, '').trim() || '';
-        const whatsappToken = companyData?.settings?.whatsapp?.access_token || cleanEnvVar(process.env.WHATSAPP_ACCESS_TOKEN);
-        const phoneNumberId = companyData?.settings?.whatsapp?.phone_number_id || cleanEnvVar(process.env.WHATSAPP_PHONE_NUMBER_ID);
+      // 💎 CORRECCIÓN DIAMOND: Lectura plana directa desde actionData (SSOT de interfaces/actions.ts)
+      const phone = actionData.target_phone || (msgInfo as any).conversations?.contacts?.phone as string | undefined;
 
-        if (!whatsappToken || !phoneNumberId) {
-          results.push({ action: 'pdf_generate', status: 'failed', error: 'Missing WhatsApp configuration' });
-          return results;
+      if (!phone) {
+        return [{
+          action: 'pdf_generate',
+          status: 'validation_failed',
+          error: 'Missing_Recipient_Phone'
+        }];
+      }
+
+      // 2. Obtener credenciales de WhatsApp de la empresa (SSOT Settings)
+      const { data: companyData, error: companyError } = await supabase
+        .from('companies')
+        .select('settings')
+        .eq('id', companyId)
+        .single();
+
+      if (companyError || !companyData) throw companyError;
+
+      const cleanEnvVar = (val?: string) => val?.replace(/["\r\n\\]/g, '').trim() || '';
+      
+      const settings = (companyData.settings || {}) as any;
+      const whatsappToken = settings.whatsapp?.access_token || cleanEnvVar(process.env.WHATSAPP_ACCESS_TOKEN);
+      const phoneNumberId = settings.whatsapp?.phone_number_id || cleanEnvVar(process.env.WHATSAPP_PHONE_NUMBER_ID);
+
+      if (!whatsappToken || !phoneNumberId) {
+        return [{
+          action: 'pdf_generate',
+          status: 'failed',
+          error: 'WhatsApp_Config_Incomplete'
+        }];
+      }
+
+      // 3. Resolución de Endpoint y Pipeline PDF
+      const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 
+            (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 
+            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'));
+      
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000); // 45s para generación PDF
+
+      try {
+        const response = await fetch(`${appUrl}/api/pdf`, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.INTERNAL_API_KEY || ''
+          },
+          body: JSON.stringify({
+            targetPhone: phone,
+            whatsappToken,
+            phoneNumberId,
+            reportType: actionData.report_type || 'inventory',
+            companyId: companyId,
+            isPreGen: actionData.is_pregen || false
+          }),
+        });
+
+        const resData = (await response.json()) as { fileName?: string; error?: string };
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+           throw new Error(resData.error || 'PDF_Generation_Failed');
         }
 
-        const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 
-              (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 
-              (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'));
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
+        // Telemetría de Auditoría Diamond
+        await supabase.from('audit_logs').insert({
+          company_id: companyId,
+          action: 'PDF_GENERATED_AND_SENT',
+          table_name: 'prepared_reports',
+          new_data: { type: actionData.report_type || 'inventory', phone, status: 'success' }
+        });
 
-        try {
-          const response = await fetch(`${appUrl}/api/pdf`, {
-            method: 'POST',
-            signal: controller.signal,
-            headers: { 
-              'Content-Type': 'application/json',
-              'x-api-key': process.env.INTERNAL_API_KEY || ''
-            },
-            body: JSON.stringify({
-              targetPhone: phone,
-              whatsappToken,
-              phoneNumberId,
-              reportType: actionData.report_type || actionData.parameters?.report_type || actionData.type || actionData.parameters?.type || 'inventory',
-              companyId: companyId,
-              isPreGen: false // LM Protocol: Si viene de la IA, enviar al usuario.
-            }),
-          });
-
-          const resData = await response.json();
-          clearTimeout(timeout);
-
-          results.push({ 
-            action: 'pdf_generate', 
-            status: response.ok ? 'success' : 'failed', 
-            to: phone,
-            details: resData.fileName || resData.error
-          });
-        } catch (err: any) {
-          results.push({ 
-            action: 'pdf_generate', 
-            status: 'error', 
-            to: phone, 
-            error: err.name === 'AbortError' ? 'Timeout (30s)' : err.message 
-          });
-        }
+        results.push({ 
+          action: 'pdf_generate', 
+          status: 'success', 
+          to: phone
+        });
+      } catch (err: unknown) {
+        const error = err as Error;
+        results.push({ 
+          action: 'pdf_generate', 
+          status: 'error', 
+          to: phone, 
+          error: error.name === 'AbortError' ? 'Pipeline_Timeout (45s)' : error.message 
+        });
       }
     }
+  } catch (err: unknown) {
+    const error = err as Error;
+    results.push({
+      action: 'pdf_generate',
+      status: 'error',
+      error: error.message
+    });
   }
 
   return results;

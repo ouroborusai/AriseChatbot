@@ -1,173 +1,105 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { 
-  Search, 
-  Plus, 
-  ArrowLeft, 
-  ArrowRight,
-  Activity,
-  Sparkles,
-  Package,
-  Layers,
-  ArrowUpRight,
-  Filter
-} from 'lucide-react';
-import { InventoryStats } from '@/components/inventory/InventoryStats';
+import { Search, Plus, Package, Activity, Filter } from 'lucide-react';
 import { InventoryTable } from '@/components/inventory/InventoryTable';
-import { InventoryKardex } from '@/components/inventory/InventoryKardex';
-import { InventoryQuickActions } from '@/components/inventory/InventoryQuickActions';
-import Image from 'next/image';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import useSWR from 'swr';
+import type { InventoryItem } from '@/types/database';
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 10;
 
 export default function InventoryPage() {
   const { activeCompany, isLoading: isContextLoading } = useActiveCompany();
+  const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
-  
+
   const activeCompanyId = activeCompany?.id;
 
   const fetchInventory = async (companyId: string, currentPage: number) => {
-    const isGlobal = companyId === 'global';
+    if (!companyId) return { items: [], totalCount: 0 };
     
-    let countQuery = supabase
+    const { count } = await supabase
       .from('inventory_items')
-      .select('*', { count: 'estimated', head: true });
-    
-    if (!isGlobal) countQuery = countQuery.eq('company_id', companyId);
+      .select('*', { count: 'estimated', head: true })
+      .eq('company_id', companyId);
 
-    let dataQuery = supabase
+    const { data } = await supabase
       .from('inventory_items')
-      .select('*');
-    
-    if (!isGlobal) dataQuery = dataQuery.eq('company_id', companyId);
-    
-    let transQuery = supabase
-      .from('inventory_transactions')
-      .select('*, inventory_items(name)');
-    
-    if (!isGlobal) transQuery = transQuery.eq('company_id', companyId);
-    
-    const [
-      { count },
-      { data, error },
-      { data: transData }
-    ] = await Promise.all([
-      countQuery,
-      dataQuery
-        .order('current_stock', { ascending: true })
-        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1),
-      transQuery
-        .order('created_at', { ascending: false })
-        .limit(5)
-    ]);
+      .select('*')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false })
+      .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
-    if (error) throw error;
-    
-    return {
-      totalCount: count || 0,
-      items: data || [],
-      transactions: transData || []
-    };
+    return { totalCount: count || 0, items: data as InventoryItem[] || [] };
   };
 
-  const { data, error, isLoading: isSwrLoading } = useSWR(
+  const { data, isLoading: isSwrLoading } = useSWR(
     !isContextLoading && activeCompanyId ? `inventory_${activeCompanyId}_${page}` : null,
-    () => fetchInventory(activeCompanyId || 'global', page),
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 60000,
-    }
+    () => fetchInventory(activeCompanyId!, page),
+    { revalidateOnFocus: false }
   );
 
   const loading = isContextLoading || isSwrLoading || !data;
   const items = data?.items || [];
-  const transactions = data?.transactions || [];
   const totalCount = data?.totalCount || 0;
 
-  const hasCriticalStock = items.some(i => i.current_stock <= (i.min_stock_alert || 0));
-  const criticalCount = items.filter(i => i.current_stock <= (i.min_stock_alert || 0)).length;
+  const filteredItems = items.filter(item => 
+    item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    item.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="flex flex-col w-full max-w-full py-master-section animate-in fade-in duration-300 overflow-x-hidden relative">
+    <div className="flex flex-col w-full max-w-full py-master-section animate-in fade-in duration-700 overflow-x-hidden relative">
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#22c55e]/5 blur-[100px] rounded-full -z-10 animate-pulse" />
       
-      {/* PERFORMANCE: OPTIMIZED BACKGROUND ACCENTS - ASLAS STYLE */}
-      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-primary/10 blur-[100px] rounded-full -z-10 animate-pulse" />
-      <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-accent/5 blur-[100px] rounded-full -z-10" />
-
-      {/* HEADER SECTION - ASLAS STYLE (Optimized Scales) */}
-      <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-12 mb-24 px-4 relative z-10 animate-in fade-in slide-in-from-top-8 duration-1000">
-        <div className="relative">
-          <h1 className="text-h1-mobile md:text-h1 font-black text-neural-dark tracking-tighter leading-[0.85] uppercase italic">
-            Control de <br/><span className="text-primary drop-shadow-xl">Stock.</span>
-          </h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.5em] mt-10 flex items-center gap-4 italic opacity-60">
-            <Package size={16} className="text-primary animate-pulse" />
-            CATÁLOGO_MAESTRO_DE_ACTIVOS_//_v10.4_PLATINUM
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6 relative z-10">
-          <div className="relative group">
-            <input 
-              type="text" 
-              placeholder="BUSCAR_SKU_/_ITEM_..." 
-              className="loop-input w-full lg:w-96 pl-14"
-            />
-            <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors z-20" />
+      <div className="px-8 lg:px-12 max-w-7xl mx-auto w-full">
+        <header className="mb-12 flex flex-col md:flex-row md:justify-between md:items-end gap-6 relative z-10">
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#22c55e]/10 flex items-center justify-center text-[#22c55e]" style={{ borderRadius: 40 }}>
+                <Package size={20} />
+              </div>
+              <p className="text-[10px] font-black text-[#22c55e] uppercase tracking-[0.5em] mt-4 flex items-center gap-2 italic">
+                <Activity size={12} className="animate-pulse" />
+                CATÁLOGO_MAESTRO_DE_ACTIVOS
+              </p>
+            </div>
+            <h1 className="text-5xl md:text-6xl font-black text-[#1a1a1a] tracking-tighter italic uppercase">
+              Control de <span className="text-[#22c55e]">Stock.</span>
+            </h1>
           </div>
-          
-          <button className="btn-loop flex items-center justify-center gap-5">
-            <Plus size={18} />
-            <span>NUEVO_ITEM</span>
-          </button>
-        </div>
-      </header>
+          <div className="flex gap-4">
+            <button className="flex items-center gap-3 bg-white text-[#1a1a1a] px-8 py-4 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-50 transition-all border border-slate-100 shadow-sm italic" style={{ borderRadius: 40 }}>
+              <Filter size={16} />
+              Filtrar
+            </button>
+            <button className="flex items-center gap-3 bg-[#22c55e] text-white px-8 py-4 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-[#1a1a1a] transition-all shadow-xl shadow-[#22c55e]/20 hover:shadow-2xl hover:shadow-[#1a1a1a]/20 hover:-translate-y-1 italic" style={{ borderRadius: 40 }}>
+              <Plus size={16} />
+              Nuevo Item
+            </button>
+          </div>
+        </header>
 
-      {/* STATS SECTION */}
-      <div className="mb-12 px-2">
-        <InventoryStats 
-          totalCount={totalCount} 
-          criticalCount={criticalCount} 
-          hasCritical={hasCriticalStock} 
+        <div className="mb-8 flex items-center bg-white p-2 border border-slate-100 shadow-sm relative z-10" style={{ borderRadius: 40 }}>
+          <div className="flex items-center pl-6 pr-4">
+            <Search className="text-slate-400" size={20} />
+          </div>
+          <input
+            type="text"
+            placeholder="BUSCAR_POR_NOMBRE_O_SKU..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 bg-transparent py-4 outline-none text-[11px] font-black text-[#1a1a1a] uppercase tracking-widest placeholder:text-slate-300 italic"
+          />
+        </div>
+
+        <InventoryTable 
           loading={loading} 
+          items={filteredItems} 
         />
-      </div>
-
-      {/* MAIN TABLE */}
-      <div className="px-2">
-        <InventoryTable loading={loading} items={items} />
-      </div>
-
-      {/* PAGINATION - COMPACT PLATINUM */}
-      <div className="loop-card p-8 flex flex-col sm:flex-row justify-between items-center mt-12 gap-8 relative z-10">
-        <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 shadow-inner">
-              <Layers size={16} className="text-slate-300" />
-           </div>
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] italic opacity-60">
-              Página <span className="text-neural-dark opacity-100">{page + 1}</span> // <span className="text-primary opacity-100">{totalCount}</span> Unidades_Registradas
-           </p>
-        </div>
-        <div className="flex gap-4">
-          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="w-14 h-14 bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary/30 disabled:opacity-20 transition-all group shadow-sm" style={{ borderRadius: 'var(--radius-md)' }}>
-            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform"/>
-          </button>
-          <button onClick={() => setPage(p => p + 1)} disabled={(page + 1) * PAGE_SIZE >= totalCount} className="w-14 h-14 bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary/30 disabled:opacity-20 transition-all group shadow-sm" style={{ borderRadius: 'var(--radius-md)' }}>
-            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform"/>
-          </button>
-        </div>
-      </div>
-
-      {/* SECONDARY PANELS - COMPACT PLATINUM */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-16 px-2">
-        <div className="lg:col-span-2">
-           <InventoryKardex transactions={transactions} />
-        </div>
-        <InventoryQuickActions />
       </div>
     </div>
   );

@@ -1,9 +1,13 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { InventoryActionParams, NeuralActionResult } from '../interfaces/actions';
 
+// ⚠️ TIPADO SSOT IMPORTADO DIRECTAMENTE DE LA BASE DE DATOS
+import type { InventoryItem } from '@/types/database';
+
 /**
- * INVENTORY HANDLER v10.4 Platinum
- * Procesa acciones de inventario: create, add, remove, log, scan.
+ *  INVENTORY HANDLER v11.9.1 (Diamond Resilience - Ouroborus Engine)
+ *  Procesa acciones de inventario: create, add, remove, log, scan.
+ *  Aislamiento Tenant Estricto y Cero 'any'.
  */
 export async function handleInventoryAction(
   supabase: SupabaseClient,
@@ -13,15 +17,15 @@ export async function handleInventoryAction(
 ): Promise<NeuralActionResult[]> {
   const results: NeuralActionResult[] = [];
 
-  // Flexibilidad de Propiedades: Lógica polimórfica (acepta sku, item, name, item_name y product).
+  // Protocolo de Extracción Diamond v11.9.1
   const targetSku = actionData.sku || actionData.params?.sku;
-  const targetName = actionData.name || actionData.item_name || actionData.item || actionData.product;
-  const targetQuantity = Number(actionData.quantity || actionData.stock || actionData.params?.quantity || 0);
+  const targetName = actionData.name;
+  const targetQuantity = Number(actionData.current_stock || actionData.params?.current_stock || 0);
 
   try {
     if (actionData.action === 'inventory_create') {
       if (!targetName && !targetSku) {
-        return [{ action: actionData.action, status: 'validation_failed', error: 'Falta nombre o SKU para crear el item.' }];
+        return [{ action: actionData.action, status: 'validation_failed', error: 'Falta nombre o SKU para crear el nodo logístico.' }];
       }
       
       const finalSku = targetSku || `SKU-${Date.now().toString().slice(-6)}`;
@@ -30,7 +34,7 @@ export async function handleInventoryAction(
       const { data, error } = await supabase
         .from('inventory_items')
         .insert({
-          company_id: companyId,
+          company_id: companyId, // 🛡️ AISLAMIENTO TENANT OBLIGATORIO
           sku: finalSku,
           name: finalName,
           current_stock: targetQuantity,
@@ -41,12 +45,14 @@ export async function handleInventoryAction(
 
       if (error) throw error;
 
+      const item = data as InventoryItem;
+
       results.push({
         action: actionData.action,
         status: 'success',
-        sku: data.sku,
-        name: data.name,
-        stock: data.current_stock
+        sku: item.sku,
+        name: item.name,
+        stock: item.current_stock ?? 0
       });
 
     } else if (['inventory_add', 'inventory_remove', 'inventory_log'].includes(actionData.action)) {
@@ -54,8 +60,10 @@ export async function handleInventoryAction(
         return [{ action: actionData.action, status: 'validation_failed', error: 'Se requiere SKU o nombre visual para modificar inventario.' }];
       }
 
-      // Búsqueda inteligente SKU primero, luego Nombre visual.
-      let query = supabase.from('inventory_items').select('*').eq('company_id', companyId);
+      // 🛡️ Búsqueda con Aislamiento Tenant RLS Mandatorio
+      let query = supabase.from('inventory_items')
+        .select('*')
+        .eq('company_id', companyId);
       
       if (targetSku) {
         query = query.eq('sku', targetSku);
@@ -71,34 +79,40 @@ export async function handleInventoryAction(
         return [{ action: actionData.action, status: 'item_not_found', error: `No se encontró el nodo logístico ${targetSku || targetName}.` }];
       }
 
-      const item = items[0];
-      let newStock = Number(item.current_stock);
+      const item = items[0] as InventoryItem;
+      let newStock = Number(item.current_stock || 0);
       const isOut = actionData.action === 'inventory_remove' || actionData.params?.type === 'out';
 
       newStock = isOut ? newStock - targetQuantity : newStock + targetQuantity;
 
-      const { data: updated, error: updateError } = await supabase
+      const { data: updatedRaw, error: updateError } = await supabase
         .from('inventory_items')
         .update({ current_stock: newStock })
         .eq('id', item.id)
+        .eq('company_id', companyId) // 🛡️ Doble Verificación Tenant
         .select()
         .single();
 
       if (updateError) throw updateError;
 
-      // Alerta de stock bajo proactiva.
-      if (updated.current_stock <= (updated.min_stock_alert || 5)) {
+      const updated = updatedRaw as InventoryItem;
+
+      // Alerta de stock bajo proactiva (Telemetría Integrada)
+      if ((updated.current_stock ?? 0) <= (updated.min_stock_alert || 5)) {
         await supabase.from('audit_logs').insert({
           company_id: companyId,
           action: 'LOW_STOCK_ALERT',
+          table_name: 'inventory_items',
+          record_id: updated.id,
           new_data: { sku: updated.sku, stock: updated.current_stock }
         });
       }
 
-      // Shadow PDF Trigger.
+      // Shadow PDF Trigger (Centralización de Auditoría)
       await supabase.from('audit_logs').insert({
         company_id: companyId,
         action: 'TRIGGER_REPORT_REFRESH',
+        table_name: 'inventory_items',
         new_data: { type: 'inventory' }
       });
 
@@ -107,7 +121,7 @@ export async function handleInventoryAction(
         status: 'success',
         sku: updated.sku,
         name: updated.name,
-        stock: updated.current_stock,
+        stock: updated.current_stock ?? 0,
         suggested_options: [
             { id: 'inventory_view', title: '📦 Ver Stock' },
             { id: 'pdf_inventory', title: '📊 Generar PDF' }
@@ -118,7 +132,7 @@ export async function handleInventoryAction(
       const { data, error } = await supabase
         .from('inventory_items')
         .select('sku, name, current_stock')
-        .eq('company_id', companyId)
+        .eq('company_id', companyId) // 🛡️ Aislamiento Tenant
         .order('current_stock', { ascending: true })
         .limit(10);
 
@@ -130,11 +144,12 @@ export async function handleInventoryAction(
         instruction_for_ai: `Resumen de inventario: ${JSON.stringify(data)}`
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     results.push({
       action: actionData.action,
       status: 'error',
-      error: error.message
+      error: err.message
     });
   }
 

@@ -18,7 +18,8 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
-import { useCompanyList, CompanyListItem } from '@/hooks/useCompanyList';
+import { useCompanyList } from '@/hooks/useCompanyList';
+import type { ActiveCompanyType } from '@/contexts/ActiveCompanyContext';
 import { MetricSmall } from '@/components/ui/MetricSmall';
 import { useRouter } from 'next/navigation';
 
@@ -29,7 +30,6 @@ export default function CompaniesManagementPage() {
   const { setActiveCompany } = useActiveCompany();
   const { 
     companies, 
-    filteredCompanies, 
     isLoading, 
     searchQuery, 
     setSearchQuery 
@@ -37,10 +37,10 @@ export default function CompaniesManagementPage() {
   
   const [page, setPage] = useState(0);
 
-  const totalCount = filteredCompanies.length;
-  const paginatedCompanies = filteredCompanies.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const totalCount = companies.length;
+  const paginatedCompanies = companies.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  const handleManageCompany = (company: CompanyListItem) => {
+  const handleManageCompany = (company: ActiveCompanyType) => {
     setActiveCompany(company);
     localStorage.setItem('arise_active_company', company.id);
     router.push('/company');
@@ -212,7 +212,7 @@ export default function CompaniesManagementPage() {
              <div>
                <p className="text-[10px] font-black text-white uppercase tracking-[0.4em] mb-2">Centralización Neural</p>
                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] leading-relaxed">
-                 AL SELECCIONAR UNA UNIDAD, EL CONTEXTO DE ARISE SE RE-SINCRONIZARÁ AUTOMÁTICAMENTE CON EL VAULT, INVENTARIO Y CRM DE DICHA ENTIDAD.
+                 AL SELECCIONAR UNA UNIDAD, EL CONTEXTO DE LOOP SE RE-SINCRONIZARÁ AUTOMÁTICAMENTE CON EL VAULT, INVENTARIO Y CRM DE DICHA ENTIDAD.
                </p>
              </div>
           </div>

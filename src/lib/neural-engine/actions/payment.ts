@@ -1,81 +1,148 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { PaymentActionParams, NeuralActionResult } from '../interfaces/actions';
 
+/**
+ *  PAYMENT HANDLER v11.9.1 (Diamond Resilience)
+ *  Orquestación de links de pago y pasarelas con aislamiento tenant.
+ *  Cero 'any'.
+ */
 export async function handlePaymentAction(
   supabase: SupabaseClient,
-  actionData: any,
+  actionData: PaymentActionParams,
   companyId: string,
   messageId: string
-) {
-  const results: any[] = [];
+): Promise<NeuralActionResult[]> {
+  const results: NeuralActionResult[] = [];
 
-  // 1. PAYMENT_LINK_GENERATE
-  if (actionData.action === 'payment_link_generate') {
-    const { data: msgInfo } = await supabase.from('messages').select('conversation_id').eq('id', messageId).single();
+  try {
+    // 1. PAYMENT_LINK_GENERATE
+    if (actionData.action === 'payment_link_generate' || actionData.action === 'payment_link') {
+      
+      // 🛡️ Optimización Diamond: Si ya tenemos el contexto, evitamos queries redundantes.
+      // Pero para máxima seguridad en la resolución del email/phone, validamos el contacto.
+      
+      const { data: contactData, error: contactError } = await supabase
+        .from('contacts')
+        .select('phone, email, first_name')
+        .eq('id', actionData.contact_id)
+        .eq('company_id', companyId) // Blindaje Tenant Directo
+        .single();
 
-    if (msgInfo) {
-      const { data: contactInfo } = await supabase.from('conversations').select('contacts(phone, email, first_name)').eq('id', msgInfo.conversation_id).single();
-      const phone = (contactInfo as any)?.contacts?.phone;
-      const email = (contactInfo as any)?.contacts?.email;
-      const name = (contactInfo as any)?.contacts?.first_name || 'Cliente Arise';
+      if (contactError || !contactData) {
+        // Fallback: Resolución vía mensaje si el contact_id falla
+        const { data: msgData, error: msgError } = await supabase
+          .from('messages')
+          .select(`
+            conversations!inner(
+              contacts(phone, email, first_name)
+            )
+          `)
+          .eq('id', messageId)
+          .eq('company_id', companyId)
+          .single();
 
-      if (!email) {
-        results.push({
-          action: 'payment_link_generate',
-          status: 'failed',
-          error: 'Email de contacto no disponible. Requerido para MercadoPago.'
-        });
-        return results;
-      }
-
-      if (phone) {
-        const { data: companyData } = await supabase.from('companies').select('name').eq('id', companyId).single();
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
-        const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
-
-        if (!INTERNAL_API_KEY) {
-          throw new Error('INTERNAL_API_KEY no configurada en el servidor');
+        if (msgError || !msgData) {
+          throw new Error(`Payment_Context_Failed: Unauthorized or missing contact context`);
         }
 
-        try {
-          const response = await fetch(`${appUrl}/api/checkout`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'x-api-key': INTERNAL_API_KEY
-            },
-            body: JSON.stringify({
-              companyId: companyId,
-              companyName: companyData?.name || 'Arise Business OS',
-              userEmail: email,
-            }),
-          });
+        const fallbackConv = msgData.conversations as unknown as { 
+          contacts: { phone: string | null; email: string | null; first_name: string | null } 
+        };
+        
+        const contact = fallbackConv.contacts;
+        const phone = contact?.phone;
+        const email = contact?.email;
+        const name = contact?.first_name || 'Cliente';
 
-          const checkoutData = await response.json();
-
-          if (checkoutData.init_point) {
-            results.push({
-              action: 'payment_link_generate',
-              status: 'success',
-              url: checkoutData.init_point,
-              to: phone
-            });
-          } else {
-            results.push({
-              action: 'payment_link_generate',
-              status: 'failed',
-              error: checkoutData.error || 'Failed to generate link'
-            });
-          }
-        } catch (err: any) {
-          results.push({
-            action: 'payment_link_generate',
-            status: 'failed',
-            error: err.message
-          });
-        }
+        return await executeCheckout(supabase, companyId, email, phone, name, actionData.action, results);
       }
+
+      const phone = contactData.phone;
+      const email = contactData.email;
+      const name = contactData.first_name || 'Cliente';
+
+      return await executeCheckout(supabase, companyId, email, phone, name, actionData.action, results);
     }
+  } catch (err: unknown) {
+    const error = err as Error;
+    results.push({
+      action: actionData.action,
+      status: 'error',
+      error: error.message
+    });
   }
 
+  return results;
+}
+
+/**
+ * Lógica de ejecución de checkout centralizada
+ */
+async function executeCheckout(
+  supabase: SupabaseClient,
+  companyId: string,
+  email: string | null,
+  phone: string | null,
+  name: string,
+  action: string,
+  results: NeuralActionResult[]
+): Promise<NeuralActionResult[]> {
+  if (!email) {
+    results.push({
+      action: action,
+      status: 'validation_failed',
+      error: 'Email_Required: El contacto no tiene un email configurado para MercadoPago.'
+    });
+    return results;
+  }
+
+  if (phone) {
+    const { data: companyData } = await supabase
+        .from('companies')
+        .select('name')
+        .eq('id', companyId)
+        .single();
+
+    const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+
+    if (!INTERNAL_API_KEY) {
+      throw new Error('Infrastructure_Failure: INTERNAL_API_KEY missing');
+    }
+
+    const response = await fetch(`${appUrl}/api/checkout`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-api-key': INTERNAL_API_KEY
+      },
+      body: JSON.stringify({
+        companyId: companyId,
+        companyName: companyData?.name || 'ARISE Business OS',
+        userEmail: email,
+        userName: name
+      }),
+    });
+
+    const checkoutData = (await response.json()) as { init_point?: string; error?: string };
+
+    if (checkoutData.init_point) {
+      await supabase.from('audit_logs').insert({
+        company_id: companyId,
+        action: 'PAYMENT_LINK_GENERATED',
+        new_data: { email, phone, status: 'success' }
+      });
+
+      results.push({
+        action: action,
+        status: 'success',
+        url: checkoutData.init_point,
+        to: phone
+      });
+    } else {
+      throw new Error(checkoutData.error || 'Checkout_Service_Failure');
+    }
+  }
+  
   return results;
 }

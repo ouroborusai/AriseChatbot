@@ -1,6 +1,6 @@
 /**
- * MESSAGES MODULE - COMPONENTS
- * Componentes modulares para la página de Mensajes
+ * MESSAGES MODULE - COMPONENTS v11.9.1 (Diamond Resilience)
+ * Componentes modulares para la página de Mensajes - Tipado SSOT Certificado.
  */
 
 export { ConversationList } from './ConversationList';

@@ -1,6 +1,6 @@
 /**
- * ARISE WHATSAPP CONSTANTS Diamond v10.1
- * Límites y plantillas predefinidas para WhatsApp Business API
+ * LOOP WHATSAPP CONSTANTS v10.4 Platinum
+ * Límites y plantillas predefinidas para LOOP Business OS
  */
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -40,8 +40,8 @@ export const WHATSAPP_LIMITS = {
 export const TEMPLATES = {
   // Menu principal
   mainMenu: {
-    header: 'Arise Business OS',
-    footer: 'Diamond Diamond v10.1',
+    header: 'LOOP Business OS',
+    footer: 'LOOP Diamond v10.4 Platinum',
     button: 'Ver Opciones',
   },
 
@@ -56,8 +56,8 @@ export const TEMPLATES = {
 
   // Navegación CRM
   crmNavigation: {
-    header: 'Gestión CRM',
-    footer: 'Arise Intelligence',
+    header: 'Gestión CRM LOOP',
+    footer: 'LOOP Intelligence',
     button: 'Seleccionar',
     sections: [
       {
@@ -80,8 +80,8 @@ export const TEMPLATES = {
 
   // Navegación Inventario
   inventoryNavigation: {
-    header: 'Control Inventario',
-    footer: 'Diamond Diamond v10.1',
+    header: 'Control Inventario LOOP',
+    footer: 'LOOP Diamond v10.4 Platinum',
     button: 'Ver Opciones',
     sections: [
       {

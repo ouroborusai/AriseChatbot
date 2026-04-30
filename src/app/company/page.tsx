@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { Company } from '@/types/database';
 import { 
   Activity, 
   Globe, 
@@ -15,15 +16,6 @@ import {
   Lock
 } from 'lucide-react';
 import Image from 'next/image';
-
-interface Company {
-  id: string;
-  legal_name?: string;
-  rut?: string;
-  segment?: string;
-  created_at: string;
-  metadata?: Record<string, unknown>;
-}
 
 export default function CompanyPage() {
   const [company, setCompany] = useState<Company | null>(null);
@@ -40,11 +32,12 @@ export default function CompanyPage() {
       if (activeCompanyId === 'global') {
         setCompany({
           id: 'global',
-          legal_name: 'VISTA GLOBAL CONSOLIDADA',
-          rut: 'N/A - MULTI-NODE',
-          segment: 'ENTORNO_MAESTRO',
+          name: 'VISTA GLOBAL CONSOLIDADA',
+          tax_id: 'N/A - MULTI-NODE',
+          status: 'active',
+          plan_tier: 'enterprise',
           created_at: new Date().toISOString(),
-          metadata: { mode: "GLOBAL", nodes: "ALL", security: "ROOT_ACCESS" }
+          settings: { mode: "GLOBAL", nodes: "ALL", security: "ROOT_ACCESS" }
         });
         setLoading(false);
         return;
@@ -108,17 +101,17 @@ export default function CompanyPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 relative z-10">
               <div className="space-y-1">
                 <p className="text-[6.5px] font-black text-slate-300 uppercase tracking-widest">Nomenclatura</p>
-                <p className="text-lg font-black text-slate-900 tracking-tighter uppercase">{company?.legal_name || 'INITIALIZING...'}</p>
+                <p className="text-lg font-black text-slate-900 tracking-tighter uppercase">{company?.name || 'INITIALIZING...'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[6.5px] font-black text-slate-300 uppercase tracking-widest">Identidad Tributaria</p>
-                <p className="text-lg font-black text-slate-900 tracking-tighter font-mono">{company?.rut || 'NO_DECLARED'}</p>
+                <p className="text-lg font-black text-slate-900 tracking-tighter font-mono">{company?.tax_id || 'NO_DECLARED'}</p>
               </div>
               <div className="space-y-3">
-                <p className="text-[6.5px] font-black text-slate-300 uppercase tracking-widest">Segmento Industrial</p>
+                <p className="text-[6.5px] font-black text-slate-300 uppercase tracking-widest">Plan de Servicio</p>
                 <div className="inline-flex px-2 py-1 bg-slate-50 text-[#22c55e] rounded-lg text-[7px] font-black uppercase tracking-widest gap-2 items-center border border-slate-100">
                   <div className="w-1 h-1 rounded-full bg-[#22c55e]" />
-                  {company?.segment || 'ESTÁNDAR_INDUSTRIAL'}
+                  {company?.plan_tier || 'ESTÁNDAR_INDUSTRIAL'}
                 </div>
               </div>
               <div className="space-y-1">
@@ -138,7 +131,7 @@ export default function CompanyPage() {
              </h3>
              <div className="bg-white p-4 rounded-xl border border-slate-100 relative group/code shadow-inner">
                <pre className="text-[8px] leading-relaxed text-slate-400 font-mono overflow-x-auto scrollbar-hide">
-                 {JSON.stringify(company?.metadata || { status: "ACTIVE", core: "LOOP_v2.5", security: "AES-256" }, null, 3)}
+                 {JSON.stringify(company?.settings || { status: "ACTIVE", core: "LOOP_v2.5", security: "AES-256" }, null, 3)}
                </pre>
              </div>
           </div>

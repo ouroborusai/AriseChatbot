@@ -1,5 +1,5 @@
 /**
- * ARISE NEURAL ENGINE - EXPORTS Diamond v10.1
+ * LOOP NEURAL ENGINE - EXPORTS Platinum v10.4
  * Punto único de importación para el motor neural
  */
 

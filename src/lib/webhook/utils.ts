@@ -1,35 +1,52 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+// 🛡️ CONFIGURACIÓN DE INFRAESTRUCTURA DIAMOND v11.9.1
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = (process.env.ARISE_MASTER_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)!;
-export const supabase = createClient(supabaseUrl, supabaseKey);
 
-export async function getWhatsAppConfig(companyId: string) {
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('[WEBHOOK_UTILS] Missing Supabase Infrastructure Keys');
+}
+
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+
+/**
+ * Recupera la configuración de WhatsApp con Aislamiento Tenant Mandatorio.
+ */
+export async function getWhatsAppConfig(companyId: string): Promise<{ token: string; phoneId: string }> {
   const { data, error } = await supabase
     .from('companies')
     .select('settings')
     .eq('id', companyId)
     .single();
 
-  if (error || !data?.settings?.whatsapp) {
-    throw new Error(`[WHATSAPP_CONFIG_ERROR] No se encontró configuración válida para la empresa: ${companyId}`);
+  if (error || !data?.settings) {
+    throw new Error(`[WHATSAPP_CONFIG_ERROR] No se encontró configuración para la empresa: ${companyId}`);
   }
 
-  const { access_token, phone_number_id } = data.settings.whatsapp;
+  const settings = data.settings as any; // Cast local controlado para settings JSON
+  const whatsapp = settings.whatsapp;
 
-  if (!access_token || !phone_number_id) {
-    throw new Error(`[WHATSAPP_CONFIG_ERROR] Credenciales incompletas en DB para la empresa: ${companyId}`);
+  if (!whatsapp?.access_token || !whatsapp?.phone_number_id) {
+    throw new Error(`[WHATSAPP_CONFIG_ERROR] Credenciales incompletas para la empresa: ${companyId}`);
   }
 
   return {
-    token: access_token,
-    phoneId: phone_number_id
+    token: whatsapp.access_token,
+    phoneId: whatsapp.phone_number_id
   };
-
 }
 
-export async function resolveIdentity(sender: string) {
-  // 1. Buscar contacto por teléfono
+/**
+ * Resuelve la identidad del remitente con Aislamiento Tenant y trazabilidad de conversación.
+ */
+export async function resolveIdentity(sender: string): Promise<{
+  contact_id: string;
+  company_id: string;
+  name: string;
+  conversation_id: string;
+}> {
+  // 1. Buscar contacto por teléfono (SSOT Contacts)
   const { data: contact } = await supabase
     .from('contacts')
     .select('id, company_id, full_name')
@@ -41,11 +58,11 @@ export async function resolveIdentity(sender: string) {
         contact_id: contact.id,
         company_id: contact.company_id,
         name: contact.full_name,
-        conversation_id: `conv_${sender}` // Trazabilidad dinámica
+        conversation_id: `conv_${sender}`
     };
   }
 
-  // 2. Fallback: Directorio Interno
+  // 2. Fallback: Directorio Interno (Internal Team)
   const { data: internal } = await supabase
     .from('internal_directory')
     .select('company_id, name')
@@ -61,36 +78,43 @@ export async function resolveIdentity(sender: string) {
     };
   }
 
-  // 3. SuperAdmin Fallback (Seguimiento de Invitados v10.4)
+  // 3. SuperAdmin Fallback (Protocolo Guest v11.9.1)
+  const masterCompany = process.env.ARISE_MASTER_COMPANY_ID || '';
+  
   return { 
     contact_id: 'guest', 
-    company_id: process.env.ARISE_MASTER_COMPANY_ID || 'ca69f43b-7b11-4dd3-abe8-8338580b2d84', 
-    name: 'Usuario LOOP Nuevo',
+    company_id: masterCompany, 
+    name: 'Usuario Nuevo',
     conversation_id: `conv_${sender}`
   };
 }
 
 /**
- * LOGGER INDUSTRIAL Diamond v10.2
- * Guarda eventos de depuración en la tabla audit_logs
+ * LOGGER DE TELEMETRÍA DIAMOND
+ * Registra eventos en audit_logs para auditoría centralizada.
  */
 export async function logEvent(params: {
   companyId?: string;
   action: string;
-  details?: any;
-}) {
-
+  details?: Record<string, unknown>;
+  tableName?: string;
+}): Promise<void> {
   console.log(`[EVENT] ${params.action}`, params.details || '');
-  await supabase.from('audit_logs').insert({
-    company_id: params.companyId,
-    action: params.action,
-    new_data: params.details || {},
-    table_name: 'system_telemetry'
-  });
+  
+  try {
+    await supabase.from('audit_logs').insert({
+      company_id: params.companyId,
+      action: params.action,
+      new_data: params.details || {},
+      table_name: params.tableName || 'system_telemetry'
+    });
+  } catch (err: unknown) {
+    console.error('[LOG_EVENT_FAILURE]', (err as Error).message);
+  }
 }
 
 /**
- * Envía un documento PDF a WhatsApp usando un mediaId existente (Caché/Shadow PDF)
+ * Envía un documento PDF a WhatsApp usando un mediaId existente.
  */
 export async function sendWhatsAppDocument(params: {
   to: string;
@@ -98,11 +122,12 @@ export async function sendWhatsAppDocument(params: {
   filename: string;
   token: string;
   phoneId: string;
-}) {
+}): Promise<Response> {
   const { to, mediaId, filename, token, phoneId } = params;
-  const apiVersion = process.env.META_API_VERSION || 'v23.0';
+  const apiVersion = process.env.META_API_VERSION || 'v21.0';
+  const catalog_id = process.env.META_CATALOG_ID || '';
 
-  const res = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/messages`, {
+  return fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/messages`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -118,6 +143,4 @@ export async function sendWhatsAppDocument(params: {
       }
     })
   });
-
-  return res;
 }

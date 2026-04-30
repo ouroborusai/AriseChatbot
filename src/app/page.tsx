@@ -57,7 +57,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-2xl font-black tracking-tighter leading-none text-neural-dark uppercase italic">ARISE</span>
+              <span className="text-2xl font-black tracking-tighter leading-none text-neural-dark uppercase italic">LOOP</span>
               <span className="text-[8px] font-black text-primary uppercase tracking-[0.6em] mt-2 italic opacity-80">BUSINESS_OS_v10.4</span>
             </div>
           </div>
@@ -92,7 +92,7 @@ export default function LandingPage() {
               </span>
             </h1>
             <p className="text-xl text-slate-500 mb-16 leading-relaxed max-w-xl mx-auto lg:mx-0 font-black animate-in fade-in slide-in-from-left-16 duration-1000 tracking-tighter">
-              Centralice la soberanía de sus datos con el cerebro de <span className="text-accent">ARISE</span>. Una infraestructura neural diseñada para la alta disponibilidad empresarial.
+              Centralice la soberanía de sus datos con el cerebro de <span className="text-accent">LOOP</span>. Una infraestructura neural diseñada para la alta disponibilidad empresarial.
             </p>
             <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-6 animate-in fade-in slide-in-from-bottom-12 duration-1000">
               <Link href="/auth/login?tab=register" className="flex items-center justify-center gap-6 bg-primary text-white px-12 py-5 rounded-xl text-[10px] font-black uppercase tracking-[0.5em] shadow-2xl hover:bg-accent transition-all active:scale-95 group italic">
@@ -169,7 +169,7 @@ export default function LandingPage() {
                 Arquitectura <br /><span className="text-primary">de Alta Fidelidad.</span>
               </h2>
               <p className="text-xl text-slate-500 mb-16 leading-relaxed font-black tracking-tighter">
-                El **ARISE Engine** procesa el ADN de su empresa. Convertimos la información estática en conocimiento vivo y accionable mediante protocolos de memoria persistente.
+                El **LOOP Engine** procesa el ADN de su empresa. Convertimos la información estática en conocimiento vivo y accionable mediante protocolos de memoria persistente.
               </p>
               <div className="space-y-8">
                 <div className="flex items-center gap-8 bg-white p-10 rounded-xl border border-slate-100 shadow-xl hover:border-primary/30 transition-all group overflow-hidden relative">
@@ -222,7 +222,7 @@ export default function LandingPage() {
       <footer className="py-24 border-t border-slate-100 bg-slate-50/30">
         <div className="max-w-7xl mx-auto px-10 flex flex-col md:flex-row justify-between items-center gap-16">
           <div className="flex flex-col items-center md:items-start">
-             <span className="text-3xl font-black tracking-tighter text-neural-dark uppercase italic">ARISE</span>
+             <span className="text-3xl font-black tracking-tighter text-neural-dark uppercase italic">LOOP</span>
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.6em] mt-4 italic opacity-60">AUTONOMOUS_BUSINESS_OS_v10.4</p>
           </div>
           

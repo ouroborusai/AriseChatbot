@@ -53,7 +53,7 @@ export default function NeuralNotifier() {
             
             // Opcional: Notificación nativa del sistema
             if (Notification.permission === 'granted') {
-              new Notification('Nuevo Mensaje Arise', {
+              new Notification('Nuevo Mensaje LOOP', {
                 body: newMessage.content,
                 icon: '/brand/official.png'
               });

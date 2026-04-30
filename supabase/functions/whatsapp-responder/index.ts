@@ -30,7 +30,7 @@ Deno.serve(async (req: Request) => {
       .limit(1)
       .single();
 
-    let systemPrompt = promptQuery.data?.system_prompt || 'Eres Ouroborus AI, el asistente financiero inteligente de Arise. Contesta cordial y brevemente. INTERACTIVIDAD: Separa botones con "---" (ej. "--- Opcion1 | Opcion2").';
+    let systemPrompt = promptQuery.data?.system_prompt || 'Eres Ouroborus AI, el motor de inteligencia de LOOP Business OS. Contesta cordial y brevemente. INTERACTIVIDAD: Separa botones con "---" (ej. "--- Opcion1 | Opcion2").';
 
     // Añadir Contexto de negocio solo a clientes establecidos
     if (activeCategory === 'General') {

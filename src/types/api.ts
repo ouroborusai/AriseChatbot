@@ -1,5 +1,5 @@
 /**
- * ARISE API TYPES Diamond v10.1 [v10.4 Platinum Update]
+ * LOOP API TYPES Platinum v10.4
  * Tipos TypeScript estrictos para endpoints de la API.
  */
 

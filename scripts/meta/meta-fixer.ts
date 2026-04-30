@@ -8,7 +8,7 @@ const API_VERSION = 'v23.0';
 async function fixMeta() {
   if (!ACCESS_TOKEN) return;
 
-  console.log('🛠️ META FIXER - ARISE v10.4\n');
+  console.log('🛠️ META FIXER - LOOP v10.4\n');
 
   // 1. Intentar publicar un Flow
   const FLOW_ID = '1679867603465733';

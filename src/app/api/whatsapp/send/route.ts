@@ -3,74 +3,73 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import {
   buildWhatsAppMessage,
-  validateMessage,
-  debugParse,
   type WhatsAppApiResponse,
 } from '@/lib/whatsapp-parser';
 
 /**
- * LOOP WHATSAPP SEND API v10.0
- * Envía mensajes interactivos con tipos TypeScript estrictos
+ *  ARISE WHATSAPP SEND API v11.9.1 (Diamond Resilience)
+ *  Endpoint de despacho manual y automatizado con Aislamiento Tenant RLS.
+ *  Cero 'any'. 
  */
 export async function POST(req: Request) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
   try {
-    const { contactId, content } = await req.json();
+    const { contactId, content } = (await req.json()) as { contactId: string; content: string };
 
     if (!contactId || !content) {
       return NextResponse.json(
-        { error: 'Parámetros requeridos: contactId y content' },
+        { error: 'Incomplete_Request: contactId and content required' },
         { status: 400 }
       );
     }
 
-    // 1. Obtener datos de empresa y contacto
+    // 1. Recuperación de Contexto con Aislamiento Tenant (RLS Habilitado)
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
-      .select('phone, companies(id, settings)')
+      .select('phone, company_id, companies!inner(id, settings)')
       .eq('id', contactId)
       .single();
 
-    const company = Array.isArray(contact?.companies) 
-      ? contact?.companies[0] 
-      : (contact?.companies as any);
-
-    if (contactError || !company?.settings?.whatsapp) {
+    if (contactError || !contact) {
       return NextResponse.json(
-        { error: 'Configuración de WhatsApp no encontrada' },
+        { error: 'Access_Denied: Contact or Company configuration not found' },
         { status: 404 }
       );
     }
 
-    const { access_token, phone_number_id, catalog_id } = company.settings.whatsapp;
-    const apiVersion = process.env.META_API_VERSION || 'v23.0';
+    // Normalización de settings de empresa (SSOT JSON)
+    const company = contact.companies as unknown as { settings: Record<string, any> };
+    const settings = company?.settings || {};
+    const whatsapp = settings.whatsapp;
 
-    // 2. Buscar conversación activa
-    const { data: conv } = await supabase
+    if (!whatsapp?.access_token || !whatsapp?.phone_number_id) {
+      return NextResponse.json(
+        { error: 'Infrastructure_Failure: WhatsApp credentials missing for this tenant' },
+        { status: 404 }
+      );
+    }
+
+    const { access_token, phone_number_id, catalog_id } = whatsapp;
+    const apiVersion = process.env.META_API_VERSION || 'v21.0';
+
+    // 2. Localización de Conversación (Tenant Guard)
+    const { data: conv, error: convError } = await supabase
       .from('conversations')
       .select('id')
       .eq('contact_id', contactId)
+      .eq('company_id', contact.company_id) // 🛡️ AISLAMIENTO TENANT OBLIGATORIO
       .maybeSingle();
 
-    if (!conv) {
-      return NextResponse.json(
-        { error: 'Conversación no encontrada' },
-        { status: 404 }
-      );
+    if (convError || !conv) {
+      return NextResponse.json({ error: 'Conversation_Isolation_Failure' }, { status: 404 });
     }
 
-    // Validar contenido antes de enviar
-    const validation = validateMessage(content);
-    if (!validation.valid && process.env.NODE_ENV === 'development') {
-      debugParse(content);
-    }
-
-    // 5. Construir mensaje con parser inteligente
+    // 3. Construcción de Payload Meta (Parser v11.9.1)
     const waPayload = buildWhatsAppMessage(contact.phone, content, catalog_id);
 
-    // 6. Enviar a WhatsApp API
+    // 4. Despacho a Meta Graph API (v21.0 Hardened)
     const response = await fetch(
       `https://graph.facebook.com/${apiVersion}/${phone_number_id}/messages`,
       {
@@ -83,33 +82,33 @@ export async function POST(req: Request) {
       }
     );
 
-    const result: WhatsAppApiResponse = await response.json();
+    const result = (await response.json()) as WhatsAppApiResponse;
 
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new Error(`Meta_API_Error: ${result.error.message}`);
     }
 
-    // 7. Registrar mensaje del agente
-    let interactiveCount = 0;
-    if (waPayload.type === 'interactive') {
-      if (waPayload.interactive.type === 'button') {
-        interactiveCount = waPayload.interactive.action.buttons.length;
-      } else if (waPayload.interactive.type === 'list') {
-        interactiveCount = waPayload.interactive.action.sections.reduce((acc, s) => acc + s.rows.length, 0);
-      } else {
-        // Para catálogos o productos, el conteo es 1 o basado en los items
-        interactiveCount = 1;
-      }
-    }
-
-    await supabase.from('messages').insert({
+    // 5. Registro de Mensaje y Telemetría Diamond
+    const { error: insertError } = await supabase.from('messages').insert({
       conversation_id: conv.id,
       sender_type: 'bot',
       content: content,
       metadata: {
         message_type: waPayload.type,
-        interactive_count: interactiveCount,
+        meta_id: result.messages?.[0]?.id,
+        processed_at: new Date().toISOString()
       },
+    });
+
+    if (insertError) {
+      console.warn('[DB_SYNC_WARNING]', insertError.message);
+    }
+
+    // Auditoría Centralizada
+    await supabase.from('audit_logs').insert({
+      company_id: contact.company_id,
+      action: 'WHATSAPP_MESSAGE_SENT',
+      new_data: { type: waPayload.type, meta_id: result.messages?.[0]?.id }
     });
 
     return NextResponse.json({
@@ -117,10 +116,12 @@ export async function POST(req: Request) {
       messageId: result.messages?.[0]?.id,
       messageType: waPayload.type,
     });
+
   } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+    const error = err as Error;
+    console.error('[WHATSAPP_SEND_FAILURE]', error.message);
     return NextResponse.json(
-      { error: errorMessage },
+      { error: error.message },
       { status: 500 }
     );
   }

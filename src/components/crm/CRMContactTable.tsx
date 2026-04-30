@@ -1,24 +1,20 @@
 import React from 'react';
 import { MoreHorizontal, ArrowUpRight, ShieldCheck, Activity } from 'lucide-react';
 
-interface CRMContact {
-  id: string;
-  full_name?: string;
-  phone?: string;
-  email?: string;
-  category?: string;
-  created_at: string;
+import type { Contact } from '@/types/database';
+
+export type CRMContactType = Pick<Contact, 'id' | 'full_name' | 'phone' | 'email' | 'category' | 'created_at'> & {
   companies?: { name: string };
-}
+};
 
 interface CRMContactTableProps {
   loading: boolean;
-  contacts: CRMContact[];
-  onOpenChat: (contact: CRMContact) => void;
-  onUpdateSegment: (id: string, newCategory: string) => void;
+  contacts: CRMContactType[];
+  onOpenChat: (contact: CRMContactType) => void;
+  onUpdateCategory: (id: string, newCategory: CRMContactType['category']) => void;
 }
 
-export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateSegment }: CRMContactTableProps) {
+export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateCategory }: CRMContactTableProps) {
   return (
     <div className="loop-card overflow-hidden relative animate-in fade-in slide-in-from-bottom-4 duration-1000">
       <div className="overflow-x-auto">
@@ -72,7 +68,7 @@ export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateSegment
                     <div className="relative inline-block group/select">
                       <select 
                         value={contact.category || 'lead'}
-                        onChange={(e) => onUpdateSegment(contact.id, e.target.value)}
+                        onChange={(e) => onUpdateCategory(contact.id, e.target.value as CRMContactType['category'])}
                         style={{ borderRadius: 'var(--radius-md)' }}
                         className={`text-[9px] font-black px-5 py-2 border appearance-none cursor-pointer outline-none transition-all shadow-sm tracking-[0.2em] uppercase italic ${
                           contact.category === 'client' ? 'bg-primary/10 text-primary border-primary/20' : 

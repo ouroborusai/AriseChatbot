@@ -31,9 +31,11 @@ export async function requireAuth() {
   const apiKey = headerList.get('x-api-key');
 
   // Permitir acceso si la llave de API interna es correcta (operaciones internas)
-  if (apiKey && apiKey === (process.env.INTERNAL_API_KEY || 'arise_internal_v9_secret')) {
-    return { error: null, user: { id: 'system_agent', email: 'agent@arise.ai' } };
+  if (apiKey && apiKey === process.env.INTERNAL_API_KEY) {
+    return { error: null, user: { id: 'system_agent', email: 'agent@loop-os.ai' } };
   }
+
+
 
   // Usar Anon Key + session cookies para auth de usuario estándar
   const supabase = createClient(

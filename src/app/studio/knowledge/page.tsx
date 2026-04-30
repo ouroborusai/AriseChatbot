@@ -24,17 +24,13 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 
-interface FAQ {
-  id: string;
-  question: string;
-  answer: string;
-  is_active: boolean;
-  created_at: string;
-}
+import type { Faq } from '@/types/database';
+
+export type FaqType = Pick<Faq, 'id' | 'question' | 'answer' | 'is_active' | 'created_at'>;
 
 export default function FAQManagementPage() {
   const { activeCompany, isLoading: isContextLoading } = useActiveCompany();
-  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [faqs, setFaqs] = useState<FaqType[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -68,8 +64,9 @@ export default function FAQManagementPage() {
 
       if (error) throw error;
       setFaqs(data || []);
-    } catch (err: any) {
-      console.error('Error fetching FAQs:', err.message);
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error('Error fetching FAQs:', error.message);
       setError('Error al cargar las preguntas frecuentes.');
     } finally {
       setLoading(false);
@@ -102,8 +99,9 @@ export default function FAQManagementPage() {
 
       fetchFAQs();
       resetForm();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message);
     } finally {
       setSaving(false);
     }
@@ -117,12 +115,13 @@ export default function FAQManagementPage() {
       if (error) throw error;
       setFaqs(faqs.filter(f => f.id !== id));
       setSuccess('FAQ eliminada.');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message);
     }
   };
 
-  const toggleStatus = async (faq: FAQ) => {
+  const toggleStatus = async (faq: FaqType) => {
     try {
       const { error } = await supabase
         .from('faqs')
@@ -130,16 +129,17 @@ export default function FAQManagementPage() {
         .eq('id', faq.id);
       if (error) throw error;
       setFaqs(faqs.map(f => f.id === faq.id ? { ...f, is_active: !f.is_active } : f));
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message);
     }
   };
 
-  const startEdit = (faq: FAQ) => {
+  const startEdit = (faq: FaqType) => {
     setEditingId(faq.id);
-    setQuestion(faq.question);
-    setAnswer(faq.answer);
-    setIsActive(faq.is_active);
+    setQuestion(faq.question || '');
+    setAnswer(faq.answer || '');
+    setIsActive(faq.is_active || false);
     setIsAdding(true);
   };
 
@@ -156,8 +156,8 @@ export default function FAQManagementPage() {
   };
 
   const filteredFaqs = faqs.filter(f => 
-    f.question.toLowerCase().includes(search.toLowerCase()) || 
-    f.answer.toLowerCase().includes(search.toLowerCase())
+    (f.question || '').toLowerCase().includes(search.toLowerCase()) || 
+    (f.answer || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (

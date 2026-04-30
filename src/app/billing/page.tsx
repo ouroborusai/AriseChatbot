@@ -20,16 +20,7 @@ import {
 } from 'lucide-react';
 import { MetricSmall } from '@/components/ui/MetricSmall';
 import Image from 'next/image';
-
-interface ClientDocument {
-  id: string;
-  folio?: string;
-  amount_total?: number;
-  created_at: string;
-  document_type?: string;
-  company_id: string;
-  status?: string;
-}
+import type { ClientDocument } from '@/types/database';
 
 export default function BillingPage() {
   const [docs, setDocs] = useState<ClientDocument[]>([]);
@@ -50,7 +41,7 @@ export default function BillingPage() {
     try {
       let query = supabase
         .from('client_documents')
-        .select('id, folio, amount_total, created_at, document_type, company_id, status');
+        .select('id, folio, amount_total, amount_tax, created_at, document_type, company_id, status');
       
       if (!isGlobal) query = query.eq('company_id', activeCompanyId);
       
@@ -61,12 +52,13 @@ export default function BillingPage() {
       if (error) throw error;
       
       if (data) {
-        setDocs(data);
-        const total = data.reduce((acc, d) => acc + Number(d.amount_total), 0);
+        setDocs(data as unknown as ClientDocument[]);
+        const total = data.reduce((acc, d) => acc + Number(d.amount_total || 0), 0);
+        const taxTotal = data.reduce((acc, d) => acc + Number(d.amount_tax || 0), 0);
         const paidCount = data.filter(d => d.status === 'paid').length;
         setStats({
           total: total,
-          tax: total * 0.19, // IVA Estimado
+          tax: taxTotal, // Cero Cálculos Locales - Extracción SSOT
           count: data.length,
           efficiency: data.length > 0 ? (paidCount / data.length) * 100 : 0
         });

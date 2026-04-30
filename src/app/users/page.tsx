@@ -18,21 +18,17 @@ import {
 import { MetricSmall } from '@/components/ui/MetricSmall';
 import Image from 'next/image';
 
-interface UserProfile {
-  id: string;
-  email?: string;
-  role: string;
-  created_at?: string;
-}
+import type { Profile, Company } from '@/types/database';
 
-interface CompanyMinimal {
-  id: string;
-  name: string;
-}
+export type UserProfileType = Pick<Profile, 'id' | 'email' | 'created_at'> & {
+  role: string;
+};
+
+export type CompanyMinimalType = Pick<Company, 'id' | 'name'>;
 
 export default function UsersManagement() {
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [companies, setCompanies] = useState<CompanyMinimal[]>([]);
+  const [users, setUsers] = useState<UserProfileType[]>([]);
+  const [companies, setCompanies] = useState<CompanyMinimalType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

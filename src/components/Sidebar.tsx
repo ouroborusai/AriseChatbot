@@ -77,7 +77,10 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-100 flex flex-col p-5 pb-10 z-50 transition-all duration-500 ease-out shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+    <aside 
+      className="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-100 flex flex-col p-5 pb-10 z-50 transition-all duration-500 ease-out shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
+      style={{ backgroundImage: 'url("/brand/backgrounds/pure-mesh.png")', backgroundSize: 'cover', backgroundPosition: 'center' }}
+    >
       
       {/* HOME / LANDING HOOK */}
       <div className="mb-6">

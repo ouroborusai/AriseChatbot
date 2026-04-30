@@ -1,231 +1,215 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { 
-  Terminal, 
-  Search, 
-  MessageSquare, 
-  RefreshCcw, 
-  AlertTriangle, 
-  CheckCircle,
-  Play,
-  Cpu,
-  Smartphone,
-  Layers,
-  ChevronRight,
-  Database,
-  Activity,
-  ShieldCheck,
-  Zap
-} from 'lucide-react';
-import Image from 'next/image';
+import { Terminal, Search, Activity, ShieldCheck, Zap, Database } from 'lucide-react';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 
-export default function NeuralLogPage() {
-  const [messages, setMessages] = useState<any[]>([]);
-  const [testPhone, setTestPhone] = useState('56990062213');
+// ⚠️ TIPADO SSOT IMPORTADO DIRECTAMENTE DE LA BASE DE DATOS
+import type { AuditLog } from '@/types/database';
+
+/**
+ *  TELEMETRY LOGS (Audit Flow) v11.9.1 (Diamond Resilience - Luminous Pure)
+ *  Aislamiento Tenant Estricto y Tipado SSOT.
+ */
+export default function TelemetryLogsPage() {
+  const { activeCompany, isLoading: isContextLoading } = useActiveCompany();
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLive, setIsLive] = useState(true);
-  const [stats, setStats] = useState({ total: 0, errors: 0, interactive_rate: '0%' });
 
-  useEffect(() => {
-    fetchLogs();
-    if (isLive) {
-      const channel = supabase
-        .channel('schema-db-changes')
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'messages' },
-          () => {
-            fetchLogs();
-          }
-        )
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
-    }
-  }, [isLive, testPhone]);
+  // Extracción blindada del Tenant Activo
+  const activeCompanyId = activeCompany?.id;
 
   const fetchLogs = async () => {
-    const { data } = await supabase
-      .from('messages')
-      .select(`
-        id, 
-        content, 
-        sender_type, 
-        created_at, 
-        metadata,
-        conversations!inner (
-          contact_id,
-          contacts!inner (phone, full_name)
-        )
-      `)
-      .eq('conversations.contacts.phone', testPhone)
+    if (!activeCompanyId) return;
+    
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .select('*')
+      .eq('company_id', activeCompanyId) // 🛡️ AISLAMIENTO TENANT OBLIGATORIO
       .order('created_at', { ascending: false })
-      .limit(30);
+      .limit(50);
 
     if (data) {
-      setMessages(data);
-      const total = data.length;
-      const interactive = data.filter(m => m.sender_type === 'bot' && m.metadata?.interactive_buttons?.length > 0).length;
-      const rate = total > 0 ? (interactive / (total / 2) * 100).toFixed(0) + '%' : '0%';
-      setStats({ total, errors: 0, interactive_rate: rate });
+      setLogs(data as AuditLog[]);
     }
+    setLoading(false);
   };
 
-  return (
-    <div className="flex flex-col w-full max-w-full py-6 md:py-12 animate-in fade-in duration-700 overflow-x-hidden relative min-h-screen bg-[#020617]">
-      
-      {/* PREMIUM BACKGROUND ACCENTS */}
-      <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-green-500/5 blur-[120px] rounded-full -z-10" />
-      <div className="absolute bottom-0 left-0 w-[50%] h-[50%] bg-blue-500/5 blur-[120px] rounded-full -z-10" />
+  useEffect(() => {
+    if (activeCompanyId) {
+      fetchLogs();
+    }
+  }, [activeCompanyId]);
 
-      <div className="max-w-[1600px] mx-auto w-full px-4 lg:px-10">
-        
-        {/* HEADER SECTION - DIAMOND v10.0 */}
-        <header className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-10 mb-16 relative z-10">
-          <div className="relative">
-            <div className="flex items-center gap-3 mb-4">
-               <div className="w-1.5 h-6 bg-green-500 rounded-full shadow-[0_0_15px_#22c55e]" />
-               <span className="text-[10px] font-black text-green-500 uppercase tracking-[0.5em]">Telemetría en Tiempo Real</span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none italic uppercase">
-              Audit <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-500">Flow</span>
+  useEffect(() => {
+    if (!isLive || !activeCompanyId) return;
+
+    // 🛡️ Suscripción Realtime con Aislamiento Tenant RLS
+    const channel = supabase.channel('audit_logs_channel')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'audit_logs',
+        filter: `company_id=eq.${activeCompanyId}`
+      }, (payload) => {
+        setLogs((prev) => [payload.new as AuditLog, ...prev].slice(0, 50));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isLive, activeCompanyId]);
+
+  const filteredLogs = logs.filter(log => 
+    (log.action && log.action.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (log.table_name && log.table_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (log.record_id && log.record_id.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  return (
+    <div className="flex flex-col w-full max-w-full py-12 animate-in fade-in duration-700 overflow-x-hidden relative min-h-[calc(100vh-72px)] bg-slate-50">
+      {/* Luminous Pure Background Glow */}
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#22c55e]/10 blur-[100px] rounded-full -z-10 animate-pulse pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[30%] h-[30%] bg-[#22c55e]/5 blur-[120px] rounded-full -z-10 pointer-events-none" />
+
+      <div className="px-8 md:px-12 w-full max-w-[1600px] mx-auto flex flex-col h-full relative z-10">
+        <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-8 mb-12">
+          <div>
+            <h1 className="text-4xl md:text-6xl font-black text-[#1a1a1a] tracking-tighter uppercase italic">
+              Audit <span className="text-[#22c55e]">Flow.</span>
             </h1>
-            <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] mt-5 flex items-center gap-3">
-              <Terminal size={12} className="text-green-500" />
-              SISTEMA DE AUDITORÍA NEURAL / v2.5
+            <p className="text-[10px] md:text-[12px] font-black text-[#22c55e] uppercase tracking-[0.4em] mt-4 flex items-center gap-3 italic">
+              <Terminal size={14} className="text-[#22c55e]" />
+              TELEMETRY_SSOT_v11.9.1_DIAMOND
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6">
+          <div className="flex items-center gap-4">
             <div className="relative group">
-              <div className="absolute inset-0 bg-white/5 rounded-[24px] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-              <Smartphone className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 z-20" size={16} />
-              <input 
-                type="text" 
-                value={testPhone} 
-                onChange={(e) => setTestPhone(e.target.value)}
-                placeholder="Frecuencia_Tel..." 
-                className="w-full lg:w-64 pl-14 pr-6 py-4.5 bg-white/5 text-[10px] font-black uppercase tracking-widest text-white rounded-[24px] outline-none border border-white/10 focus:border-green-500/30 focus:bg-white/10 transition-all relative z-10"
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#22c55e] transition-colors" size={16} />
+              <input
+                type="text"
+                placeholder="BUSCAR_LOGS..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full md:w-72 bg-white border border-slate-200 py-4 pl-14 pr-6 text-[10px] font-black text-[#1a1a1a] uppercase tracking-widest outline-none focus:border-[#22c55e]/50 focus:ring-4 focus:ring-[#22c55e]/10 transition-all italic shadow-sm"
+                style={{ borderRadius: 40 }}
               />
             </div>
-            
-            <button 
+            <button
               onClick={() => setIsLive(!isLive)}
-              className={`flex items-center justify-center gap-4 px-10 py-5 rounded-[24px] text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all active:scale-95 border ${isLive ? 'bg-green-500 text-slate-900 border-transparent shadow-[0_0_30px_#22c55e33]' : 'bg-white/5 text-slate-500 border-white/5 hover:bg-white/10 hover:text-white'}`}
+              className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest italic transition-all shadow-sm border ${
+                isLive
+                  ? 'bg-[#22c55e] text-white border-[#22c55e]/20 shadow-[0_0_20px_rgba(34,197,94,0.3)]'
+                  : 'bg-white text-slate-400 border-slate-200 hover:border-[#22c55e]/30'
+              }`}
+              style={{ borderRadius: 40 }}
             >
-              <RefreshCcw size={16} className={isLive ? 'animate-spin' : ''} />
-              <span>{isLive ? 'Live_Sync_ON' : 'Streaming_Paused'}</span>
+              <div className="flex items-center gap-3">
+                {isLive ? <Activity size={14} className="animate-pulse" /> : <Database size={14} />}
+                <span className="hidden sm:inline">{isLive ? 'Live_Sync_ON' : 'Sync_Paused'}</span>
+              </div>
             </button>
           </div>
         </header>
 
-        {/* METRICS GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 relative z-10">
-            {[
-                { label: 'Telemetría IA', value: stats.total, icon: Database, color: 'text-blue-500', bg: 'bg-blue-500/5' },
-                { label: 'Interactive Rate', value: stats.interactive_rate, icon: Layers, color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
-                { label: 'Neural Health', value: 'Optimal', icon: Cpu, color: 'text-green-500', bg: 'bg-green-500/5' },
-                { label: 'Latency Pulse', value: 'Active', icon: Activity, color: 'text-orange-500', bg: 'bg-orange-500/5' }
-            ].map((st, i) => (
-                <div key={i} className={`loop-card p-8 bg-white/5 border-white/5 backdrop-blur-3xl group hover:border-white/10 hover:bg-white/[0.08] transition-all rounded-[32px] shadow-2xl relative overflow-hidden`}>
-                    <div className={`absolute top-0 right-0 w-24 h-24 blur-3xl opacity-20 ${st.bg}`} />
-                    <div className="flex justify-between items-start mb-10 relative z-10">
-                        <st.icon className={`${st.color} transition-all`} size={20} />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-700">Idx_0{i+1}</span>
-                    </div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.4em] mb-2 text-slate-500">{st.label}</p>
-                    <p className="text-3xl font-black italic text-white tracking-tighter">{st.value}</p>
-                </div>
-            ))}
-        </div>
-
-        {/* CONSOLE TERMINAL */}
-        <div className="loop-card bg-white/5 rounded-[48px] border border-white/5 overflow-hidden backdrop-blur-3xl shadow-2xl relative z-10">
-            <div className="bg-white/5 px-10 py-8 border-b border-white/5 flex justify-between items-center">
-                <div className="flex items-center gap-5">
-                    <div className="flex gap-2.5">
-                       <div className="w-3.5 h-3.5 rounded-full bg-red-500/20 border border-red-500/30" />
-                       <div className="w-3.5 h-3.5 rounded-full bg-yellow-500/20 border border-yellow-500/30" />
-                       <div className="w-3.5 h-3.5 rounded-full bg-green-500/20 border border-green-500/30" />
-                    </div>
-                    <span className="text-[11px] font-black uppercase tracking-[0.6em] ml-6 text-slate-500 italic">Live_Response_Console</span>
-                </div>
-                <div className="flex items-center gap-4 text-[9px] font-black text-green-500 tracking-widest uppercase">
-                    <Play size={14} className="fill-green-500 animate-pulse" /> 
-                    <span className="hidden sm:inline">Streaming_Production_v2.5</span>
-                </div>
-            </div>
-
-            <div className="p-10 lg:p-16 space-y-12 max-h-[800px] overflow-y-auto scrollbar-hide">
-                {messages.length === 0 ? (
-                  <div className="py-40 text-center">
-                     <Zap size={64} className="mx-auto text-slate-800 mb-8 opacity-20 animate-pulse" />
-                     <p className="text-[11px] font-black text-slate-600 uppercase tracking-[1em]">Esperando enlace neuronal...</p>
-                  </div>
+        {/* Master Log Container */}
+        <div 
+          className="flex-1 bg-white border border-slate-100 shadow-[0_4px_30px_-10px_rgba(34,197,94,0.15)] relative overflow-hidden" 
+          style={{ borderRadius: 40 }}
+        >
+          <div className="overflow-x-auto h-[70vh] custom-scrollbar">
+            <table className="w-full text-left min-w-[1000px]">
+              <thead className="sticky top-0 bg-white/95 backdrop-blur-xl z-20 border-b border-slate-100">
+                <tr>
+                  <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic opacity-80">Timestamp</th>
+                  <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic opacity-80">Action_Trigger</th>
+                  <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic opacity-80">Target_Entity</th>
+                  <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic opacity-80">Payload_Data</th>
+                  <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] text-right italic opacity-80">Integrity</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 relative z-10">
+                {loading || isContextLoading ? (
+                  Array(8).fill(0).map((_, i) => (
+                    <tr key={`skeleton-${i}`}>
+                      <td className="px-8 py-6"><div className="w-32 h-6 bg-slate-50 animate-pulse" style={{ borderRadius: 40 }} /></td>
+                      <td className="px-8 py-6"><div className="w-48 h-6 bg-slate-50 animate-pulse" style={{ borderRadius: 40 }} /></td>
+                      <td className="px-8 py-6"><div className="w-24 h-6 bg-slate-50 animate-pulse" style={{ borderRadius: 40 }} /></td>
+                      <td className="px-8 py-6"><div className="w-full h-12 bg-slate-50 animate-pulse" style={{ borderRadius: 40 }} /></td>
+                      <td className="px-8 py-6 text-right"><div className="w-16 h-6 bg-slate-50 animate-pulse ml-auto" style={{ borderRadius: 40 }} /></td>
+                    </tr>
+                  ))
+                ) : filteredLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-8 py-32 text-center">
+                      <Terminal size={48} className="text-slate-200 mx-auto mb-6 opacity-50" />
+                      <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest italic">NO_TELEMETRY_FOUND</p>
+                      <p className="text-[9px] font-black text-slate-300 mt-2 uppercase tracking-[0.4em] italic">Esperando eventos en tiempo real...</p>
+                    </td>
+                  </tr>
                 ) : (
-                  messages.map((msg, idx) => (
-                      <div key={msg.id} className={`flex gap-10 animate-in slide-in-from-left-6 duration-700`}>
-                          <div className="flex-shrink-0 mt-2">
-                              {msg.sender_type === 'user' ? (
-                                  <div className="w-14 h-14 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center text-slate-600">
-                                      <MessageSquare size={20} />
-                                  </div>
-                              ) : (
-                                  <div className="w-14 h-14 bg-green-500/10 rounded-2xl border border-green-500/20 flex items-center justify-center text-green-500 shadow-[0_0_20px_#22c55e33]">
-                                      <Cpu size={20} />
-                                  </div>
-                              )}
+                  filteredLogs.map((log) => (
+                    <tr key={log.id} className="group hover:bg-slate-50/80 transition-all duration-300">
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
+                          {new Date(log.created_at).toLocaleString('es-ES', { 
+                            day: '2-digit', month: 'short', year: 'numeric', 
+                            hour: '2-digit', minute: '2-digit', second: '2-digit' 
+                          })}
+                        </span>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div 
+                            className="w-10 h-10 bg-[#22c55e]/10 text-[#22c55e] flex items-center justify-center border border-[#22c55e]/20 group-hover:scale-110 transition-transform shadow-inner" 
+                            style={{ borderRadius: 40 }}
+                          >
+                            <Zap size={14} />
                           </div>
-                          <div className="flex-grow space-y-5">
-                              <div className="flex items-center gap-6">
-                                  <span className={`text-[11px] font-black uppercase tracking-[0.4em] ${msg.sender_type === 'user' ? 'text-white' : 'text-green-500'}`}>
-                                      {msg.sender_type === 'user' ? 'Protocol_Input' : 'Neural_Response'}
-                                  </span>
-                                  <span className="text-[10px] text-slate-700 font-mono tracking-widest uppercase">{new Date(msg.created_at).toLocaleTimeString()}</span>
-                              </div>
-                              
-                              <div className={`p-8 lg:p-10 rounded-[40px] border text-sm leading-relaxed transition-all hover:bg-white/[0.02] shadow-2xl ${msg.sender_type === 'user' ? 'bg-white/5 border-white/5 text-slate-300' : 'bg-green-500/5 border-green-500/10 text-white font-medium'}`}>
-                                  <p className="whitespace-pre-wrap tracking-tight leading-loose">{msg.content}</p>
-                                  
-                                  {msg.metadata?.interactive_buttons?.length > 0 && (
-                                      <div className="mt-10 pt-8 border-t border-white/5 flex flex-wrap gap-3">
-                                          {msg.metadata.interactive_buttons.map((btn: string, bi: number) => (
-                                              <span key={bi} className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-green-500 hover:text-slate-900 transition-all cursor-default">
-                                                  🔘 {btn}
-                                              </span>
-                                          ))}
-                                      </div>
-                                  )}
-                              </div>
-
-                              {msg.sender_type === 'bot' && (
-                                  <div className="flex items-center gap-10 mt-2 px-4">
-                                      <button className="flex items-center gap-3 text-[9px] font-black text-green-500 uppercase hover:bg-green-500/10 px-5 py-2 rounded-xl transition-all tracking-widest border border-green-500/10">
-                                          <CheckCircle size={12} /> Validar Nodo
-                                      </button>
-                                      <button className="flex items-center gap-3 text-[9px] font-black text-red-500 uppercase hover:bg-red-500/10 px-5 py-2 rounded-xl transition-all tracking-widest border border-red-500/10">
-                                          <AlertTriangle size={12} /> Refinar Prompt
-                                      </button>
-                                  </div>
-                              )}
-                          </div>
-                      </div>
+                          <span className="text-[11px] font-black text-[#1a1a1a] tracking-tight uppercase italic group-hover:text-[#22c55e] transition-colors">
+                            {log.action}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        <span 
+                          className="inline-block px-4 py-2 bg-slate-100 text-slate-500 border border-slate-200 text-[9px] font-black uppercase tracking-[0.2em] italic shadow-sm" 
+                          style={{ borderRadius: 40 }}
+                        >
+                          {log.table_name || 'SYSTEM_CORE'}
+                        </span>
+                      </td>
+                      <td className="px-8 py-6 w-1/3">
+                        <div 
+                          className="max-w-md bg-[#1a1a1a] text-[#22c55e] p-4 font-mono text-[9px] overflow-x-auto shadow-inner border border-black/10" 
+                          style={{ borderRadius: 24 }}
+                        >
+                          <pre className="tracking-widest">
+                            {JSON.stringify(log.new_data || log.old_data || { status: 'NO_PAYLOAD' }, null, 2)}
+                          </pre>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        <div className="inline-flex items-center gap-2 justify-end bg-slate-50 px-3 py-1.5 border border-slate-100" style={{ borderRadius: 40 }}>
+                          <ShieldCheck size={12} className="text-[#22c55e]" />
+                          <span className="text-[9px] font-black text-[#22c55e] uppercase tracking-[0.2em] italic">SECURE</span>
+                        </div>
+                      </td>
+                    </tr>
                   ))
                 )}
-            </div>
-
-            <div className="bg-white/5 px-10 py-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-6">
-                <div className="flex items-center gap-4 text-slate-700">
-                   <ShieldCheck size={16} />
-                   <p className="text-[9px] font-black uppercase tracking-[0.4em] italic leading-none">CONNECTED_TO_SUPABASE_CLUSTER_v2.5 // AES-256-GCM_STABLE</p>
-                </div>
-                <div className="flex items-center gap-4 text-green-500 text-[10px] font-black uppercase tracking-[0.4em] cursor-pointer hover:text-white transition-all group">
-                    <span>Ver Documentación Neural SSOT</span>
-                    <ChevronRight size={14} className="group-hover:translate-x-2 transition-transform" />
-                </div>
-            </div>
+              </tbody>
+            </table>
+          </div>
         </div>
-
       </div>
     </div>
   );

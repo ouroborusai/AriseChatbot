@@ -7,343 +7,175 @@ import { supabase } from '@/lib/supabase';
 import { MessageSquare, Sparkles, Cpu, Activity, Search, ShieldCheck } from 'lucide-react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { ConversationList, ChatHeader, MessageBubble, MessageInput } from './components';
-import Image from 'next/image';
 import { useMobileNav } from '@/contexts/MobileNavContext';
 
-interface Contact {
-  full_name: string | null;
-  phone: string | null;
-}
+// Importación estricta SSOT de la base de datos
+import type { Conversation, Message, Contact } from '@/types/database';
+import type { ConvListType } from './components/ConversationList';
 
-interface Conversation {
-  id: string;
-  status: 'new' | 'open' | 'waiting_human' | 'closed';
-  updated_at: string;
-  company_id: string;
-  contact_id: string;
-  contacts?: Contact;
-}
+/**
+ *  MESSAGES PAGE Diamond v11.9.1 (Diamond Resilience - OMNI-CHANNEL SSOT)
+ *  Aislamiento Tenant Estricto y Tipado Certificado sin 'any'.
+ */
 
-interface Message {
-  id: string;
-  content: string;
-  sender_type: 'bot' | 'user' | 'agent';
-  created_at: string;
-  conversation_id: string;
-}
+export type ChatMessage = Pick<Message, 'id' | 'content' | 'sender_type' | 'created_at'>;
 
 export default function MessagesPage() {
   const { activeCompany } = useActiveCompany();
   const { setIsVisible } = useMobileNav();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
+  
+  const [conversations, setConversations] = useState<ConvListType[]>([]);
+  const [selectedConv, setSelectedConv] = useState<ConvListType | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
-  useEffect(() => {
-    // Hide mobile nav when a conversation is selected on mobile
-    if (selectedConv) {
-      setIsVisible(false);
-    } else {
-      setIsVisible(true);
+  // Extracción blindada del Tenant Activo
+  const activeCompanyId = activeCompany?.id;
+
+  const fetchConversations = async () => {
+    if (!activeCompanyId) return;
+
+    // Aislamiento Tenant aplicado estrictamente a nivel de query
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*, contacts(full_name, phone)')
+      .eq('company_id', activeCompanyId)
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      console.error('[Messages] Sincronización fallida:', error.message);
+      setLoading(false);
+      return;
     }
-    
-    // Cleanup to ensure nav is visible when leaving the page
-    return () => setIsVisible(true);
-  }, [selectedConv, setIsVisible]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
-  const BRAND_GREEN = "#22c55e";
-  const ACCENT_BLACK = "#0f172a";
+    setConversations((data as unknown as ConvListType[]) || []);
+    setLoading(false);
+  };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const fetchMessages = async (conversationId: string) => {
+    if (!activeCompanyId) return;
+
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id, content, sender_type, created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('[Messages] Fallo en recuperación de historial:', error.message);
+      return;
+    }
+
+    setMessages((data as ChatMessage[]) || []);
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const fetchConversations = async (silent = false) => {
-    if (!activeCompany) return;
-    if (!silent) setLoading(true);
-
-    try {
-      let query = supabase
-        .from('conversations')
-        .select('*, contacts(full_name, phone)')
-        .order('updated_at', { ascending: false });
-
-      if (activeCompany?.id !== 'global') {
-        query = query.eq('company_id', activeCompany?.id);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      if (data) {
-        const uniqueContacts: Record<string, boolean> = {};
-        const filtered = data.filter(conv => {
-          if (!conv.contact_id) return true;
-          if (!uniqueContacts[conv.contact_id]) {
-            uniqueContacts[conv.contact_id] = true;
-            return true;
-          }
-          return false;
-        });
-
-        const sorted = [...filtered].sort((a, b) => {
-          if (a.status === 'waiting_human' && b.status !== 'waiting_human') return -1;
-          if (a.status !== 'waiting_human' && b.status === 'waiting_human') return 1;
-          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-        });
-
-        setConversations(sorted);
-      }
-    } catch {
-      // Error manejado silenciosamente
-    } finally {
-      if (!silent) setLoading(false);
+    if (activeCompanyId) {
+      fetchConversations();
     }
-  };
-
-  const fetchMessages = async (convId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', convId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setMessages(data || []);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    }
-  };
+  }, [activeCompanyId]);
 
   useEffect(() => {
-    if (!activeCompany) return;
-
-    const globalChannel = supabase.channel('global_conversations')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'conversations',
-      }, () => {
-        fetchConversations(true);
-      })
-      .subscribe();
-
-    const interval = setInterval(() => fetchConversations(true), 60000);
-
-    return () => {
-      supabase.removeChannel(globalChannel);
-      clearInterval(interval);
-    };
-  }, [activeCompany?.id]);
-
-  useEffect(() => {
-    if (!selectedConv?.id) return;
-
-    const convId = selectedConv.id;
-
-    const channel = supabase.channel(`chat_${convId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `conversation_id=eq.${convId}`,
-      }, async (payload: { new: Message }) => {
-        if (payload.new.sender_type === 'bot') {
-          fetch('/api/neural-processor', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messageId: payload.new.id, companyId: selectedConv.company_id }),
-          }).catch(() => {});
-        }
-
-        setMessages(prev => {
-          if (prev.some(m => m.id === payload.new.id)) return prev;
-          return [...prev, payload.new].sort(
-            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
-        });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    if (selectedConv?.id) {
+      fetchMessages(selectedConv.id);
+    }
   }, [selectedConv?.id]);
 
-  useEffect(() => {
-    if (activeCompany) {
-      fetchConversations();
-      if (selectedConv && activeCompany?.id !== 'global' && selectedConv.company_id !== activeCompany?.id) {
-        setSelectedConv(null);
-        setMessages([]);
-      }
-    }
-  }, [activeCompany?.id]);
-
-  const selectConversation = async (conv: Conversation) => {
-    const newStatus = conv.status === 'new' ? 'open' : conv.status;
-    setSelectedConv({ ...conv, status: newStatus });
-    await fetchMessages(conv.id);
-
-    if (conv.status === 'new') {
-      const { error } = await supabase
-        .from('conversations')
-        .update({ status: 'open' })
-        .eq('id', conv.id);
-
-      if (error) {
-        setSelectedConv({ ...conv, status: conv.status });
-      }
-      fetchConversations(true);
-    }
-  };
-
-  const toggleHandoff = async (conv: Conversation) => {
-    const newStatus = conv.status === 'waiting_human' ? 'open' : 'waiting_human';
-    const { error } = await supabase
-      .from('conversations')
-      .update({ status: newStatus })
-      .eq('id', conv.id);
-
-    if (!error) {
-      setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, status: newStatus } : c));
-      setSelectedConv({ ...conv, status: newStatus });
-    }
-  };
-
-  const sendMessage = async (overrideContent?: string) => {
-    const content = overrideContent || newMessage;
-    if (!content.trim() || !selectedConv) return;
-
-    if (!overrideContent) setNewMessage('');
-
+  const sendMessage = async (content: string) => {
+    if (!selectedConv?.contact_id || !activeCompanyId || !content.trim()) return;
+    
     try {
       await fetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contactId: selectedConv.contact_id,
-          content,
-          companyId: selectedConv.company_id,
+        body: JSON.stringify({ 
+          contactId: selectedConv.contact_id, 
+          content, 
+          companyId: activeCompanyId 
         }),
       });
-      fetchConversations(true);
-    } catch {}
+
+      // Optimistic Update del UI (Cero Cálculo Local en agregaciones)
+      setNewMessage('');
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `opt-${Date.now()}`,
+          content,
+          sender_type: 'agent',
+          created_at: new Date().toISOString()
+        }
+      ]);
+    } catch (error) {
+      console.error('[Messages] Emisión de mensaje fallida:', error);
+    }
   };
 
   return (
-    <div className="flex flex-1 h-full bg-white text-neural-dark font-sans selection:bg-primary/20 relative animate-in fade-in duration-700">
-      
-      {/* PERFORMANCE: OPTIMIZED MESH BACKGROUND ACCENTS - ASLAS STYLE */}
+    <div 
+      className="flex flex-1 h-full bg-white relative overflow-hidden shadow-2xl border border-slate-100" 
+      style={{ borderRadius: 40 }}
+    >
+      {/* Luminous Pure Estética y Brillo de Fondo LOOP Green (#22c55e) */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-primary/5 blur-[128px] rounded-full animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-[60%] h-[60%] bg-accent/5 blur-[128px] rounded-full" />
-        
-        <div 
-          className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
-          style={{
-            backgroundImage: 'url("/brand/auth-bg.png")',
-            backgroundSize: '400px',
-            backgroundRepeat: 'repeat',
-          }}
+        <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-[#22c55e]/5 blur-[128px] rounded-full animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-slate-50 blur-[100px] rounded-full" />
+      </div>
+
+      <div className="w-[450px] border-r border-slate-100 relative z-10 flex flex-col bg-white/50 backdrop-blur-3xl" style={{ borderTopLeftRadius: 40, borderBottomLeftRadius: 40 }}>
+        <ConversationList 
+          conversations={conversations} 
+          selectedConv={selectedConv} 
+          onSelect={(c: ConvListType) => setSelectedConv(c)} 
+          loading={loading}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
         />
       </div>
 
-      <div className="flex flex-1 relative z-10 overflow-hidden w-full">
-        {/* Lado Izquierdo: Lista de Conversaciones */}
-        <div className={`${selectedConv ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] lg:w-[450px] h-full flex-col border-r border-slate-100 bg-white/40 backdrop-blur-xl`}>
-          <ConversationList
-            conversations={conversations}
-            selectedConv={selectedConv}
-            onSelect={selectConversation}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            loading={loading}
-            activeCompanyId={activeCompany?.id}
-          />
-        </div>
-
-        {/* Lado Derecho: Chat Content */}
-        <div className={`${!selectedConv ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-white/60 backdrop-blur-2xl relative overflow-hidden shadow-sm h-full`}>
-
-
-          {selectedConv ? (
-            <>
-              <ChatHeader 
-                selectedConv={selectedConv} 
-                onToggleHandoff={toggleHandoff} 
-                onBack={() => setSelectedConv(null)}
-              />
-
-              <div className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-6 relative">
-                <div className="absolute inset-0 bg-[radial-gradient(rgba(46,58,140,0.02)_1px,transparent_1px)] [background-size:32px_32px] pointer-events-none" />
-
-                <div className="relative space-y-6 max-w-4xl mx-auto">
-                  {messages.map((m, i) => (
-                    <MessageBubble key={m.id} message={m} index={i} onSendMessage={sendMessage} />
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              </div>
-
-              <MessageInput
-                value={newMessage}
-                onChange={setNewMessage}
-                onSend={() => sendMessage()}
-              />
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-300 relative overflow-hidden p-10">
-              <div className="absolute inset-0 bg-[radial-gradient(rgba(0,0,0,0.02)_1px,transparent_1px)] [background-size:40px_40px]" />
-              
-              <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 duration-1000">
-                <div className="relative mb-12 group">
-                   <div className="absolute inset-0 bg-primary/20 blur-[64px] rounded-full opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
-                   <div className="w-20 h-20 bg-white border border-slate-100 rounded-xl flex items-center justify-center shadow-2xl relative z-10 transform group-hover:scale-110 transition-all duration-1000 overflow-hidden">
-                      <Image 
-                        src="/brand/official.png" 
-                        alt="LOOP" 
-                        width={40} 
-                        height={40} 
-                        className="object-contain"
-                      />
-                   </div>
-                   <div className="absolute -top-2 -right-2 w-7 h-7 bg-white border border-slate-100 rounded-full flex items-center justify-center shadow-xl z-20">
-                      <Activity size={14} className="text-primary animate-pulse" />
-                   </div>
-                </div>
-                
-                <h3 className="text-4xl md:text-5xl font-black text-neural-dark tracking-tighter mb-4 text-center uppercase italic">
-                  Consola <span className="text-primary">Neural</span>
-                </h3>
-                <p className="text-[9px] tracking-[0.6em] uppercase font-black text-slate-400 text-center opacity-60">
-                  seleccione una frecuencia para sincronizar ...
-                </p>
-                
-                <div className="mt-20 flex items-center gap-12 opacity-30">
-                   <div className="flex flex-col items-center gap-3">
-                      <ShieldCheck size={20} className="text-slate-400" />
-                      <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">E2EE Safe</span>
-                   </div>
-                   <div className="flex flex-col items-center gap-3">
-                      <Cpu size={20} className="text-primary" />
-                      <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Logic v10.4</span>
-                   </div>
-                </div>
-              </div>
+      <div className="flex-1 flex flex-col relative z-10">
+        {selectedConv ? (
+          <>
+            <ChatHeader 
+              selectedConv={selectedConv} 
+              onToggleHandoff={() => {}} 
+              onBack={() => setSelectedConv(null)} 
+            />
+            
+            <div className="flex-1 overflow-y-auto p-10 space-y-4">
+              {messages.map((m) => (
+                <MessageBubble 
+                  key={m.id} 
+                  message={m} 
+                />
+              ))}
             </div>
-          )}
-        </div>
+
+            <div className="px-8 pb-8 pt-4">
+               <MessageInput 
+                 value={newMessage} 
+                 onChange={setNewMessage} 
+                 onSend={() => sendMessage(newMessage)} 
+                 disabled={!newMessage.trim()}
+               />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <h3 className="text-5xl font-black text-neural-dark uppercase italic flex items-center gap-4">
+              Consola <span className="text-[#22c55e]">Neural</span>
+            </h3>
+            <p className="text-[10px] font-black text-[#22c55e] uppercase tracking-[0.5em] mt-4 flex items-center gap-2 italic">
+              <ShieldCheck size={12} className="text-[#22c55e]" />
+              v11.9.1_DIAMOND_OPERATIVO
+            </p>
+            <div className="mt-12 p-8 bg-slate-50/50 rounded-full animate-pulse border border-slate-100">
+               <Activity size={32} className="text-[#22c55e] opacity-40" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

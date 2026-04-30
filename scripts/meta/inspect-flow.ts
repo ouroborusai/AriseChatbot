@@ -4,7 +4,7 @@ dotenv.config({ path: '.env.local' });
 
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const API_VERSION = 'v23.0';
-const FLOW_ID = '1679867603465733'; // arise_sii_access_v1
+const FLOW_ID = process.argv[2] || '3141848516022930'; // Default to inventory flow
 
 async function inspectFlow() {
   if (!ACCESS_TOKEN) return;
@@ -18,14 +18,14 @@ async function inspectFlow() {
   console.log('📦 Assets del Flow:', JSON.stringify(data, null, 2));
 
   if (data.data && data.data.length > 0) {
-    const assetId = data.data[0].id;
-    console.log(`\n📥 Descargando asset: ${assetId}...`);
-    const assetRes = await fetch(`https://graph.facebook.com/${API_VERSION}/${assetId}`, {
-        headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
-    });
-    // For flow assets, sometimes it's a direct download or a handle.
-    // The asset object usually has a 'download_url' or similar if queried specifically.
-    console.log('Respuesta Asset:', await assetRes.json());
+    const asset = data.data.find((a: any) => a.asset_type === 'FLOW_JSON');
+    if (asset && asset.download_url) {
+        console.log(`\n📥 Descargando FLOW_JSON desde: ${asset.download_url.substring(0, 50)}...`);
+        const jsonRes = await fetch(asset.download_url);
+        const flowJson = await jsonRes.json();
+        console.log('\n📄 CONTENIDO DEL FLOW JSON:\n');
+        console.log(JSON.stringify(flowJson, null, 2));
+    }
   }
 }
 

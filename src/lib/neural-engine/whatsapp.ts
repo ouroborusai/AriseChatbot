@@ -1,12 +1,16 @@
-// src/lib/neural-engine/whatsapp.ts (v10.4 Platinum - Certificado por NotebookLM)
-import { createClient } from '@supabase/supabase-js';
-import { ICON_MAP, WHATSAPP_LIMITS, SYSTEM_STRINGS } from '@/lib/neural-engine/constants';
-import { SuggestedOption } from '@/types/api';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { ICON_MAP, SYSTEM_STRINGS } from '@/lib/neural-engine/constants';
 import { logEvent } from '@/lib/webhook/utils';
 
-function createSupabaseClient() {
+/**
+ *  WHATSAPP ENGINE v11.9.1 (Diamond Resilience)
+ *  Orquestación de mensajería interactiva (Buttons, Lists, Flows, Catalogs).
+ *  Cero 'any'. Aislamiento Tenant Mandatorio.
+ */
+
+function createSupabaseClient(): SupabaseClient {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.ARISE_MASTER_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!; 
+    const supabaseKey = (process.env.ARISE_MASTER_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)!; 
     return createClient(supabaseUrl, supabaseKey);
 }
 
@@ -17,19 +21,26 @@ export function enrichText(text: string): string {
     return key ? `${ICON_MAP[key]} ${text}` : `🔹 ${text}`;
 }
 
-export async function sendWhatsAppMessage(params: {
+export interface WhatsAppMessageParams {
     to: string;
     text?: string;
     options?: (string | { id: string; title: string; description?: string })[];
     template?: { name: string; language: string; variables: string[]; };
-    flow?: { id: string; cta: string; token: string; screen: string; data?: any };
+    flow?: { id: string; cta: string; token: string; screen: string; data?: Record<string, unknown> };
     catalog?: { catalogId: string; body: string; footer?: string };
     phoneNumberId: string;
     whatsappToken: string;
     companyId: string;
-}) {
+}
+
+export async function sendWhatsAppMessage(params: WhatsAppMessageParams): Promise<Record<string, unknown>> {
     const { to, text, options, template, flow, catalog, phoneNumberId, whatsappToken, companyId } = params;
-    let payload: any = { messaging_product: 'whatsapp', to };
+    const apiVersion = process.env.META_API_VERSION || 'v21.0';
+    
+    let payload: Record<string, unknown> = { 
+      messaging_product: 'whatsapp', 
+      to 
+    };
 
     if (template) {
         payload.type = 'template';
@@ -60,12 +71,12 @@ export async function sendWhatsAppMessage(params: {
         } else {
             payload.interactive = {
                 type: 'list',
-                header: { type: 'text', text: 'Opciones LOOP 🟢' },
+                header: { type: 'text', text: 'Opciones ARISE 🟢' },
                 body: { text: text || 'Selecciona una opción de la lista' },
                 action: {
-                    button: 'Ver Opciones',
+                    button: 'Ver Menú',
                     sections: [{
-                        title: 'Principales',
+                        title: 'Gestión Principal',
                         rows: options.map((opt, i) => ({
                             id: typeof opt === 'string' ? `item_${i}` : opt.id,
                             title: (typeof opt === 'string' ? opt : opt.title).substring(0, 24),
@@ -104,7 +115,7 @@ export async function sendWhatsAppMessage(params: {
         payload.text = { body: text };
     }
 
-    const response = await fetch(`https://graph.facebook.com/v23.0/${phoneNumberId}/messages`, {
+    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${whatsappToken}`,
@@ -113,20 +124,24 @@ export async function sendWhatsAppMessage(params: {
         body: JSON.stringify(payload)
     });
 
-    const result = await response.json();
+    const result = (await response.json()) as Record<string, any>;
 
     if (!response.ok) {
         await logEvent({ 
             companyId, 
             action: 'WH_SEND_ERROR', 
-            details: { error: result, payload } 
+            details: { error: result, payload },
+            tableName: 'whatsapp_telemetry'
         });
-        throw new Error(result.error?.message || 'Error sending WhatsApp message');
+        throw new Error(result.error?.message || 'Error_Sending_WhatsApp_Message');
     }
 
     return result;
 }
 
+/**
+ * Orquestador de Respuesta IA con Aislamiento Tenant.
+ */
 export async function generateAndSendAIResponse(params: {
     content: string;
     companyId: string;
@@ -135,22 +150,26 @@ export async function generateAndSendAIResponse(params: {
     sender: string;
     phoneNumberId: string;
     whatsappToken: string;
-}) {
+}): Promise<Record<string, unknown>> {
     const { content, companyId, contactId, conversationId, sender, phoneNumberId, whatsappToken } = params;
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/neural-processor`, {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
+    // Invocación al Neural Processor Orchestrator (Hardened v11.9.1)
+    const response = await fetch(`${appUrl}/api/neural-processor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            message: content,
-            company_id: companyId,
+            messageId: 'N/A_OUTGOING_DIRECT', // Contexto de envío directo
+            companyId: companyId,
             contact_id: contactId,
             conversation_id: conversationId,
             phone_number: sender
         })
     });
 
-    const { response: aiText } = await response.json();
+    const resJson = (await response.json()) as { response?: string };
+    const aiText = resJson.response || SYSTEM_STRINGS.FALLBACK_RESPONSE;
 
     return sendWhatsAppMessage({
         to: sender,

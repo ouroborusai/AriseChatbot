@@ -29,7 +29,7 @@ export async function GET() {
     // LM Protocol: Si no está en DB, usar variables de entorno maestras configuradas en Vercel/Local
     const access_token = dbConfig.access_token || cleanEnvVar(process.env.WHATSAPP_ACCESS_TOKEN) || cleanEnvVar(process.env.META_ACCESS_TOKEN);
     const whatsapp_business_account_id = dbConfig.whatsapp_business_account_id || cleanEnvVar(process.env.WABA_ID) || cleanEnvVar(process.env.META_BUSINESS_ID);
-    const catalog_id = dbConfig.catalog_id || cleanEnvVar(process.env.META_CATALOG_ID) || '998467769274169'; 
+    const catalog_id = dbConfig.catalog_id || cleanEnvVar(process.env.META_CATALOG_ID) || ''; 
 
     const apiVersion = cleanEnvVar(process.env.META_API_VERSION) || 'v23.0';
 

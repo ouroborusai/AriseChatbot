@@ -1,5 +1,5 @@
 /**
- * ARISE NEURAL ENGINE CONSTANTS Diamond v10.1
+ * LOOP NEURAL ENGINE CONSTANTS Platinum v10.4
  * Centralización de configuraciones y valores mágicos
  */
 

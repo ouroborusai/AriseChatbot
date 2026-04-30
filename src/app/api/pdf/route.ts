@@ -1,57 +1,56 @@
 import { NextResponse } from 'next/server';
 import { executePDFPipeline } from '@/lib/pdf/pipeline';
 import { requireAuth } from '@/lib/api-auth';
-import { createClient } from '@supabase/supabase-js';
-
-// Configuración de Supabase (se inicializa una vez)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-const supabaseKey = (process.env.ARISE_MASTER_SERVICE_KEY || process.env.ARISE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)?.trim();
-
-const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * ARISE PDF PIPELINE Diamond v10.1
- * Handles high-precision document generation and WhatsApp delivery.
+ *  PDF ORCHESTRATION API v11.9.1 (Diamond Resilience)
+ *  Punto de entrada para la generación de reportes industriales.
+ *  Cero 'any'. Aislamiento Tenant Blindado.
  */
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const supabaseKey = (process.env.ARISE_MASTER_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)?.trim();
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('[PDF_API] Missing Supabase Infrastructure Keys');
+}
+
+const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+
 export async function POST(req: Request) {
   try {
     const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
-    
-    // Log de entrada para diagnóstico
-    if (supabase) {
-      await supabase.from('audit_logs').insert({
-        action: 'PDF_API_HIT',
-        new_data: { timestamp: new Date().toISOString() }
-      });
-    }
-    
-    if (!INTERNAL_API_KEY) {
-      console.error('[PDF_PIPELINE] INTERNAL_API_KEY is missing');
-      return NextResponse.json({ error: 'System configuration error' }, { status: 500 });
-    }
+    if (!INTERNAL_API_KEY) throw new Error('[PDF_API] INTERNAL_API_KEY missing');
 
-    if (!supabase) {
-      console.error('[PDF_PIPELINE] Supabase client not initialized');
-      return NextResponse.json({ error: 'Database connection error' }, { status: 500 });
-    }
-    // Autenticación dual: sesión de usuario O clave interna del neural-processor
+    // Autenticación dual: máster interno O sesión de usuario
     const internalKey = req.headers.get('x-api-key');
-    const serverKey = process.env.INTERNAL_API_KEY;
-    const isInternalCall = internalKey === serverKey;
-
-    console.log(`[PDF_AUTH_DEBUG] Received: ${internalKey?.substring(0, 10)}..., ServerKey: ${serverKey?.substring(0, 10)}..., Match: ${isInternalCall}`);
+    const isInternalCall = internalKey === INTERNAL_API_KEY;
 
     if (!isInternalCall) {
-      console.warn('[PDF_AUTH_FAILED] Key mismatch or missing. Falling back to requireAuth().');
       const authResult = await requireAuth();
-      if (authResult.error) {
-        console.error('[PDF_AUTH_CRITICAL] requireAuth() also failed.');
-        return authResult.error;
-      }
+      if (authResult.error) return authResult.error;
     }
 
-    const { targetPhone, whatsappToken, phoneNumberId, reportType, companyId, isPreGen } = await req.json();
-    
+    const body = await req.json();
+    const { targetPhone, whatsappToken, phoneNumberId, reportType, companyId, isPreGen } = body;
+
+    // 🛡️ Validación Diamond: Contexto Tenant Mandatorio
+    if (!companyId || !reportType) {
+      return NextResponse.json(
+        { error: 'Incomplete_Request: companyId and reportType required' },
+        { status: 400 }
+      );
+    }
+
+    // Telemetría de Entrada
+    await supabase.from('audit_logs').insert({
+      company_id: companyId,
+      action: 'PDF_API_REQUEST_RECEIVED',
+      new_data: { reportType, isPreGen }
+    });
+
+    // Delegación al Pipeline Hardened (v11.9.1)
     const result = await executePDFPipeline({
       targetPhone,
       whatsappToken,
@@ -62,8 +61,13 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    console.error("PDF_ROUTE_ERROR", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('[PDF_API_FAILURE]', error.message);
+    
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
   }
 }

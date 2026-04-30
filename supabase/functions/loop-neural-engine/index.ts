@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
 /**
- * MASTER NEURAL ENGINE v10.1 (Omnichannel Diamond)
+ * MASTER NEURAL ENGINE v10.4 (LOOP Platinum)
  * Procesa pulsos de la DB y responde vía WhatsApp, Facebook e Instagram.
  */
 
@@ -78,8 +78,7 @@ serve(async (req: Request) => {
         supabase.from('companies').select('settings').eq('id', companyId).maybeSingle(),
         supabase.from('contacts').select('phone').eq('id', conversation.contact_id).maybeSingle()
       ]);
-
-      const systemPrompt = promptRes.data?.system_prompt || "Eres Arise Business OS Diamond v10.1.";
+      const systemPrompt = promptRes.data?.system_prompt || "Eres LOOP Business OS Diamond v10.4 Platinum.";
       const history = (historyRes.data || []).reverse();
       const directory = directoryRes.data || [];
       const waSettings = companyRes.data?.settings?.whatsapp;
@@ -90,7 +89,7 @@ serve(async (req: Request) => {
       const formattedHistory = history.map((m: any) => `${m.sender_type === 'user' ? 'User' : 'Bot'}: ${m.content}`).join('\n');
       const directoryContext = directory.map(d => `- ${d.name} (${d.phone}): ${d.role}`).join('\n');
 
-      const fullPrompt = `${systemPrompt}\n\n[DIRECTORY]\n${directoryContext}\n\n[HISTORY]\n${formattedHistory}\n\n[INSTRUCTION]\nResponde de forma ejecutiva. Usa el formato v61 obligatorio (Texto --- Botón 1 | Botón 2).`;
+      const fullPrompt = `${systemPrompt}\n\n[DIRECTORY]\n${directoryContext}\n\n[HISTORY]\n${formattedHistory}\n\n[INSTRUCTION]\nResponde de forma ejecutiva como Director AI de LOOP. Usa el formato v61 obligatorio (Texto --- Botón 1 | Botón 2).`;
 
       let aiResponse = null;
       const shuffledKeys = keys.sort(() => Math.random() - 0.5);
@@ -143,13 +142,13 @@ serve(async (req: Request) => {
         if (waSettings?.access_token && waSettings?.phone_number_id && targetPhone) {
           const cleanAiText = aiResponse.replace(/\[\[[^\[\]]+\]\]/g, '').trim();
           const parts = cleanAiText.split('---');
-          const textPart = parts.slice(0, -1).join(' --- ').trim() || "Procesado.";
+          const textPart = parts.slice(0, -1).join(' --- ').trim() || "Procesado por LOOP Director AI.";
           const buttonsPart = parts[parts.length - 1];
 
           let payload: any = { type: 'text', text: { body: textPart } };
           if (buttonsPart && buttonsPart.includes('|')) {
             const rows = buttonsPart.split('|').map((o: string, i: number) => ({ id: `btn_${i}`, title: o.trim().substring(0, 24) }));
-            payload = { type: 'interactive', interactive: { type: 'list', body: { text: textPart }, action: { button: 'Opciones', sections: [{ title: 'Menú', rows: rows.slice(0, 10) }] } } };
+            payload = { type: 'interactive', interactive: { type: 'list', body: { text: textPart }, action: { button: 'Opciones', sections: [{ title: 'Menú LOOP', rows: rows.slice(0, 10) }] } } };
           }
           await sendWhatsApp(targetPhone, payload, waSettings.access_token, waSettings.phone_number_id);
         }
@@ -157,13 +156,14 @@ serve(async (req: Request) => {
 
       // Procesador de acciones neurales [[ ]]
       if (aiResponse.includes('[[') && botMsg) {
-        const appUrl = Deno.env.get('APP_URL') || "https://arise-business-os.vercel.app";
+        const appUrl = Deno.env.get('APP_URL') || "https://loop-business-os.vercel.app";
         fetch(`${appUrl}/api/neural-processor`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': Deno.env.get('INTERNAL_API_KEY') || 'arise_internal_v9_secret' },
+          headers: { 'Content-Type': 'application/json', 'x-api-key': Deno.env.get('LOOP_INTERNAL_API_KEY') || Deno.env.get('INTERNAL_API_KEY') || 'loop_internal_v10_secret' },
           body: JSON.stringify({ messageId: botMsg.id, companyId: companyId })
         }).catch(() => {});
       }
+   }
 
       return new Response('OK');
     }

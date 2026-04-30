@@ -1,5 +1,5 @@
 /**
- * ARISE Structured Logger v1.0
+ * LOOP Structured Logger v1.0
  * Logger centralizado para reemplazar console.log dispersos
  */
 

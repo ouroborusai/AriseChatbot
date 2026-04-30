@@ -276,7 +276,7 @@ function AuthContent() {
                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic">Terminal</span>
                          </div>
                          <Mail size={18} className="ml-6 text-slate-300 group-focus-within:text-primary transition-colors shrink-0" />
-                         <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="NOMBRE@NODO.ARISE"
+                         <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="NOMBRE@NODO.LOOP"
                           className="flex-1 bg-transparent border-none px-6 h-full text-[11px] font-black text-neural-dark uppercase tracking-[0.2em] outline-none placeholder:text-slate-200 italic" />
                       </div>
 
@@ -346,7 +346,7 @@ function AuthContent() {
 
           <footer className="py-12 text-center border-t border-slate-100 bg-slate-50/20">
              <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.6em] italic opacity-40">
-                © 2026 SISTEMAS ARISE · ENGINE v10.4 NEURAL CORE · E2EE PROTECTED
+                © 2026 LOOP BUSINESS OS · ENGINE v10.4 NEURAL CORE · E2EE PROTECTED
              </p>
           </footer>
         </div>

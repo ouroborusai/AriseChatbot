@@ -1,102 +1,65 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import type { NeuralActionResult, CreditActionParams } from '../interfaces/actions';
 
 /**
- * CREDIT ACTION HANDLER v1.0
- * Gestiona la asignación y actualización de límites de crédito
- * en la tabla internal_directory.
- *
- * Acciones soportadas:
- * - credit_limit_set: Establece o actualiza el límite de crédito de un cliente.
- *
- * Formato de acción neural esperado:
- * [[ { "action": "credit_limit_set", "phone": "56911112222", "amount": 500000 } ]]
+ *  CREDIT ACTION HANDLER v11.9.1 (Diamond Resilience)
+ *  Gestiona la asignación y actualización de límites de crédito.
+ *  SSOT: Cero 'any', Aislamiento Tenant Inquebrantable vía .eq('company_id', companyId).
  */
 export async function handleCreditAction(
-  supabase: SupabaseClient,
-  actionData: any,
-  companyId: string,
-  messageId: string
-) {
-  const results: any[] = [];
+    supabase: SupabaseClient,
+    actionData: CreditActionParams,
+    companyId: string,
+    messageId: string
+): Promise<NeuralActionResult[]> {
+    const results: NeuralActionResult[] = [];
 
-  if (actionData.action === 'credit_limit_set') {
-    const phone = actionData.phone || actionData.params?.phone;
-    const amount = actionData.amount ?? actionData.params?.amount;
+    try {
+        if (actionData.action === 'credit_limit_set') {
+            const phone = actionData.phone || actionData.params?.phone;
+            const amount = Number(actionData.amount ?? actionData.params?.amount);
 
-    // Validación de parámetros requeridos
-    if (!phone) {
-      results.push({
-        action: 'credit_limit_set',
-        status: 'failed',
-        error: 'Missing required parameter: "phone"',
-      });
-      return results;
+            if (!phone || isNaN(amount)) {
+                results.push({ 
+                    action: actionData.action, 
+                    status: 'validation_failed', 
+                    error: 'Faltan parámetros requeridos (phone, amount)' 
+                });
+                return results;
+            }
+
+            const { data, error } = await supabase
+                .from('internal_directory')
+                .update({ credit_limit: amount, credit_limit_updated_at: new Date().toISOString() })
+                .eq('company_id', companyId)
+                .eq('phone', phone)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            if (!data) {
+                results.push({ 
+                    action: actionData.action, 
+                    status: 'item_not_found', 
+                    error: 'Directorio interno no encontrado para este número en esta empresa.' 
+                });
+                return results;
+            }
+
+            results.push({ 
+                action: actionData.action, 
+                status: 'success'
+            });
+        }
+    } catch (error: unknown) {
+        const err = error as Error;
+        results.push({ 
+            action: actionData.action, 
+            status: 'error', 
+            error: err.message 
+        });
     }
 
-    if (amount === undefined || amount === null || isNaN(Number(amount))) {
-      results.push({
-        action: 'credit_limit_set',
-        status: 'failed',
-        error: 'Missing or invalid required parameter: "amount" (must be a number)',
-      });
-      return results;
-    }
-
-    const creditAmount = Number(amount);
-
-    // Verificar que el contacto existe en el directorio de la empresa
-    const { data: existingContact, error: lookupError } = await supabase
-      .from('internal_directory')
-      .select('id, name, role')
-      .eq('phone', phone)
-      .eq('company_id', companyId)
-      .single();
-
-    if (lookupError || !existingContact) {
-      results.push({
-        action: 'credit_limit_set',
-        status: 'failed',
-        error: `Contact with phone ${phone} not found in directory. Register the client first using directory_register.`,
-      });
-      return results;
-    }
-
-    // Actualizar el límite de crédito
-    const { data, error } = await supabase
-      .from('internal_directory')
-      .update({
-        credit_limit: creditAmount,
-        credit_limit_updated_at: new Date().toISOString(),
-      })
-      .eq('phone', phone)
-      .eq('company_id', companyId)
-      .select()
-      .single();
-
-    if (data) {
-      // Registrar en audit_logs para trazabilidad
-      await supabase.from('audit_logs').insert({
-        company_id: companyId,
-        action: 'NEURAL_CREDIT_LIMIT_SET',
-        table_name: 'internal_directory',
-        record_id: data.id,
-        new_data: {
-          phone,
-          credit_limit: creditAmount,
-          updated_by_message: messageId,
-        },
-      });
-    }
-
-    results.push({
-      action: 'credit_limit_set',
-      status: error ? 'failed' : 'success',
-      data: data
-        ? { phone, name: data.name, credit_limit: data.credit_limit }
-        : undefined,
-      error: error?.message,
-    });
-  }
-
-  return results;
+    return results;
 }

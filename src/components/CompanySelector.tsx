@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
-import { useCompanyList, CompanyListItem } from '@/hooks/useCompanyList';
+import type { ActiveCompanyType } from '@/contexts/ActiveCompanyContext';
+import { useCompanyList } from '@/hooks/useCompanyList';
 
 interface CompanySelectorProps {
   className?: string;
@@ -27,7 +28,6 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
 
   const {
     companies,
-    filteredCompanies,
     isLoading,
     searchQuery,
     setSearchQuery
@@ -52,7 +52,7 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleCompanyChange = (company: CompanyListItem) => {
+  const handleCompanyChange = (company: ActiveCompanyType) => {
     setActiveCompany(company);
     localStorage.setItem('arise_active_company', company.id);
     setIsDropdownOpen(false);
@@ -89,9 +89,9 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
             <div className="max-h-[60vh] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
               <div className="px-4 py-3 border-b border-slate-100 mb-3 flex justify-between items-center">
                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Nodos Detectados</span>
-                 <span className="text-[9px] font-black bg-slate-50 text-[#22c55e] px-3 py-1 rounded-lg border border-slate-200">{filteredCompanies.length}</span>
+                 <span className="text-[9px] font-black bg-slate-50 text-[#22c55e] px-3 py-1 rounded-lg border border-slate-200">{companies.length}</span>
               </div>
-              {filteredCompanies.map((c) => (
+              {companies.map((c) => (
                 <button 
                   key={c.id} 
                   onClick={() => handleCompanyChange(c)}
@@ -148,10 +148,10 @@ export default function CompanySelector({ className = '', variant = 'sidebar' }:
           <div className="max-h-[50vh] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
             <div className="px-4 py-3 border-b border-slate-100 mb-3 flex justify-between items-center">
                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Unidades Activas</span>
-                 <span className="text-[9px] font-black bg-slate-50 text-[#22c55e] px-3 py-1 rounded-lg border border-slate-200">{filteredCompanies.length}</span>
+                 <span className="text-[9px] font-black bg-slate-50 text-[#22c55e] px-3 py-1 rounded-lg border border-slate-200">{companies.length}</span>
             </div>
-            {filteredCompanies.length > 0 ? (
-              filteredCompanies.map((c) => (
+            {companies.length > 0 ? (
+              companies.map((c) => (
                 <button 
                   key={c.id} 
                   onClick={() => handleCompanyChange(c)}

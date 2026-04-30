@@ -1,5 +1,5 @@
 /**
- * ARISE WHATSAPP TYPES Diamond v10.1
+ * LOOP WHATSAPP TYPES Platinum v10.4
  * Tipos TypeScript estrictos para la API de WhatsApp Business
  */
 

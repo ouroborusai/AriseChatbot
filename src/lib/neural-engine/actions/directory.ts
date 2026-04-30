@@ -1,57 +1,75 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import type { NeuralActionResult, DirectoryActionParams } from '../interfaces/actions';
 
 /**
- * DIRECTORY ACTION HANDLER v10.0
- * Gestiona el registro y actualización de roles en internal_directory.
+ *  DIRECTORY ACTION HANDLER v11.9.1 (Diamond Resilience)
+ *  Gestiona el registro y actualización de roles en internal_directory.
+ *  SSOT: Cero 'any', Aislamiento Tenant Estricto.
  */
 export async function handleDirectoryAction(
-  supabase: SupabaseClient,
-  actionData: any,
-  companyId: string,
-  messageId: string
-) {
-  const results: any[] = [];
+    supabase: SupabaseClient,
+    actionData: DirectoryActionParams,
+    companyId: string,
+    messageId: string
+): Promise<NeuralActionResult[]> {
+    const results: NeuralActionResult[] = [];
 
-  // directory_register / directory_update
-  if (actionData.action === 'directory_register' || actionData.action === 'directory_update' || actionData.action === 'register_client') {
-    const phone = actionData.phone || actionData.params?.phone;
-    const name = actionData.name || actionData.params?.name;
-    const role = actionData.role || actionData.params?.role || 'CLIENTE';
+    try {
+        if (actionData.action === 'directory_register' || actionData.action === 'directory_update' || actionData.action === 'register_client') {
+            const phone = actionData.phone || actionData.params?.phone;
+            const name = actionData.name || actionData.params?.name;
+            const role = actionData.role || actionData.params?.role || 'CLIENTE';
 
-    if (!phone) {
-        // Intentar recuperar el teléfono del prospecto si no viene en el JSON
-        // Buscamos el mensaje anterior en la conversación si es posible
+            if (!phone || !name) {
+                results.push({ 
+                    action: actionData.action, 
+                    status: 'validation_failed', 
+                    error: 'Faltan parámetros requeridos (phone, name)' 
+                });
+                return results;
+            }
+
+            if (actionData.action === 'register_client') {
+                const { error } = await supabase
+                    .from('contacts')
+                    .upsert({
+                        company_id: companyId,
+                        phone: phone,
+                        full_name: name,
+                        category: 'client',
+                        created_at: new Date().toISOString()
+                    }, { onConflict: 'phone' });
+
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from('internal_directory')
+                    .upsert({
+                        company_id: companyId,
+                        phone: phone,
+                        name: name,
+                        role: role as 'ADMIN' | 'MMC' | 'PROVEEDOR' | 'CONTADOR' | 'CLIENTE' | 'PROSPECTO',
+                        created_at: new Date().toISOString()
+                    }, { onConflict: 'phone' });
+
+                if (error) throw error;
+            }
+
+            results.push({ 
+                action: actionData.action, 
+                status: 'success', 
+                name, 
+                phone 
+            });
+        }
+    } catch (error: unknown) {
+        const err = error as Error;
         results.push({ 
             action: actionData.action, 
-            status: 'failed', 
-            error: 'Missing phone number. Please provide "phone" in the action block.' 
+            status: 'error', 
+            error: err.message 
         });
-        return results;
     }
 
-    const { data, error } = await supabase.from('internal_directory').upsert({
-      company_id: companyId,
-      phone,
-      name: name || 'Usuario Arise',
-      role: role.toUpperCase()
-    }, { onConflict: 'phone' }).select().single();
-
-    if (data) {
-      await supabase.from('audit_logs').insert({
-        company_id: companyId,
-        action: `NEURAL_DIRECTORY_${actionData.action.toUpperCase()}`,
-        table_name: 'internal_directory',
-        record_id: data.id,
-        new_data: actionData
-      });
-    }
-
-    results.push({
-      action: actionData.action,
-      status: error ? 'failed' : 'success',
-      error: error?.message
-    });
-  }
-
-  return results;
+    return results;
 }
