@@ -92,7 +92,7 @@ export default function Sidebar() {
           <div className="w-10 h-10 relative group-hover:scale-105 transition-all duration-700">
              <div className="absolute inset-0 bg-[#22c55e]/10 blur-xl rounded-full" />
              <Image 
-               src="/brand/official.png" 
+               src="/brand/loop-logo.png" 
                alt="LOOP Logo" 
                width={40}
                height={40}

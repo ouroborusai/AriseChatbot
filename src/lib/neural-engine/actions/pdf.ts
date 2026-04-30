@@ -17,8 +17,9 @@ export async function handlePdfAction(
 
       if (phone) {
         const { data: companyData } = await supabase.from('companies').select('settings').eq('id', companyId).single();
-        const whatsappToken = companyData?.settings?.whatsapp?.access_token || process.env.WHATSAPP_ACCESS_TOKEN;
-        const phoneNumberId = companyData?.settings?.whatsapp?.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID;
+        const cleanEnvVar = (val?: string) => val?.replace(/["\r\n\\]/g, '').trim() || '';
+        const whatsappToken = companyData?.settings?.whatsapp?.access_token || cleanEnvVar(process.env.WHATSAPP_ACCESS_TOKEN);
+        const phoneNumberId = companyData?.settings?.whatsapp?.phone_number_id || cleanEnvVar(process.env.WHATSAPP_PHONE_NUMBER_ID);
 
         if (!whatsappToken || !phoneNumberId) {
           results.push({ action: 'pdf_generate', status: 'failed', error: 'Missing WhatsApp configuration' });

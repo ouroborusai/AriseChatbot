@@ -39,7 +39,7 @@ export default function MobileNav() {
           <div className="w-10 h-10 relative rotate-3 group-hover:rotate-0 transition-transform">
              <div className="absolute inset-0 bg-green-100 blur-lg rounded-full" />
              <Image 
-               src="/brand/official.png" 
+               src="/brand/loop-logo.png" 
                alt="LOOP Logo" 
                width={40}
                height={40}

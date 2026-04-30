@@ -22,12 +22,11 @@ export async function POST(req: Request) {
     const result = await generateAndSendAIResponse({
       content,
       companyId,
-      contactId: null,
+      contactId: 'simulated_contact',
       conversationId: 'simulated_conv',
       sender,
       phoneNumberId: 'SIM_PHONE',
-      whatsappToken: 'SIM_TOKEN',
-      simulationMode: true
+      whatsappToken: 'SIM_TOKEN'
     });
 
     return NextResponse.json({

@@ -32,11 +32,18 @@ export async function resolveIdentity(sender: string) {
   // 1. Buscar contacto por teléfono
   const { data: contact } = await supabase
     .from('contacts')
-    .select('id, company_id, name')
+    .select('id, company_id, full_name')
     .eq('phone', sender)
     .maybeSingle();
 
-  if (contact) return contact;
+  if (contact) {
+    return {
+        contact_id: contact.id,
+        company_id: contact.company_id,
+        name: contact.full_name,
+        conversation_id: `conv_${sender}` // Trazabilidad dinámica
+    };
+  }
 
   // 2. Fallback: Directorio Interno
   const { data: internal } = await supabase
@@ -45,13 +52,21 @@ export async function resolveIdentity(sender: string) {
     .eq('phone', sender)
     .maybeSingle();
 
-  if (internal) return { id: null, company_id: internal.company_id, name: internal.name };
+  if (internal) {
+    return { 
+        contact_id: 'internal', 
+        company_id: internal.company_id, 
+        name: internal.name,
+        conversation_id: `conv_${sender}`
+    };
+  }
 
-  // 3. SuperAdmin Fallback
+  // 3. SuperAdmin Fallback (Seguimiento de Invitados v10.4)
   return { 
-    id: null, 
-    company_id: '77777777-7777-7777-7777-777777777777', // Arise Demo
-    name: 'Usuario Nuevo' 
+    contact_id: 'guest', 
+    company_id: process.env.ARISE_MASTER_COMPANY_ID || 'ca69f43b-7b11-4dd3-abe8-8338580b2d84', 
+    name: 'Usuario LOOP Nuevo',
+    conversation_id: `conv_${sender}`
   };
 }
 

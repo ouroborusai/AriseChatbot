@@ -189,7 +189,40 @@ export interface ProductMessage {
   };
 }
 
-export type WhatsAppMessage = TextMessage | ButtonInteractive | ListInteractive | DocumentMessage | TemplateMessage | CatalogMessage | ProductMessage;
+export interface FlowMessage {
+  messaging_product: 'whatsapp';
+  recipient_type: 'individual';
+  to: string;
+  type: 'interactive';
+  interactive: {
+    type: 'flow';
+    header?: {
+      type: 'text';
+      text: string;
+    };
+    body: {
+      text: string;
+    };
+    footer?: {
+      text: string;
+    };
+    action: {
+      name: 'flow';
+      parameters: {
+        flow_token: string;
+        flow_id: string;
+        flow_cta: string;
+        flow_action: 'navigate' | 'data_exchange';
+        flow_action_payload?: {
+          screen: string;
+          data?: any;
+        };
+      };
+    };
+  };
+}
+
+export type WhatsAppMessage = TextMessage | ButtonInteractive | ListInteractive | DocumentMessage | TemplateMessage | CatalogMessage | ProductMessage | FlowMessage;
 
 // ════════════════════════════════════════════════════════════════════════════
 // PARSED CONTENT (para uso interno)
