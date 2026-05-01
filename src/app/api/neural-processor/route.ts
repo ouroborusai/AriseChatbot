@@ -20,8 +20,12 @@ import { handleOfferMenusAction } from '@/lib/neural-engine/actions/menus';
  *  Aislamiento Tenant Estricto y Cero 'any'.
  */
 
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
-if (!INTERNAL_API_KEY) throw new Error('[NEURAL_PROCESSOR] INTERNAL_API_KEY env var is not set');
+const cleanEnvVar = (val?: string) => val?.replace(/["\r\n\\]/g, '').trim() || '';
+const INTERNAL_API_KEY = cleanEnvVar(process.env.INTERNAL_API_KEY);
+
+if (!INTERNAL_API_KEY) {
+  console.error('[NEURAL_PROCESSOR] INTERNAL_API_KEY is not set or empty');
+}
 
 export async function POST(req: Request) {
   // Autenticación dual: sesión de usuario O clave interna master

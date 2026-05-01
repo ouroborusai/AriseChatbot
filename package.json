@@ -7,6 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "test:neural": "npx tsx src/lib/neural-engine/scripts/test-neural.ts",
     "audit": "npx tsx scripts/code-audit.ts",
     "deps": "npx tsx scripts/dependency-check.ts",
     "schema": "npx tsx scripts/schema-validator.ts",

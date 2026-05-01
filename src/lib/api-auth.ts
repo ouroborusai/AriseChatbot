@@ -29,9 +29,11 @@ export async function requireAuth() {
   const { headers } = await import('next/headers');
   const headerList = await headers();
   const apiKey = headerList.get('x-api-key');
+  const cleanEnvVar = (val?: string) => val?.replace(/["\r\n\\]/g, '').trim() || '';
+  const internalMasterKey = cleanEnvVar(process.env.INTERNAL_API_KEY);
 
   // Permitir acceso si la llave de API interna es correcta (operaciones internas)
-  if (apiKey && apiKey === process.env.INTERNAL_API_KEY) {
+  if (apiKey && apiKey === internalMasterKey) {
     return { error: null, user: { id: 'system_agent', email: 'agent@loop-os.ai' } };
   }
 

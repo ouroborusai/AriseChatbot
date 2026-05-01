@@ -1,8 +1,48 @@
 import { NextResponse } from 'next/server';
-import { supabase, resolveIdentity, getWhatsAppConfig, logEvent } from '@/lib/webhook/utils';
+import { resolveIdentity, getWhatsAppConfig, logEvent } from '@/lib/webhook/utils';
 import { handleActionRouting } from '@/lib/webhook/router';
 import { generateAndSendAIResponse } from '@/lib/neural-engine/whatsapp';
-import type { WhatsAppWebhookRequest } from '@/types/api';
+import { handleOrderMessage, type OrderPayload } from '@/lib/webhook/handlers/order';
+
+// Interfaces estrictas locales para garantizar Cero 'any' (SSOT Compliance)
+interface WhatsAppContact {
+  profile: { name: string };
+  wa_id: string;
+}
+
+interface InteractiveMessage {
+  type: string;
+  button_reply?: { id: string; title: string };
+  list_reply?: { id: string; title: string };
+  nfm_reply?: { response_json: string; name?: string; body?: string };
+}
+
+interface WhatsAppMessageData {
+  from: string;
+  id: string;
+  type: string;
+  text?: { body: string };
+  interactive?: InteractiveMessage;
+  order?: OrderPayload;
+}
+
+interface WhatsAppValue {
+  messaging_product: string;
+  metadata: { display_phone_number: string; phone_number_id: string };
+  contacts?: WhatsAppContact[];
+  messages?: WhatsAppMessageData[];
+}
+
+export interface WhatsAppWebhookRequest {
+  object: string;
+  entry?: Array<{
+    id: string;
+    changes?: Array<{
+      value: WhatsAppValue;
+      field: string;
+    }>;
+  }>;
+}
 
 /**
  * WHATSAPP WEBHOOK ROUTE v11.9.1 (Diamond Resilience)
@@ -11,152 +51,139 @@ import type { WhatsAppWebhookRequest } from '@/types/api';
  */
 export const maxDuration = 60;
 
-export async function POST(req: Request) {
-    try {
-        const body = (await req.json()) as WhatsAppWebhookRequest;
-        const entry = body.entry?.[0];
-        const changes = entry?.changes?.[0]?.value;
-
-        if (!changes || !changes.messages || changes.messages.length === 0) {
-            return NextResponse.json({ status: 'ignored' });
-        }
-
-        const message = changes.messages[0];
-        const sender = message.from;
-        let content = '';
-        let buttonId: string | undefined = undefined;
-
-        // --- INYECCIÓN DIAMOND v11.9.1: PROCESADOR DE INTERACCIONES (TEMPLATES & FLOWS) ---
-        
-        // 1. Detección de Respuestas de WhatsApp Flows (nfm_reply)
-        if (message.type === 'interactive' && message.interactive && (message.interactive.type as string) === 'nfm_reply') {
-            const flowResponse = (message.interactive as any).nfm_reply?.response_json;
-            if (!flowResponse) return NextResponse.json({ status: 'ok' });
-            try {
-                const parsedPayload = JSON.parse(flowResponse);
-                const identity = await resolveIdentity(sender);
-                
-                await logEvent({ 
-                    companyId: identity.company_id, 
-                    action: 'FLOW_PAYLOAD_RECEIVED', 
-                    details: { sender, payload: parsedPayload } 
-                });
-
-                // Lógica de Negocio: Explorador Red MTZ
-                if (parsedPayload?.action === 'view_collection' && parsedPayload?.category) {
-                    content = `ACCION_CATALOGO: ${parsedPayload.category}`;
-                    // El router manejará el envío de la colección filtrada
-                } else {
-                    content = `FLOW_RESPONSE: ${flowResponse}`;
-                }
-            } catch (e) {
-                console.error('[FLOW_PARSE_ERROR]', e);
-                content = 'ERROR_FLOW';
-            }
-        } 
-        // 2. Detección de Botones Quick Reply (Plantillas de Bienvenida)
-        else if ((message.type as string) === 'button' && (message as any).button) {
-            const buttonText = (message as any).button.text;
-            content = buttonText;
-            buttonId = buttonText === 'Comenzar' ? 'TRIGGER_WELCOME' : 'TRIGGER_CATALOG';
-            
-            const identity = await resolveIdentity(sender);
-            await logEvent({ 
-                companyId: identity.company_id, 
-                action: 'TEMPLATE_BUTTON_CLICK', 
-                details: { sender, buttonText } 
-            });
-        }
-        // 3. Procesamiento Estándar (Texto e Interactivo común)
-        else if (message.type === 'text' && message.text) {
-            content = message.text.body;
-        } else if (message.type === 'interactive' && message.interactive) {
-            if (message.interactive.type === 'button_reply' && message.interactive.button_reply) {
-                buttonId = message.interactive.button_reply.id;
-                content = message.interactive.button_reply.id;
-            } else if (message.interactive.type === 'list_reply' && message.interactive.list_reply) {
-                buttonId = message.interactive.list_reply.id;
-                content = message.interactive.list_reply.title;
-            }
-        } else {
-            return NextResponse.json({ status: 'ignored_type' });
-        }
-
-        const identity = await resolveIdentity(sender);
-        const companyId = identity.company_id;
-        const contactId = identity.contact_id;
-        const conversationId = identity.conversation_id;
-
-        const config = await getWhatsAppConfig(companyId);
-
-        const isRouted = await handleActionRouting({
-            buttonId,
-            content,
-            sender,
-            companyId,
-            whatsappToken: config.token,
-            phoneNumberId: config.phoneId
-        });
-
-        if (isRouted) {
-            return NextResponse.json({ status: 'routed' });
-        }
-
-        // 4. ASEGURAR CONVERSACIÓN Y REGISTRAR MENSAJE
-        let targetConversationId = conversationId;
-        
-        if (!targetConversationId) {
-            const { data: newConv } = await supabase
-                .from('conversations')
-                .insert({ 
-                    company_id: companyId, 
-                    contact_id: contactId, 
-                    status: 'open' 
-                })
-                .select()
-                .single();
-            if (newConv) targetConversationId = newConv.id;
-        }
-
-        if (targetConversationId) {
-            await supabase
-                .from('messages')
-                .insert({
-                    conversation_id: targetConversationId,
-                    sender_type: 'user',
-                    content: content,
-                    external_id: message.id,
-                    created_at: new Date().toISOString()
-                });
-        }
-
-        await generateAndSendAIResponse({
-            content,
-            companyId,
-            contactId,
-            conversationId,
-            sender,
-            phoneNumberId: config.phoneId,
-            whatsappToken: config.token
-        });
-
-        return NextResponse.json({ status: 'success' });
-
-    } catch (error: unknown) {
-        const err = error as Error;
-        return NextResponse.json({ error: err.message }, { status: 500 });
-    }
-}
-
 export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const mode = searchParams.get('hub.mode');
-    const token = searchParams.get('hub.verify_token');
-    const challenge = searchParams.get('hub.challenge');
+  const { searchParams } = new URL(req.url);
+  const mode = searchParams.get('hub.mode');
+  const token = searchParams.get('hub.verify_token');
+  const challenge = searchParams.get('hub.challenge');
 
-    if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-        return new Response(challenge, { status: 200 });
+  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+
+  if (mode && token) {
+    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+      return new NextResponse(challenge, { status: 200 });
     }
-    return new Response('Forbidden', { status: 403 });
+    return new NextResponse('Forbidden', { status: 403 });
+  }
+  return new NextResponse('Bad Request', { status: 400 });
 }
 
+export async function POST(req: Request) {
+  try {
+    const body = (await req.json()) as WhatsAppWebhookRequest;
+    const entry = body.entry?.[0];
+    const changes = entry?.changes?.[0]?.value;
+
+    if (!changes || !changes.messages || changes.messages.length === 0) {
+      return NextResponse.json({ status: 'ignored', reason: 'No messages' }, { status: 200 });
+    }
+
+    const message = changes.messages[0];
+    const contact = changes.contacts?.[0];
+    const phoneNumberId = changes.metadata.phone_number_id;
+    const sender = message.from;
+
+    // 1. Obtener Configuración de la Empresa via phoneNumberId
+    let config: { token: string; phoneId: string } | null = null;
+    try {
+      // getWhatsAppConfig espera companyId pero resolvemos via PHONE_NUMBER_ID del env
+      // como fallback directo para el tenant maestro
+      const masterCompanyId = process.env.ARISE_MASTER_COMPANY_ID || '';
+      config = await getWhatsAppConfig(masterCompanyId);
+    } catch {
+      console.error('[WEBHOOK_FATAL] No se encontró configuración para el phoneNumberId:', phoneNumberId);
+      return NextResponse.json({ status: 'error', reason: 'Unregistered phone number' }, { status: 404 });
+    }
+
+    const whatsappToken = config.token;
+    const companyId = process.env.ARISE_MASTER_COMPANY_ID || '';
+
+    // 2. Resolver Identidad (Contacto y Conversación)
+    const identity = await resolveIdentity(sender);
+
+    if (!identity) {
+      console.error('[WEBHOOK_FATAL] Error resolviendo identidad para:', sender);
+      return NextResponse.json({ status: 'error', reason: 'Identity resolution failed' }, { status: 500 });
+    }
+
+    const contactId = identity.contact_id;
+    const conversationId = identity.conversation_id;
+
+    // 3. Delegación de Responsabilidad Directa (Fallo Silent Failure Resuelto)
+    if (message.type === 'order' && message.order) {
+      await handleOrderMessage({
+        order: message.order,
+        sender,
+        companyId,
+        contactId,
+        conversationId,
+        whatsappToken,
+        phoneNumberId
+      });
+
+      return NextResponse.json({ status: 'success', type: 'order_processed' }, { status: 200 });
+    }
+
+    // 4. Manejo de Otros Tipos (Texto, Interactivo, Flows)
+    let contentText = '';
+    let buttonId: string | undefined = undefined;
+
+    if (message.type === 'text' && message.text) {
+      contentText = message.text.body;
+    } else if (message.type === 'interactive' && message.interactive) {
+      const interactive = message.interactive;
+      if (interactive.type === 'button_reply' && interactive.button_reply) {
+        buttonId = interactive.button_reply.id;
+        contentText = interactive.button_reply.title;
+      } else if (interactive.type === 'list_reply' && interactive.list_reply) {
+        buttonId = interactive.list_reply.id;
+        contentText = interactive.list_reply.title;
+      } else if (interactive.type === 'nfm_reply' && interactive.nfm_reply) {
+         const responseJson = interactive.nfm_reply.response_json;
+         if (responseJson) {
+            try {
+               const payload = typeof responseJson === 'string' ? JSON.parse(responseJson) : responseJson;
+               contentText = `ACCION_CATALOGO: ${payload.category || 'N/A'}`;
+            } catch (e) {
+               contentText = String(responseJson);
+            }
+         }
+      }
+    }
+
+    if (buttonId) {
+      // Ruteo de acciones (PDFs, Comandos, etc.)
+      const isRouted = await handleActionRouting({
+        buttonId,
+        content: contentText,
+        sender,
+        companyId,
+        whatsappToken,
+        phoneNumberId
+      });
+
+      if (isRouted) {
+        return NextResponse.json({ status: 'success', type: 'action_routed' }, { status: 200 });
+      }
+    }
+
+    // 5. Invocación Nativa de la IA para texto general (Motor Migrado v11.9.1)
+    if (contentText) {
+       await generateAndSendAIResponse({
+         content: contentText,
+         companyId,
+         contactId,
+         conversationId,
+         sender,
+         phoneNumberId,
+         whatsappToken
+       });
+    }
+
+    return NextResponse.json({ status: 'success' }, { status: 200 });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('[WEBHOOK_FATAL_ERROR]', err.message);
+    return NextResponse.json({ status: 'error', reason: err.message }, { status: 500 });
+  }
+}

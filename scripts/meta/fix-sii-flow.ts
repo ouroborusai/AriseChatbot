@@ -4,8 +4,7 @@ dotenv.config({ path: '.env.local' });
 
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const API_VERSION = 'v23.0';
-const FLOW_ID = '1679867603465733';
-
+const FLOW_ID = '3141848516022930';
 const FINAL_JSON_LM = {
   "version": "7.3",
   "data_api_version": "4.0",
@@ -36,11 +35,12 @@ const FINAL_JSON_LM = {
           {
             "type": "CheckboxGroup",
             "name": "consentimiento_datos",
+            "label": "Términos y Condiciones",
             "required": true,
             "data-source": [
               {
                 "id": "acepto",
-                "title": "Acepto los términos y el uso de mis datos"
+                "title": "Acepto términos y condiciones"
               }
             ]
           },

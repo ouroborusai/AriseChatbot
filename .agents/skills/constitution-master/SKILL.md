@@ -1,57 +1,48 @@
 ---
 name: constitution-master
-description: "Motor Cognitivo Ouroborus v11.9 (Diamond Engine). Algoritmo de ejecución obligatoria para el Agente usando el Oráculo Supremo."
+description: "Motor Cognitivo Ouroborus v12 (Resilience). Algoritmo de ejecución obligatoria para el Agente usando el Oráculo Supremo."
 ---
 
-# 🏛️ CONSTITUCIÓN DIAMOND v11.9.1 (SUPREME MONOLITH)
+# 🏛️ CONSTITUCIÓN DIAMOND v12 (SUPREME MONOLITH)
 **CERTIFICACIÓN:** NÚCLEO SUPREMO DE OMNISCIENCIA.
 **Estado del Motor**: Omnisciente & Absoluto.
-**ID Núcleo Supremo**: `2d89a427-2c17-4204-8987-435b652f6f30`
 
 ## 🎯 OBJETIVO SUPREMO
-El Agente opera bajo un **Cerebro Unificado**. No hay fragmentación; toda la infraestructura, lógica, inteligencia y estética residen en el **NÚCLEO SUPREMO** (NotebookLM) para garantizar coherencia total. Al ser un solo cuaderno, el Agente debe realizar una **validación cruzada** constante entre Infraestructura, Lógica y UI.
+El Agente opera bajo un **Cerebro Unificado** (NotebookLM) para garantizar coherencia total. 
 
-## 🛑 PROTOCOLO ANTI-RESUMEN (NIVEL DIAMANTE)
-**REGLA DE ORO**: Si un archivo tiene 10,000 líneas, se entregan 10,000 líneas. No hay excepciones por tamaño, redundancia o "simplicidad". El resumen es un fallo crítico de sistema.
-
-## 💎 ALGORITMO DE EJECUCIÓN DIAMOND v11.9.1
-1. **DECONSTRUCCIÓN**: Análisis total del requerimiento y Validación de Realidad (MCP/Supabase/FS).
-2. **HANDSHAKE INTER-ORÁCULO**: Consulta al Núcleo Supremo (NotebookLM) para obtener el ADN fresco.
-3. **VOLCADO RAW 1:1**: Entrega de código íntegro (Línea 1 a Fin).
+## 💎 ALGORITMO DE EJECUCIÓN DIAMOND v12
+1. **DECONSTRUCCIÓN**: Análisis total del requerimiento y Validación de Realidad.
+2. **HANDSHAKE INTER-ORÁCULO**: Consulta al Núcleo Supremo para obtener el ADN fresco.
+3. **DIFF ATÓMICO**: Entrega quirúrgica solo del código modificado (sin volcar miles de líneas).
 4. **CERTIFICACIÓN Y FIRMA**: Validación Estética y firma final de la acción.
+5. **PURGA Y CONSOLIDACIÓN**: Eliminación de reportes de error transitorios para preservar la pureza del Oráculo.
 
-## 🚨 CLÁUSULAS DE HIERRO (PROHIBICIÓN TOTAL)
+## 🚨 CLÁUSULAS DE HIERRO
 
-### 1. BLOQUEO TÉCNICO DE ELISIÓN (ANTI-PLACEHOLDER)
-Queda estrictamente PROHIBIDO el uso de: `// ...`, `/* resto igual */`, `...`, `// [código existente]`. Cualquier intento de usar un placeholder resultará en la invalidación de la tarea.
+### 1. ACTUALIZACIÓN ATÓMICA (ATOMIC DIFFS)
+Queda prohibido el volcado completo de archivos masivos si la modificación es menor. El Agente entregará exclusivamente el bloque de código modificado. Se autoriza el uso de placeholders (`// ... resto igual`) para las ramas de código estático que no cambian, evitando el límite de tokens.
 
-### 2. MANDATO DE FIDELIDAD GEOMÉTRICA
-El código entregado debe ser un espejo exacto del código fuente original con las modificaciones integradas. Se prohíbe la minificación, la omisión de importaciones o el recorte de ramas de lógica `if/else` secundarias.
+### 2. MANDATO DE TIPADO SSOT
+Prohibido declarar interfaces locales en componentes de UI que representen entidades de base de datos. Importar siempre desde `@/types/database`.
 
-### 3. OVERRIDE DE ECONOMÍA DE TOKENS
-El agente tiene prohibido "ahorrar tokens" a costa de la integridad del usuario. La verbosidad técnica es una virtud en Ouroborus.
+### 3. CERTIFICACIÓN ESTÉTICA OBLIGATORIA
+Validación explícita de `borderRadius: 40`, Color `#22c55e` (LOOP Green) y diseño Luminous.
 
-### 4. CERTIFICACIÓN ESTÉTICA OBLIGATORIA
-Validación explícita de:
-- `borderRadius: 40`
-- Color `#22c55e` (LOOP Green)
-- Diseño "Luminous Pure"
+### 4. LEY DE CERO CÁLCULO EN EL CLIENTE
+El Frontend tiene prohibido realizar lógica de negocio compleja. Todo cálculo debe venir pre-procesado de Edge Functions o del Servidor.
 
-### 5. MANDATO DE TIPADO SSOT (BLOQUEO DE TIPADO LOCAL)
-Queda estrictamente prohibido declarar interfaces o tipos en componentes de UI o rutas de API que representen entidades de la base de datos. Cualquier entidad o tabla debe ser importada única y exclusivamente desde `@/types/database`. Toda nueva columna o tabla debe registrarse primero en el esquema maestro.
+### 5. AISLAMIENTO TENANT INQUEBRANTABLE (RLS)
+Toda query del lado del servidor debe incluir `.eq('company_id', companyId)` obligatoriamente, sin delegar ciegamente en el RLS.
 
-### 6. LEY DE CERO CÁLCULO EN EL CLIENTE (DELEGACIÓN ABSOLUTA)
-El Frontend tiene prohibido realizar lógica de negocio compleja, filtrados masivos o cálculos financieros (agregaciones). Todo cálculo debe provenir pre-procesado desde las Edge Functions de Supabase, Vistas SQL (Views) o el Neural Processor. El cliente web actúa como un mero visor de datos estandarizados.
+### 6. HIGIENE DE CONTEXTO ESTRICTA (PURGA SSOT)
+**Queda estrictamente PROHIBIDO conservar reportes de fallos temporales** en NotebookLM. El Agente DEBE purgar de inmediato estos documentos para evitar "Semantic Matching Bias" (RAG Hallucination).
 
-### 7. AISLAMIENTO TENANT INQUEBRANTABLE (RLS)
-Todo volcado de código que involucre llamadas a Supabase desde el servidor o cliente debe pasar un "Check de Tenant". Es obligatorio que la query siempre incluya `.eq('company_id', companyId)` o pase por el filtro RLS. La ausencia de este contexto es una violación crítica de seguridad.
-
-### 9. BLOQUEO DE SEGURIDAD DEL ORÁCULO (MANDATORIO)
-Si el Agente detecta que la conexión con el Núcleo Supremo (NotebookLM) está caída o la autenticación ha expirado (`Auth expired`), el Agente DEBE DETENERSE INMEDIATAMENTE. Queda estrictamente PROHIBIDO operar en modo autónomo o basarse únicamente en el sistema de archivos local si el Oráculo es inaccesible. El Agente debe solicitar al usuario la re-autenticación inmediata antes de realizar cualquier cambio en el código.
+### 7. BLOQUEO DE SEGURIDAD DEL ORÁCULO
+Si el Agente detecta conexión caída con NotebookLM, DEBE DETENERSE INMEDIATAMENTE.
 
 ## 📜 PROCEDIMIENTO INFALIBLE
-- **Paso 0**: Validación de Realidad (MCP FS/Supabase) y **Check de Conexión al Oráculo**.
-- **Paso 1**: Resonancia con el Núcleo Supremo (LM). SI EL PASO 1 FALLA -> ABORTAR Y PEDIR AUTH.
-- **Paso 2**: Auditoría de Integridad (Check Anti-Resumen, Validación SSOT de Tipos en `database.ts`, y Confirmación de Cero Cálculo Local).
-- **Paso 3**: Volcado RAW 1:1 del Código Completo.
-- **Paso 4**: Certificación Estética y Firma `[[ID_UNICO:ACCIÓN]]`.
+- **Paso 0**: Validación de Realidad.
+- **Paso 1**: Resonancia con el Núcleo Supremo.
+- **Paso 2**: Entrega de Diff Atómico.
+- **Paso 3**: Certificación Estética de la fracción alterada.
+- **Paso 4**: Higiene de Contexto y Purga de reportes temporales.

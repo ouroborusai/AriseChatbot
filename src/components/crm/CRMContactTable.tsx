@@ -32,11 +32,11 @@ export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateCategor
             {loading ? (
               Array(6).fill(0).map((_, i) => (
                 <tr key={i}>
-                  <td className="px-8 py-8"><div className="w-48 h-10 bg-slate-50 animate-pulse" style={{ borderRadius: 'var(--radius-md)' }} /></td>
-                  <td className="hidden md:table-cell px-8 py-8"><div className="w-32 h-6 bg-slate-50 animate-pulse" style={{ borderRadius: 'var(--radius-sm)' }} /></td>
-                  <td className="hidden lg:table-cell px-8 py-8 text-center"><div className="w-24 h-8 bg-slate-50 animate-pulse mx-auto" style={{ borderRadius: 'var(--radius-md)' }} /></td>
-                  <td className="hidden md:table-cell px-8 py-8"><div className="w-28 h-6 bg-slate-50 animate-pulse" style={{ borderRadius: 'var(--radius-sm)' }} /></td>
-                  <td className="px-8 py-8 text-right"><div className="w-12 h-12 bg-slate-50 animate-pulse ml-auto" style={{ borderRadius: 'var(--radius-md)' }} /></td>
+                  <td className="px-8 py-8"><div className="w-48 h-10 bg-[#22c55e]/10 animate-pulse" style={{ borderRadius: 40 }} /></td>
+                  <td className="hidden md:table-cell px-8 py-8"><div className="w-32 h-6 bg-[#22c55e]/10 animate-pulse" style={{ borderRadius: 40 }} /></td>
+                  <td className="hidden lg:table-cell px-8 py-8 text-center"><div className="w-24 h-8 bg-[#22c55e]/10 animate-pulse mx-auto" style={{ borderRadius: 40 }} /></td>
+                  <td className="hidden md:table-cell px-8 py-8"><div className="w-28 h-6 bg-[#22c55e]/10 animate-pulse" style={{ borderRadius: 40 }} /></td>
+                  <td className="px-8 py-8 text-right"><div className="w-12 h-12 bg-[#22c55e]/10 animate-pulse ml-auto" style={{ borderRadius: 40 }} /></td>
                 </tr>
               ))
             ) : (
@@ -44,7 +44,7 @@ export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateCategor
                 <tr key={contact.id} className="group hover:bg-slate-50 transition-all cursor-pointer">
                   <td className="px-8 py-8" onClick={() => onOpenChat(contact)}>
                     <div className="flex items-center gap-5">
-                      <div className="w-12 h-12 bg-slate-50 text-slate-300 flex items-center justify-center font-black text-[12px] border border-slate-100 shadow-inner group-hover:bg-primary group-hover:text-white group-hover:border-transparent transition-all duration-500 italic" style={{ borderRadius: 'var(--radius-md)' }}>
+                      <div className="w-12 h-12 bg-slate-50 text-slate-300 flex items-center justify-center font-black text-[12px] border border-slate-100 shadow-inner group-hover:bg-[#22c55e] group-hover:text-white group-hover:border-transparent transition-all duration-500 italic" style={{ borderRadius: 40 }}>
                         {contact.full_name?.[0] || '?'}
                       </div>
                       <div>
@@ -58,7 +58,7 @@ export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateCategor
                     <div className="flex items-center gap-3 mt-2">
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic opacity-60">{contact.email || 'NO_COMMS'}</p>
                       {contact.companies?.name && (
-                        <span className="text-[8px] font-black bg-primary/5 text-primary border border-primary/10 px-2.5 py-1 uppercase tracking-widest italic shadow-sm" style={{ borderRadius: 'var(--radius-sm)' }}>
+                        <span className="text-[8px] font-black bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20 px-2.5 py-1 uppercase tracking-widest italic shadow-sm" style={{ borderRadius: 40 }}>
                           {contact.companies.name}
                         </span>
                       )}
@@ -69,9 +69,9 @@ export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateCategor
                       <select 
                         value={contact.category || 'lead'}
                         onChange={(e) => onUpdateCategory(contact.id, e.target.value as CRMContactType['category'])}
-                        style={{ borderRadius: 'var(--radius-md)' }}
+                        style={{ borderRadius: 40 }}
                         className={`text-[9px] font-black px-5 py-2 border appearance-none cursor-pointer outline-none transition-all shadow-sm tracking-[0.2em] uppercase italic ${
-                          contact.category === 'client' ? 'bg-primary/10 text-primary border-primary/20' : 
+                          contact.category === 'client' ? 'bg-[#22c55e]/10 text-[#22c55e] border-[#22c55e]/30' : 
                           contact.category === 'family' ? 'bg-accent/10 text-white border-transparent bg-accent' : 
                           'bg-slate-50 text-slate-400 border-slate-100'
                         }`}
