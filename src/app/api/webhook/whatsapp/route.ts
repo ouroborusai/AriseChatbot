@@ -26,7 +26,49 @@ export async function POST(req: Request) {
         let content = '';
         let buttonId: string | undefined = undefined;
 
-        if (message.type === 'text' && message.text) {
+        // --- INYECCIÓN DIAMOND v11.9.1: PROCESADOR DE INTERACCIONES (TEMPLATES & FLOWS) ---
+        
+        // 1. Detección de Respuestas de WhatsApp Flows (nfm_reply)
+        if (message.type === 'interactive' && message.interactive && (message.interactive.type as string) === 'nfm_reply') {
+            const flowResponse = (message.interactive as any).nfm_reply?.response_json;
+            if (!flowResponse) return NextResponse.json({ status: 'ok' });
+            try {
+                const parsedPayload = JSON.parse(flowResponse);
+                const identity = await resolveIdentity(sender);
+                
+                await logEvent({ 
+                    companyId: identity.company_id, 
+                    action: 'FLOW_PAYLOAD_RECEIVED', 
+                    details: { sender, payload: parsedPayload } 
+                });
+
+                // Lógica de Negocio: Explorador Red MTZ
+                if (parsedPayload?.action === 'view_collection' && parsedPayload?.category) {
+                    content = `ACCION_CATALOGO: ${parsedPayload.category}`;
+                    // El router manejará el envío de la colección filtrada
+                } else {
+                    content = `FLOW_RESPONSE: ${flowResponse}`;
+                }
+            } catch (e) {
+                console.error('[FLOW_PARSE_ERROR]', e);
+                content = 'ERROR_FLOW';
+            }
+        } 
+        // 2. Detección de Botones Quick Reply (Plantillas de Bienvenida)
+        else if ((message.type as string) === 'button' && (message as any).button) {
+            const buttonText = (message as any).button.text;
+            content = buttonText;
+            buttonId = buttonText === 'Comenzar' ? 'TRIGGER_WELCOME' : 'TRIGGER_CATALOG';
+            
+            const identity = await resolveIdentity(sender);
+            await logEvent({ 
+                companyId: identity.company_id, 
+                action: 'TEMPLATE_BUTTON_CLICK', 
+                details: { sender, buttonText } 
+            });
+        }
+        // 3. Procesamiento Estándar (Texto e Interactivo común)
+        else if (message.type === 'text' && message.text) {
             content = message.text.body;
         } else if (message.type === 'interactive' && message.interactive) {
             if (message.interactive.type === 'button_reply' && message.interactive.button_reply) {
@@ -105,3 +147,4 @@ export async function GET(req: Request) {
     }
     return new Response('Forbidden', { status: 403 });
 }
+

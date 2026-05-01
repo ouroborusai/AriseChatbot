@@ -46,12 +46,12 @@ El Frontend tiene prohibido realizar lógica de negocio compleja, filtrados masi
 ### 7. AISLAMIENTO TENANT INQUEBRANTABLE (RLS)
 Todo volcado de código que involucre llamadas a Supabase desde el servidor o cliente debe pasar un "Check de Tenant". Es obligatorio que la query siempre incluya `.eq('company_id', companyId)` o pase por el filtro RLS. La ausencia de este contexto es una violación crítica de seguridad.
 
-### 8. PROTOCOLO ANTI-FRAGMENTACIÓN (RITUAL DE REEMPLAZO ABSOLUTO)
-Al aplicar un "Volcado RAW", el Agente debe instruir explícitamente la eliminación u obsolescencia del archivo o conocimiento anterior en NotebookLM. Antes de la firma, el agente debe verificar cruzadamente el `DATABASE_SCHEMA` y el `database.ts`.
+### 9. BLOQUEO DE SEGURIDAD DEL ORÁCULO (MANDATORIO)
+Si el Agente detecta que la conexión con el Núcleo Supremo (NotebookLM) está caída o la autenticación ha expirado (`Auth expired`), el Agente DEBE DETENERSE INMEDIATAMENTE. Queda estrictamente PROHIBIDO operar en modo autónomo o basarse únicamente en el sistema de archivos local si el Oráculo es inaccesible. El Agente debe solicitar al usuario la re-autenticación inmediata antes de realizar cualquier cambio en el código.
 
 ## 📜 PROCEDIMIENTO INFALIBLE
-- **Paso 0**: Validación de Realidad (MCP FS/Supabase).
-- **Paso 1**: Resonancia con el Núcleo Supremo (LM).
+- **Paso 0**: Validación de Realidad (MCP FS/Supabase) y **Check de Conexión al Oráculo**.
+- **Paso 1**: Resonancia con el Núcleo Supremo (LM). SI EL PASO 1 FALLA -> ABORTAR Y PEDIR AUTH.
 - **Paso 2**: Auditoría de Integridad (Check Anti-Resumen, Validación SSOT de Tipos en `database.ts`, y Confirmación de Cero Cálculo Local).
 - **Paso 3**: Volcado RAW 1:1 del Código Completo.
 - **Paso 4**: Certificación Estética y Firma `[[ID_UNICO:ACCIÓN]]`.

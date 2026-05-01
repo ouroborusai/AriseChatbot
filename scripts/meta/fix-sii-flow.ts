@@ -10,12 +10,54 @@ const FINAL_JSON_LM = {
   "version": "7.3",
   "data_api_version": "4.0",
   "routing_model": {
+    "consent_screen": [
+      "sii_credentials_screen"
+    ],
     "sii_credentials_screen": [
       "success_screen"
     ],
     "success_screen": []
   },
   "screens": [
+    {
+      "id": "consent_screen",
+      "title": "Portal Seguro SII",
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "Autorización de Acceso"
+          },
+          {
+            "type": "TextBody",
+            "text": "Para procesar sus trámites, ARISE requiere acceder a su portal tributario utilizando encriptación de grado militar. Sus datos no serán almacenados de forma permanente."
+          },
+          {
+            "type": "CheckboxGroup",
+            "name": "consentimiento_datos",
+            "required": true,
+            "data-source": [
+              {
+                "id": "acepto",
+                "title": "Acepto los términos y el uso de mis datos"
+              }
+            ]
+          },
+          {
+            "type": "Footer",
+            "label": "Continuar",
+            "on-click-action": {
+              "name": "navigate",
+              "next": {
+                "type": "screen",
+                "name": "sii_credentials_screen"
+              }
+            }
+          }
+        ]
+      }
+    },
     {
       "id": "sii_credentials_screen",
       "title": "Portal Seguro SII",
@@ -28,14 +70,14 @@ const FINAL_JSON_LM = {
           },
           {
             "type": "TextBody",
-            "text": "LOOP utiliza encriptación de grado militar para proteger tus datos."
+            "text": "ARISE utiliza encriptación de grado militar para proteger tus datos."
           },
           {
             "type": "TextInput",
             "name": "rut_input",
             "label": "RUT (Ej: 12345678-9)",
             "required": true,
-            "pattern": "^\\d{7,8}-[0-9Kk]$|\\d{1,2}\\.\\d{3}\\.\\d{3}-[0-9Kk]$",
+            "pattern": "^\\d{7,8}-[0-9Kk]$|\\d{1,2}\\.\\d{3}\\.\\d{3}-[0-9Kk]$|\\d{1,2}\\.\\d{3}\\.\\d{3}-[0-9Kk]$",
             "error-message": "Por favor ingresa un RUT válido.",
             "helper-text": "Ingrese su RUT con guión"
           },
@@ -100,7 +142,7 @@ const FINAL_JSON_LM = {
         "children": [
           {
             "type": "TextBody",
-            "text": "Conectando con el motor neural. LOOP te notificará por chat cuando finalice el proceso."
+            "text": "Conectando con el motor neural. ARISE te notificará por chat cuando finalice el proceso."
           },
           {
             "type": "Footer",

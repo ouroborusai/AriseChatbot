@@ -3,9 +3,13 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
-const WABA_ID = process.env.WABA_ID || '930946633057624';
+const WABA_ID = process.env.WABA_ID;
 const BUSINESS_ID = process.env.META_BUSINESS_ID;
 const API_VERSION = 'v23.0';
+
+if (!WABA_ID) {
+  throw new Error('❌ [DIAMOND_FATAL] WABA_ID no definido en .env.local. Ejecución bloqueada.');
+}
 
 async function deepMetaSearch() {
   if (!ACCESS_TOKEN) return;

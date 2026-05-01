@@ -10,6 +10,19 @@ export const ACTION_PREFIXES = {
 };
 
 /**
+ * 🏛️ SSOT: MAPEO DE COLECCIONES RED MTZ v11.9.1
+ * Mapeo oficial de IDs técnicos a IDs de Product Sets en Meta.
+ */
+const MTZ_CATALOG_MAPPING: Record<string, string> = {
+  'mtz_food': '862189043577820',
+  'mtz_construction': '1282758163986295',
+  'mtz_logistics': '1712834606375750',
+  'mtz_health': '1698047397876594',
+  'mtz_industrial': '1515104673540585',
+  'mtz_pro_services': '1174341769086586',
+};
+
+/**
  * LM Protocol: Normaliza el tipo de reporte desde buttonId O desde el texto del mensaje.
  */
 export function getRequestedReportType(buttonId: string | undefined, content?: string): string | null {
@@ -158,6 +171,60 @@ export async function handleActionRouting(params: {
               whatsappToken,
               companyId
           });
+          return true;
+      }
+  }
+
+  // 4. LÓGICA DE CATÁLOGO POR RUBRO (v11.9.1 - Anti-Engorroso)
+  // Detectamos si el mensaje viene de un Flow (ACCION_CATALOGO) o de una Lista (mtz_xxx)
+  const isCatalogRequest = content?.includes('ACCION_CATALOGO:') || (buttonId && MTZ_CATALOG_MAPPING[buttonId]);
+  
+  if (isCatalogRequest) {
+      const categoryId = buttonId || content.split(': ')[1];
+      const productSetId = MTZ_CATALOG_MAPPING[categoryId];
+
+      if (productSetId) {
+          await logEvent({ 
+              companyId, 
+              action: 'CATALOG_COLLECTION_REQUESTED', 
+              details: { categoryId, productSetId } 
+          });
+
+          const catalogId = '998467769274169'; // SSOT Catalog ID
+          
+          const sendCatalogPromise = fetch(`https://graph.facebook.com/v23.0/${phoneNumberId}/messages`, {
+              method: 'POST',
+              headers: {
+                  'Authorization': `Bearer ${whatsappToken}`,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  to: sender,
+                  type: "interactive",
+                  interactive: {
+                      type: "catalog_message",
+                      body: { text: `Aquí tienes los mejores proveedores de: *${categoryId.replace('mtz_', '').toUpperCase()}*` },
+                      action: {
+                          name: "catalog_message",
+                          parameters: {
+                              thumbnail_product_retailer_id: "CONS-01", // Item base para miniatura
+                              product_set_id: productSetId
+                          }
+                      }
+                  }
+              })
+          }).then(async (res) => {
+              const resData = await res.json();
+              await logEvent({ 
+                  companyId, 
+                  action: res.ok ? 'CATALOG_SEND_SUCCESS' : 'CATALOG_SEND_FAILED', 
+                  details: resData 
+              });
+          });
+
+          waitUntil(sendCatalogPromise);
           return true;
       }
   }

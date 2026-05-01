@@ -55,7 +55,7 @@ export function ChatNeuralSlideOver({
               <div className="flex items-center gap-6">
                  <span className="flex items-center gap-3 px-4 py-1.5 rounded-xl bg-primary/10 text-[9px] font-black text-primary uppercase tracking-[0.3em] border border-primary/10 shadow-sm italic">
                    <Activity size={12} className="animate-pulse" />
-                   LINK_ESTABLISHED_v10.4
+                   ARISE_LINK_ESTABLISHED_v11.9.1
                  </span>
                  <p className="text-[11px] font-black text-slate-400 font-mono tracking-widest italic opacity-60">+{contact?.phone}</p>
               </div>
@@ -93,7 +93,7 @@ export function ChatNeuralSlideOver({
                        {isBot ? (
                           <>
                              <Cpu size={14} className="text-primary" />
-                             <span className="text-[8px] font-black text-neural-dark uppercase tracking-widest italic">Neural_Engine_v10.4</span>
+                             <span className="text-[8px] font-black text-neural-dark uppercase tracking-widest italic">ARISE_NEURAL_ENGINE_v11.9.1</span>
                           </>
                        ) : isAgent ? (
                           <>
@@ -164,7 +164,7 @@ export function ChatNeuralSlideOver({
                {(contact as any)?.convStatus === 'waiting_human' ? 'CONTROL_HUMANO_ACTIVO' : 'IA_AUTÓNOMA'}
              </button>
              <div className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] italic opacity-60">
-               Neural_Engine_v10.4_Platinum
+               ARISE_NEURAL_ENGINE_v11.9.1
              </div>
           </div>
           

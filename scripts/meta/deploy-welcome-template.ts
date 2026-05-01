@@ -53,9 +53,9 @@ async function deployWelcome() {
         console.log(`✅ Video subido con éxito. Handle: ${handle}`);
 
         // 3. Crear la Plantilla (SIN EMOJIS EN BOTONES)
-        console.log('📡 [3/3] Registrando plantilla loop_v10_welcome_v1...');
+        console.log('📡 [3/3] Registrando plantilla arise_v11_welcome...');
         const templatePayload = {
-            name: "loop_v10_welcome_v1",
+            name: "arise_v11_welcome",
             language: "es",
             category: "MARKETING",
             components: [
@@ -68,11 +68,11 @@ async function deployWelcome() {
                 },
                 {
                     type: "BODY",
-                    text: "Bienvenido al ecosistema *LOOP v10.4 Platinum*. Soy tu Director Neural.\n\nEstoy aquí para optimizar tu operativa y conectar tu negocio con la Red MTZ de forma inteligente. ¿Cómo podemos evolucionar hoy?"
+                    text: "Bienvenido al ecosistema *ARISE v11.9.1 Diamond Resilience*. Soy tu Director Neural.\n\nEstoy aquí para optimizar tu operativa y conectar tu negocio con la Red MTZ de forma inteligente. ¿Cómo podemos evolucionar hoy?"
                 },
                 {
                     type: "FOOTER",
-                    text: "Ouroborus AI - Sede Central"
+                    text: "Ouroborus Neural Engine - ARISE Business OS"
                 },
                 {
                     type: "BUTTONS",
@@ -83,7 +83,7 @@ async function deployWelcome() {
                         },
                         {
                             type: "QUICK_REPLY",
-                            text: "Ver Catalogo"
+                            text: "Ver Catálogo"
                         }
                     ]
                 }

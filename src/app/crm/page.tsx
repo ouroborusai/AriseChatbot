@@ -134,7 +134,7 @@ export default function CRMPage() {
         <div>
           <h1 className="text-4xl md:text-6xl font-black text-neural-dark tracking-tighter uppercase italic">CRM <span className="text-primary drop-shadow-xl">Neural.</span></h1>
           <p className="text-slate-400 text-[10px] md:text-[11px] font-black uppercase tracking-[0.5em] mt-6 flex items-center gap-4 italic opacity-60">
-            <ShieldCheck size={14} className="text-primary" /> DIAMOND_RESILIENCE_SYNC_//_v11.9.1
+            <ShieldCheck size={14} className="text-primary" /> ARISE_DIAMOND_RESILIENCE_SYNC_//_v11.9.1
           </p>
         </div>
         
