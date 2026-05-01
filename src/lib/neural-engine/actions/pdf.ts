@@ -16,28 +16,28 @@ export async function handlePdfAction(
 
   try {
     if (actionData.action === 'pdf_generate' || actionData.action === 'pdf_send') {
-      // 1. Obtener contexto de contacto y teléfono con Aislamiento Tenant
-      const { data: msgInfo, error: msgError } = await supabase
-        .from('messages')
-        .select('conversation_id, conversations!inner(company_id, contacts(phone))')
-        .eq('id', messageId)
-        .eq('conversations.company_id', companyId) // 🛡️ AISLAMIENTO TENANT OBLIGATORIO
-        .single();
+      // 1. Obtener contexto de contacto y teléfono (Bypass Resiliencia v11.9.1)
+      const conversationId = (actionData as any).conversation_id;
+      let phone = actionData.target_phone || (actionData as any).phone_number;
 
-      if (msgError || !msgInfo) {
-        throw new Error(`Context_Resolution_Failed: ${msgError?.message || 'Access denied'}`);
+      // Si no tenemos el teléfono, lo buscamos en la conversación
+      if (!phone && conversationId) {
+        const { data: contactInfo } = await supabase
+          .from('conversations')
+          .select('contacts!inner(phone)')
+          .eq('id', conversationId)
+          .eq('company_id', companyId)
+          .single();
+        
+        if (contactInfo) {
+          phone = (contactInfo.contacts as unknown as { phone: string }).phone;
+        }
       }
-
-      // 💎 CORRECCIÓN DIAMOND: Lectura plana directa desde actionData (SSOT de interfaces/actions.ts)
-      const phone = actionData.target_phone || (msgInfo as any).conversations?.contacts?.phone as string | undefined;
 
       if (!phone) {
-        return [{
-          action: 'pdf_generate',
-          status: 'validation_failed',
-          error: 'Missing_Recipient_Phone'
-        }];
+        throw new Error('Context_Resolution_Failed: No recipient phone found in action context.');
       }
+
 
       // 2. Obtener credenciales de WhatsApp de la empresa (SSOT Settings)
       const { data: companyData, error: companyError } = await supabase

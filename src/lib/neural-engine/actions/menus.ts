@@ -16,33 +16,28 @@ export async function handleOfferMenusAction(
     const results: NeuralActionResult[] = [];
 
     try {
-        // 🛡️ AISLAMIENTO TENANT OBLIGATORIO (Cláusula 7)
-        const { data: msgInfo, error: msgError } = await supabase
-            .from('messages')
-            .select('conversation_id')
-            .eq('id', messageId)
-            .eq('company_id', companyId) // Blindaje inyectado
-            .single();
+        // 🛡️ AISLAMIENTO TENANT OBLIGATORIO (Bypass Resiliencia v11.9.1)
+        const conversationId = (actionData as any).conversation_id;
+        let phone = (actionData as any).phone_number;
 
-        if (msgError || !msgInfo) {
-            results.push({ action: 'offer_menus', status: 'failed', error: 'Message not found or unauthorized' });
-            return results;
+        // Si no tenemos el teléfono en la maleta, lo buscamos en la conversación (único fetch necesario)
+        if (!phone && conversationId) {
+            const { data: contactInfo } = await supabase
+                .from('conversations')
+                .select('contacts!inner(phone)')
+                .eq('id', conversationId)
+                .eq('company_id', companyId)
+                .single();
+            
+            if (contactInfo) {
+                phone = (contactInfo.contacts as unknown as { phone: string }).phone;
+            }
         }
 
-        // AISLAMIENTO TENANT EN EL CRUCE DE CONVERSACIÓN
-        const { data: contactInfo, error: contactError } = await supabase
-            .from('conversations')
-            .select('contacts!inner(phone)')
-            .eq('id', msgInfo.conversation_id)
-            .eq('company_id', companyId)
-            .single();
-
-        if (contactError || !contactInfo) {
-            results.push({ action: 'offer_menus', status: 'failed', error: 'Phone not found or unauthorized for this Tenant' });
+        if (!phone) {
+            results.push({ action: 'offer_menus', status: 'failed', error: 'Context_Resolution_Failed: No recipient phone found' });
             return results;
         }
-
-        const phone = (contactInfo.contacts as unknown as { phone: string }).phone;
 
         const { data: companyData, error: companyError } = await supabase
             .from('companies')

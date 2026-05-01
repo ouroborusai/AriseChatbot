@@ -9,7 +9,7 @@ export type ChatMessage = Pick<Message, 'id' | 'content' | 'sender_type' | 'crea
 interface ChatNeuralSlideOverProps {
   isOpen: boolean;
   onClose: () => void;
-  contact: CRMContactType;
+  contact: CRMContactType | null;
   chatMessages: ChatMessage[];
   newMessage: string;
   setNewMessage: (msg: string) => void;
@@ -29,7 +29,7 @@ export function ChatNeuralSlideOver({
   onToggleHandoff,
   isSending = false
 }: ChatNeuralSlideOverProps) {
-  if (!isOpen) return null;
+  if (!isOpen || !contact) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex justify-end animate-in fade-in duration-300">

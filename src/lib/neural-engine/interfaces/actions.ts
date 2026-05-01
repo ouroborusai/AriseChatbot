@@ -12,6 +12,7 @@ export interface NeuralProcessorRequest {
   contact_id: string;
   conversation_id: string;
   phone_number: string;
+  content?: string; // VISIÓN DIRECTA v11.9.1
   payload?: Record<string, unknown>;
 }
 

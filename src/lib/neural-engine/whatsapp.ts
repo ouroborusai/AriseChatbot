@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ICON_MAP, SYSTEM_STRINGS } from '@/lib/neural-engine/constants';
 import { logEvent } from '@/lib/webhook/utils';
+import { generateGeminiResponse } from './gemini'; // CEREBRO NATIVO v11.9.1
 
 /**
  *  WHATSAPP ENGINE v11.9.1 (Diamond Resilience)
@@ -155,22 +156,35 @@ export async function generateAndSendAIResponse(params: {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     
-    // Invocación al Neural Processor Orchestrator (Hardened v11.9.1)
-    const response = await fetch(`${appUrl}/api/neural-processor`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            messageId: 'N/A_OUTGOING_DIRECT', // Contexto de envío directo
-            companyId: companyId,
-            contact_id: contactId,
-            conversation_id: conversationId,
-            phone_number: sender,
-            content: content
-        })
+    // 🧠 INFERENCIA NATIVA DIAMOND v11.9.1 (Bypass de Supabase)
+    const aiResponse = await generateGeminiResponse({
+        messageId: 'N/A_OUTGOING_DIRECT',
+        companyId: companyId,
+        contact_id: contactId,
+        conversation_id: conversationId,
+        content: content
     });
 
-    const resJson = (await response.json()) as { response?: string };
-    const aiText = resJson.response || SYSTEM_STRINGS.FALLBACK_RESPONSE;
+    const aiText = aiResponse.response || SYSTEM_STRINGS.FALLBACK_RESPONSE;
+
+    // 🚀 DISPARO DE ACCIONES (Asíncrono)
+    if (aiResponse.response.includes('[[')) {
+        fetch(`${appUrl}/api/neural-processor`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.INTERNAL_API_KEY || ''
+            },
+            body: JSON.stringify({
+                messageId: 'N/A_OUTGOING_DIRECT',
+                companyId,
+                contact_id: contactId,
+                conversation_id: conversationId,
+                phone_number: sender,
+                content: aiResponse.response
+            })
+        }).catch(err => console.error('[ACTIONS_ERROR]', err));
+    }
 
     return sendWhatsAppMessage({
         to: sender,

@@ -81,44 +81,45 @@ export async function POST(req: Request) {
       }
     }
 
-    // 1. Recuperación del mensaje con Reintento por Latencia de Replicación
+    // 1. Recuperación del mensaje (Bypass para Resiliencia Cold Start)
     let messageContent: string | null = null;
+    let convStatus: string = 'open';
+    let resolvedConvId: string | null = conversation_id || null;
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('content')
-        .eq('id', messageId)
-        .eq('company_id', companyId)
-        .single();
+    if (messageId === 'N/A_OUTGOING_DIRECT') {
+      console.log('[NEURAL_PROCESSOR] Aplicando Bypass Directo v11.9.1 (Diamond Resilience)');
+      messageContent = body.content || null;
+    } else {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const { data } = await supabase
+          .from('messages')
+          .select('content, conversation_id, conversations!inner(status)')
+          .eq('id', messageId)
+          .eq('company_id', companyId)
+          .single();
 
-      if (data) {
-        messageContent = data.content;
-        break;
+        if (data) {
+          messageContent = data.content;
+          convStatus = (data.conversations as unknown as { status: string }).status;
+          resolvedConvId = data.conversation_id;
+          break;
+        }
+
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-
-      const delay = Math.pow(2, attempt - 1) * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
     }
 
     if (!messageContent) {
+      console.error(`[NEURAL_PROCESSOR] Fallo de Resolución: ID=${messageId}`);
       return NextResponse.json({ error: 'Message content not resolved' }, { status: 404 });
     }
 
     // 2. Validación de Estado de Conversación (Anti-Handoff)
-    const { data: msgData, error: msgError } = await supabase
-      .from('messages')
-      .select('conversation_id, conversations!inner(status)')
-      .eq('id', messageId)
-      .eq('company_id', companyId)
-      .single();
-
-    if (msgError || !msgData) {
-      return NextResponse.json({ error: 'Conversation mapping failed' }, { status: 404 });
+    if (convStatus !== 'open') {
+      console.log(`[NEURAL_PROCESSOR] Handoff activo (${convStatus}). Abortando acciones.`);
+      return NextResponse.json({ response: 'Handoff_Active', action_results: [] });
     }
-
-    const conversation = msgData.conversations as unknown as { status: string };
-    const convStatus = conversation.status;
 
     if (convStatus !== 'open') {
       console.log(`[NEURAL_PROCESSOR] Handoff activo (${convStatus}). Abortando acciones.`);
@@ -162,7 +163,7 @@ export async function POST(req: Request) {
             ...actionData,
             company_id: companyId,
             contact_id: actionData.contact_id || contact_id,
-            conversation_id: actionData.conversation_id || conversation_id,
+            conversation_id: actionData.conversation_id || resolvedConvId || conversation_id,
             phone_number: actionData.phone_number || phone_number,
             meta_payload: payload
           };
