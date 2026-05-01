@@ -96,8 +96,12 @@ export async function POST(req: Request) {
       // como fallback directo para el tenant maestro
       const masterCompanyId = process.env.ARISE_MASTER_COMPANY_ID || '';
       config = await getWhatsAppConfig(masterCompanyId);
-    } catch {
+    } catch (err: any) {
       console.error('[WEBHOOK_FATAL] No se encontró configuración para el phoneNumberId:', phoneNumberId);
+      await logEvent({
+        action: 'WEBHOOK_CONFIG_ERROR',
+        details: { error: err?.message || 'Unknown error', phoneNumberId }
+      });
       return NextResponse.json({ status: 'error', reason: 'Unregistered phone number' }, { status: 404 });
     }
 
@@ -190,6 +194,10 @@ export async function POST(req: Request) {
   } catch (error: unknown) {
     const err = error as Error;
     console.error('[WEBHOOK_FATAL_ERROR]', err.message);
+    await logEvent({
+      action: 'WEBHOOK_POST_CATCH_ERROR',
+      details: { error: err.message, stack: err.stack }
+    });
     return NextResponse.json({ status: 'error', reason: err.message }, { status: 500 });
   }
 }
