@@ -164,7 +164,8 @@ export async function generateAndSendAIResponse(params: {
             companyId: companyId,
             contact_id: contactId,
             conversation_id: conversationId,
-            phone_number: sender
+            phone_number: sender,
+            content: content
         })
     });
 
