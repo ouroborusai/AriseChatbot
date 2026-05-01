@@ -70,7 +70,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as WhatsAppWebhookRequest;
+    const bodyText = await req.text();
+    await logEvent({
+      action: 'WEBHOOK_RAW_ENTRY',
+      details: { raw: bodyText.substring(0, 1000) } // Evitamos saturar si es muy largo
+    });
+    
+    const body = JSON.parse(bodyText) as WhatsAppWebhookRequest;
     const entry = body.entry?.[0];
     const changes = entry?.changes?.[0]?.value;
 
