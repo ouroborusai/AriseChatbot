@@ -102,20 +102,32 @@ export async function POST(req: Request) {
             return NextResponse.json({ status: 'routed' });
         }
 
-        const { data: userMsg, error: insertError } = await supabase
-            .from('messages')
-            .insert({
-                conversation_id: conversationId,
-                sender_type: 'user',
-                content: content,
-                external_id: message.id,
-                created_at: new Date().toISOString()
-            })
-            .select()
-            .single();
+        // 4. ASEGURAR CONVERSACIÓN Y REGISTRAR MENSAJE
+        let targetConversationId = conversationId;
+        
+        if (!targetConversationId) {
+            const { data: newConv } = await supabase
+                .from('conversations')
+                .insert({ 
+                    company_id: companyId, 
+                    contact_id: contactId, 
+                    status: 'open' 
+                })
+                .select()
+                .single();
+            if (newConv) targetConversationId = newConv.id;
+        }
 
-        if (insertError || !userMsg) {
-            throw new Error('Error al registrar mensaje en DB');
+        if (targetConversationId) {
+            await supabase
+                .from('messages')
+                .insert({
+                    conversation_id: targetConversationId,
+                    sender_type: 'user',
+                    content: content,
+                    external_id: message.id,
+                    created_at: new Date().toISOString()
+                });
         }
 
         await generateAndSendAIResponse({
