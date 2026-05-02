@@ -162,7 +162,8 @@ export async function generateAndSendAIResponse(params: {
         companyId: companyId,
         contact_id: contactId,
         conversation_id: conversationId,
-        content: content
+        content: content,
+        phone_number: sender
     });
 
     const aiText = aiResponse.response || SYSTEM_STRINGS.FALLBACK_RESPONSE;

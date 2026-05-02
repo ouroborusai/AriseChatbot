@@ -1,5 +1,6 @@
 import { supabase, logEvent } from '@/lib/webhook/utils';
 import { generateAndSendAIResponse } from '@/lib/neural-engine/whatsapp';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 // Tipos estrictos heredados de la arquitectura SSOT
 export interface OrderItem {
@@ -26,8 +27,8 @@ export interface OrderMessageParams {
 }
 
 /**
- * ARISE NEURAL INVENTORY LOOP v11.9.1 (Diamond Resilience)
- * Handler de Pedidos de Catálogo - Sincronización certificada por Oráculo.
+ * ARISE NEURAL INVENTORY LOOP v12.0 (Diamond Resilience)
+ * Handler de Pedidos de Catálogo - Integración de Cierre Financiero (MercadoPago).
  * SSOT: Cero 'any', Aislamiento Tenant Inquebrantable.
  */
 export async function handleOrderMessage(params: OrderMessageParams): Promise<boolean> {
@@ -37,7 +38,7 @@ export async function handleOrderMessage(params: OrderMessageParams): Promise<bo
     // 1. Telemetría de Recepción Platinum
     await logEvent({
       companyId,
-      action: 'ORDER_RECEIVED_V11_9_1',
+      action: 'ORDER_RECEIVED_V12',
       details: { catalog_id: order.catalog_id, sender }
     });
 
@@ -57,7 +58,44 @@ export async function handleOrderMessage(params: OrderMessageParams): Promise<bo
     if (order.text) {
       orderDetails += `\nNota del cliente: ${order.text}\n`;
     }
-    orderDetails += `\nTotal estimado: ${totalAmount}`;
+    orderDetails += `\nTotal estimado: ${totalAmount}\n`;
+
+    // 2.5 Generación de Enlace de Pago (Cierre Financiero Ventana 24h)
+    let paymentLink = '';
+    if (totalAmount > 0 && process.env.MERCADOPAGO_ACCESS_TOKEN) {
+      try {
+        const mpClient = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
+        const preference = new Preference(mpClient);
+        
+        const prefResult = await preference.create({
+          body: {
+            items: [{
+              id: order.catalog_id,
+              title: `Pedido Comercial - Red MTZ`,
+              quantity: 1,
+              unit_price: totalAmount,
+              currency_id: 'CLP'
+            }],
+            payer: { email: `whatsapp_${sender}@redmtz.cl` }, // Pseudo-email para validación MP
+            metadata: { company_id: companyId, sender_phone: sender },
+            auto_return: 'approved'
+          }
+        });
+        
+        if (prefResult.init_point) {
+          paymentLink = prefResult.init_point;
+          orderDetails += `\n[SISTEMA]: Se generó este enlace de MercadoPago para el pago seguro del cliente: ${paymentLink}\nINSTRUCCIÓN PARA IA: Entrégale este enlace al cliente de inmediato y amablemente para concretar la venta.`;
+          
+          await logEvent({
+            companyId,
+            action: 'PAYMENT_LINK_GENERATED_V12',
+            details: { amount: totalAmount, link: paymentLink, sender }
+          });
+        }
+      } catch (mpError: unknown) {
+        console.error('[MERCADOPAGO_ERROR]', (mpError as Error).message);
+      }
+    }
 
     // 3. Inserción con ARISE_MASTER_SERVICE_KEY via supabase admin client
     // Se fuerza la asociación estricta a contact_id y company_id en el nivel metadata.
