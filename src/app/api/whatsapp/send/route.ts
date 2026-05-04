@@ -3,11 +3,10 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import {
   buildWhatsAppMessage,
-  type WhatsAppApiResponse,
 } from '@/lib/whatsapp-parser';
 
 /**
- *  ARISE WHATSAPP SEND API v11.9.1 (Diamond Resilience)
+ *  ARISE WHATSAPP SEND API v12.0 (Diamond Resilience)
  *  Endpoint de despacho manual y automatizado con Aislamiento Tenant RLS.
  *  Cero 'any'. 
  */
@@ -39,10 +38,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Normalización de settings de empresa (SSOT JSON)
-    const company = contact.companies as unknown as { settings: Record<string, any> };
-    const settings = company?.settings || {};
-    const whatsapp = settings.whatsapp;
+    const company = contact.companies as any;
+    const whatsapp = company?.settings?.whatsapp;
 
     if (!whatsapp?.access_token || !whatsapp?.phone_number_id) {
       return NextResponse.json(
@@ -66,7 +63,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Conversation_Isolation_Failure' }, { status: 404 });
     }
 
-    // 3. Construcción de Payload Meta (Parser v11.9.1)
+    // 3. Construcción de Payload Meta (Parser v12.0)
     const waPayload = buildWhatsAppMessage(contact.phone, content, catalog_id);
 
     // 4. Despacho a Meta Graph API (v21.0 Hardened)
@@ -82,7 +79,7 @@ export async function POST(req: Request) {
       }
     );
 
-    const result = (await response.json()) as WhatsAppApiResponse;
+    const result = (await response.json()) as any;
 
     if (result.error) {
       throw new Error(`Meta_API_Error: ${result.error.message}`);
@@ -91,6 +88,7 @@ export async function POST(req: Request) {
     // 5. Registro de Mensaje y Telemetría Diamond
     const { error: insertError } = await supabase.from('messages').insert({
       conversation_id: conv.id,
+      company_id: contact.company_id,
       sender_type: 'bot',
       content: content,
       metadata: {
@@ -99,6 +97,7 @@ export async function POST(req: Request) {
         processed_at: new Date().toISOString()
       },
     });
+
 
     if (insertError) {
       console.warn('[DB_SYNC_WARNING]', insertError.message);

@@ -1,14 +1,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { PdfActionParams, NeuralActionResult } from '../interfaces/actions';
+import { NeuralActionResult, NeuralActionPayload } from '@/lib/whatsapp/types';
 
 /**
- *  PDF GENERATOR HANDLER v11.9.1 (Diamond Resilience)
+ *  PDF GENERATOR HANDLER v12.0 (Diamond Resilience)
  *  Orquestación de generación de reportes PDF y envío vía WhatsApp.
  *  Cero 'any'. Aislamiento Tenant Blindado.
  */
 export async function handlePdfAction(
   supabase: SupabaseClient,
-  actionData: PdfActionParams,
+  actionData: NeuralActionPayload,
   companyId: string,
   messageId: string
 ): Promise<NeuralActionResult[]> {
@@ -16,9 +16,9 @@ export async function handlePdfAction(
 
   try {
     if (actionData.action === 'pdf_generate' || actionData.action === 'pdf_send') {
-      // 1. Obtener contexto de contacto y teléfono (Bypass Resiliencia v11.9.1)
-      const conversationId = (actionData as any).conversation_id;
-      let phone = actionData.target_phone || (actionData as any).phone_number;
+      // 1. Obtener contexto de contacto y teléfono (Bypass Resiliencia v12.0)
+      const conversationId = actionData.conversation_id;
+      let phone = actionData.target_phone || actionData.phone_number;
 
       // Si no tenemos el teléfono, lo buscamos en la conversación
       if (!phone && conversationId) {
@@ -50,7 +50,7 @@ export async function handlePdfAction(
 
       const cleanEnvVar = (val?: string) => val?.replace(/["\r\n\\]/g, '').trim() || '';
       
-      const settings = (companyData.settings || {}) as any;
+      const settings = (companyData.settings || {}) as Record<string, Record<string, string>>;
       const whatsappToken = settings.whatsapp?.access_token || cleanEnvVar(process.env.WHATSAPP_ACCESS_TOKEN);
       const phoneNumberId = settings.whatsapp?.phone_number_id || cleanEnvVar(process.env.WHATSAPP_PHONE_NUMBER_ID);
 

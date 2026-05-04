@@ -1,5 +1,5 @@
 /**
- * LOOP WHATSAPP MESSAGE PARSER Diamond v11.8 (Diamond Resilience)
+ * ARISE WHATSAPP MESSAGE PARSER Diamond v12.0 (Diamond Resilience)
  * Parser inteligente para respuestas de IA con formato interactivo
  *
  * Formato soportado:
@@ -8,23 +8,25 @@
  */
 
 import {
+  WHATSAPP_LIMITS,
   buildTextMessage,
   buildButtonMessage,
   buildListMessage,
   buildCatalogMessage,
   buildProductMessage,
-  WHATSAPP_LIMITS,
   type WhatsAppMessage,
-  type WhatsAppApiResponse,
-  type ParsedInteractiveContent,
+  type InteractiveMessagePayload,
+  type AIInteractiveParseResult,
+  type ParsedInteractiveOption,
 } from './whatsapp';
+import { logger } from './logger';
 
-export type { WhatsAppMessage, WhatsAppApiResponse, ParsedInteractiveContent };
+export type { WhatsAppMessage, InteractiveMessagePayload, AIInteractiveParseResult, ParsedInteractiveOption };
 
 /**
  * Parsea el contenido de una respuesta de IA y detecta elementos interactivos
  */
-export function parseInteractiveContent(content: string): ParsedInteractiveContent {
+export function parseInteractiveContent(content: string): AIInteractiveParseResult {
   const separator = '---';
   
   // --- CODE BODYGUARD: Cleanup Markdown Artifacts ---
@@ -65,14 +67,18 @@ export function parseInteractiveContent(content: string): ParsedInteractiveConte
 
     // --- CODE BODYGUARD: WhatsApp Button Limit (24 chars) ---
     if (cleanTitle.length > 24) {
-      console.warn(`[WHATSAPP_PARSER] Truncating option title from ${cleanTitle.length} to 24 chars: ${cleanTitle}`);
+      logger.warn(`Truncating option title from ${cleanTitle.length} to 24 chars: ${cleanTitle}`, 'WHATSAPP_PARSER');
       cleanTitle = cleanTitle.substring(0, 21) + '...';
     }
 
     return {
-      id: `opt_${index}_${Date.now()}`,
+      id: `opt_${index}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       title: cleanTitle || `Opción ${index + 1}`,
       actionPayload: actionPayload || undefined,
+      _uiMetadata: {
+        borderRadius: 40,
+        color: '#22c55e'
+      } as const
     };
   });
 
@@ -81,6 +87,10 @@ export function parseInteractiveContent(content: string): ParsedInteractiveConte
     bodyText,
     options,
     footer: extractFooter(bodyText),
+    uiMetadata: {
+      borderRadius: 40,
+      brandColor: '#22c55e'
+    } as const
   };
 }
 
@@ -101,7 +111,7 @@ function extractFooter(text: string): string | undefined {
 /**
  * Construye el mensaje de WhatsApp apropiado según la cantidad de opciones
  *
- * Reglas Diamond v11.8:
+ * Reglas Diamond v12.0:
  * - Detección de [[CATALOG]] -> Catalog Message
  * - Detección de [[PRODUCT:ID]] -> Product Message
  * - 1-3 opciones: Botones interactivos (mejor UX)
@@ -173,7 +183,7 @@ export function buildWhatsAppMessage(
     ],
     'Ver Opciones',
     undefined,
-    parsed.footer || 'Diamond v11.8 Resilience'
+    parsed.footer || 'Diamond v12.0 Resilience'
   );
 }
 
@@ -247,33 +257,33 @@ export function extractOptionsFromMessage(content: string): string[] {
 export function debugParse(content: string): void {
   const parsed = parseInteractiveContent(content);
 
-  console.log('═══════════════════════════════════════════════════════════');
-  console.log('🔍 DEBUG PARSE - LOOP Diamond v11.8');
-  console.log('═══════════════════════════════════════════════════════════');
-  console.log(`📝 Body Text: ${parsed.bodyText.substring(0, 50)}...`);
-  console.log(`🔢 Opciones: ${parsed.options.length}`);
-  console.log(`🎯 Interactivo: ${parsed.hasInteractive ? 'SÍ' : 'NO'}`);
+  logger.debug('═══════════════════════════════════════════════════════════', 'WHATSAPP_PARSER');
+  logger.debug('🔍 DEBUG PARSE - ARISE Diamond v12.0', 'WHATSAPP_PARSER');
+  logger.debug('═══════════════════════════════════════════════════════════', 'WHATSAPP_PARSER');
+  logger.debug(`📝 Body Text: ${parsed.bodyText.substring(0, 50)}...`, 'WHATSAPP_PARSER');
+  logger.debug(`🔢 Opciones: ${parsed.options.length}`, 'WHATSAPP_PARSER');
+  logger.debug(`🎯 Interactivo: ${parsed.hasInteractive ? 'SÍ' : 'NO'}`, 'WHATSAPP_PARSER');
 
   if (parsed.options.length > 0) {
-    console.log('\n📋 OPCIONES:');
+    logger.debug('\n📋 OPCIONES:', 'WHATSAPP_PARSER');
     parsed.options.forEach((opt, i) => {
-      console.log(`   ${i + 1}. ${opt.title}${opt.actionPayload ? ` [[${opt.actionPayload}]]` : ''}`);
+      logger.debug(`   ${i + 1}. ${opt.title}${opt.actionPayload ? ` [[${opt.actionPayload}]]` : ''}`, 'WHATSAPP_PARSER');
     });
   }
 
   const validation = validateMessage(content);
   if (!validation.valid) {
-    console.log('\n⚠️ ERRORES DE VALIDACIÓN:');
-    validation.errors.forEach(err => console.log(`   - ${err}`));
+    logger.debug('\n⚠️ ERRORES DE VALIDACIÓN:', 'WHATSAPP_PARSER');
+    validation.errors.forEach(err => logger.debug(`   - ${err}`, 'WHATSAPP_PARSER'));
   } else {
-    console.log('\n✅ Mensaje válido');
+    logger.debug('\n✅ Mensaje válido', 'WHATSAPP_PARSER');
   }
 
-  console.log('═══════════════════════════════════════════════════════════\n');
+  logger.debug('═══════════════════════════════════════════════════════════\n', 'WHATSAPP_PARSER');
 }
 
 /**
- * PARSER PARA UI (LOOP Diamond v11.8 resilient)
+ * PARSER PARA UI (ARISE Diamond v12.0 resilient)
  * Divide el mensaje en partes de texto y bloques de botones, manejando múltiples separadores ---
  *
  * Estrategia: El último --- separa el cuerpo del bloque de botones

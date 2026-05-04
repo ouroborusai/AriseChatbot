@@ -3,18 +3,18 @@ import { createClient } from "@supabase/supabase-js";
 import { parseInteractiveContent } from "whatsapp-parser";
 
 /**
- * META OMNICHANNEL WEBHOOK v10.4 (LOOP Platinum)
+ * ARISE OMNICHANNEL WEBHOOK v12.0 (Diamond Resilience)
  * Soporte para Facebook Messenger, Instagram DMs y WhatsApp
  */
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const META_VERIFY_TOKEN = Deno.env.get("META_VERIFY_TOKEN") || "loop_platinum_v10.4";
+const META_VERIFY_TOKEN = Deno.env.get("META_VERIFY_TOKEN") || "arise_diamond_v12.0";
 const META_ACCESS_TOKEN = Deno.env.get("META_ACCESS_TOKEN") || "";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-serve(async (req) => {
+serve(async (req: Request) => {
   const url = new URL(req.url);
 
   // 1. Verificación del Webhook (GET)
@@ -126,10 +126,10 @@ async function resolveConversationId(contactId: string): Promise<string> {
 }
 
 /**
- * Dispara el motor de inferencia v10.4 Platinum
+ * Dispara el motor de inferencia v12.0 Diamond
  */
 function triggerNeuralEngine(messageId: string) {
-  const endpoint = `${SUPABASE_URL}/functions/v1/loop-neural-engine?source=trigger`;
+  const endpoint = `${SUPABASE_URL}/functions/v1/arise-neural-engine?source=trigger`;
   
   fetch(endpoint, {
     method: "POST",
@@ -139,6 +139,6 @@ function triggerNeuralEngine(messageId: string) {
     },
     body: JSON.stringify({ messageId })
   })
-  .then(res => console.log(`🧠 [LOOP] Neural Engine disparado para mensaje ${messageId}: ${res.status}`))
-  .catch(err => console.error("❌ [LOOP] Error disparando Neural Engine:", err));
+  .then(res => console.log(`🧠 [ARISE] Neural Engine disparado para mensaje ${messageId}: ${res.status}`))
+  .catch(err => console.error("❌ [ARISE] Error disparando Neural Engine:", err));
 }

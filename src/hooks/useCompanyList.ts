@@ -59,7 +59,7 @@ export function useCompanyList(): UseCompanyListReturn {
         const { data: all } = await dbQuery;
 
         if (all) {
-          finalCompanies = all.map((c: any) => ({
+          finalCompanies = all.map((c: { id: string; name: string; plan_tier: string }) => ({
             id: c.id,
             name: c.name,
             role: 'admin',
@@ -92,7 +92,7 @@ export function useCompanyList(): UseCompanyListReturn {
         const { data: access } = await dbQuery;
 
         if (access) {
-          finalCompanies = access.map((a: any) => {
+          finalCompanies = (access as unknown as Array<{ company_id: string; role: string; companies: any }>).map((a) => {
             const comp = Array.isArray(a.companies) ? a.companies[0] : a.companies;
             return {
               id: a.company_id,
@@ -102,7 +102,7 @@ export function useCompanyList(): UseCompanyListReturn {
               status: 'active' as ActiveCompanyType['status'],
               tax_id: null
             };
-          }).sort((a: any, b: any) => a.name.localeCompare(b.name));
+          }).sort((a: ActiveCompanyType, b: ActiveCompanyType) => a.name.localeCompare(b.name));
         }
       }
 

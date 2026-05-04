@@ -1,10 +1,10 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ICON_MAP, SYSTEM_STRINGS } from '@/lib/neural-engine/constants';
 import { logEvent } from '@/lib/webhook/utils';
-import { generateGeminiResponse } from './gemini'; // CEREBRO NATIVO v11.9.1
+import { generateGeminiResponse } from './gemini'; // CEREBRO NATIVO v12.0
 
 /**
- *  WHATSAPP ENGINE v11.9.1 (Diamond Resilience)
+ *  WHATSAPP ENGINE v12.0 (Diamond Resilience)
  *  Orquestación de mensajería interactiva (Buttons, Lists, Flows, Catalogs).
  *  Cero 'any'. Aislamiento Tenant Mandatorio.
  */
@@ -36,7 +36,7 @@ export interface WhatsAppMessageParams {
 
 export async function sendWhatsAppMessage(params: WhatsAppMessageParams): Promise<Record<string, unknown>> {
     const { to, text, options, template, flow, catalog, phoneNumberId, whatsappToken, companyId } = params;
-    const apiVersion = process.env.META_API_VERSION || 'v21.0';
+    const apiVersion = process.env.META_API_VERSION || 'v23.0';
     
     let payload: Record<string, unknown> = { 
       messaging_product: 'whatsapp', 
@@ -125,7 +125,7 @@ export async function sendWhatsAppMessage(params: WhatsAppMessageParams): Promis
         body: JSON.stringify(payload)
     });
 
-    const result = (await response.json()) as Record<string, any>;
+    const result = (await response.json()) as Record<string, unknown>;
 
     if (!response.ok) {
         await logEvent({ 
@@ -134,7 +134,8 @@ export async function sendWhatsAppMessage(params: WhatsAppMessageParams): Promis
             details: { error: result, payload },
             tableName: 'whatsapp_telemetry'
         });
-        throw new Error(result.error?.message || 'Error_Sending_WhatsApp_Message');
+        const errorData = result.error as { message?: string } | undefined;
+        throw new Error(errorData?.message || 'Error_Sending_WhatsApp_Message');
     }
 
     return result;
@@ -156,7 +157,7 @@ export async function generateAndSendAIResponse(params: {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     
-    // 🧠 INFERENCIA NATIVA DIAMOND v11.9.1 (Bypass de Supabase)
+    // 🧠 INFERENCIA NATIVA DIAMOND v12.0 (Bypass de Supabase)
     const aiResponse = await generateGeminiResponse({
         messageId: 'N/A_OUTGOING_DIRECT',
         companyId: companyId,
@@ -166,10 +167,10 @@ export async function generateAndSendAIResponse(params: {
         phone_number: sender
     });
 
-    const aiText = aiResponse.response || SYSTEM_STRINGS.FALLBACK_RESPONSE;
+    const aiText = aiResponse.text || SYSTEM_STRINGS.FALLBACK_RESPONSE;
 
     // 🚀 DISPARO DE ACCIONES (Asíncrono)
-    if (aiResponse.response.includes('[[')) {
+    if (aiResponse.text.includes('[[')) {
         fetch(`${appUrl}/api/neural-processor`, {
             method: 'POST',
             headers: { 
@@ -182,7 +183,7 @@ export async function generateAndSendAIResponse(params: {
                 contact_id: contactId,
                 conversation_id: conversationId,
                 phone_number: sender,
-                content: aiResponse.response
+                content: aiResponse.text
             })
         }).catch(err => console.error('[ACTIONS_ERROR]', err));
     }

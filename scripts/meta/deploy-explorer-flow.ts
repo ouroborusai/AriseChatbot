@@ -33,7 +33,11 @@ const EXPLORER_JSON = {
               { "id": "mtz_logistics", "title": "Transporte & Logística 🚛" },
               { "id": "mtz_health", "title": "Salud & Bienestar 💅" },
               { "id": "mtz_pro_services", "title": "Servicios Profesionales ⚖️" },
-              { "id": "mtz_industrial", "title": "Seguridad & Industrial 🛡️" }
+              { "id": "mtz_industrial", "title": "Seguridad & Industrial 🛡️" },
+              { "id": "mtz_distillery", "title": "Destilerías & Producción 🍷" },
+              { "id": "mtz_education", "title": "Educación & Comunidad 🎨" },
+              { "id": "mtz_automotive", "title": "Automotriz & Talleres 🏎️" },
+              { "id": "mtz_retail", "title": "Comercio & Retail 🛒" }
             ]
           },
           {
@@ -81,7 +85,7 @@ async function deploy() {
   if (!ACCESS_TOKEN || !WABA_ID) return;
   console.log('📡 Aplicando requerimiento de Meta (__example__) al Flow...');
   
-  const FLOW_ID = '3141848516022930'; 
+  const FLOW_ID = '1022620870276018'; // arise_v12_mtz_explorer — SSOT v12.0 
 
   const formData = new FormData();
   const blob = new Blob([JSON.stringify(EXPLORER_JSON)], { type: 'application/json' });

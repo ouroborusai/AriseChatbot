@@ -1,6 +1,6 @@
 import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
-import { LoopDocument } from './LoopDocument';
+import { AriseDocument } from './AriseDocument';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { logEvent } from '../webhook/utils';
 
@@ -14,7 +14,7 @@ export interface PDFPipelineParams {
 }
 
 /**
- *  PDF GENERATION PIPELINE v11.9.1 (Diamond Resilience)
+ *  PDF GENERATION PIPELINE v12.0 (Diamond Resilience)
  *  Orquestación industrial para la generación, almacenamiento y despacho de PDFs.
  *  Cero 'any'. Aislamiento Tenant Estricto.
  */
@@ -71,7 +71,7 @@ export async function executePDFPipeline(params: PDFPipelineParams) {
 
     // Renderizado con Estética Luminous Pure (Hardened)
     const pdfBuffer = await renderToBuffer(
-      <LoopDocument
+      <AriseDocument
         reportType={cleanReportType}
         companyName={company.name || "ARISE Business OS"}
         date={new Date().toLocaleDateString('es-CL')}

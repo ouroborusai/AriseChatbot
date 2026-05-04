@@ -11,7 +11,7 @@ import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import type { AuditLog } from '@/types/database';
 
 /**
- *  TELEMETRY LOGS (Audit Flow) v11.9.1 (Diamond Resilience - Luminous Pure)
+ *  TELEMETRY LOGS (Audit Flow) v12.0 (Diamond Resilience - Luminous Pure)
  *  Aislamiento Tenant Estricto y Tipado SSOT.
  */
 export default function TelemetryLogsPage() {
@@ -87,7 +87,7 @@ export default function TelemetryLogsPage() {
             </h1>
             <p className="text-[10px] md:text-[12px] font-black text-[#22c55e] uppercase tracking-[0.4em] mt-4 flex items-center gap-3 italic">
               <Terminal size={14} className="text-[#22c55e]" />
-              TELEMETRY_SSOT_v11.9.1_DIAMOND
+              TELEMETRY_SSOT_v12.0_DIAMOND
             </p>
           </div>
 

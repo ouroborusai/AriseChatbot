@@ -2,7 +2,7 @@ import React from 'react';
 import { LucideIcon, ArrowUpRight, Activity } from 'lucide-react';
 
 // ════════════════════════════════════════════════════════════════════════════
-// METRIC SMALL v10.4 - PLATINUM INDUSTRIAL
+// METRIC SMALL v12.0 - DIAMOND INDUSTRIAL
 // Componente de telemetría atómica de alta fidelidad.
 // ════════════════════════════════════════════════════════════════════════════
 

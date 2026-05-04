@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LOOP Business OS",
+  title: "ARISE Business OS",
   description: "Neural Operating System for Industrial Growth",
   manifest: "/manifest.json",
   icons: {
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "LOOP OS",
+    title: "ARISE OS",
     statusBarStyle: "black-translucent",
   },
 };

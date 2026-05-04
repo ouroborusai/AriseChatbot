@@ -1,22 +1,22 @@
-# 🏛️ LOOP BUSINESS OS v10.4 (Platinum)
+# 🏛️ ARISE BUSINESS OS v12.0 (Diamond Resilience)
 
 **Next-Generation AI-Powered Business Intelligence Platform**
 
-> *"The Synthetic Architect" - OuroborusAI Intelligence Engine*
+> *"The Synthetic Architect" - ARISE Intelligence Engine*
 
 ---
 
-## 🚀 NOVEDADES v10.2 PLATINUM (Industrialización)
+## 🚀 NOVEDADES v12.0 DIAMOND (Resiliencia Extrema)
 
 ### 📊 Shadow PDF Pipeline
 - **Generación Nativa:** Se eliminó la dependencia de Puppeteer/Chromium en favor de `@react-pdf/renderer` para estabilidad total en Vercel Serverless.
 - **Protocolo Cero Cálculos:** Los reportes son 100% íntegros, mapeando directamente desde la columna `summary_data` de Supabase.
 - **Handshake Blindado:** Webhook calibrado para Meta con respuesta `text/plain` y persistencia garantizada vía `waitUntil()`.
-- **Diseño Luminous Pure:** Formateo financiero profesional ($ CLP) y estética LOOP Green (#22c55e).
+- **Diseño Luminous Pure:** Formateo financiero profesional ($ CLP) y estética ARISE Green (#22c55e).
 
 ### 🌐 Endpoints de Producción (SSOT)
-- **Webhook WhatsApp:** `https://loop-business-os.vercel.app/api/webhook/whatsapp`
-- **Verify Token:** `loop_platinum_v10.4`
+- **Webhook WhatsApp:** `https://arise-chatbot-eight.vercel.app/api/webhook/whatsapp`
+- **Verify Token:** `quickship_wh_verify_meta_2026`
 - **Region:** `iad1` (Washington, D.C.)
 
 ---
@@ -37,7 +37,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         LOOP BUSINESS OS v10.4                          │
+│                         ARISE BUSINESS OS v12.0                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
 │  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐            │
@@ -83,8 +83,8 @@
 
 ### IA & Messaging
 - **LLM:** Google Gemini 2.5 Flash-Lite
-- **WhatsApp:** Meta WhatsApp Business Cloud API
-- **PDF:** Puppeteer + Handlebars
+- **WhatsApp:** Meta WhatsApp Business Cloud API v21.0
+- **PDF:** @react-pdf/renderer
 
 ### Pagos
 - **Gateway:** MercadoPago SDK v2.12.0
@@ -100,9 +100,10 @@ ouroborus-ai/
 │   │   ├── api/                  # API Routes (Next.js)
 │   │   │   ├── neural-processor/ # Ejecuta acciones de IA
 │   │   │   ├── ocr-processor/    # Procesa imágenes con Gemini Vision
-│   │   │   ├── pdf/              # Genera PDFs con Puppeteer
-│   │   │   ├── whatsapp/send/    # Envía mensajes WhatsApp
-│   │   │   └── webhook/whatsapp/ # Webhook de Meta
+│   │   │   ├── pdf/               # Lógica de generación de documentos (@react-pdf)
+│   ├── neural-engine/     # Motor de IA y prompts
+│   ├── webhook/           # Handlers de Meta y seguridad
+│   └── whatsapp/          # Tipado SSOT y clientes API
 │   │   ├── dashboard/            # Vista general del sistema
 │   │   ├── crm/                  # Gestión de contactos y clientes
 │   │   ├── inventory/            # Control de inventario
@@ -151,7 +152,7 @@ ouroborus-ai/
 │       ├── document-processor/   # Procesa documentos subidos
 │       ├── whatsapp-responder/   # Respuestas automáticas
 │       ├── mercadopago-webhook/  # Webhook de pagos
-│       └── loop-neural-engine/   # Motor de IA (Platinum v10.4)
+│       └── arise-neural-engine/   # Motor de IA (Diamond v12.0)
 │
 ├── scripts/                      # Scripts de desarrollo y auditoría
 │   ├── code-audit.ts             # Auditoría de código estático
@@ -186,7 +187,7 @@ Usuario ◄── WhatsApp Send API ◄── Gemini 2.5 Flash-Lite ◄── Su
 3. **Identidad:** Resuelve `company_id` y `contact_id` (multi-tenant routing)
 4. **Contexto:** Obtiene prompt personalizado de `ai_prompts` table
 5. **Inferencia:** Llama a Gemini 2.5 Flash-Lite con contexto del usuario
-6. **Parseo Diamond v61:** Detecta inteligentemente formato `---` y `|` para generar Listas y Botones dinámicos
+6. **Parseo Diamond v12.0:** Detecta inteligentemente formato `---` y `|` para generar Listas y Botones dinámicos
 7. **Respuesta Interactiva:** Envía payload `list` o `button` por WhatsApp API
 8. **Acción:** Si hay bloques `[[...]]`, trigger a `/api/neural-processor`
 
@@ -252,13 +253,13 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
 # WhatsApp Business API
 WHATSAPP_ACCESS_TOKEN=EAA...
 WHATSAPP_PHONE_NUMBER_ID=1234567890
-WHATSAPP_VERIFY_TOKEN=loop_verify_2026
+WHATSAPP_VERIFY_TOKEN=quickship_wh_verify_meta_2026
 
 # Google Gemini AI
 GEMINI_API_KEY=AIzaSy...
 
 # App URL (production)
-APP_URL=https://your-domain.com
+APP_URL=https://arise-chatbot-eight.vercel.app
 
 # MercadoPago (opcional)
 MP_ACCESS_TOKEN=APP_USR-...
@@ -310,7 +311,7 @@ supabase link --project-ref your-project-ref
 
 # Deploy de funciones
 supabase functions deploy mercadopago-webhook
-supabase functions deploy loop-neural-engine
+supabase functions deploy arise-neural-engine
 supabase functions deploy mercadopago-webhook
 ```
 
@@ -319,8 +320,8 @@ supabase functions deploy mercadopago-webhook
 Configurar en Meta Developers Dashboard:
 
 ```
-Webhook URL: https://your-project.supabase.co/functions/v1/whatsapp-webhook
-Verify Token: (el que configuraste en WHATSAPP_VERIFY_TOKEN)
+Webhook URL: https://arise-chatbot-eight.vercel.app/api/webhook/whatsapp
+Verify Token: quickship_wh_verify_meta_2026
 ```
 
 **Suscribirse a eventos:**
@@ -334,10 +335,12 @@ Verify Token: (el que configuraste en WHATSAPP_VERIFY_TOKEN)
 
 El sistema registra automáticamente:
 
-| Métrica | Tabla | Propósito |
-|---------|-------|-----------|
-| Tokens IA | `ai_api_telemetry` | Costos y uso de Gemini |
-| Latencia | `ai_api_telemetry` | Performance de respuestas |
+| Variable | Valor / Propósito |
+|----------|-------------------|
+| **App URL** | `https://arise-chatbot-eight.vercel.app` |
+| **Verify Token** | `quickship_wh_verify_meta_2026` |
+| **Meta API** | `v21.0` |
+ai_api_telemetry` | Performance de respuestas |
 | Mensajes | `messages` | Historial de conversaciones |
 | Transacciones | `inventory_transactions` | Kardex de inventario |
 | Pagos | `subscriptions` | Estado de suscripciones |
@@ -414,10 +417,10 @@ chore: Cambios en build/config
 
 ## 📞 SOPORTE
 
-**Equipo:** LOOP Intelligence  
-**Versión:** v11.0 Diamond Resilience
-**Última actualización:** 2026-04-30
+**Equipo:** ARISE Intelligence  
+**Versión:** v12.0 Diamond Resilience
+**Última actualización:** 2026-05-02
 
 ---
 
-*LOOP Business OS - The Synthetic Architect*
+*ARISE Business OS - The Synthetic Architect*

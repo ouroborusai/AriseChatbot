@@ -64,8 +64,9 @@ function AuthContent() {
       }
 
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Error de acceso.');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Error de acceso.');
     } finally {
       setLoading(false);
     }
@@ -93,11 +94,11 @@ function AuthContent() {
         },
       });
 
-      if (signUpError) throw signUpError;
       setSuccess(true);
       setError(null);
-    } catch (err: any) {
-      setError(err.message || 'Error de registro.');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Error de registro.');
     } finally {
       setLoading(false);
     }
@@ -113,11 +114,11 @@ function AuthContent() {
         redirectTo: `${window.location.origin}/auth/update-password`,
       });
 
-      if (resetError) throw resetError;
       setSuccess(true);
       setError(null);
-    } catch (err: any) {
-      setError(err.message || 'Error al procesar.');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Error al procesar.');
     } finally {
       setLoading(false);
     }
@@ -178,14 +179,14 @@ function AuthContent() {
 
           <div className="relative z-10 w-full flex items-center gap-6 animate-in fade-in slide-in-from-left-8 duration-1000">
              <div className="w-2 h-8 bg-primary rounded-full shadow-[0_0_20px_rgba(34,197,94,0.6)]" />
-             <span className="text-[10px] font-black text-accent uppercase tracking-[0.6em] italic">Protocolo_Luminous_v10.4</span>
+             <span className="text-[10px] font-black text-accent uppercase tracking-[0.6em] italic">Protocolo_ARISE_v12.0</span>
           </div>
 
           <div className="relative z-20 flex flex-col items-center justify-center w-full">
              <div className="relative group mb-16">
                  <div className="absolute inset-0 bg-primary/20 blur-[80px] rounded-full opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
                  <div className="w-56 h-56 bg-white rounded-xl border border-white/10 shadow-2xl flex items-center justify-center p-0 overflow-hidden relative group-hover:scale-110 transition-transform duration-1000 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.2)]">
-                    <Image src="/brand/official.png" alt="LOOP logo" fill className="object-cover" />
+                    <Image src="/brand/arise-logo.png" alt="ARISE logo" fill className="object-cover" />
                  </div>
               </div>
 
@@ -196,7 +197,7 @@ function AuthContent() {
                    {view === 'forgot' && <>Reseteo <br /><span className="text-primary">Secuencial.</span></>}
                  </h2>
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.5em] mt-12 max-w-[280px] leading-relaxed opacity-60 italic">
-                   Sincronización en tiempo real con el núcleo Gemini 10.4 Platinum
+                   Sincronización en tiempo real con el núcleo Gemini 12.0 Diamond
                 </p>
              </div>
           </div>
@@ -216,7 +217,7 @@ function AuthContent() {
             {/* Header Section */}
             <div className="flex flex-col items-center mb-16 w-full animate-in fade-in slide-in-from-top-8 duration-1000">
                <div className="w-20 h-20 bg-white rounded-xl flex items-center justify-center mb-10 border border-slate-100 p-0 overflow-hidden shadow-2xl relative lg:hidden">
-                  <Image src="/brand/official.png" alt="Logo" fill className="object-cover" />
+                  <Image src="/brand/arise-logo.png" alt="Logo" fill className="object-cover" />
                </div>
                <h1 className="text-4xl lg:text-5xl font-black text-neural-dark mb-6 tracking-tighter uppercase text-center italic">
                   {view === 'login' ? 'Auth_Terminal' : view === 'register' ? 'Node_Provision' : 'Recovery_Safe'}
@@ -224,7 +225,7 @@ function AuthContent() {
                 <div className="flex items-center gap-5">
                    <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.6)]" />
                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] italic">
-                     {view === 'login' ? 'ACCESO_RESTRINGIDO_v10' : view === 'register' ? 'ALTA_PRIORITARIA' : 'ENLACE_CRÍPTICO'}
+                     {view === 'login' ? 'ACCESO_RESTRINGIDO_v12.0' : view === 'register' ? 'ALTA_PRIORITARIA' : 'ENLACE_CRÍPTICO'}
                    </p>
                 </div>
             </div>
@@ -276,7 +277,7 @@ function AuthContent() {
                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic">Terminal</span>
                          </div>
                          <Mail size={18} className="ml-6 text-slate-300 group-focus-within:text-primary transition-colors shrink-0" />
-                         <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="NOMBRE@NODO.LOOP"
+                         <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="NOMBRE@NODO.ARISE"
                           className="flex-1 bg-transparent border-none px-6 h-full text-[11px] font-black text-neural-dark uppercase tracking-[0.2em] outline-none placeholder:text-slate-200 italic" />
                       </div>
 
@@ -346,7 +347,7 @@ function AuthContent() {
 
           <footer className="py-12 text-center border-t border-slate-100 bg-slate-50/20">
              <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.6em] italic opacity-40">
-                © 2026 LOOP BUSINESS OS · ENGINE v10.4 NEURAL CORE · E2EE PROTECTED
+                © 2026 ARISE BUSINESS OS · ENGINE v12.0 NEURAL CORE · E2EE PROTECTED
              </p>
           </footer>
         </div>

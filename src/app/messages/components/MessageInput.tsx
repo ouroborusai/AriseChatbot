@@ -44,7 +44,7 @@ export function MessageInput({ value, onChange, onSend, disabled }: MessageInput
       <div className="mt-8 flex justify-center items-center gap-3">
          <Zap size={12} className="text-[#22c55e] animate-pulse" />
          <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.5em] italic">
-           Terminal_Segura_v11.9.1_Diamond
+           Terminal_Segura_v12.0_Diamond
          </p>
       </div>
     </div>

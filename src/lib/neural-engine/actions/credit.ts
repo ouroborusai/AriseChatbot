@@ -1,14 +1,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { NeuralActionResult, CreditActionParams } from '../interfaces/actions';
+import { NeuralActionResult, NeuralActionPayload } from '@/lib/whatsapp/types';
 
 /**
- *  CREDIT ACTION HANDLER v11.9.1 (Diamond Resilience)
+ *  CREDIT ACTION HANDLER v12.0 (Diamond Resilience)
  *  Gestiona la asignación y actualización de límites de crédito.
  *  SSOT: Cero 'any', Aislamiento Tenant Inquebrantable vía .eq('company_id', companyId).
  */
 export async function handleCreditAction(
     supabase: SupabaseClient,
-    actionData: CreditActionParams,
+    actionData: NeuralActionPayload,
     companyId: string,
     messageId: string
 ): Promise<NeuralActionResult[]> {
@@ -16,7 +16,7 @@ export async function handleCreditAction(
 
     try {
         if (actionData.action === 'credit_limit_set') {
-            const phone = actionData.phone || actionData.params?.phone;
+            const phone = (actionData.phone || actionData.params?.phone) as string;
             const amount = Number(actionData.amount ?? actionData.params?.amount);
 
             if (!phone || isNaN(amount)) {

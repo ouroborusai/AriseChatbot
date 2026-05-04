@@ -7,13 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test:neural": "npx tsx src/lib/neural-engine/scripts/test-neural.ts",
-    "audit": "npx tsx scripts/code-audit.ts",
-    "deps": "npx tsx scripts/dependency-check.ts",
-    "schema": "npx tsx scripts/schema-validator.ts",
-    "diagnostic": "npx tsx scripts/neural_diagnostic.ts",
-    "analyze": "npx tsx scripts/code-audit.ts && npx tsx scripts/dependency-check.ts",
-    "cleanup": "npx tsx scripts/auto-cleanup.ts"
+    "test:neural": "npx tsx src/lib/neural-engine/scripts/test-neural.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",

@@ -33,8 +33,9 @@ export default function UpdatePasswordPage() {
       if (updateError) throw updateError;
       setSuccess(true);
       setTimeout(() => router.push('/auth/login'), 3000);
-    } catch (err: any) {
-      setError(err.message || 'Error al actualizar la clave de seguridad.');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Error al actualizar la clave de seguridad.');
     } finally {
       setLoading(false);
     }
@@ -52,8 +53,8 @@ export default function UpdatePasswordPage() {
           <div className="w-20 h-20 relative mb-8 group">
              <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full" />
              <Image 
-               src="/brand/official.png" 
-               alt="LOOP Logo" 
+               src="/brand/arise-logo.png" 
+               alt="ARISE Logo" 
                width={80}
                height={80}
                className="w-full h-full object-cover rounded-[24px] shadow-2xl relative z-10 border border-white/5"

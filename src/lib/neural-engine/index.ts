@@ -1,5 +1,5 @@
 /**
- * LOOP NEURAL ENGINE - EXPORTS Platinum v10.4
+ * ARISE NEURAL ENGINE - EXPORTS Diamond v12.0
  * Punto único de importación para el motor neural
  */
 
@@ -24,4 +24,4 @@ export {
 } from './constants';
 
 // Types
-export type { GeminiResponse } from './gemini';
+export type { GeminiResponse, GeminiContext, NeuralProcessorRequest, NeuralProcessorResponse, NeuralActionResult } from '@/lib/whatsapp/types';

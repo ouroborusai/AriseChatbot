@@ -35,7 +35,7 @@ export default function NotFound() {
         </div>
 
         <p className="max-w-xl text-slate-400 text-[12px] font-black uppercase tracking-[0.4em] leading-loose mb-16 italic px-4 opacity-60">
-          La unidad operativa solicitada no responde o ha sido desmantelada por el protocolo de seguridad LOOP. Verifique el enlace de acceso.
+          La unidad operativa solicitada no responde o ha sido desmantelada por el protocolo de seguridad ARISE. Verifique el enlace de acceso.
         </p>
 
         <Link 
@@ -50,7 +50,7 @@ export default function NotFound() {
       <div className="absolute bottom-12 left-0 right-0 flex justify-center gap-12 opacity-30 pointer-events-none">
          <div className="flex items-center gap-3">
             <Cpu size={16} className="text-primary" />
-            <span className="text-[9px] font-black uppercase tracking-widest">Protocolo: Diamond_v10.4</span>
+            <span className="text-[9px] font-black uppercase tracking-widest">Protocolo: Diamond_v12.0</span>
          </div>
          <div className="flex items-center gap-3">
             <Activity size={16} className="text-primary" />

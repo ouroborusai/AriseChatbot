@@ -16,7 +16,7 @@ interface CRMContactTableProps {
 
 export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateCategory }: CRMContactTableProps) {
   return (
-    <div className="loop-card overflow-hidden relative animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div className="arise-card overflow-hidden relative animate-in fade-in slide-in-from-bottom-4 duration-1000">
       <div className="overflow-x-auto">
         <table className="w-full text-left min-w-[800px]">
           <thead>
@@ -86,7 +86,7 @@ export function CRMContactTable({ loading, contacts, onOpenChat, onUpdateCategor
                     {new Date(contact.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
                   </td>
                   <td className="px-8 py-8 text-right">
-                    <button className="btn-loop w-12 h-12 flex ml-auto items-center justify-center">
+                    <button className="btn-arise w-12 h-12 flex ml-auto items-center justify-center">
                       <ArrowUpRight size={18} />
                     </button>
                   </td>

@@ -43,7 +43,7 @@ export default function UsersManagement() {
         supabase.from('companies').select('id, name')
       ]);
       
-      const mappedUsers = (uRes.data || []).map((u: any) => ({
+      const mappedUsers = (uRes.data || []).map((u: { id: string; email: string; created_at: string; user_company_access: { role: string }[] }) => ({
         id: u.id,
         email: u.email,
         role: u.user_company_access?.[0]?.role || 'Operador',
@@ -72,11 +72,11 @@ export default function UsersManagement() {
           </h1>
           <p className="text-slate-400 text-[8px] font-black uppercase tracking-[0.4em] mt-6 flex items-center gap-2.5">
             <Lock size={12} className="text-primary" />
-            CONTROL DE ACCESO NEURAL / v10.4 PLATINUM
+            CONTROL DE ACCESO NEURAL / v12.0 DIAMOND
           </p>
         </div>
 
-        <button className="btn-loop flex items-center justify-center gap-4 bg-accent text-white px-8 py-3.5 text-[8px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-primary transition-all active:scale-95 group">
+        <button className="btn-arise flex items-center justify-center gap-4 bg-accent text-white px-8 py-3.5 text-[8px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-primary transition-all active:scale-95 group">
           <span>Autorizar Operador</span>
           <UserPlus size={16} className="group-hover:rotate-12 transition-transform" />
         </button>
@@ -180,7 +180,7 @@ export default function UsersManagement() {
                   </div>
                 </div>
 
-                <button className="btn-loop w-full bg-primary text-white py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-white hover:text-accent transition-all active:scale-95 mt-4 group/auth">
+                <button className="btn-arise w-full bg-primary text-white py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-white hover:text-accent transition-all active:scale-95 mt-4 group/auth">
                   <span className="flex items-center justify-center gap-3">
                     Conceder Autorización
                     <Zap size={16} className="group-hover/auth:fill-current" />
@@ -195,7 +195,7 @@ export default function UsersManagement() {
             <div className="flex items-start gap-4">
                <Fingerprint size={16} className="text-slate-100 mt-0.5 group-hover:text-[#22c55e]/20 transition-colors" />
                <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.25em] leading-relaxed">
-                 * Las modificaciones en privilegios son registradas por el núcleo auditivo de LOOP Intelligence.
+                 * Las modificaciones en privilegios son registradas por el núcleo auditivo de ARISE Intelligence.
                </p>
             </div>
           </div>

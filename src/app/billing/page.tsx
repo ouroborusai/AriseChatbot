@@ -88,7 +88,7 @@ export default function BillingPage() {
           </h1>
           <p className="text-slate-400 text-[8px] font-black uppercase tracking-[0.4em] mt-6 flex items-center gap-2.5">
             <BarChart3 size={12} className="text-primary" />
-            INTELIGENCIA FINANCIERA / v10.4 PLATINUM
+            INTELIGENCIA FINANCIERA / v12.0 DIAMOND
           </p>
         </div>
 
@@ -97,7 +97,7 @@ export default function BillingPage() {
             <Download size={14} />
             <span>Auditoría</span>
           </button>
-          <button className="btn-loop flex items-center justify-center gap-3 bg-accent text-white px-8 py-3.5 text-[8px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-primary transition-all active:scale-95 group">
+          <button className="btn-arise flex items-center justify-center gap-3 bg-accent text-white px-8 py-3.5 text-[8px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-primary transition-all active:scale-95 group">
             <span>Reporte Neural</span>
             <Zap size={14} className="group-hover:fill-current" />
           </button>
@@ -118,7 +118,7 @@ export default function BillingPage() {
           <div className="p-6 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center border-b border-slate-100 gap-4">
             <h2 className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-300">Registro Maestro de Archivos</h2>
             <div className="relative w-full sm:w-auto group">
-              <input type="text" placeholder="BUSCAR_FOLIO..." className="loop-input w-full sm:w-60 pl-10" />
+              <input type="text" placeholder="BUSCAR_FOLIO..." className="arise-input w-full sm:w-60 pl-10" />
               <Search size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-200 z-20" />
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function BillingPage() {
               <div className="w-12 h-12 bg-white/5 backdrop-blur-3xl flex items-center justify-center text-white mb-8 border border-white/10 group-hover:bg-primary transition-all shadow-lg" style={{ borderRadius: 'var(--radius-md)' }}>
                  <ShieldCheck size={24} />
               </div>
-              <h2 className="text-[9px] font-black uppercase tracking-[0.5em] text-primary mb-6">Cumplimiento Neural v10.4</h2>
+              <h2 className="text-[9px] font-black uppercase tracking-[0.5em] text-primary mb-6">Cumplimiento Neural v12.0</h2>
               <p className="text-white/40 text-[9px] leading-relaxed font-black uppercase tracking-tight">
                 VALIDACIÓN DE PARÁMETROS FISCALES COMPLETADA. <br/>SINCRONIZACIÓN ACTIVA CON SSOT.
               </p>
@@ -195,7 +195,7 @@ export default function BillingPage() {
             <div className="flex items-start gap-3">
                <Lock size={10} className="text-slate-100 mt-0.5" />
                <p className="text-[7px] font-black text-slate-200 uppercase tracking-tight leading-relaxed italic">
-                 * TODA TRANSACCIÓN SE REGISTRA EN LA BÓVEDA LOOP.
+                 * TODA TRANSACCIÓN SE REGISTRA EN LA BÓVEDA ARISE.
                </p>
             </div>
           </div>

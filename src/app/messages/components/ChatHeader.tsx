@@ -38,7 +38,7 @@ export function ChatHeader({ selectedConv, onToggleHandoff, onBack }: ChatHeader
           <div className="flex items-center gap-3 mt-2">
             <Zap size={10} className="text-[#22c55e]" />
             <span className="text-[10px] font-black text-[#22c55e] uppercase tracking-[0.5em] italic">
-              v11.9.1_DIAMOND_LINK
+              v12.0_DIAMOND_LINK
             </span>
             <div className="w-1 h-1 bg-[#22c55e] rounded-full animate-pulse" />
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">

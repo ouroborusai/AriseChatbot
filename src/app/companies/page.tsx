@@ -61,7 +61,7 @@ export default function CompaniesManagementPage() {
           </h1>
           <p className="text-slate-400 text-[8px] font-black uppercase tracking-[0.4em] mt-6 flex items-center gap-2.5">
             <Building2 size={12} className="text-primary" />
-            DIRECTORIO MAESTRO DE NODOS / v10.4 PLATINUM
+            DIRECTORIO MAESTRO DE NODOS / v12.0 DIAMOND
           </p>
         </div>
 
@@ -212,7 +212,7 @@ export default function CompaniesManagementPage() {
              <div>
                <p className="text-[10px] font-black text-white uppercase tracking-[0.4em] mb-2">Centralización Neural</p>
                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] leading-relaxed">
-                 AL SELECCIONAR UNA UNIDAD, EL CONTEXTO DE LOOP SE RE-SINCRONIZARÁ AUTOMÁTICAMENTE CON EL VAULT, INVENTARIO Y CRM DE DICHA ENTIDAD.
+                 AL SELECCIONAR UNA UNIDAD, EL CONTEXTO DE ARISE SE RE-SINCRONIZARÁ AUTOMÁTICAMENTE CON EL VAULT, INVENTARIO Y CRM DE DICHA ENTIDAD.
                </p>
              </div>
           </div>

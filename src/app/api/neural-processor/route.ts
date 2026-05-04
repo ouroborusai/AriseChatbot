@@ -1,21 +1,17 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import type {
-  NeuralProcessorRequest,
-  NeuralProcessorResponse,
-  NeuralActionResult,
-} from '@/lib/neural-engine/interfaces/actions';
+import {
+  type NeuralProcessorRequest,
+  type NeuralProcessorResponse,
+  type NeuralActionResult,
+} from '@/lib/whatsapp/types';
 import { requireAuth, verifyCompanyAccess } from '@/lib/api-auth';
-import { handleInventoryAction } from '@/lib/neural-engine/actions/inventory';
-import { handleTaskAction } from '@/lib/neural-engine/actions/task';
-import { handlePdfAction } from '@/lib/neural-engine/actions/pdf';
-import { handleDirectoryAction } from '@/lib/neural-engine/actions/directory';
-import { handleCreditAction } from '@/lib/neural-engine/actions/credit';
-import { handlePaymentAction } from '@/lib/neural-engine/actions/payment';
-import { handleOfferMenusAction } from '@/lib/neural-engine/actions/menus';
+import { handleEmployeeAction } from '@/lib/neural-engine/actions/employee';
+import { logger } from '@/lib/logger';
+import { resolveHandler } from '@/lib/neural-engine/actions/registry';
 
 /**
- *  NEURAL PROCESSOR ORCHESTRATOR v11.9.1 (Diamond Resilience)
+ *  NEURAL PROCESSOR ORCHESTRATOR v12.0 (Diamond Resilience)
  *  Enrutador puro para bloques de acción [[ { "action": "..." } ]].
  *  Aislamiento Tenant Estricto y Cero 'any'.
  */
@@ -24,7 +20,7 @@ const cleanEnvVar = (val?: string) => val?.replace(/["\r\n\\]/g, '').trim() || '
 const INTERNAL_API_KEY = cleanEnvVar(process.env.INTERNAL_API_KEY);
 
 if (!INTERNAL_API_KEY) {
-  console.error('[NEURAL_PROCESSOR] INTERNAL_API_KEY is not set or empty');
+  logger.error('INTERNAL_API_KEY is not set or empty', 'NEURAL_PROCESSOR');
 }
 
 export async function POST(req: Request) {
@@ -45,7 +41,7 @@ export async function POST(req: Request) {
   const supabaseKey = process.env.ARISE_MASTER_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    console.error('[NEURAL_PROCESSOR] Missing Supabase credentials');
+    logger.error('Missing Supabase credentials', 'NEURAL_PROCESSOR');
     return NextResponse.json(
       { error: 'Server configuration error: Missing Supabase credentials' },
       { status: 500 }
@@ -91,7 +87,7 @@ export async function POST(req: Request) {
     let resolvedConvId: string | null = conversation_id || null;
 
     if (messageId === 'N/A_OUTGOING_DIRECT') {
-      console.log('[NEURAL_PROCESSOR] Aplicando Bypass Directo v11.9.1 (Diamond Resilience)');
+      logger.info('Aplicando Bypass Directo v12.0 (Diamond Resilience)', 'NEURAL_PROCESSOR');
       messageContent = body.content || null;
     } else {
       for (let attempt = 1; attempt <= 3; attempt++) {
@@ -115,18 +111,13 @@ export async function POST(req: Request) {
     }
 
     if (!messageContent) {
-      console.error(`[NEURAL_PROCESSOR] Fallo de Resolución: ID=${messageId}`);
+      logger.error(`Fallo de Resolución: ID=${messageId}`, 'NEURAL_PROCESSOR');
       return NextResponse.json({ error: 'Message content not resolved' }, { status: 404 });
     }
 
     // 2. Validación de Estado de Conversación (Anti-Handoff)
     if (convStatus !== 'open') {
-      console.log(`[NEURAL_PROCESSOR] Handoff activo (${convStatus}). Abortando acciones.`);
-      return NextResponse.json({ response: 'Handoff_Active', action_results: [] });
-    }
-
-    if (convStatus !== 'open') {
-      console.log(`[NEURAL_PROCESSOR] Handoff activo (${convStatus}). Abortando acciones.`);
+      logger.info(`Handoff activo (${convStatus}). Abortando acciones.`, 'NEURAL_PROCESSOR');
       return NextResponse.json({ response: 'Handoff_Active', action_results: [] });
     }
 
@@ -175,23 +166,15 @@ export async function POST(req: Request) {
           const actionType = actionData.action || '';
           let actionResults: NeuralActionResult[] = [];
 
-          if (actionType.startsWith('inventory_')) {
-            actionResults = await handleInventoryAction(supabase, extendedActionData, companyId, messageId);
-          } else if (actionType.startsWith('task_') || actionType.startsWith('reminder_')) {
-            actionResults = await handleTaskAction(supabase, extendedActionData, companyId, messageId);
-          } else if (actionType === 'pdf_generate' || actionType === 'pdf_send') {
-            actionResults = await handlePdfAction(supabase, extendedActionData, companyId, messageId);
-          } else if (actionType.startsWith('directory_') || actionType === 'register_client') {
-            actionResults = await handleDirectoryAction(supabase, extendedActionData, companyId, messageId);
-          } else if (actionType === 'credit_limit_set') {
-            actionResults = await handleCreditAction(supabase, extendedActionData, companyId, messageId);
-          } else if (actionType === 'payment_link_generate' || actionType === 'payment_link') {
-            actionResults = await handlePaymentAction(supabase, extendedActionData, companyId, messageId);
-          } else if (actionType === 'offer_menus') {
-            actionResults = await handleOfferMenusAction(supabase, extendedActionData, companyId, messageId);
+          // 🛡️ DESPACHO DINÁMICO DIAMOND v12.0
+          const handler = resolveHandler(actionType);
+          
+          if (handler) {
+            actionResults = await handler(supabase, extendedActionData, companyId, messageId);
           } else if (actionType === 'whatsapp_flow_init' || actionType === 'commerce_catalog_send') {
             actionResults = [{ action: actionType, status: 'pending_execution' }];
           } else {
+            logger.warn(`Acción no soportada: ${actionType}`, 'NEURAL_PROCESSOR');
             actionResults = [{ action: 'unknown', status: 'error', error: `Unsupported_Action: ${actionType}` }];
           }
 
@@ -209,7 +192,7 @@ export async function POST(req: Request) {
     } as NeuralProcessorResponse);
   } catch (error: unknown) {
     const err = error as Error;
-    console.error('[NEURAL_PROCESSOR] Fatal Failure:', err.message);
+    logger.error(`Fatal Failure: ${err.message}`, 'NEURAL_PROCESSOR');
     return NextResponse.json({ error: 'Internal server failure' }, { status: 500 });
   }
 }

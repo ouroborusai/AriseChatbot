@@ -55,7 +55,7 @@ export function ChatNeuralSlideOver({
               <div className="flex items-center gap-6">
                  <span className="flex items-center gap-3 px-4 py-1.5 rounded-xl bg-primary/10 text-[9px] font-black text-primary uppercase tracking-[0.3em] border border-primary/10 shadow-sm italic">
                    <Activity size={12} className="animate-pulse" />
-                   ARISE_LINK_ESTABLISHED_v11.9.1
+                   ARISE_LINK_ESTABLISHED_v12.0_DIAMOND
                  </span>
                  <p className="text-[11px] font-black text-slate-400 font-mono tracking-widest italic opacity-60">+{contact?.phone}</p>
               </div>
@@ -93,7 +93,7 @@ export function ChatNeuralSlideOver({
                        {isBot ? (
                           <>
                              <Cpu size={14} className="text-primary" />
-                             <span className="text-[8px] font-black text-neural-dark uppercase tracking-widest italic">ARISE_NEURAL_ENGINE_v11.9.1</span>
+                             <span className="text-[8px] font-black text-neural-dark uppercase tracking-widest italic">ARISE_NEURAL_ENGINE_v12.0</span>
                           </>
                        ) : isAgent ? (
                           <>
@@ -155,16 +155,16 @@ export function ChatNeuralSlideOver({
              <button 
                onClick={onToggleHandoff}
                className={`flex items-center gap-4 px-8 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all border shadow-2xl italic ${
-                 (contact as any)?.convStatus === 'waiting_human'
+                 contact.convStatus === 'waiting_human'
                   ? 'bg-primary text-white border-primary shadow-xl shadow-primary/20'
                   : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-white hover:border-primary/30 hover:text-primary'
                }`}
              >
-               <Power size={18} className={(contact as any)?.convStatus === 'waiting_human' ? 'animate-pulse' : ''} />
-               {(contact as any)?.convStatus === 'waiting_human' ? 'CONTROL_HUMANO_ACTIVO' : 'IA_AUTÓNOMA'}
+               <Power size={18} className={contact.convStatus === 'waiting_human' ? 'animate-pulse' : ''} />
+               {contact.convStatus === 'waiting_human' ? 'CONTROL_HUMANO_ACTIVO' : 'IA_AUTÓNOMA'}
              </button>
              <div className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] italic opacity-60">
-               ARISE_NEURAL_ENGINE_v11.9.1
+               ARISE_NEURAL_ENGINE_v12.0_DIAMOND
              </div>
           </div>
           
@@ -173,7 +173,7 @@ export function ChatNeuralSlideOver({
             <textarea 
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={(contact as any)?.convStatus === 'waiting_human' ? "ESCRIBIR_COMANDO_HUMANO..." : "MODO_ESCUCHA_IA_..."}
+              placeholder={contact.convStatus === 'waiting_human' ? "ESCRIBIR_COMANDO_HUMANO..." : "MODO_ESCUCHA_IA_..."}
               className="w-full bg-slate-50 border border-slate-100 rounded-xl p-10 pr-28 text-[15px] font-bold text-neural-dark outline-none focus:bg-white focus:border-primary/30 transition-all resize-none h-36 lg:h-44 relative z-10 placeholder:text-slate-300 focus:shadow-2xl italic custom-scrollbar"
             />
             <button

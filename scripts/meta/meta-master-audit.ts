@@ -17,7 +17,7 @@ async function auditMeta() {
     return;
   }
 
-  console.log('🏛️  MASTER META AUDIT - LOOP v10.4\n');
+  console.log('🏛️  MASTER META AUDIT - LOOP v12.0\n');
 
   // 1. WhatsApp Business Account (WABA) Info
   console.log('📡 [1/4] Consultando WABA Info...');

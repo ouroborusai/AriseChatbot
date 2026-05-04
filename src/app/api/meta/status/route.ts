@@ -68,9 +68,10 @@ export async function GET() {
       sync_mode: dbConfig.whatsapp_business_account_id ? 'database' : 'environment_fallback'
     });
 
-  } catch (error: any) {
-    console.error('[META_ROUTE_CRASH]', error.message);
-    return NextResponse.json({ error: 'Error interno al consultar Meta API', details: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('[META_ROUTE_CRASH]', err.message);
+    return NextResponse.json({ error: 'Error interno al consultar Meta API', details: err.message }, { status: 500 });
   }
 }
 

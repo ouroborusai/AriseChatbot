@@ -85,7 +85,7 @@ export default function ClientVaultPage() {
   if (!isRegistered) {
       return (
           <div className="flex flex-col items-center justify-center w-full min-h-[60vh] animate-in fade-in duration-500">
-              <div className="loop-card p-12 max-w-md w-full text-center">
+              <div className="arise-card p-12 max-w-md w-full text-center">
                   <Lock size={48} className="text-primary mx-auto mb-6 opacity-80" />
                   <h2 className="text-2xl font-black tracking-tighter uppercase italic text-neural-dark mb-4">Acceso Denegado</h2>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">Por favor, registre su Terminal de Acceso</p>
@@ -98,7 +98,7 @@ export default function ClientVaultPage() {
                           onChange={(e) => setTaxId(e.target.value)}
                           className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-xl text-[10px] font-black uppercase italic tracking-widest outline-none focus:ring-4 focus:ring-primary/10 transition-all text-center"
                       />
-                      <button type="submit" className="btn-loop w-full flex items-center justify-center gap-3">
+                      <button type="submit" className="btn-arise w-full flex items-center justify-center gap-3">
                           {loading ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
                           <span>VERIFICAR</span>
                       </button>
@@ -117,21 +117,21 @@ export default function ClientVaultPage() {
         <div>
           <h1 className="text-4xl md:text-6xl font-black text-neural-dark tracking-tighter uppercase italic">Bóveda <span className="text-primary drop-shadow-xl">Neural.</span></h1>
           <p className="text-slate-400 text-[10px] md:text-[11px] font-black uppercase tracking-[0.5em] mt-6 flex items-center gap-4 italic opacity-60">
-            <Lock size={14} className="text-primary" /> NODO_SEGURO_SSOT_//_v11.9.1
+            <Lock size={14} className="text-primary" /> NODO_SEGURO_SSOT_//_v12.0
           </p>
         </div>
       </header>
 
       <div className="px-4 relative z-10">
          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="loop-card p-8">
+            <div className="arise-card p-8">
                 <div className="flex items-center gap-4 mb-8">
                     <div className="p-3 bg-primary/10 rounded-xl text-primary border border-primary/20">
                         <Database size={24} />
                     </div>
                     <div>
                         <h2 className="text-xl font-black tracking-tighter uppercase italic">Memoria_Cognitiva</h2>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">client_knowledge_v11.9.1</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">client_knowledge_v12.0</p>
                     </div>
                 </div>
 
@@ -163,21 +163,21 @@ export default function ClientVaultPage() {
 
                 <div className="mt-8">
                     <input type="file" id="upload-knowledge" className="hidden" onChange={handleFileUpload} />
-                    <label htmlFor="upload-knowledge" className="btn-loop w-full flex items-center justify-center gap-3 cursor-pointer text-center">
+                    <label htmlFor="upload-knowledge" className="btn-arise w-full flex items-center justify-center gap-3 cursor-pointer text-center">
                         {uploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
                         <span>{uploading ? 'PROCESANDO_VECTORES...' : 'INDEXAR_NUEVO_DOCUMENTO'}</span>
                     </label>
                 </div>
             </div>
 
-            <div className="loop-card p-8">
+            <div className="arise-card p-8">
                 <div className="flex items-center gap-4 mb-8">
                     <div className="p-3 bg-accent/10 rounded-xl text-accent border border-accent/20">
                         <CreditCard size={24} />
                     </div>
                     <div>
                         <h2 className="text-xl font-black tracking-tighter uppercase italic">Registro_Financiero</h2>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">client_documents_v11.9.1</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">client_documents_v12.0</p>
                     </div>
                 </div>
 

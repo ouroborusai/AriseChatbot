@@ -131,7 +131,7 @@ export default function CompanyPage() {
              </h3>
              <div className="bg-white p-4 rounded-xl border border-slate-100 relative group/code shadow-inner">
                <pre className="text-[8px] leading-relaxed text-slate-400 font-mono overflow-x-auto scrollbar-hide">
-                 {JSON.stringify(company?.settings || { status: "ACTIVE", core: "LOOP_v2.5", security: "AES-256" }, null, 3)}
+                 {JSON.stringify(company?.settings || { status: "ACTIVE", core: "ARISE_v2.5", security: "AES-256" }, null, 3)}
                </pre>
              </div>
           </div>

@@ -1,14 +1,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { NeuralActionResult, DirectoryActionParams } from '../interfaces/actions';
+import { NeuralActionResult, NeuralActionPayload } from '@/lib/whatsapp/types';
 
 /**
- *  DIRECTORY ACTION HANDLER v11.9.1 (Diamond Resilience)
+ *  DIRECTORY ACTION HANDLER v12.0 (Diamond Resilience)
  *  Gestiona el registro y actualización de roles en internal_directory.
  *  SSOT: Cero 'any', Aislamiento Tenant Estricto.
  */
 export async function handleDirectoryAction(
     supabase: SupabaseClient,
-    actionData: DirectoryActionParams,
+    actionData: NeuralActionPayload,
     companyId: string,
     messageId: string
 ): Promise<NeuralActionResult[]> {
@@ -16,9 +16,9 @@ export async function handleDirectoryAction(
 
     try {
         if (actionData.action === 'directory_register' || actionData.action === 'directory_update' || actionData.action === 'register_client') {
-            const phone = actionData.phone || actionData.params?.phone;
-            const name = actionData.name || actionData.params?.name;
-            const role = actionData.role || actionData.params?.role || 'CLIENTE';
+            const phone = (actionData.phone || actionData.params?.phone) as string;
+            const name = (actionData.name || actionData.params?.name) as string;
+            const role = (actionData.role || actionData.params?.role || 'CLIENTE') as string;
 
             if (!phone || !name) {
                 results.push({ 

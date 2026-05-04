@@ -1,24 +1,24 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { sendWhatsAppMessage } from '../whatsapp';
-import type { NeuralActionResult, MenuActionParams } from '../interfaces/actions';
+import { NeuralActionResult, NeuralActionPayload } from '@/lib/whatsapp/types';
 
 /**
- *  Módulo de Menús Interactivos v11.9.1 (Diamond Resilience)
+ *  Módulo de Menús Interactivos v12.0 (Diamond Resilience)
  *  Envía listas de opciones al usuario para evitar cálculos de la IA.
  *  SSOT: Cero 'any', Extracción estricta y Blindaje Tenant en el Join.
  */
 export async function handleOfferMenusAction(
     supabase: SupabaseClient,
-    actionData: MenuActionParams,
+    actionData: NeuralActionPayload,
     companyId: string,
     messageId: string
 ): Promise<NeuralActionResult[]> {
     const results: NeuralActionResult[] = [];
 
     try {
-        // 🛡️ AISLAMIENTO TENANT OBLIGATORIO (Bypass Resiliencia v11.9.1)
-        const conversationId = (actionData as any).conversation_id;
-        let phone = (actionData as any).phone_number;
+        // 🛡️ AISLAMIENTO TENANT OBLIGATORIO (Bypass Resiliencia v12.0)
+        const conversationId = actionData.conversation_id as string;
+        let phone = actionData.phone_number as string;
 
         // Si no tenemos el teléfono en la maleta, lo buscamos en la conversación (único fetch necesario)
         if (!phone && conversationId) {

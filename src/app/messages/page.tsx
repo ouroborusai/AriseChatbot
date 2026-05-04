@@ -14,7 +14,7 @@ import type { Conversation, Message, Contact } from '@/types/database';
 import type { ConvListType } from './components/ConversationList';
 
 /**
- *  MESSAGES PAGE Diamond v11.9.1 (Diamond Resilience - OMNI-CHANNEL SSOT)
+ *  MESSAGES PAGE Diamond v12.0 (Diamond Resilience - OMNI-CHANNEL SSOT)
  *  Aislamiento Tenant Estricto y Tipado Certificado sin 'any'.
  */
 
@@ -118,7 +118,7 @@ export default function MessagesPage() {
       className="flex flex-1 h-full bg-white relative overflow-hidden shadow-2xl border border-slate-100" 
       style={{ borderRadius: 40 }}
     >
-      {/* Luminous Pure Estética y Brillo de Fondo LOOP Green (#22c55e) */}
+      {/* Luminous Pure Estética y Brillo de Fondo ARISE Green (#22c55e) */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-[#22c55e]/5 blur-[128px] rounded-full animate-pulse" />
         <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-slate-50 blur-[100px] rounded-full" />
@@ -169,7 +169,7 @@ export default function MessagesPage() {
             </h3>
             <p className="text-[10px] font-black text-[#22c55e] uppercase tracking-[0.5em] mt-4 flex items-center gap-2 italic">
               <ShieldCheck size={12} className="text-[#22c55e]" />
-              v11.9.1_DIAMOND_OPERATIVO
+              v12.0_DIAMOND_OPERATIVO
             </p>
             <div className="mt-12 p-8 bg-slate-50/50 rounded-full animate-pulse border border-slate-100">
                <Activity size={32} className="text-[#22c55e] opacity-40" />

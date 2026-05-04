@@ -1,14 +1,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { PaymentActionParams, NeuralActionResult } from '../interfaces/actions';
+import { NeuralActionResult, NeuralActionPayload } from '@/lib/whatsapp/types';
 
 /**
- *  PAYMENT HANDLER v11.9.1 (Diamond Resilience)
+ *  PAYMENT HANDLER v12.0 (Diamond Resilience)
  *  Orquestación de links de pago y pasarelas con aislamiento tenant.
  *  Cero 'any'.
  */
 export async function handlePaymentAction(
   supabase: SupabaseClient,
-  actionData: PaymentActionParams,
+  actionData: NeuralActionPayload,
   companyId: string,
   messageId: string
 ): Promise<NeuralActionResult[]> {

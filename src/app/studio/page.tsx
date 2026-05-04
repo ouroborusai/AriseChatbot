@@ -210,7 +210,7 @@ export default function AIStudio() {
           </h1>
           <p className="text-slate-400 text-[8px] font-black uppercase tracking-[0.4em] mt-6 flex items-center gap-2.5">
             <Cpu size={12} className="text-primary" />
-            ADN MAESTRO / v10.4 PLATINUM
+            ADN MAESTRO / v12.0 DIAMOND
           </p>
         </div>
 
@@ -265,7 +265,7 @@ export default function AIStudio() {
       <div className="mt-20 pt-10 border-t border-slate-100 flex flex-wrap gap-12 opacity-60 px-2 relative z-10">
          <div className="flex items-center gap-3">
             <ShieldCheck size={14} className="text-slate-400" />
-            <span className="text-[8px] font-black uppercase tracking-widest">Protocolo Blindado v10.4</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">Protocolo Blindado v12.0</span>
          </div>
          <div className="flex items-center gap-3">
             <Zap size={14} className="text-primary" />

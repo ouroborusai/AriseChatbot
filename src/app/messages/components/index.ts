@@ -1,5 +1,5 @@
 /**
- * MESSAGES MODULE - COMPONENTS v11.9.1 (Diamond Resilience)
+ * MESSAGES MODULE - COMPONENTS v12.0 (Diamond Resilience)
  * Componentes modulares para la página de Mensajes - Tipado SSOT Certificado.
  */
 

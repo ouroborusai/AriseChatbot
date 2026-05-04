@@ -14,7 +14,10 @@ import type { Message, Contact } from '@/types/database';
 
 const PAGE_SIZE = 10;
 
-export type CRMContactType = Pick<Contact, 'id' | 'full_name' | 'phone' | 'email' | 'category' | 'created_at'> & { companies?: { name: string } };
+export type CRMContactType = Pick<Contact, 'id' | 'full_name' | 'phone' | 'email' | 'category' | 'created_at'> & { 
+  companies?: { name: string };
+  convStatus?: string;
+};
 
 export default function CRMPage() {
   const { activeCompany, isLoading: isContextLoading } = useActiveCompany();
@@ -33,18 +36,29 @@ export default function CRMPage() {
     
     let countQuery = supabase.from('contacts').select('*', { count: 'exact', head: true });
     let dataQuery = supabase.from('contacts')
-      .select('id, full_name, phone, email, category, created_at, companies(name)')
+      .select(`
+        id, full_name, phone, email, category, created_at, 
+        companies(name),
+        conversations(status)
+      `)
       .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1)
       .order('created_at', { ascending: false });
 
     if (!isGlobal) {
         countQuery = countQuery.eq('company_id', companyId);
         dataQuery = dataQuery.eq('company_id', companyId);
+        // Filtramos conversaciones de esta empresa específica
+        dataQuery = dataQuery.eq('conversations.company_id', companyId);
     }
 
     const [{ count }, { data }] = await Promise.all([countQuery, dataQuery]);
 
-    return { totalCount: count || 0, contacts: (data as unknown as CRMContactType[]) || [], activeChats: 0 };
+    const mappedContacts = (data as any[] || []).map(contact => ({
+      ...contact,
+      convStatus: contact.conversations?.[0]?.status || 'open'
+    })) as CRMContactType[];
+
+    return { totalCount: count || 0, contacts: mappedContacts, activeChats: 0 };
   };
 
   const { data, error, mutate, isLoading: isSwrLoading } = useSWR(
@@ -134,7 +148,7 @@ export default function CRMPage() {
         <div>
           <h1 className="text-4xl md:text-6xl font-black text-neural-dark tracking-tighter uppercase italic">CRM <span className="text-primary drop-shadow-xl">Neural.</span></h1>
           <p className="text-slate-400 text-[10px] md:text-[11px] font-black uppercase tracking-[0.5em] mt-6 flex items-center gap-4 italic opacity-60">
-            <ShieldCheck size={14} className="text-primary" /> ARISE_DIAMOND_RESILIENCE_SYNC_//_v11.9.1
+            <ShieldCheck size={14} className="text-primary" /> ARISE_DIAMOND_RESILIENCE_SYNC_//_v12.0
           </p>
         </div>
         
@@ -149,7 +163,7 @@ export default function CRMPage() {
               className="w-full bg-white border border-slate-100 pl-14 pr-6 py-5 rounded-xl text-[10px] font-black uppercase italic tracking-widest outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary/30 transition-all shadow-sm text-neural-dark placeholder:text-slate-300"
             />
           </div>
-          <button className="flex-1 md:flex-none btn-loop flex items-center justify-center gap-3 w-full md:w-auto">
+          <button className="flex-1 md:flex-none btn-arise flex items-center justify-center gap-3 w-full md:w-auto">
             <UserPlus size={16} />
             <span>NUEVO_NODO</span>
           </button>

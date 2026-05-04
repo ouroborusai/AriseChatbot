@@ -38,7 +38,7 @@ const menuItems = [
   { name: 'Analítica', icon: BarChart3, path: '/billing', premium: true },
   { name: 'Empresas', icon: Building2, path: '/companies', premium: true },
   { name: 'Meta Console', icon: Zap, path: '/meta', premium: true },
-  { name: 'LOOP Studio', icon: Code2, path: '/studio', premium: true },
+  { name: 'ARISE Studio', icon: Code2, path: '/studio', premium: true },
   { name: 'Conocimiento', icon: BookOpen, path: '/studio/knowledge', premium: true },
   { name: 'Control de Acceso Neural', icon: ShieldCheck, path: '/users', premium: false },
 ];
@@ -95,15 +95,15 @@ export default function Sidebar() {
           <div className="w-10 h-10 relative group-hover:scale-105 transition-all duration-700">
              <div className="absolute inset-0 bg-[#22c55e]/10 blur-xl rounded-full" />
              <Image 
-               src="/brand/loop-logo.png" 
-               alt="LOOP Logo" 
+               src="/brand/arise-logo.png" 
+               alt="ARISE Logo" 
                width={40}
                height={40}
                className="w-full h-full object-cover rounded-lg relative z-10 shadow-sm"
              />
           </div>
           <div className="relative">
-            <span className="font-black text-slate-900 tracking-tighter text-2xl leading-none block uppercase">LOOP</span>
+            <span className="font-black text-slate-900 tracking-tighter text-2xl leading-none block uppercase">ARISE</span>
             <span className="text-[#22c55e] text-[8px] font-black uppercase tracking-[0.4em] block mt-1">INTELIGENCIA</span>
           </div>
         </div>

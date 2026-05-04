@@ -10,7 +10,7 @@ export const ACTION_PREFIXES = {
 };
 
 /**
- * 🏛️ SSOT: MAPEO DE COLECCIONES RED MTZ v11.9.1
+ * 🏛️ SSOT: MAPEO DE COLECCIONES RED MTZ v12.0
  * Mapeo oficial de IDs técnicos a IDs de Product Sets en Meta.
  */
 const MTZ_CATALOG_MAPPING: Record<string, string> = {
@@ -20,6 +20,10 @@ const MTZ_CATALOG_MAPPING: Record<string, string> = {
   'mtz_health': '1698047397876594',
   'mtz_industrial': '1515104673540585',
   'mtz_pro_services': '1174341769086586',
+  'mtz_distillery': '2793828444312416',
+  'mtz_education': '1303884558504406',
+  'mtz_automotive': '1381259267200595',
+  'mtz_retail': '1622447402352384',
 };
 
 /**
@@ -51,7 +55,7 @@ export function getRequestedReportType(buttonId: string | undefined, content?: s
 
 
 /**
- * Orquestador de ruteo con Telemetría Platinum v10.4
+ * Orquestador de ruteo con Telemetría Diamond v12.0
  */
 export async function handleActionRouting(params: {
   buttonId: string | undefined;
@@ -123,7 +127,7 @@ export async function handleActionRouting(params: {
         // NOTIFICACIÓN AL USUARIO
         await sendWhatsAppMessage({
             to: sender,
-            text: `⚠️ *LOOP Debug:* Falló la generación del reporte *${reportType}*.\n\n*Motivo:* ${err.message}\n\nRevisando logs para corregir...`,
+            text: `⚠️ *ARISE Debug:* Falló la generación del reporte *${reportType}*.\n\n*Motivo:* ${err.message}\n\nRevisando logs para corregir...`,
             phoneNumberId,
             whatsappToken,
             companyId
@@ -135,11 +139,102 @@ export async function handleActionRouting(params: {
     return true;
   }
 
-  // 3. COMANDOS DE ADMINISTRADOR (Platinum Shell v10.4)
+  // 3. COMANDOS DE BIENVENIDA / FLOWS (v12.0)
+  if (content === 'Ver Catalogo') {
+    await logEvent({ companyId, action: 'WELCOME_EXPLORER_REQUESTED', details: { sender } });
+    
+    const flowPromise = sendWhatsAppMessage({
+        to: sender,
+        text: "🔍 *Explorador Red MTZ*\nSelecciona un rubro para ver los proveedores disponibles.",
+        flow: {
+            id: '1022620870276018',
+            cta: 'Explorar Rubros',
+            token: `flow_${Date.now()}`,
+            screen: 'CATEGORY_SELECTION'
+        },
+        phoneNumberId,
+        whatsappToken,
+        companyId
+    });
+
+    waitUntil(flowPromise);
+    return true;
+  }
+
+  if (content === 'Comenzar') {
+    await sendWhatsAppMessage({
+        to: sender,
+        text: "🚀 *Sistemas Iniciados.*\n\nSoy *Arise Director Neural*. Estoy listo para gestionar tu inventario, generar reportes financieros o conectar con la Red MTZ.\n\nEscribe *'Ver Catalogo'* o usa el menú para empezar.",
+        phoneNumberId,
+        whatsappToken,
+        companyId
+    });
+    return true;
+  }
+
+  // 4. COMANDOS DE ADMINISTRADOR (Diamond Shell v12.0)
   if (content.startsWith('/')) {
       const command = content.toLowerCase().split(' ')[0];
       
+      // Bloque de Seguridad: Solo permitir al teléfono oficial del administrador
+      const isAdmin = sender === '56990062213';
+      if (!isAdmin) {
+          await logEvent({ companyId, action: 'UNAUTHORIZED_ADMIN_COMMAND', details: { command, sender } });
+          return false; 
+      }
+
       await logEvent({ companyId, action: 'ADMIN_COMMAND_DETECTED', details: { command, sender } });
+
+      if (command === '/admin') {
+          await sendWhatsAppMessage({
+              to: sender,
+              text: "⚙️ *Panel de Gestión de Inventario*\nIniciando interfaz de control administrativo...",
+              flow: {
+                  id: '986752173802419',
+                  cta: 'Abrir Panel',
+                  token: `flow_admin_${Date.now()}`,
+                  screen: 'MAIN_MENU'
+              },
+              phoneNumberId,
+              whatsappToken,
+              companyId
+          });
+          return true;
+      }
+
+      if (command === '/rrhh') {
+          await sendWhatsAppMessage({
+              to: sender,
+              text: "👥 *Portal de RRHH*\nIniciando formulario de contratación...",
+              flow: {
+                  id: '1643909690206058',
+                  cta: 'Nueva Ficha',
+                  token: `flow_hr_${Date.now()}`,
+                  screen: 'ONBOARDING_SCREEN'
+              },
+              phoneNumberId,
+              whatsappToken,
+              companyId
+          });
+          return true;
+      }
+
+      if (command === '/tarea') {
+          await sendWhatsAppMessage({
+              to: sender,
+              text: "📝 *Gestor de Tareas*\nConfigura un nuevo recordatorio neural...",
+              flow: {
+                  id: '2772837246413893',
+                  cta: 'Crear Tarea',
+                  token: `flow_task_${Date.now()}`,
+                  screen: 'REMINDER_SCREEN'
+              },
+              phoneNumberId,
+              whatsappToken,
+              companyId
+          });
+          return true;
+      }
 
       if (command === '/status') {
           // Obtener conteo real de caché
@@ -150,7 +245,7 @@ export async function handleActionRouting(params: {
 
           await sendWhatsAppMessage({
               to: sender,
-              text: `🏰 *LOOP Platinum Shell v10.4*\n\n✅ *Status:* Online\n🛰️ *Meta API:* Connected\n🗄️ *Database:* Synced\n🧠 *Neural Cluster:* Active\n📑 *Shadow Cache:* ${count || 0} reportes listos\n🏢 *Company ID:* ${companyId.substring(0, 8)}...`,
+              text: `🏰 *ARISE Diamond Shell v12.0*\n\n✅ *Status:* Online\n🛰️ *Meta API:* Connected\n🗄️ *Database:* Synced\n🧠 *Neural Cluster:* Active\n📑 *Shadow Cache:* ${count || 0} reportes listos\n🏢 *Company ID:* ${companyId.substring(0, 8)}...`,
               phoneNumberId,
               whatsappToken,
               companyId
@@ -175,7 +270,7 @@ export async function handleActionRouting(params: {
       }
   }
 
-  // 4. LÓGICA DE CATÁLOGO POR RUBRO (v11.9.1 - Anti-Engorroso)
+  // 4. LÓGICA DE CATÁLOGO POR RUBRO (v12.0 - Anti-Engorroso)
   // Detectamos si el mensaje viene de un Flow (ACCION_CATALOGO) o de una Lista (mtz_xxx)
   const isCatalogRequest = content?.includes('ACCION_CATALOGO:') || (buttonId && MTZ_CATALOG_MAPPING[buttonId]);
   

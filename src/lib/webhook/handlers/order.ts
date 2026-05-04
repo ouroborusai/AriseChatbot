@@ -1,33 +1,10 @@
 import { supabase, logEvent } from '@/lib/webhook/utils';
 import { generateAndSendAIResponse } from '@/lib/neural-engine/whatsapp';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
-
-// Tipos estrictos heredados de la arquitectura SSOT
-export interface OrderItem {
-  product_retailer_id: string;
-  quantity: string;
-  item_price: string;
-  currency: string;
-}
-
-export interface OrderPayload {
-  catalog_id: string;
-  text?: string;
-  product_items: OrderItem[];
-}
-
-export interface OrderMessageParams {
-  order: OrderPayload;
-  sender: string;
-  companyId: string;
-  contactId: string;
-  conversationId: string;
-  whatsappToken: string;
-  phoneNumberId: string;
-}
+import { type OrderItem, type OrderPayload, type OrderMessageParams } from '@/lib/whatsapp/types';
 
 /**
- * ARISE NEURAL INVENTORY LOOP v12.0 (Diamond Resilience)
+ * ARISE NEURAL INVENTORY v12.0 (Diamond Resilience)
  * Handler de Pedidos de Catálogo - Integración de Cierre Financiero (MercadoPago).
  * SSOT: Cero 'any', Aislamiento Tenant Inquebrantable.
  */
@@ -35,7 +12,7 @@ export async function handleOrderMessage(params: OrderMessageParams): Promise<bo
   const { order, sender, companyId, contactId, conversationId, whatsappToken, phoneNumberId } = params;
 
   try {
-    // 1. Telemetría de Recepción Platinum
+    // 1. Telemetría de Recepción Diamond
     await logEvent({
       companyId,
       action: 'ORDER_RECEIVED_V12',
@@ -49,9 +26,13 @@ export async function handleOrderMessage(params: OrderMessageParams): Promise<bo
     if (Array.isArray(order.product_items)) {
       for (const item of order.product_items) {
         const price = parseFloat(item.item_price || '0');
-        const qty = parseInt(item.quantity || '0', 10);
+        const qty = Math.min(parseInt(item.quantity || '0', 10), 99); // 🛡️ Límite Meta 2026: 99 unidades
         totalAmount += price * qty;
         orderDetails += `- ${qty}x [SKU: ${item.product_retailer_id}] - ${item.currency} ${price * qty}\n`;
+        
+        if (parseInt(item.quantity || '0', 10) > 99) {
+           orderDetails += ` (⚠️ Ajustado al límite de 99 unidades)\n`;
+        }
       }
     }
 
@@ -77,8 +58,7 @@ export async function handleOrderMessage(params: OrderMessageParams): Promise<bo
               currency_id: 'CLP'
             }],
             payer: { email: `whatsapp_${sender}@redmtz.cl` }, // Pseudo-email para validación MP
-            metadata: { company_id: companyId, sender_phone: sender },
-            auto_return: 'approved'
+            metadata: { company_id: companyId, sender_phone: sender }
           }
         });
         
@@ -98,16 +78,15 @@ export async function handleOrderMessage(params: OrderMessageParams): Promise<bo
     }
 
     // 3. Inserción con ARISE_MASTER_SERVICE_KEY via supabase admin client
-    // Se fuerza la asociación estricta a contact_id y company_id en el nivel metadata.
     const { error: insertError } = await supabase
       .from('messages')
       .insert({
         conversation_id: conversationId,
+        company_id: companyId,
         sender_type: 'user',
         content: orderDetails,
-        external_id: 'N/A_OUTGOING_DIRECT', // Flag Supremo para evitar fallos de constraint
+        external_id: 'N/A_OUTGOING_DIRECT',
         metadata: { 
-          company_id: companyId,
           contact_id: contactId,
           order_payload: order 
         }
@@ -118,7 +97,7 @@ export async function handleOrderMessage(params: OrderMessageParams): Promise<bo
       throw new Error(`Fallo silencioso DB interceptado: ${insertError.message}`);
     }
 
-    // 4. Despertar a la IA con el contexto inyectado sin depender del Trigger Lobotomizado
+    // 4. Despertar a la IA con el contexto inyectado
     await generateAndSendAIResponse({
       content: orderDetails,
       companyId,

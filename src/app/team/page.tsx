@@ -11,7 +11,7 @@ import useSWR from 'swr';
 import type { Employee } from '@/types/database';
 
 /**
- *  TEAM HUB v11.9.1 (Diamond Resilience - SSOT)
+ *  TEAM HUB v12.0 (Diamond Resilience - SSOT)
  *  Aislamiento Tenant Estricto y Tipado Certificado.
  */
 export default function TeamPage() {
@@ -62,7 +62,7 @@ export default function TeamPage() {
             Equipo <span className="text-primary drop-shadow-xl">Humano.</span>
           </h1>
           <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.5em] mt-6 flex items-center gap-4 italic opacity-60">
-            INTELIGENCIA_DE_CAPITAL_//_v11.9.1_DIAMOND
+            INTELIGENCIA_DE_CAPITAL_//_v12.0_DIAMOND
           </p>
         </div>
         <div className="flex gap-6">
@@ -87,7 +87,7 @@ export default function TeamPage() {
       </div>
 
       <div className="px-4 lg:px-8">
-        <div className="loop-card overflow-hidden relative shadow-2xl border-slate-100/50" style={{ borderRadius: 'var(--radius-xl)' }}>
+        <div className="arise-card overflow-hidden relative shadow-2xl border-slate-100/50" style={{ borderRadius: 'var(--radius-xl)' }}>
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[800px]">
               <thead>
@@ -136,7 +136,7 @@ export default function TeamPage() {
                         {new Date(emp.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
                       </td>
                       <td className="px-8 py-8 text-right">
-                        <button className="btn-loop w-12 h-12 flex ml-auto items-center justify-center">
+                        <button className="btn-arise w-12 h-12 flex ml-auto items-center justify-center">
                           <ArrowUpRight size={18} />
                         </button>
                       </td>

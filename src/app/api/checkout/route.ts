@@ -4,7 +4,7 @@ import { requireAuth, verifyCompanyAccess } from '@/lib/api-auth';
 import { createClient } from '@supabase/supabase-js';
 
 /**
- *  CHECKOUT ENGINE v11.9.1 (Diamond Resilience)
+ *  CHECKOUT ENGINE v12.0 (Diamond Resilience)
  *  Orquestación de pasarela de pagos con MercadoPago y Aislamiento Tenant.
  *  Cero 'any'.
  */

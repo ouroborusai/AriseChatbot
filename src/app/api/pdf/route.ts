@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/api-auth';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 /**
- *  PDF ORCHESTRATION API v11.9.1 (Diamond Resilience)
+ *  PDF ORCHESTRATION API v12.0 (Diamond Resilience)
  *  Punto de entrada para la generación de reportes industriales.
  *  Cero 'any'. Aislamiento Tenant Blindado.
  */
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       new_data: { reportType, isPreGen }
     });
 
-    // Delegación al Pipeline Hardened (v11.9.1)
+    // Delegación al Pipeline Hardened (v12.0)
     const result = await executePDFPipeline({
       targetPhone,
       whatsappToken,

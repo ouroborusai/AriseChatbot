@@ -38,7 +38,7 @@ export default function Error({
           <h2 className="text-4xl md:text-7xl font-black uppercase italic tracking-tighter mb-6">Fallo de <span className="text-primary">Sistema</span></h2>
           <div className="flex items-center justify-center gap-6 mb-12">
              <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_15px_#ef4444]" />
-             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.6em] italic">CRITICAL_RUNTIME_EXCEPTION // v10.4 PLATINUM</p>
+             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.6em] italic">CRITICAL_RUNTIME_EXCEPTION // v12.0 DIAMOND</p>
           </div>
         </div>
 

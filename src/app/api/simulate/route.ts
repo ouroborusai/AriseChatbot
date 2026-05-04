@@ -37,10 +37,11 @@ export async function POST(req: Request) {
       raw: result
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     return NextResponse.json({ 
       status: 'error', 
-      message: error.message 
+      message: err.message 
     }, { status: 500 });
   }
 }

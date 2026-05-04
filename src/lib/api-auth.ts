@@ -34,7 +34,7 @@ export async function requireAuth() {
 
   // Permitir acceso si la llave de API interna es correcta (operaciones internas)
   if (apiKey && apiKey === internalMasterKey) {
-    return { error: null, user: { id: 'system_agent', email: 'agent@loop-os.ai' } };
+    return { error: null, user: { id: 'system_agent', email: 'agent@arise-os.ai' } };
   }
 
 

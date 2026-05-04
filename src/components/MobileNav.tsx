@@ -39,15 +39,15 @@ export default function MobileNav() {
           <div className="w-10 h-10 relative rotate-3 group-hover:rotate-0 transition-transform">
              <div className="absolute inset-0 bg-green-100 blur-lg rounded-full" />
              <Image 
-               src="/brand/loop-logo.png" 
-               alt="LOOP Logo" 
+               src="/brand/arise-logo.png" 
+               alt="ARISE Logo" 
                width={40}
                height={40}
                className="w-full h-full object-cover rounded-xl shadow-2xl relative z-10"
              />
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-slate-900 tracking-tighter text-sm uppercase italic">LOOP</span>
+            <span className="font-black text-slate-900 tracking-tighter text-sm uppercase italic">ARISE</span>
             <span className="text-green-500 text-[8px] font-black uppercase tracking-[0.2em] leading-none">NEURAL_OS</span>
           </div>
         </div>

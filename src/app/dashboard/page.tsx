@@ -11,7 +11,7 @@ import { MetricSmall } from '@/components/ui/MetricSmall';
 import useSWR from 'swr';
 
 /**
- * DASHBOARD MASTER v11.9.1 (Diamond Resilience)
+ * DASHBOARD MASTER v12.0 (Diamond Resilience)
  * Estética: Luminous Pure
  * Cero Cálculos Locales: Integración directa mediante agregaciones Head/Count y Vistas Pre-procesadas.
  */
@@ -93,7 +93,7 @@ export default function Dashboard() {
             Panel de <span className="text-[#22c55e]">Control.</span>
           </h1>
           <p className="text-[10px] font-black text-[#22c55e] uppercase tracking-[0.5em] mt-4 flex items-center gap-2">
-            <Zap size={12} className="animate-pulse" /> NODO_ALPHA_SYNC // v11.9.1_DIAMOND_OPERATIVO
+            <Zap size={12} className="animate-pulse" /> NODO_ALPHA_SYNC // v12.0_DIAMOND_OPERATIVO
           </p>
         </div>
         <div className="hidden md:flex items-center gap-3 bg-white px-6 py-3 border border-slate-100 shadow-sm transition-all hover:shadow-md" style={{ borderRadius: 40 }}>

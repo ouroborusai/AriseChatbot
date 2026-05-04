@@ -3,9 +3,10 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import { logger } from '@/lib/logger';
 
 /**
- * NEURAL NOTIFIER Diamond v10.1
+ * NEURAL NOTIFIER Diamond v12.0
  * Gestiona notificaciones sonoras en tiempo real para mensajes entrantes.
  */
 export default function NeuralNotifier() {
@@ -35,7 +36,7 @@ export default function NeuralNotifier() {
           // pero podemos filtrar en el callback.
         },
         async (payload) => {
-          const newMessage = payload.new;
+          const newMessage = payload.new as { sender_type: string; conversation_id: string; content: string };
           
           // Solo notificar si es un mensaje de un USUARIO (cliente externo)
           if (newMessage.sender_type !== 'user') return;
@@ -48,14 +49,14 @@ export default function NeuralNotifier() {
             .single();
 
           if (conv?.company_id === activeCompany?.id) {
-            console.log('[NEURAL_NOTIFY] Nuevo mensaje entrante detectado.');
+            logger.info('Nuevo mensaje entrante detectado.', 'NEURAL_NOTIFY');
             playNotificationSound();
             
             // Opcional: Notificación nativa del sistema
             if (Notification.permission === 'granted') {
-              new Notification('Nuevo Mensaje LOOP', {
+              new Notification('Nuevo Mensaje ARISE', {
                 body: newMessage.content,
-                icon: '/brand/official.png'
+                icon: '/brand/arise-logo.png'
               });
             }
           }
@@ -75,7 +76,7 @@ export default function NeuralNotifier() {
 
   const playNotificationSound = () => {
     if (audioRef.current) {
-      audioRef.current.play().catch(e => console.warn('[AUDIO_BLOCKED] Browser blocked autoplay sound. Interaction required.'));
+      audioRef.current.play().catch(e => logger.warn(`Browser blocked autoplay sound: ${e.message}`, 'AUDIO_BLOCKED'));
     }
   };
 

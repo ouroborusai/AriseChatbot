@@ -29,7 +29,7 @@ export function ConversationList({ conversations, selectedConv, onSelect, search
             <h1 className="text-2xl font-black tracking-tighter text-neural-dark uppercase italic">Frecuencias</h1>
             <p className="text-[8px] font-black text-[#22c55e] uppercase tracking-[0.6em] mt-2 flex items-center gap-2">
               <Zap size={10} className="text-[#22c55e]" /> 
-              NODOS_DE_SINCRONIZACIÓN_v11.9.1
+              NODOS_DE_SINCRONIZACIÓN_v12.0
             </p>
           </div>
           <Activity className="w-5 h-5 text-[#22c55e] animate-pulse" />

@@ -29,6 +29,10 @@ async function syncToMeta() {
     "mtz_health": "health.png",
     "mtz_pro_services": "pro_services.png",
     "mtz_industrial": "services.png",
+    "mtz_distillery": "services.png",
+    "mtz_education": "services.png",
+    "mtz_automotive": "services.png",
+    "mtz_retail": "services.png",
     "mtz_general": "services.png"
   };
 

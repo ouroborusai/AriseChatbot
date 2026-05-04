@@ -1,5 +1,5 @@
 /**
- * LOOP NEURAL ENGINE CONSTANTS Platinum v10.4
+ * ARISE NEURAL ENGINE CONSTANTS Diamond v12.0
  * Centralización de configuraciones y valores mágicos
  */
 
@@ -66,7 +66,7 @@ export const TIMEOUTS = {
 // ════════════════════════════════════════════════════════════════════════════
 
 export const SYSTEM_STRINGS = {
-  DEFAULT_SYSTEM_PROMPT: 'Eres LOOP Director AI. "Cierra el ciclo de tus tareas con Loop".',
-  NEURAL_AI_CREATED: 'Creado vía LOOP Neural AI',
-  FALLBACK_RESPONSE: 'LOOP Neural Engine: Fallo de percepción.',
+  DEFAULT_SYSTEM_PROMPT: 'Eres ARISE Director Neural. "La inteligencia que evoluciona con tu negocio".',
+  NEURAL_AI_CREATED: 'Creado vía ARISE Neural AI',
+  FALLBACK_RESPONSE: 'ARISE Neural Engine: Fallo de percepción.',
 } as const;

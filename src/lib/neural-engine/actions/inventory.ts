@@ -1,23 +1,24 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { InventoryActionParams, NeuralActionResult } from '../interfaces/actions';
+import { NeuralActionResult, NeuralActionPayload } from '@/lib/whatsapp/types';
+import { logEvent } from '@/lib/webhook/utils';
 
 // ⚠️ TIPADO SSOT IMPORTADO DIRECTAMENTE DE LA BASE DE DATOS
 import type { InventoryItem } from '@/types/database';
 
 /**
- *  INVENTORY HANDLER v11.9.1 (Diamond Resilience - Ouroborus Engine)
+ *  INVENTORY HANDLER v12.0 (Diamond Resilience - Ouroborus Engine)
  *  Procesa acciones de inventario: create, add, remove, log, scan.
  *  Aislamiento Tenant Estricto y Cero 'any'.
  */
 export async function handleInventoryAction(
   supabase: SupabaseClient,
-  actionData: InventoryActionParams,
+  actionData: NeuralActionPayload,
   companyId: string,
   messageId: string
 ): Promise<NeuralActionResult[]> {
   const results: NeuralActionResult[] = [];
 
-  // Protocolo de Extracción Diamond v11.9.1
+  // Protocolo de Extracción Diamond v12.0
   const targetSku = actionData.sku || actionData.params?.sku;
   const targetName = actionData.name;
   const targetQuantity = Number(actionData.current_stock || actionData.params?.current_stock || 0);
@@ -99,21 +100,20 @@ export async function handleInventoryAction(
 
       // Alerta de stock bajo proactiva (Telemetría Integrada)
       if ((updated.current_stock ?? 0) <= (updated.min_stock_alert || 5)) {
-        await supabase.from('audit_logs').insert({
-          company_id: companyId,
+        await logEvent({
+          companyId,
           action: 'LOW_STOCK_ALERT',
-          table_name: 'inventory_items',
-          record_id: updated.id,
-          new_data: { sku: updated.sku, stock: updated.current_stock }
+          tableName: 'inventory_items',
+          details: { sku: updated.sku, stock: updated.current_stock }
         });
       }
 
       // Shadow PDF Trigger (Centralización de Auditoría)
-      await supabase.from('audit_logs').insert({
-        company_id: companyId,
+      await logEvent({
+        companyId,
         action: 'TRIGGER_REPORT_REFRESH',
-        table_name: 'inventory_items',
-        new_data: { type: 'inventory' }
+        tableName: 'inventory_items',
+        details: { type: 'inventory' }
       });
 
       results.push({

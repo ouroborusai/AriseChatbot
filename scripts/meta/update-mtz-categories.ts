@@ -11,17 +11,18 @@ const supabase = createClient(
 );
 
 async function updateCategories() {
+  // ✅ LEY DEL GUIÓN BAJO Diamond v12 - IDs técnicos puros SSOT
   const categories = [
-    "Gastronomía & Alimentos 🍣",
-    "Construcción, Ferretería & Maderas 🛠️",
-    "Transportes, Grúas & Logística 🚛",
-    "Estética, Salud & Bienestar 💅",
-    "Seguridad & Servicios Industriales 🛡️",
-    "Destilerías & Producción 🍷",
-    "Educación & Comunidad 🎨",
-    "Automotriz & Talleres 🏎️",
-    "Servicios Profesionales & Consultoría ⚖️",
-    "Comercio & Retail 🛒"
+    "mtz_food",
+    "mtz_construction",
+    "mtz_logistics",
+    "mtz_health",
+    "mtz_industrial",
+    "mtz_distillery",
+    "mtz_education",
+    "mtz_automotive",
+    "mtz_pro_services",
+    "mtz_retail"
   ];
 
   const { data: items } = await supabase.from('inventory_items').select('id, sku');

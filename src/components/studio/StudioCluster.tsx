@@ -66,7 +66,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
            <h2 className="text-4xl font-black text-white tracking-tighter relative z-10">{telemetry.latency}</h2>
            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-6 flex items-center gap-3 relative z-10">
               <Zap size={14} className="text-primary" />
-              Ritmo de Respuesta v10.4
+              Ritmo de Respuesta v12.0
            </p>
         </div>
       </div>
@@ -79,7 +79,7 @@ export function StudioCluster({ telemetry, apiKeys, keyResults, onTestKey }: Stu
               <Database size={18} className="text-primary" />
               Estado de los Nodos Gemini-2.5
             </h3>
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-md border border-slate-100">Round-Robin v10.4</span>
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-md border border-slate-100">Round-Robin v12.0</span>
           </div>
           
           <div className="grid grid-cols-1 gap-4">

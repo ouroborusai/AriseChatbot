@@ -47,8 +47,9 @@ export default function MetaConsolePage() {
       const json = await res.json();
       if (json.error) throw new Error(json.error);
       setData(json);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message);
     } finally {
       setLoading(false);
     }

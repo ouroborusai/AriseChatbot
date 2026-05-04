@@ -35,12 +35,12 @@ export function StudioBrain({ systemPrompt, setSystemPrompt, saving, onSave, tel
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
               className="w-full h-[400px] md:h-[600px] px-8 py-8 text-neural-dark text-[13px] font-mono leading-relaxed outline-none resize-none bg-transparent selection:bg-primary/10 scrollbar-hide"
-              placeholder="IDENTITY_PROTOCOL_v10.4_PLATINUM..."
+              placeholder="IDENTITY_PROTOCOL_v12.0_DIAMOND..."
             />
           </div>
           <div className="px-8 py-6 bg-slate-50/50 flex justify-between items-center border-t border-slate-100">
             <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest hidden sm:block">
-               * PROTOCOLO DE IDENTIDAD NEURAL / ARISE OS v10.4
+               * PROTOCOLO DE IDENTIDAD NEURAL / ARISE OS v12.0
             </p>
             <button 
               onClick={onSave}

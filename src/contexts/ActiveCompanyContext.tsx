@@ -46,9 +46,9 @@ export const ActiveCompanyProvider = ({ children }: { children: ReactNode }) => 
     localStorage.setItem("arise_active_status", company.status || 'active');
     localStorage.setItem("arise_active_tax_id", company.tax_id || '');
     
-    // Cookie para SSR/Middleware (Diamond v11.9.1)
-    document.cookie = `loop_company_id=${company.id}; path=/; max-age=31536000; SameSite=Lax`;
-    document.cookie = `loop_plan_tier=${company.plan_tier || 'free'}; path=/; max-age=31536000; SameSite=Lax`;
+    // Cookie para SSR/Middleware (Diamond v12.0)
+    document.cookie = `arise_company_id=${company.id}; path=/; max-age=31536000; SameSite=Lax`;
+    document.cookie = `arise_plan_tier=${company.plan_tier || 'free'}; path=/; max-age=31536000; SameSite=Lax`;
   }, []);
 
   const value = React.useMemo(() => ({ 

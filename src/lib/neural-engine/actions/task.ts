@@ -1,18 +1,18 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SYSTEM_STRINGS } from '../constants';
-import { TaskActionParams, NeuralActionResult } from '../interfaces/actions';
+import { NeuralActionResult, NeuralActionPayload } from '@/lib/whatsapp/types';
 
 // ⚠️ TIPADO SSOT IMPORTADO DIRECTAMENTE DE LA BASE DE DATOS
 import type { ServiceRequest, Reminder } from '@/types/database';
 
 /**
- *  TASK & REMINDER HANDLER v11.9.1 (Diamond Resilience)
+ *  TASK & REMINDER HANDLER v12.0 (Diamond Resilience)
  *  Procesa acciones de tareas y recordatorios con aislamiento tenant blindado.
  *  Cero 'any'.
  */
 export async function handleTaskAction(
   supabase: SupabaseClient,
-  actionData: TaskActionParams,
+  actionData: NeuralActionPayload,
   companyId: string,
   messageId: string
 ): Promise<NeuralActionResult[]> {
@@ -85,7 +85,7 @@ export async function handleTaskAction(
 
       if (msgError) throw msgError;
 
-      const contactId = (msgData as any)?.conversations?.contact_id;
+      const contactId = (msgData as unknown as { conversations: { contact_id: string } })?.conversations?.contact_id;
 
       const { data, error } = await supabase.from('reminders').insert({
         company_id: companyId, // 🛡️ AISLAMIENTO TENANT OBLIGATORIO
